@@ -1,16 +1,22 @@
 # dsh-task-supervisor 工作约定
 
-本项目是独立的 DSH 插件项目，目标是以一个任务督导流程替代 DSH 原生 Goal 与 Plan 的用户工作流。实现前先读 [README.zh.md](README.zh.md)、[架构](docs/architecture.zh.md)、[审查策略](docs/review-policy.zh.md)和[评测设计](docs/evaluation.zh.md)，并遵循本地 DSH 源码仓库的 [AGENTS.md](../../deepseek-harness/AGENTS.md) 与 [架构说明](../../deepseek-harness/docs/architecture.md)。
+本项目是独立的 DSH 插件项目，目标是以一个任务督导流程替代 DSH 原生 Goal 与 Plan 的用户工作流。实现前先读 [README.zh.md](README.zh.md)、[架构](docs/architecture.zh.md)、[任务状态与控制](docs/task-lifecycle.zh.md)、[审查策略](docs/review-policy.zh.md)、[评测设计](docs/evaluation.zh.md)和[首个原型](docs/prototype.zh.md)，并遵循本地 DSH 源码仓库的 [AGENTS.md](../../deepseek-harness/AGENTS.md) 与 [架构说明](../../deepseek-harness/docs/architecture.md)。
 
 ## 不变量
 
 - DSH 主会话日志是用户指令、Agent 行为和工具结果的共同事实来源；不得创建两份需要人工同步的任务要求。
-- 用户继续使用 `/goal` 与 `/plan`；目标配置档由本插件接管这两个入口及任务控制，同一会话不得同时运行原生与插件控制器。
+- 在功能上替代 Goal 与 Plan，使用独立命令命名空间（暂定 `/task`）及自有模型工具、状态和 UI；不覆盖或要求卸载原生插件，不依赖其私有服务。
+- 同一会话只由一个控制器负责续行；首版以专用 preset 和新的督导会话隔离任务控制，不能把独立命令名当成避免运行冲突的充分条件。
+- 每会话维护有上限的未结束任务列表，同时只准入一个任务执行。JSON 是会话事件的可重建快照，不建立第二份权威历史。
+- 关闭 Supervisor 必须使续行、审查和超时回调失效；重新启用不自动恢复任务。阶段审查聚焦目标、约束、进展和完成证据。
 - 插件拥有持久任务状态、执行计划、续行和完成裁决。主 Agent 执行任务并提出计划变更；独立审查者读取主会话证据，不能代替主 Agent 修改工作区。
 - 任何送入模型的插件消息都必须能从持久 session 事件重建。注册、监听和清理遵循 Cordis effect 生命周期。
 - 首次自主多轮执行前由用户确认任务要求与初始计划。用户在同一会话中的后续指令不需要额外的“同步确认”。宿主重启后恢复状态，但等待用户手动继续。
 - 在隔离 DSH 实例验收；不修改日常 DSH profile，也不改旧原型 `../dsh-jev-verifier/`。
-- 先以真实长任务数据和独立验收建立基线，再声称优于 DSH Goal 或 Plan。
+- 主 Agent 保持执行身份，督导控制层负责确定性调度与状态；审查者不充当通用 Lead 或实施 Worker。持久化不是相对于 Team 的独有优势。
+- 先以真实长任务数据和独立验收建立基线，再声称优于 DSH Goal 或 Plan；同时比较明确要求审查的 Lead–Worker Team。
+
+恢复、动作交付与日志读取按[督导会话设计](docs/session-runtime.zh.md)执行；影响控制的记录不得为了可读而标为 `ignorable`。审查默认跟随主 Agent，也可从当前 DSH profile 指定模型，详见[审查模型](docs/review-model.zh.md)。
 
 ## DSH 本地 Skills
 
@@ -18,4 +24,4 @@ DSH 源码仓库的 13 个 skill 已从仓库根目录的 `.agents/skills/` 通�
 
 ## 当前状态
 
-这里目前只有设计与开发约定，尚无可安装插件。README 中的目标行为不是已实现能力。
+这里有设计与开发约定，以及 `spikes/kernel/` 中使用真实 DSH 内核和脚本化模型的能力试验，尚无可安装的产品插件。已验证范围和持久化缺口见[试验记录](docs/host-spike.zh.md)；README 中的目标行为不是已实现能力。

@@ -1,47 +1,64 @@
 # Review and intervention proposal
 
-**Status: design proposal.** This document owns review timing, evidence access, and intervention semantics. The plugin has not implemented them yet.
+**Status: design proposal.** This page owns task review, checkpoint timing, evidence access, and intervention. The proposed thresholds are provisional and need calibration on real tasks.
 
 ## Summary
 
-The supervisor checks whether the main agent is still pursuing the user's task and whether its completion claim is supported. Each issue category has a configurable response tier. The reviewer must cite session evidence before it can interrupt work.
+Review the task's objective, constraints, stage progress, and completion evidence. The main review checkpoints are plan readiness, stage transitions, and final acceptance. Routine tool calls do not need a model review or a supervisor permission gate. DSH continues to own tool permissions; an explicit task constraint about an action is reviewed as a task constraint.
 
 ## When review runs
 
 | Checkpoint | Purpose |
 | --- | --- |
-| Before a tool action | A light check for an obvious, imminent policy match; do not run a full independent review on every tool call. |
-| End of an execution round | A fresh independent reviewer checks progress, deviations, and the proposed next step. |
-| Milestone or early stagnation signal | A deeper review checks the effective plan and whether another approach is needed. |
-| Completion request | An independent evaluator inspects the evidence and workspace acceptance result before the controller finishes the task. |
+| Initial plan ready | Check coverage of the user's objective, constraints, stages, and acceptance criteria before the user reviews the plan. |
+| Stage claimed complete | Check the expected evidence and decide whether the next stage is ready. A main-agent claim is not sufficient by itself. |
+| Objective edit or material plan revision | Reconcile affected requirements and stages; user-authorized changes take effect without a second synchronization confirmation. |
+| Final completion request | Evaluate every acceptance criterion against current artifacts and evidence. |
+| Missing progress or an extended stage | Trigger an independent review even when the main agent never reports a stage transition. |
 
-The controller may call a specialist reviewer for a narrow issue. Its findings join the same decision record; a specialist does not acquire separate authority to continue or pause the task.
+At ordinary round boundaries, the controller checks task state and whether a review is due. It does not necessarily call a reviewer. As a provisional watchdog, request a review after three execution rounds or twenty tool results since the last accepted review, whichever comes first. During a long round, deliver it at the next supported safe step boundary. Count events cheaply; do not review every tool call. Repeated failed checks can trigger an earlier review, but repetition alone does not prove stagnation. Exact thresholds and boundary support need validation.
 
-## Issue categories and tiers
+At a required checkpoint, hold new task steps at the supported boundary until the review resolves; allow already-started tools to settle. New user instructions take priority and invalidate an obsolete review decision. Coalesce simultaneous triggers into one review for the same task revision and evidence cutoff. Start a fresh reviewer at each checkpoint by default; call a specialist only for a concrete unresolved issue. A reviewer cannot independently schedule main-agent work. Its output identifies the task and plan versions, evidence cutoff, findings, and recommended next action.
 
-| Category | Question the reviewer checks |
+Review follows the main Agent's effective model selection by default or uses a model selected from the active DSH profile; each job pins its resolved configuration under [reviewer model policy](review-model.md). Recovery reconciles previous jobs through [Supervisor Session](session-runtime.md); restart or history inspection does not authorize a new review.
+
+## What each review decides
+
+The reviewer checks four things: whether work still serves current instructions; whether this stage produced useful progress; whether its expected evidence exists; and whether the proposed next action follows from that evidence. A stage can pass, need revision, or need user input. A missing acceptance result is actionable; a stylistic preference outside the user's criteria is not grounds to keep a finished task running.
+
+| Finding | Proposed default response |
 | --- | --- |
-| Objective or constraint drift | Does the next action still serve the user's current instructions in the bound session? |
-| Stagnation or repeated attempts | Is the agent repeating an approach without useful new evidence or progress? |
-| Unsupported completion | Does the completion request lack required acceptance evidence or leave explicit constraints unmet? |
-| High-impact actions and side effects | Does a proposed action have consequences that require a stronger check under the configured policy? |
+| Minor observation with no required change | Record only. |
+| Evidence-backed drift, missing evidence, or a recoverable failed approach | Deliver an automatic correction and let the main agent revise its next step. |
+| Contradictory requirements or a decision only the user can make | Pause and show the exact decision needed. |
+| Confirmed stagnation after attempted correction | Pause until the user manually resumes or changes direction. |
 
-Each category can use one of three tiers: **record only**, **automatic reminder**, or **pause for user decision**. A configured severity rule may raise the tier for a specific finding. A pause requires concrete evidence: cited event IDs, the current instruction or plan version, the questioned action, and the likely consequence. A finding without enough evidence is recorded for a later check rather than promoted to a pause.
+The three configurable tiers remain record only, automatic reminder, and pause for user decision. Severity rules may raise a finding's tier. A finding cites instruction or plan versions and supporting event IDs. A pause explains the concrete consequence and available choices. It must not invent a new acceptance criterion.
 
-At the reminder tier, the controller delivers the finding to the main agent and records that delivery so it can be replayed. The agent then chooses how to revise its plan or action. At the pause tier, the user can continue the original action, accept the reviewer's advice, or stop the action. Accepting advice cancels the pending original action and returns control to the main agent to replan. It does not let the reviewer edit the workspace.
+## Pause and timeout
 
-The user can configure a pause timeout. The agreed default is to continue the original action when that timeout expires and record that the timeout caused automatic continuation. The exact duration and tier defaults per category remain open. This timeout rule does not replace DSH tool permissions, sandbox checks, or any separate approval required by the host.
+Stage review normally holds the next continuation or stage transition, not an arbitrary tool call. The user may continue the proposed next step, accept advice and return the task to replanning, or stop. An automatic reminder is delivered through a logged main-agent instruction. Corrective continuation must change the next step or supply useful missing evidence; repeatedly delivering the same reminder is not progress.
+
+For ordinary review prompts configured with a timeout, keep the agreed default: timeout permits the held next step and records automatic continuation. The exact duration remains open. Immediately before continuation, recheck task revision, supervisor enablement, execution permission, and newer user input. A stale timeout never revives an edited, stopped, or cleared task.
+
+Initial plan approval, an unresolved essential user decision, confirmed-stall recovery, manual pause, restart, and disabled Supervisor do not receive this timeout permission. Timeout cannot mark a task complete or grant a separate DSH permission. Accepting review advice cancels the held continuation and gives the main agent a concrete replanning instruction.
 
 ## Evidence access
 
-The reviewer reads a plugin-provided view of the bound main session, beginning with the last completed round. It can request earlier pages and expand selected redacted messages, tool arguments, or tool results. Later reviews use an incremental cursor. The tool reports stable event references and round boundaries, so a finding can be checked against the original record. It must not accept a caller-supplied arbitrary session ID or grant write access to the main session.
+The session read tool is bound to the main session. Its first view is the last completed round; the reviewer expands backward or reads from its persisted cursor to cover the entire unreviewed interval. Returning only the latest round is insufficient when a stage spans several rounds. Freeze an evidence cutoff for each review, retain stable event references, and require missing pages to be read before the cursor advances. Longer redacted messages and tool inputs or outputs are expanded on demand.
 
-The final evaluator also reads the workspace result. If acceptance commands are needed, it runs them in an isolated copy and reports the command, observed result, and limitations to the controller. It does not treat the main agent's summary as sufficient evidence by itself.
+Later user edits invalidate control decisions based on older task versions. Later execution evidence stays pending for another review; findings may be retained as historical observations but cannot approve work beyond their cutoff. The tool cannot select an arbitrary session or write into the main session. Reading task state does not replace reading the original evidence.
+
+## Final acceptance
+
+The final evaluator checks the current effective acceptance criteria against the actual workspace result. An isolated copy must include relevant committed, uncommitted, and untracked task artifacts; checking only repository HEAD could validate a different result. Record artifact identity, commands, outputs, and limitations. Pin the result to the task version and tested artifact snapshot; later relevant changes invalidate it.
+
+The evaluator returns accepted, needs work, or needs user evidence. The controller records completion only for an accepted result with all required criteria supported. Infrastructure failure or missing credentials do not prove acceptance failure or success; they produce an explicit unresolved result. The evaluator can request repairs for unmet criteria but cannot expand scope with optional improvements. Its checks never modify the main workspace.
 
 ## Decision record
 
-Every review checkpoint records its input cursor, findings, tier, controller decision, and any delivered reminder or user choice. Pending actions and timeouts need durable identities so replay does not apply a choice twice. A host restart reconstructs this record and waits for manual resume, as specified by [architecture](architecture.md).
+Persist review inputs, output, cursor advancement, intervention, and delivered messages through session events. Each decision has an identity and revision check so duplicate callbacks do not apply it twice. Reviewer errors or malformed output do not count as a passing review. Required reviews hold continuation while recovery is attempted; exhausted recovery waits for the user. Restart behavior follows [task lifecycle](task-lifecycle.md).
 
 ## Dev Note
 
-Open policy decisions: exact category defaults, severity thresholds, pause duration, reminder wording, model invocation budget, false-positive suppression, race ordering between a pending tool action and a user reply, and the DSH transport for a pause decision. Validate redaction and event-reference behavior against DSH session storage before fixing the read-tool schema.
+Calibrate watchdog thresholds, severity rules, timeout duration, false-positive suppression, and transient review retries. Verify safe step-boundary scheduling, event pagination, redaction, workspace-copy fidelity, and host user-decision transport in an isolated DSH instance before fixing tool schemas.

@@ -1,0 +1,40 @@
+/** Check the experiment with DSH's strict host options and declared project references. */
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const project = fileURLToPath(new URL('../..', import.meta.url))
+const source = resolve(process.env.DSH_SOURCE ?? resolve(project, '../../deepseek-harness'))
+const requireFromDsh = createRequire(resolve(source, 'package.json'))
+const ts = requireFromDsh('typescript')
+const configPath = resolve(source, 'tsconfig.host.json')
+const config = ts.readConfigFile(configPath, ts.sys.readFile)
+if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
+const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, source, undefined, configPath)
+const options = {
+  ...parsed.options,
+  composite: false,
+  incremental: false,
+  noEmit: true,
+  typeRoots: [resolve(source, 'node_modules/@types')],
+  paths: {
+    ...parsed.options.paths,
+    vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')],
+  },
+}
+const program = ts.createProgram({
+  rootNames: [resolve(project, 'spikes/kernel/capabilities.spec.ts')],
+  options,
+  projectReferences: parsed.projectReferences,
+})
+const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
+if (diagnostics.length) {
+  process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+    getCanonicalFileName: name => name,
+    getCurrentDirectory: () => project,
+    getNewLine: () => '\n',
+  }))
+  process.exitCode = 1
+} else {
+  process.stdout.write('Kernel spike strict typecheck passed.\n')
+}
