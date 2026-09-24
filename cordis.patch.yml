@@ -1,0 +1,8 @@
+- insert:
+    - id: task-supervisor
+      name: dsh-task-supervisor
+      config:
+        planningReadTools:
+          - read
+          - glob
+          - grep

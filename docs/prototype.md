@@ -1,6 +1,6 @@
 # First prototype and Agent Team comparison
 
-**Status: prototype design with an executed kernel experiment.** This page defines the first prototype and the competing Lead–Worker approach. The complete product prototype and combined baseline have not been run; [kernel experiment results](host-spike.md) define the narrower verified scope and persistence gap.
+**Status: prototype design with a runnable vertical slice.** This page defines the first prototype and the competing Lead–Worker approach. The complete product and combined baseline remain untested; [implementation status](implementation.md) records the runnable slice and [kernel experiment results](host-spike.md) record the earlier persistence gap.
 
 ## The competing design is credible
 

@@ -24,4 +24,4 @@ DSH 源码仓库的 13 个 skill 已从仓库根目录的 `.agents/skills/` 通�
 
 ## 当前状态
 
-这里有设计与开发约定，以及 `spikes/kernel/` 中使用真实 DSH 内核和脚本化模型的能力试验，尚无可安装的产品插件。已验证范围和持久化缺口见[试验记录](docs/host-spike.zh.md)；README 中的目标行为不是已实现能力。
+这里已有可安装到**隔离 DSH checkout** 的宿主与 Web 客户端原型。持久化控制依赖该 checkout 中尚未合入标准 DSH 的 `extension/record` 与读取器准入扩展。[实现状态](docs/implementation.zh.md)区分已运行代码、宿主前提与尚未实现的完整设计；[试验记录](docs/host-spike.zh.md)保留最初发现持久化缺口的证据。

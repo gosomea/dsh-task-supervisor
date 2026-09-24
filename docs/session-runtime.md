@@ -1,6 +1,6 @@
 # Supervisor session and recovery
 
-**Status: researched design recommendation, not implemented.** This page owns durable records, recovery authority, action delivery, evidence reads, and fault acceptance; [task lifecycle](task-lifecycle.md) owns task semantics, and [kernel experiments](host-spike.md) delimit tested behavior. Place these responsibilities in a same-repository `supervisor-session` module, provisionally packaged as `dsh-supervisor-session` and installed with the complete plugin; do not create a separate repository or product yet.
+**Status: design recommendation with a partial implementation.** This page owns durable records, recovery authority, action delivery, evidence reads, and fault acceptance; [implementation status](implementation.md) identifies the behavior already running, [task lifecycle](task-lifecycle.md) owns task semantics, and [kernel experiments](host-spike.md) record the earlier gap. A future same-repository `supervisor-session` module may separate these responsibilities; this prototype currently implements them inside the plugin and an isolated DSH host extension.
 
 ## Recommended structure
 

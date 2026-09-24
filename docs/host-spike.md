@@ -1,6 +1,6 @@
 # Kernel capability experiment
 
-This reference records the bounded experiment in [spikes/kernel](../spikes/kernel/). It uses actual DSH Agent, loop, command, tool, Session, and JSONL persistence services, with scripted model responses. It is an in-process integration test, not an installed plugin, a profile launch, or evidence of model review quality.
+This reference records the **initial** bounded experiment in [spikes/kernel](../spikes/kernel/). It uses actual DSH Agent, loop, command, tool, Session, and JSONL persistence services, with scripted model responses. The gap and next steps below describe that experiment at the time; the later [implementation status](implementation.md) records the host extension, installed plugin, and Web smoke test. Neither test establishes real model review quality.
 
 ## Results
 
@@ -45,4 +45,4 @@ Run these commands from this project. The test runner resolves DSH packages to t
 
 The experiment mounts no application profile or network listener and makes no real model request. JSONL stores are created in fresh temporary directories and removed after their contexts are disposed. It does not use the daily DSH home or rebuild the daily checkout. The observed daily listeners on 3080 and 3081 retain their original PIDs after the experiment; no claim is made about unrelated user activity during that interval.
 
-Still required: supported `dsh plugin add link:` installation, dedicated preset composition, initial-plan tool restrictions, durable task projection and revision checks, process restart followed by manual resume, owned reviewer cancellation, the right-hand panel, and the service fixture's independent acceptance. The next executable gate is a resolved persistence path with a restart and missing-controller negative case; the full isolated host test follows that gate.
+The initial experiment left `dsh plugin add link:` installation, dedicated preset composition, initial-plan tool restrictions, durable task projection and revision checks, process restart followed by manual resume, owned reviewer cancellation, the right-hand panel, and the service fixture's independent acceptance for future work. See [implementation status](implementation.md) for which of these now have evidence. The independent executable fixture and comparative evaluation remain open.

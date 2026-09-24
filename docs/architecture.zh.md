@@ -1,6 +1,6 @@
 # 架构提案
 
-**状态：设计提案。** 项目目前没有可运行插件。本文负责组件职责与集成方向。[任务生命周期](task-lifecycle.zh.md)负责任务状态和控制。[审查策略](review-policy.zh.md)负责介入行为；[评测](evaluation.zh.md)负责比较结论。
+**状态：产品设计。** 已有依赖隔离 DSH 宿主扩展的有限原生原型；[实现状态](implementation.zh.md)区分已运行能力与剩余设计。本文负责组件职责与集成方向。[任务生命周期](task-lifecycle.zh.md)负责任务状态和控制。[审查策略](review-policy.zh.md)负责介入行为；[评测](evaluation.zh.md)负责比较结论。
 
 ## 摘要
 

@@ -1,6 +1,6 @@
 # Architecture proposal
 
-**Status: design proposal.** The project has no runnable plugin yet. This document owns component responsibilities and integration direction. [Task lifecycle](task-lifecycle.md) owns task state and controls. [Review policy](review-policy.md) owns intervention behavior; [evaluation](evaluation.md) owns comparative claims.
+**Status: product design.** A bounded native prototype now runs against an isolated DSH host extension; [implementation status](implementation.md) distinguishes working behavior from the remaining design. This document owns component responsibilities and integration direction. [Task lifecycle](task-lifecycle.md) owns task state and controls. [Review policy](review-policy.md) owns intervention behavior; [evaluation](evaluation.md) owns comparative claims.
 
 ## Summary
 

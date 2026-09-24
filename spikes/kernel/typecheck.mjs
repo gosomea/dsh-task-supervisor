@@ -16,6 +16,7 @@ const options = {
   composite: false,
   incremental: false,
   noEmit: true,
+  jsx: ts.JsxEmit.ReactJSX,
   typeRoots: [resolve(source, 'node_modules/@types')],
   paths: {
     ...parsed.options.paths,
@@ -23,7 +24,12 @@ const options = {
   },
 }
 const program = ts.createProgram({
-  rootNames: [resolve(project, 'spikes/kernel/capabilities.spec.ts')],
+  rootNames: [
+    resolve(project, 'spikes/kernel/capabilities.spec.ts'),
+    resolve(project, 'spikes/kernel/supervisor.spec.ts'),
+    resolve(project, 'src/index.ts'),
+    resolve(project, 'src/client/index.tsx'),
+  ],
   options,
   projectReferences: parsed.projectReferences,
 })

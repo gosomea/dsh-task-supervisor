@@ -1,29 +1,47 @@
 # DSH 长任务督导
 
-**设计与内核技术试验；目前没有可安装的产品插件。** 本项目面向 DSH，目标是用一套受督导的任务生命周期替代原生 Goal 与 Plan 的用户工作流。主 Agent 在原会话中规划和执行；独立审查者检查已记录的工作，推动续行，并独立判断是否完成。
+**已有可运行的原生原型，尚未发布为正式插件。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
 
-## 文档
+原型目前需要一项小范围 DSH 宿主扩展，支持持久的 `extension/record` 事件及读取器准入。扩展位于隔离 DSH 工作树，尚未合入标准 DSH。安装前请先看[实现状态](docs/implementation.zh.md)。
+
+## 当前流程
+
+1. `/task new <目标>` 创建一个受督导任务，要求主 Agent 用 `task_submit_plan` 提交验收标准和有序阶段。
+2. `/task` 查看状态。初始计划等待 `/task approve` 或右侧面板的**批准计划**按钮。规划期间由执行器限制修改工作区的工具。
+3. 获批后，控制层准入后续轮次。主 Agent 用 `task_report_stage` 汇报阶段证据；新的审查者分页读取主 Session 的有界日志，返回通过、修订或需要用户决策。
+4. 达到可配置的未汇报轮次后，进展审查决定继续、纠偏或暂停请用户处理。所有阶段通过后，`task_request_completion` 启动独立的最终审查；只有最终审查通过才能记为完成。
+5. `/task pause`、`/task off`、`/task on`、`/task resume`、`/task edit <目标>`、`/task clear` 控制生命周期。右侧面板显示状态和对应按钮，包括明确的**关闭督导**按钮。宿主重启后恢复任务，但等待用户手动继续。
+
+审查模型默认跟随主 Agent 当前有效的 DSH 路由。也可通过 `reviewerModel` 指定当前 profile 可用的提供方、模型和推理等级。每次审查记录实际模型、审查 Session ID、证据 seq 和主 Session 截止点。
+
+## 开发与隔离验证
+
+使用 Node 24 和包含 `extension/record` 宿主接缝的隔离 DSH checkout。日常 DSH checkout 与 profile 不需要修改。测试脚本通过 `DSH_SOURCE` 定位该工作树：
+
+```sh
+pnpm install
+pnpm run build
+DSH_SOURCE=/absolute/path/to/isolated-deepseek-harness node spikes/kernel/typecheck.mjs
+DSH_SOURCE=/absolute/path/to/isolated-deepseek-harness node spikes/kernel/run.mjs
+pnpm pack --dry-run
+```
+
+Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `DSH_HOME` 初始化 Web profile，再用 DSH 的 `plugin add` 安装 `link:/absolute/path/to/dsh-task-supervisor`。bundle patch 注册宿主插件，包清单注册 Web 客户端。[实现状态](docs/implementation.zh.md)列出已验证层级和当前限制。
+
+## 设计与评测
 
 | 阅读 | 用途 |
 | --- | --- |
-| [架构](docs/architecture.zh.md) | 职责与 DSH 集成。 |
-| [任务状态与控制](docs/task-lifecycle.zh.md) | 有限任务列表、JSON 快照、右侧面板控制、续行与恢复。 |
-| [审查与介入](docs/review-policy.zh.md) | 审查时机、证据读取、自动反馈与用户决策。 |
-| [评测](docs/evaluation.zh.md) | 长程软件开发数据集、对照组与成功指标。 |
-| [首个原型](docs/prototype.zh.md) | 与 Agent Team 的区别、最小完整执行循环和验收条件。 |
-| [督导会话](docs/session-runtime.zh.md) | 持久控制记录、恢复权限、动作交付与证据读取。 |
-| [审查模型](docs/review-model.zh.md) | 跟随主 Agent，或指定 DSH 已配置模型。 |
-| [内核技术试验](docs/host-spike.zh.md) | 已执行的能力检查、外部事件持久化缺口，以及剩余宿主验证。 |
-| [项目指令](AGENTS.md) | 开发规则与 DSH 源码规范入口。 |
+| [实现状态](docs/implementation.zh.md) | 实际代码、安装前提、测试与限制。 |
+| [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
+| [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
+| [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
+| [评测](docs/evaluation.zh.md) | 长程数据集及 Goal、Plan、Team 对照。 |
+| [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
+| [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |
+| [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |
+| [内核技术试验](docs/host-spike.zh.md) | 最初的能力调研。 |
 
-## 预期用法
-
-用户通过独立命令入口进入，暂定 `/task new <目标>` 创建任务、`/task plan [要求]` 先规划。插件依据任务选择单轮或自主多轮执行，并可在执行中切换。首次自主多轮前确认一次初始任务理解和计划。主 Agent 依据新证据调整计划，督导审查并推动续行。完整命令草案见[架构](docs/architecture.zh.md)。
-
-建议每个会话最多保留五个未结束任务，同时只有一个执行名额。命令统一交给右侧 Supervisor 面板及其服务端控制层；明确的关闭 Supervisor 按钮停止其工作并保留任务状态。审查主要发生在计划和阶段检查点，较长阶段由进展监测兜底。主 Agent 可以申请完成；督导根据证据裁决是否成立。确认停滞时，插件暂停并请用户决策。宿主重启后恢复任务状态，但不静默恢复执行。
-
-## 与 DSH 的关系
-
-这是 DSH 源码树外的独立插件，在功能上提供 Goal 与 Plan 的替代工作流。原生插件及其 `/goal`、`/plan` 入口继续保留。Supervisor 拥有独立的命令、工具、状态和右侧面板，使用 DSH 通用扩展能力。首版通过专用 preset 与新的督导会话避免同一会话双控制器续行，具体组合仍需验证。已有 [Jev 验证原型](../dsh-jev-verifier/README.md)提供经验和候选代码。
+当前原型每个 Session 支持一个任务。五任务队列、`/task plan` 快捷入口、独立可执行验收 fixture、用户可配置的决策超时以及长程对照评测仍属后续设计。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
 
 [English](README.md)
