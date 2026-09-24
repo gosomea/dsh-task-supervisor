@@ -19,6 +19,23 @@ One DSH session holds the user's request, subsequent instructions, agent actions
 
 The controller makes deterministic state transitions. Model reviewers supply findings and judgments; they do not directly mutate the main workspace or control state. The default topology combines persistent task state with a fresh reviewer at each checkpoint. A continuous reviewer session remains a configurable alternative.
 
+## User entry
+
+The user keeps the DSH command names `/goal` and `/plan`. Both enter one supervisor-owned task lifecycle. `/goal` starts from an objective that may need sustained execution; `/plan` starts from exploration, a proposed plan, and user review. Neither command locks the task to a number of rounds: the controller chooses single-round or autonomous multi-round execution from the task evidence and may change course later. A `/plan` task may become long-running, and a `/goal` task may finish quickly.
+
+| Command | Proposed supervisor behavior |
+| --- | --- |
+| `/goal <objective>` | Create the task and propose an initial plan; obtain the one user confirmation before autonomous multi-round execution. |
+| `/goal` | Show the current task, progress, review findings, and next available action. |
+| `/goal edit <objective>` | Update the current task objective and record a new effective version; the main agent revises its plan using the same session evidence. |
+| `/goal pause` | Stop automatic continuation while preserving task state. |
+| `/goal resume` | Explicitly resume a paused task, including after a host restart. |
+| `/goal clear` | End the current task and preserve its durable history. |
+| `/plan [request]` | Enter planning and user review; an approved plan enters the same supervisor-controlled execution lifecycle. |
+| `/plan off` | Exit planning without treating an unapproved draft as permission to execute. |
+
+The command grammar and user-visible intent remain familiar, while task control belongs to the supervisor. A later user instruction or `/goal edit` is not an artificial second synchronization approval; the main agent and reviewer see the same session record. A new explicit user decision is required only when the review policy pauses for one or another host approval applies.
+
 ## Shared evidence and state
 
 The bound main-session log is the source of truth for user instructions and observed execution. A new user instruction in that session takes effect through the normal task-state update path; the user does not have to approve an artificial synchronization between the agent and reviewer. The plugin records its own durable events for task interpretation, plan versions, review findings, user decisions, continuation, and final disposition. A replayable projection reconstructs controller state after restart; process memory is never its sole record.
@@ -44,8 +61,8 @@ The controller selects a single-round path for a short task or autonomous contin
 
 ## DSH integration direction
 
-The intended implementation uses DSH plugin registrations and effect cleanup, durable session events and projections, agent lifecycle hooks, and native client extension points. A target DSH profile replaces native Goal and Plan control for the bound task, so two round drivers do not compete. The existing [Goal package](../../../deepseek-harness/packages/goal/README.md), [Plan mode](../../../deepseek-harness/packages/plan/plan-mode/README.md), and [DSH architecture](../../../deepseek-harness/docs/architecture.md) are implementation references, not behavior inherited by default. The [Jev verifier prototype](../../dsh-jev-verifier/README.md) can provide selected parsing, repeated-action detection, structured review, and UI ideas; its in-memory state and fixed three-reviewer cadence do not define this design.
+The intended implementation uses DSH plugin registrations and effect cleanup, durable session events and projections, agent lifecycle hooks, and native client extension points. A target DSH profile replaces the native `/goal` and `/plan` command owners and their controllers with supervisor-owned handlers, so two command registrations or round drivers do not compete. The existing [Goal command](../../../deepseek-harness/packages/goal/command-goal/README.md), [Plan mode](../../../deepseek-harness/packages/plan/plan-mode/README.md), and [DSH architecture](../../../deepseek-harness/docs/architecture.md) are implementation references, not behavior inherited by default. The [Jev verifier prototype](../../dsh-jev-verifier/README.md) can provide selected parsing, repeated-action detection, structured review, and UI ideas; its in-memory state and fixed three-reviewer cadence do not define this design.
 
 ## Dev Note
 
-Open implementation decisions: exact DSH event types and projection schema; typed plan-update surface; round admission, cancellation, and fork semantics; command and client names; approval transport; safe active-session reads during concurrent append; and migration from any existing Goal or Plan state. Resolve these against the current DSH source and isolated tests before describing them as implemented behavior.
+Open implementation decisions: exact DSH event types and projection schema; typed plan-update surface; round admission, cancellation, and fork semantics; command parsing and attachment compatibility; client presentation; approval transport; safe active-session reads during concurrent append; and migration from any existing Goal or Plan state. Resolve these against the current DSH source and isolated tests before describing them as implemented behavior.

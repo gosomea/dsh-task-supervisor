@@ -12,7 +12,7 @@ The study asks whether DSH Task Supervisor keeps a coding task aligned with the 
 | --- | --- |
 | Native Goal | DSH's current Goal workflow on the pinned version. |
 | Native Plan | DSH's current Plan workflow on the pinned version. |
-| Task Supervisor | The proposed unified task workflow with autonomous continuation and review. |
+| Task Supervisor | The proposed unified task workflow, entered through `/goal` or `/plan`, with autonomous continuation and review. |
 
 Run a **product comparison** using each workflow as a user would normally invoke it. Run a separate **mechanism comparison** with matched model, tools, starting context, execution opportunity, and scripted user responses where possible. Keep these tracks separate in analysis: giving Plan an external continuation harness changes the product workflow but can isolate the value of supervision from the value of continuation.
 
