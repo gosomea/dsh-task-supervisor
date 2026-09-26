@@ -1,6 +1,6 @@
 # Long-horizon evaluation proposal
 
-**Status: study design plus a two-case development pilot.** [Pilot fixtures and results](../eval/pilot-v1/results-20260926.zh.md) are available; there is no frozen long-horizon holdout or superiority claim. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
+**Status: study design plus development pilots.** The [two-case Goal/Plan/Supervisor product pilot](../eval/pilot-v1/results-20260926.zh.md), [separate-turn regression](../eval/reliability-v1/results-20260927.zh.md), and [multi-stage requirement-revision development results](../eval/long-horizon-dev-v1/results-20260927.zh.md) provide different levels of evidence; there is no frozen long-horizon holdout or superiority claim. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
 
 ## Summary
 

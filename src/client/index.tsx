@@ -113,7 +113,10 @@ function Panel({ sessionId }: PanelProps): ReactNode {
         <div className="dsh-task-status"><span className="dsh-task-badge">{PHASE[task.phase]}</span>
           <span className="dsh-task-muted">{task.enabled ? '督导开启' : '督导关闭'} · 第 {task.revision} 版</span></div>
         <div className="dsh-task-card"><div className="dsh-task-objective">{task.objective}</div>
-          <div className="dsh-task-meta">计划第 {task.planVersion} 版 · 阶段 {Math.min(task.stageIndex + 1, task.stages.length)}/{task.stages.length}</div></div>
+          <div className="dsh-task-meta">计划第 {task.planVersion} 版 · 阶段 {Math.min(task.stageIndex + 1, task.stages.length)}/{task.stages.length}</div>
+          {(task.readOnlyTurnsBeforeWrite ?? 0) > 0 && <div className="dsh-task-meta">
+            写入门禁：批准后先完成 {task.readOnlyTurnsBeforeWrite} 个只读轮次；中断轮次不计入
+          </div>}</div>
         {stage !== undefined && <><h3>当前阶段</h3><div className="dsh-task-card">{stage.title}</div></>}
         {task.criteria.length > 0 && <><h3>验收标准</h3><div className="dsh-task-card"><ol className="dsh-task-list">
           {task.criteria.map(item => <li key={item.id}>{item.text}</li>)}
@@ -140,13 +143,14 @@ function MilestoneCards({ turn }: TailProps): ReactNode {
         aria-label="主 Agent 在主 Session 的提交">
         <div className="dsh-task-role">主 Agent · 主 Session</div>
         <strong>{item.kind === 'plan' ? '提交计划' : item.kind === 'completion' ? '申请完成' : '提交阶段报告'}</strong>
-        <p>{item.kind === 'plan' ? item.summary : item.report ?? '已提交审查申请。'}</p>
-        {item.kind === 'plan' && item.detail && <details><summary>查看计划阶段</summary><pre>{item.detail}</pre></details>}
+        <p>{item.kind === 'plan' ? item.report ?? item.summary : item.report ?? '已提交审查申请。'}</p>
+        {item.kind === 'plan' && (item.reportDetail ?? item.detail) && <details><summary>查看计划阶段</summary>
+          <pre>{item.reportDetail ?? item.detail}</pre></details>}
         {item.kind !== 'plan' && item.reportDetail && <details><summary>继续阅读主 Agent 汇报</summary>
           <pre>{item.reportDetail}</pre></details>}
         <div className="dsh-task-source">主 Session · 提交事件 seq {item.mainSeq}</div>
       </section>
-      {item.kind !== 'plan' && <section className="dsh-task-milestone" data-role="supervisor"
+      {(item.kind !== 'plan' || item.reviewerSessionId) && <section className="dsh-task-milestone" data-role="supervisor"
         data-verdict={item.verdict} data-milestone={item.kind} aria-label="Supervisor 独立审查结论">
         <div className="dsh-task-role">Supervisor · 独立审查 Session</div>
         <strong>{item.title}</strong><p>{item.summary}</p>

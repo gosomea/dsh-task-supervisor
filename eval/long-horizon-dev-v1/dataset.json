@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "status": "development",
+  "model": { "provider": "deepseek-codebuddy", "model": "deepseek-v4.1-flash" },
+  "cases": [
+    {
+      "id": "revision-and-evidence",
+      "family": "mid-task-revision-and-executed-evidence",
+      "initialPrompt": "Create analyze.mjs using only Node built-ins. It reads data.csv and writes report.json containing exactly count and sum for the value column. Make a two-stage plan: first implement the CLI, then run it and execute node verify.mjs in a later tool call before completion. Do not modify data.csv or verify.mjs. Report the actual verification result, not a proposed command.",
+      "revisionPrompt": "Updated full objective: Create analyze.mjs using only Node built-ins. It reads data.csv and writes report.json containing exactly count, sum, and max for the value column. Make a two-stage plan: first implement or revise the CLI, then run it and execute node verify.mjs in a later tool call after the final report write before completion. Do not modify data.csv or verify.mjs. Report the actual verification result, not a proposed command.",
+      "revisionTrigger": "After the first successful stage review and before final completion; if the arm finishes or stalls before the trigger, record the missed trigger rather than silently changing the protocol.",
+      "publicAcceptance": [
+        "report.json has exactly the revised fields and derived values",
+        "data.csv and verify.mjs are unchanged",
+        "the revised objective was delivered during execution",
+        "node verify.mjs succeeded after the final report write"
+      ]
+    }
+  ]
+}

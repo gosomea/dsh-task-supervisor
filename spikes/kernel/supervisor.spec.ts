@@ -35,6 +35,21 @@ class ScriptedAdapter extends LlmAdapter {
   }
 }
 
+class PausingAdapter extends ScriptedAdapter {
+  pauseNext = false
+  pauseModel = 'scripted'
+  entered = Promise.withResolvers<void>()
+  release = Promise.withResolvers<void>()
+  override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    if (this.pauseNext && options.model === this.pauseModel) {
+      this.pauseNext = false
+      this.entered.resolve()
+      await this.release.promise
+    }
+    yield* super.stream(options)
+  }
+}
+
 function toolResponse(name: string, args: Record<string, unknown>, id: string): StreamChunk[] {
   const callId = ToolCallId(id)
   const serialized = JSON.stringify(args)
@@ -67,7 +82,8 @@ afterEach(async () => {
 
 async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   reviewerModel?: { provider: string; model: string }, automaticContinuation = false,
-  maxAutomaticRoundsWithoutReport = 3): Promise<Context> {
+  maxAutomaticRoundsWithoutReport = 3, planCoverageReview = false,
+  planningReadTools: string[] = []): Promise<Context> {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(LlmRuntime)
@@ -79,8 +95,8 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
-  if (supervisor) await ctx.plugin(Supervisor, { planningReadTools: [], automaticContinuation,
-    maxAutomaticRoundsWithoutReport,
+  if (supervisor) await ctx.plugin(Supervisor, { planningReadTools, automaticContinuation,
+    maxAutomaticRoundsWithoutReport, planCoverageReview,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
   ctx.llm.registerAdapter(['scripted'], adapter)
   return ctx
@@ -169,6 +185,141 @@ it('replaces an unapproved plan before the human approves it', async () => {
   expect(pending?.approvedPlanVersion).toBeNull()
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   expect(taskOf(ctx, agent)?.approvedPlanVersion).toBe(2)
+})
+
+it('accepts a goal edit while an approved model turn is still running', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-live-edit-'))
+  roots.push(root)
+  const adapter = new PausingAdapter()
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('live-edit-main'),
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ callId: ToolCallId('live-edit-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c1', text: 'count report exists' }],
+      stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
+  adapter.pauseNext = true
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  await adapter.entered.promise
+  const edit = ctx.commands.execute(agent, '/task edit Make count and max report', [], signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.requirementsVersion).toBe(2))
+  expect(taskOf(ctx, agent)?.objective).toBe('Make count and max report')
+  adapter.release.resolve()
+  expect((await edit)?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  expect(taskOf(ctx, agent)?.requirementsVersion).toBe(2)
+  expect(taskOf(ctx, agent)?.planVersion).toBe(2)
+})
+
+it('invalidates an in-flight stage review when the user edits the objective', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-review-edit-'))
+  roots.push(root)
+  const adapter = new PausingAdapter({ main: [textResponse('ready'),
+    toolResponse('task_report_stage', { stage_id: 's1', evidence: 'report generated' }, 'old-stage-report')] })
+  adapter.pauseModel = 'reviewer'
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('review-edit-main'),
+    agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ callId: ToolCallId('review-edit-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c1', text: 'count report exists' }],
+      stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
+  adapter.pauseNext = true
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  await adapter.entered.promise
+  expect(taskOf(ctx, agent)?.phase).toBe('reviewing')
+  const edit = ctx.commands.execute(agent, '/task edit Make count and max report', [], signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.requirementsVersion).toBe(2))
+  adapter.release.resolve()
+  expect((await edit)?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  expect(taskOf(ctx, agent)?.objective).toBe('Make count and max report')
+  expect(taskOf(ctx, agent)?.lastReview).toBeNull()
+})
+
+it('holds a plan with omitted objective constraints until independent coverage review passes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-plan-coverage-'))
+  roots.push(root)
+  const adapter = new ScriptedAdapter({ reviewer: [
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'plan-read-1'),
+    toolResponse('task_review_decision', { verdict: 'revise',
+      finding: 'Add a criterion requiring a completed read-only turn before the write turn',
+      evidence_seqs: [0] }, 'plan-revise'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'plan-read-2'),
+    toolResponse('task_review_decision', { verdict: 'pass',
+      finding: 'All explicit constraints are now in acceptance criteria',
+      evidence_seqs: [0] }, 'plan-pass'),
+  ] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('plan-coverage-main'),
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent,
+    '/task new Read input.csv in one completed read-only turn; write report.json in a later turn', [], signal))?.result.kind)
+    .toBe('success')
+  await agent.whenIdle()
+  const submit = (id: string, criteria: { id: string; text: string }[]) => ctx.tools.execute({
+    callId: ToolCallId(id), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria, stages: [{ id: 's1', title: 'Read then write', criterionIds: criteria.map(c => c.id) }] },
+  })
+  const rejected = await submit('missing-order', [{ id: 'c1', text: 'report.json exists' }])
+  expect(rejected.isError).toBe(false)
+  expect(rejected.content.some(block => block.type === 'text' && block.text.includes('"verdict":"revise"'))).toBe(true)
+  expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  expect(taskOf(ctx, agent)?.planVersion).toBe(0)
+  const accepted = await submit('with-order', [
+    { id: 'c1', text: 'report.json exists' },
+    { id: 'c2', text: 'A completed read-only turn precedes the report write turn' },
+  ])
+  expect(accepted.isError).toBe(false)
+  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  expect(taskOf(ctx, agent)?.lastReview?.stageId).toBe('plan')
+  expect(taskOf(ctx, agent)?.lastReview?.reviewerSessionId).toMatch(/^task-review-/)
+})
+
+it('blocks writes until a completed post-approval read-only model turn', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-read-gate-'))
+  roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [
+    textResponse('plan first'),
+    toolResponse('unsafe_write', {}, 'too-early-write'),
+    toolResponse('read', {}, 'read-source'),
+    textResponse('read-only turn complete'),
+  ] })
+  const ctx = await host(root, adapter, true, undefined, false, 3, false, ['read'])
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('read-gate-main'),
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  let writes = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'unsafe_write', description: 'mutate fixture', parameters: {},
+    execute: async () => { writes++; return [{ type: 'text', text: 'written' }] } }))
+  ctx.tools.register(defineContentToolFixture({ name: 'read', description: 'read fixture', parameters: {},
+    execute: async () => [{ type: 'text', text: 'input.csv: alpha,3' }] }))
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Read input.csv in one turn before writing', [], signal))?.result.kind)
+    .toBe('success')
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ callId: ToolCallId('gate-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c1', text: 'Read-only turn precedes write' }],
+      stages: [{ id: 's1', title: 'Read then write', criterionIds: ['c1'] }],
+      read_only_turns_before_write: 1 } })).isError).toBe(false)
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  const events = agent.session.snapshotEvents()
+  expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'too-early-write'
+    && event.data.message.isError === true)).toBe(true)
+  expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'read-source'
+    && event.data.message.isError !== true)).toBe(true)
+  expect(writes).toBe(0)
+  const allowed = await ctx.tools.execute({ callId: ToolCallId('after-read-turn'),
+    name: 'unsafe_write', agent, signal, arguments: {} })
+  expect(allowed.isError).toBe(false)
+  expect(writes).toBe(1)
 })
 
 it('automatically continues approved work and requests a progress decision at the configured interval', async () => {

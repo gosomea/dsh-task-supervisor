@@ -2,9 +2,11 @@
 
 **Status: design proposal.** This page owns task review, checkpoint timing, evidence access, and intervention. The proposed thresholds are provisional and need calibration on real tasks.
 
+**Prototype status (2026-09-27):** Plan submission now runs an independent coverage review; stage, progress, and completion reviews still use fresh reviewer Sessions. The prototype adds `read_task_call` for inspecting tool arguments and lets a plan declare `read_only_turns_before_write` to enforce a completed read-only turn before writing. General action-order enforcement and configurable user-decision timeouts below remain design goals.
+
 ## Summary
 
-Review the task's objective, constraints, stage progress, and completion evidence. The main review checkpoints are plan readiness, stage transitions, and final acceptance. Routine tool calls do not need a model review or a supervisor permission gate. DSH continues to own tool permissions; an explicit task constraint about an action is reviewed as a task constraint.
+Review the task's objective, constraints, stage progress, and completion evidence. The main review checkpoints are plan readiness, stage transitions, and final acceptance. Routine tool calls do not need a model review. DSH continues to own baseline tool permissions; the current prototype adds a deterministic write gate for a declared read-only-turn requirement. Other action constraints still depend on reviewer judgment.
 
 ## When review runs
 

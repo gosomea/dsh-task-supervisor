@@ -96,10 +96,19 @@ function milestone(source: Call, raw: string, seq: number): Milestone | null {
     if (result.phase !== 'awaiting-approval' && result.phase !== 'active') return null
     const stages = source.stageTitles ?? []
     const criteriaCount = source.criteriaCount ?? 0
+    const mainSummary = `${stages.length} 个阶段 · ${criteriaCount} 项验收标准${result.phase === 'awaiting-approval' ? ' · 等待你批准' : ''}`
+    const stageDetail = stages.map((title, index) => `${index + 1}. ${title}`).join('\n')
+    if (typeof result.reviewerSessionId === 'string' && result.reviewerSessionId !== ''
+      && typeof result.finding === 'string') {
+      const reviewText = excerpt(result.finding)
+      return { seq, mainSeq: source.seq, kind: 'plan', verdict: 'pass',
+        title: '计划覆盖审查 · 通过', report: mainSummary, reportDetail: stageDetail,
+        summary: reviewText.summary || '计划覆盖审查已通过。', detail: reviewText.remainder,
+        reviewerSessionId: result.reviewerSessionId }
+    }
     return { seq, mainSeq: source.seq, kind: 'plan',
       title: result.phase === 'awaiting-approval' ? '计划待批准' : '计划已修订',
-      summary: `${stages.length} 个阶段 · ${criteriaCount} 项验收标准${result.phase === 'awaiting-approval' ? ' · 等待你批准' : ''}`,
-      detail: stages.map((title, index) => `${index + 1}. ${title}`).join('\n') }
+      summary: mainSummary, detail: stageDetail }
   }
   if (result.verdict !== 'pass' && result.verdict !== 'revise' && result.verdict !== 'needs-user') return null
   const kind = source.name === 'task_request_completion' ? 'completion' : 'stage'

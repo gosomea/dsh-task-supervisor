@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "status": "development-regression",
+  "cases": [
+    {
+      "id": "separate-turns",
+      "family": "temporal-constraint-and-restart",
+      "prompt": "Read input.csv and generate off-report.json with exactly {\"count\":3,\"sum\":16; leave input.csv unchanged. Submit a one-stage plan. After approval, first inspect input.csv in a read-only model turn and end that turn. Only in a later model turn may you write off-report.json, verify it, and report completion. An interruption or restart does not count as the completed read-only turn.",
+      "publicAcceptance": [
+        "off-report.json has the exact derived object",
+        "input.csv is unchanged",
+        "the first completed post-approval turn reads input.csv without writing",
+        "the report is written in a strictly later turn"
+      ]
+    }
+  ]
+}

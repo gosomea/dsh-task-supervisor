@@ -42,6 +42,8 @@ export const taskSchema = z.object({
   stageIndex: z.number().int().nonnegative(),
   roundsSinceReview: z.number().int().nonnegative(),
   approvedPlanVersion: z.number().int().nonnegative().nullable(),
+  readOnlyTurnsBeforeWrite: z.number().int().min(0).max(10).optional(),
+  readOnlyGateStartSeq: z.number().int().nonnegative().nullable().optional(),
   everApproved: z.boolean(),
   enabled: z.boolean(),
   phase: z.enum(['planning', 'awaiting-approval', 'active', 'reviewing', 'paused', 'complete', 'cleared']),
@@ -116,6 +118,8 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     stageIndex: state.stageIndex,
     roundsSinceReview: state.roundsSinceReview,
     approvedPlanVersion: state.approvedPlanVersion,
+    ...state.readOnlyTurnsBeforeWrite === undefined ? {} : { readOnlyTurnsBeforeWrite: state.readOnlyTurnsBeforeWrite },
+    ...state.readOnlyGateStartSeq === undefined ? {} : { readOnlyGateStartSeq: state.readOnlyGateStartSeq },
     everApproved: state.everApproved,
     enabled: state.enabled,
     phase: state.phase,
@@ -154,7 +158,8 @@ export function newTask(objective: string): TaskSnapshot {
   return {
     id: randomUUID(), revision: 1, objective: text, requirementsVersion: 1,
     planVersion: 0, criteria: [], stages: [], stageIndex: 0, roundsSinceReview: 0,
-    approvedPlanVersion: null, everApproved: false, enabled: true,
+    approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
+    everApproved: false, enabled: true,
     phase: 'planning', pendingReview: null, lastReview: null,
   }
 }

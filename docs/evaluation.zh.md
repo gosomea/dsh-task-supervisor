@@ -1,6 +1,6 @@
 # 长程评测提案
 
-**状态：研究设计＋两题开发试跑。** [试跑样例与结果](../eval/pilot-v1/results-20260926.zh.md)已经可复现；尚无冻结的长程留出集或优越性结论。本文负责评测问题与协议；[架构](architecture.zh.md)负责预期产品行为。
+**状态：研究设计＋开发试跑。** [Goal/Plan/Supervisor 两题产品试跑](../eval/pilot-v1/results-20260926.zh.md)、[分轮时序回归](../eval/reliability-v1/results-20260927.zh.md)和[多阶段需求变更开发题及结果](../eval/long-horizon-dev-v1/results-20260927.zh.md)提供不同层次的证据；尚无冻结的长程留出集或优越性结论。本文负责评测问题与协议；[架构](architecture.zh.md)负责预期产品行为。
 
 ## 摘要
 

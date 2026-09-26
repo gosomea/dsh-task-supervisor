@@ -32,6 +32,7 @@ declare module '@deepseek-ai/dsh-llm' {
 export interface Config {
   planningReadTools?: string[]
   reviewerModel?: ReviewerModel
+  planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
   automaticContinuation?: boolean
 }
@@ -46,6 +47,7 @@ const planInput = z.object({
   stages: z.array(z.object({
     id: z.string().min(1), title: z.string().min(1), criterionIds: z.array(z.string().min(1)).min(1),
   }).strict()).min(1),
+  read_only_turns_before_write: z.number().int().min(0).max(10).optional(),
 }).strict()
 
 function toolAgent(exec: ToolRunContext): Agent {
@@ -80,6 +82,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     throw new TypeError('planningReadTools must contain nonempty tool names')
   }
   const planningTools = new Set([...planningReadTools, 'task_status', 'task_submit_plan'])
+  const gateReadTools = new Set(planningReadTools.filter(tool => ['read', 'glob', 'grep'].includes(tool)))
   const maxAutomaticRoundsWithoutReport = config.maxAutomaticRoundsWithoutReport ?? 3
   if (!Number.isSafeInteger(maxAutomaticRoundsWithoutReport) || maxAutomaticRoundsWithoutReport < 1) {
     throw new TypeError('maxAutomaticRoundsWithoutReport must be a positive integer')
@@ -87,6 +90,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (config.reviewerModel !== undefined
     && (!config.reviewerModel.provider.trim() || !config.reviewerModel.model.trim())) {
     throw new TypeError('reviewerModel requires a provider and model from the active DSH profile')
+  }
+  if (config.planCoverageReview !== undefined && typeof config.planCoverageReview !== 'boolean') {
+    throw new TypeError('planCoverageReview must be a boolean')
   }
   const lifetimes = new WeakMap<Agent, Runtime>()
   const knownAgents = new Set<Agent>()
@@ -131,6 +137,31 @@ export function apply(ctx: Context, config: Config = {}): void {
     return agent.inbox.nextStep.length > 0 || agent.inbox.nextTurn.length > 0
   }
 
+  /** Completed post-approval read turns survive restart; aborted turns never unlock writes. */
+  function readOnlyGateRemaining(agent: Agent, task: TaskSnapshot): number {
+    const required = task.readOnlyTurnsBeforeWrite ?? 0
+    const start = task.readOnlyGateStartSeq
+    if (required === 0 || start === null || start === undefined) return 0
+    const events = agent.session.snapshotEvents().filter(event => event.seq >= start)
+    const readCalls = new Set(events.filter(event => event.type === 'tool/call'
+      && gateReadTools.has(event.data.name)).map(event => event.type === 'tool/call' ? event.data.callId : ''))
+    const readTurns = new Set(events.filter(event => event.type === 'tool/result'
+      && event.data.message.isError !== true && readCalls.has(event.data.message.source.callId))
+      .map(event => event.type === 'tool/result' ? event.data.turn : -1))
+    const completed = new Set(events.filter(event => event.type === 'turn/end'
+      && event.data.reason.kind === 'completed' && readTurns.has(event.data.turn))
+      .map(event => event.type === 'turn/end' ? event.data.turn : -1))
+    return Math.max(0, required - completed.size)
+  }
+
+  function executionPrompt(agent: Agent, task: TaskSnapshot, instruction: string): string {
+    const remaining = readOnlyGateRemaining(agent, task)
+    return remaining === 0 ? instruction
+      : `${instruction} Before any write, complete ${remaining} read-only model turn(s). `
+        + 'Use read/glob/grep to inspect the workspace, then end this turn without writing. '
+        + 'An aborted turn does not count; Supervisor will continue after a completed read-only turn.'
+  }
+
   /** The idle maintenance lock holds a queued followup until both records are durable. */
   async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot, instruction: string): Promise<void> {
     await agent.runMaintenance(async signal => {
@@ -144,6 +175,25 @@ export function apply(ctx: Context, config: Config = {}): void {
       await flush(agent)
       signal.throwIfAborted()
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
+      agent.followup(inputFor(committed, instruction))
+      await flush(agent)
+    })
+  }
+
+  /** User edits can arrive during a model turn or review; replace the objective before waiting for cancellation. */
+  async function replaceAndWake(agent: Agent, expected: TaskSnapshot, next: TaskSnapshot, instruction: string): Promise<void> {
+    const actual = current(agent)
+    if (disposed || actual?.id !== expected.id || actual.revision !== expected.revision) {
+      throw new Error('task changed before the edit could be admitted')
+    }
+    const committed = appendTask(ctx, agent, next)
+    await flush(agent)
+    await agent.whenIdle()
+    await agent.runMaintenance(async signal => {
+      signal.throwIfAborted()
+      const latest = current(agent)
+      if (disposed || latest?.id !== committed.id || latest.revision !== committed.revision) return
+      runtime(agent).armed = true
       agent.followup(inputFor(committed, instruction))
       await flush(agent)
     })
@@ -264,8 +314,9 @@ export function apply(ctx: Context, config: Config = {}): void {
         const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
           roundsSinceReview: latest.roundsSinceReview + 1 }
         await commitAndWake(agent, latest, next,
-          `Continue the approved task: ${next.objective}. Current stage: ${next.stages[next.stageIndex]?.id}. `
-          + 'Report stage evidence with task_report_stage, or request completion after every stage passes.')
+          executionPrompt(agent, next,
+            `Continue the approved task: ${next.objective}. Current stage: ${next.stages[next.stageIndex]?.id}. `
+            + 'Report stage evidence with task_report_stage, or request completion after every stage passes.'))
       } catch (error: unknown) {
         runtime(agent).armed = false
         ctx.logger.warn(`Supervisor continuation for ${agent.id} failed: ${String(error)}`)
@@ -291,6 +342,10 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
     if ((task.phase === 'planning' || task.phase === 'awaiting-approval') && !planningTools.has(exec.name)) {
       return `tool "${exec.name}" is unavailable before plan approval`
+    }
+    if (task.phase === 'active' && readOnlyGateRemaining(exec.agent, task) > 0
+      && exec.name !== 'task_status' && !gateReadTools.has(exec.name)) {
+      return `tool "${exec.name}" is unavailable until a post-approval read-only model turn completes`
     }
     return undefined
   })
@@ -318,9 +373,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (input === 'approve') {
           if (task.phase !== 'awaiting-approval') throw new Error('the plan is not awaiting approval')
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
-            approvedPlanVersion: task.planVersion, everApproved: true, phase: 'active' }
+            approvedPlanVersion: task.planVersion, everApproved: true, phase: 'active',
+            readOnlyGateStartSeq: agent.session.seq }
           await commitAndWake(agent, task, next,
-            `Execute approved stage ${next.stages[next.stageIndex]?.id}. Objective: ${next.objective}. Report stage evidence using task_report_stage.`)
+            executionPrompt(agent, next,
+              `Execute approved stage ${next.stages[next.stageIndex]?.id}. Objective: ${next.objective}. Report stage evidence using task_report_stage.`))
           return reply('Plan approved', next, life.armed)
         }
         if (input === 'pause' || input === 'off' || input === 'clear') {
@@ -359,7 +416,8 @@ export function apply(ctx: Context, config: Config = {}): void {
             interruptedReview !== null
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
               : next.phase === 'planning' ? `Resume planning: ${next.objective}. Submit the plan with task_submit_plan.`
-                : `Resume the approved task: ${next.objective}. Check the current workspace before repeating any uncertain effects.`)
+                : executionPrompt(agent, next,
+                  `Resume the approved task: ${next.objective}. Check the current workspace before repeating any uncertain effects.`))
           return reply('Task resumed', next, true)
         }
         if (input.startsWith('edit ')) {
@@ -372,13 +430,14 @@ export function apply(ctx: Context, config: Config = {}): void {
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], stageIndex: 0, roundsSinceReview: 0,
-            approvedPlanVersion: null, phase: 'planning', pendingReview: null, lastReview: null }
+            approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
+            phase: 'planning', pendingReview: null, lastReview: null }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
             await flush(agent)
             return reply('Task edited; enable and resume the Supervisor to replan', next, false)
           }
-          await commitAndWake(agent, task, next,
+          await replaceAndWake(agent, task, next,
             `Revise the plan for the updated objective: ${objective}. Submit a full plan with task_submit_plan.`)
           return reply('Task edited', next, true)
         }
@@ -417,6 +476,8 @@ export function apply(ctx: Context, config: Config = {}): void {
           criterionIds: { type: 'array', required: true, items: { type: 'string' } },
         },
       } },
+      read_only_turns_before_write: { type: 'integer',
+        description: 'Number of completed read-only model turns required after approval before any write. Use at least 1 when the objective requires a separate read-only turn before writing.' },
     },
     output: textOutput,
     async execute(args, exec) {
@@ -427,16 +488,49 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const parsed = planInput.parse(args)
       validatePlan(parsed.criteria, parsed.stages)
+      const readOnlyTurnsBeforeWrite = parsed.read_only_turns_before_write ?? 0
+      if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
+        throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')
+      }
+      let planDecision: Awaited<ReturnType<typeof reviewStage>> | undefined
+      if (config.planCoverageReview !== false) {
+        const abort = new AbortController()
+        reviewAbort.set(agent, abort)
+        try {
+          planDecision = await reviewStage(ctx, agent,
+            { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
+            'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
+            config.reviewerModel, 'plan')
+        } finally {
+          reviewAbort.delete(agent)
+        }
+        const latest = current(agent)
+        if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled) {
+          throw new Error('plan review became stale after a task change')
+        }
+        if (planDecision.verdict !== 'pass') {
+          return { verdict: planDecision.verdict, finding: planDecision.finding,
+            reviewerSessionId: planDecision.reviewerSessionId,
+            message: 'Revise the acceptance criteria and ordered stages, then resubmit the plan.' }
+        }
+      }
       const next: TaskSnapshot = { ...task, revision: task.revision + 1,
         planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages, stageIndex: 0,
+        readOnlyTurnsBeforeWrite, readOnlyGateStartSeq: task.everApproved ? agent.session.seq : null,
         roundsSinceReview: 0,
         phase: task.everApproved ? 'active' : 'awaiting-approval',
-        approvedPlanVersion: task.everApproved ? task.planVersion + 1 : null }
+        approvedPlanVersion: task.everApproved ? task.planVersion + 1 : null,
+        lastReview: planDecision === undefined ? task.lastReview : {
+          stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
+          finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
+          reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
       appendTask(ctx, agent, next)
       await flush(agent)
       if (next.phase === 'active') runtime(agent).armed = true
       exec.concludeTurn()
       return { phase: next.phase, planVersion: next.planVersion,
+        ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
+          finding: planDecision.finding },
         message: next.phase === 'awaiting-approval' ? 'Ask the user to run /task approve.' : 'Continue with the revised plan.' }
     },
   }))
