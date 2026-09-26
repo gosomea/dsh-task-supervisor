@@ -1,0 +1,8 @@
+sku,quantity,status
+apple,5,active
+pear,2,active
+apple,-2,active
+banana,9,void
+pear,4,active
+banana,3,active
+apple,100,void

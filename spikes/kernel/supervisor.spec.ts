@@ -2,8 +2,8 @@ import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
-import LlmRuntime, { LlmAdapter, ToolCallId, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
+import LlmRuntime, { LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
+import SessionStore, { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -296,6 +296,55 @@ it('turns the Supervisor off without discarding human input or silently rearming
   expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect(adapter.requests).toBe(3)
+})
+
+it('clear withdraws queued Supervisor work but preserves pending human input', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-clear-queued-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('clear-queued-main'),
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  const owned = createUserMessage({ content: [{ type: 'text', text: 'stale continuation' }],
+    source: { kind: 'task-supervisor', taskId: task.id, revision: task.revision } })
+  const human = createUserMessage({ content: [{ type: 'text', text: 'new human instruction' }],
+    source: { kind: 'user' } })
+  agent.inbox.append('next-turn', owned)
+  agent.inbox.append('next-turn', human)
+  expect((await ctx.commands.execute(agent, '/task clear', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(ctx, agent)?.phase).toBe('cleared')
+  expect(agent.inbox.nextTurn.map(message => message.id)).toEqual([human.id])
+})
+
+it('forked active tasks retain history but do not inherit execution authority', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-fork-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('fork-parent'), meta: { cwd: root },
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ callId: ToolCallId('fork-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c1', text: 'Fixture inspected' }],
+      stages: [{ id: 's1', title: 'Inspect', criterionIds: ['c1'] }] } })).isError).toBe(false)
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  const seed = agent.session.snapshotEvents()
+  const fork = await ctx.agents.create({ sessionId: SessionId('fork-child'),
+    seed, inheritedEventCount: SessionLogOffset(seed.length),
+    meta: { cwd: root, parentSession: agent.id, isSeeded: true },
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const inherited = taskOf(ctx, fork.agent)
+  expect(inherited?.phase).toBe('active')
+  expect(inherited?.id).toBe(taskOf(ctx, agent)?.id)
+  expect((await ctx.commands.execute(fork.agent, '/task', [], signal))?.result.text).toContain('(waiting)')
+  expect((await ctx.commands.execute(fork.agent, '/task resume', [], signal))?.result.kind).toBe('success')
+  await fork.agent.whenIdle()
+  expect((await ctx.commands.execute(fork.agent, '/task', [], signal))?.result.text).toContain('(armed)')
 })
 
 it('reviews a stage and final completion in fresh bounded reviewer Sessions', async () => {

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "status": "development-pilot",
+  "model": { "provider": "deepseek-codebuddy", "model": "deepseek-v4.1-flash" },
+  "arms": ["goal", "plan", "supervisor"],
+  "rules": {
+    "productTrack": true,
+    "sameInitialPrompt": true,
+    "samePublicFixture": true,
+    "oneRunPerCaseArm": true,
+    "manualApproval": "Only approve the first plan presented by Plan or Supervisor; record requested revisions and other interventions separately.",
+    "planContinuation": "After approved Plan execution becomes idle, do not add an external continuation prompt in the product track.",
+    "stop": "Stop at a valid completion claim, required user decision, 12 main model turns, or 15 minutes, whichever comes first.",
+    "primaryOutcome": "Private checker passes and explicit file constraints are respected."
+  },
+  "cases": [
+    {
+      "id": "ledger-rollup",
+      "family": "multi-step-data",
+      "prompt": "In this workspace, build a repeatable Node.js CLI named rollup.mjs. It reads input.csv and writes report.json with exactly three top-level fields: activeRows (number), grandTotal (number), and bySku (an object mapping each SKU to its net quantity). Ignore rows with status=void. Treat quantity as a signed integer, aggregate net quantity by SKU, and emit bySku keys in lexicographic order. A second run must produce byte-identical report.json. Use only Node built-ins. Do not change input.csv or add dependencies. Run your CLI and verify the output before declaring completion.",
+      "publicAcceptance": ["rollup.mjs works from the workspace root", "report.json uses deterministic JSON output", "input.csv is unchanged", "rerunning produces identical bytes"]
+    },
+    {
+      "id": "spec-parser",
+      "family": "code-repair",
+      "prompt": "Fix the exported parseSpec(text) function in parse.mjs and the CLI in cli.mjs. The format is comma-separated key=value entries. A backslash escapes the next comma, equals sign, or backslash. Trim unescaped surrounding whitespace around keys and values; ignore empty comma segments; the last duplicate key wins. Reject a non-string input, an entry without an unescaped equals sign, or an empty key. The CLI reads the first argument and prints the parsed object as JSON. Keep the existing exports and use only Node built-ins. Do not modify public.test.mjs or add dependencies. Run public.test.mjs and verify the CLI before declaring completion.",
+      "publicAcceptance": ["parseSpec handles escaped separators and duplicate keys", "CLI prints JSON", "public.test.mjs passes", "public.test.mjs is unchanged"]
+    }
+  ]
+}
