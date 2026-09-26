@@ -142,6 +142,35 @@ it('keeps one task in the native Session and resumes only after a human command'
   expect(secondAdapter.requests).toBe(1)
 })
 
+it('replaces an unapproved plan before the human approves it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-plan-revision-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('plan-revision-main'),
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Fix addition', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  const submit = (callId: string, stages: { id: string; title: string; criterionIds: string[] }[]) =>
+    ctx.tools.execute({ callId: ToolCallId(callId), name: 'task_submit_plan', agent, signal,
+      arguments: { criteria: [{ id: 'c1', text: 'Tests pass' }], stages } })
+  expect((await submit('first-plan', [
+    { id: 's1', title: 'Change code', criterionIds: ['c1'] },
+    { id: 's2', title: 'Run tests', criterionIds: ['c1'] },
+  ])).isError).toBe(false)
+  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  expect((await submit('revised-plan', [
+    { id: 's1', title: 'Change code and run tests', criterionIds: ['c1'] },
+  ])).isError).toBe(false)
+  const pending = taskOf(ctx, agent)
+  expect(pending?.phase).toBe('awaiting-approval')
+  expect(pending?.planVersion).toBe(2)
+  expect(pending?.stages).toHaveLength(1)
+  expect(pending?.approvedPlanVersion).toBeNull()
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(ctx, agent)?.approvedPlanVersion).toBe(2)
+})
+
 it('automatically continues approved work and requests a progress decision at the configured interval', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-drive-'))
   roots.push(root)
@@ -283,6 +312,7 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
   ] })
   const ctx = await host(root, adapter)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('review-main'),
+    meta: { cwd: root },
     agentOptions: { provider: 'scripted', model: 'scripted' } })
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
@@ -307,6 +337,8 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
   const reviewerLog = await ctx.sessionPersistence.open(SessionId(afterStage!.lastReview!.reviewerSessionId!), 'read')
   try {
     const persisted = await reviewerLog.read()
+    expect(reviewerLog.header.cwd).toBe(root)
+    expect(reviewerLog.header.parentSession).toBe(agent.id)
     expect(persisted.events.filter(event => event.type === 'tool/call').map(event => event.data.name))
       .toEqual(['task_review_decision', 'read_task_evidence', 'task_review_decision'])
     const results = persisted.events.filter(event => event.type === 'tool/result')

@@ -8,6 +8,7 @@ import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { TaskSnapshot } from './state.ts'
@@ -101,8 +102,7 @@ export async function reviewStage(
   const handle = await ctx.agents.create({
     sessionId: reviewerSessionId,
     parentAgent: main,
-    meta: { origin: 'subagent', parentSession: main.id,
-      delegationDepth: (main.session.header.delegationDepth ?? 0) + 1 },
+    meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false),
     agentOptions: options,
     signal,
     setup(agentCtx) {

@@ -404,7 +404,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }))
 
   ctx.tools.register(defineTool({
-    name: 'task_submit_plan', description: 'Submit acceptance criteria and ordered stages for the supervised task.',
+    name: 'task_submit_plan', description: 'Submit or replace a pending plan with acceptance criteria and ordered stages.',
     parameters: {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
@@ -422,7 +422,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     async execute(args, exec) {
       const agent = toolAgent(exec)
       const task = current(agent)
-      if (task === null || task.phase !== 'planning') throw new Error('task is not planning')
+      if (task === null || (task.phase !== 'planning' && task.phase !== 'awaiting-approval')) {
+        throw new Error('task is not planning or awaiting approval')
+      }
       const parsed = planInput.parse(args)
       validatePlan(parsed.criteria, parsed.stages)
       const next: TaskSnapshot = { ...task, revision: task.revision + 1,
@@ -479,6 +481,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             verdict: 'needs-user', finding: `Reviewer did not settle: ${String(error)}` } })
         await flush(agent)
       }
+      exec.concludeTurn()
       throw error
     } finally {
       reviewAbort.delete(agent)
