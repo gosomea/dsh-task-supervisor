@@ -10,7 +10,7 @@
 2. `/task` 查看状态。初始计划等待 `/task approve` 或右侧面板的**批准计划**按钮。规划期间由执行器限制修改工作区的工具。
 3. 获批后，控制层准入后续轮次。主 Agent 用 `task_report_stage` 汇报阶段证据；新的审查者分页读取主 Session 的有界日志，返回通过、修订或需要用户决策。
 4. 达到可配置的未汇报轮次后，进展审查决定继续、纠偏或暂停请用户处理。所有阶段通过后，`task_request_completion` 启动独立的最终审查；只有最终审查通过才能记为完成。
-5. `/task pause`、`/task off`、`/task on`、`/task resume`、`/task edit <目标>`、`/task clear` 控制生命周期。右侧面板显示状态和对应按钮，包括明确的**关闭督导**按钮。宿主重启后恢复任务，但等待用户手动继续。
+5. `/task pause`、`/task off`、`/task on`、`/task resume`、`/task edit <目标>`、`/task clear` 控制生命周期。计划提交、阶段审查和完成审查会在对应轮次留下摘要卡片；完整发现可以展开。右侧面板显示状态和对应按钮，包括明确的**关闭督导**按钮。宿主重启后恢复任务，但等待用户手动继续。
 
 审查模型默认跟随主 Agent 当前有效的 DSH 路由。也可通过 `reviewerModel` 指定当前 profile 可用的提供方、模型和推理等级。每次审查记录实际模型、审查 Session ID、证据 seq 和主 Session 截止点。
 

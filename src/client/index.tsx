@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { TaskSnapshot } from '../state.ts'
+import { milestoneDefinition, type Milestone } from './milestones.ts'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
 const ENDPOINT = '/api/task-supervisor'
 
 interface PanelProps { sessionId: string }
+interface TailProps { turn: { data: { get(key: 'task-supervisor-milestones'): readonly Milestone[] | undefined } } }
 interface PanelState { task: TaskSnapshot | null; live: boolean; armed: boolean }
 interface ClientContext {
   effect(factory: () => (() => void) | void, label?: string): void
+  uiConversation: { events: { register(definition: typeof milestoneDefinition): () => void } }
   sidebarRightTabs: {
     register(definition: { id: string; kind: string; priority: 'extension'; title: () => string;
       guide: Array<{ id: string; order: number; title: () => string; description: () => string }> }): () => void
@@ -17,10 +20,11 @@ interface ClientContext {
   slots: {
     inject(name: string, factory: () => () => void): () => void
     register(definition: { name: string; key: string }, component: (props: PanelProps) => ReactNode): () => void
+    register(definition: { name: string; id: string }, component: (props: TailProps) => ReactNode): () => void
   }
 }
 
-export const inject = ['slots', 'sidebarRightTabs', 'uiSession']
+export const inject = ['slots', 'sidebarRightTabs', 'uiSession', 'uiConversation']
 
 const CSS = `
 .dsh-task-panel{height:100%;overflow:auto;padding:18px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:13px/1.5 system-ui,sans-serif}
@@ -33,6 +37,11 @@ const CSS = `
 .dsh-task-actions button:hover{border-color:var(--dsw-alias-brand-primary)}.dsh-task-actions button:disabled{opacity:.5;cursor:default}.dsh-task-actions button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
 .dsh-task-actions button[data-action=off]{color:var(--dsw-alias-state-error-primary)}.dsh-task-error{margin-top:10px;color:var(--dsw-alias-state-error-primary)}
 .dsh-task-review{white-space:pre-wrap}.dsh-task-meta{font-size:11px;color:var(--dsw-alias-label-tertiary);margin-top:8px}
+.dsh-task-milestones{display:grid;gap:8px;margin:10px 0 14px}.dsh-task-milestone{border:1px solid var(--dsw-alias-border-l2);border-left:3px solid var(--dsw-alias-brand-primary);border-radius:8px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2);overflow-wrap:anywhere}
+.dsh-task-milestone[data-verdict=revise],.dsh-task-milestone[data-verdict=needs-user]{border-left-color:var(--dsw-alias-state-error-primary)}
+.dsh-task-milestone strong{display:block;font-size:13px}.dsh-task-milestone p{margin:5px 0 0;white-space:pre-wrap}.dsh-task-milestone details{margin-top:7px}.dsh-task-milestone summary{cursor:pointer;color:var(--dsw-alias-label-secondary)}
+.dsh-task-milestone .dsh-task-report{color:var(--dsw-alias-label-secondary)}.dsh-task-milestone .dsh-task-report span{font-weight:600}
+.dsh-task-milestone pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:8px 0 0;color:var(--dsw-alias-label-secondary)}
 `
 
 const PHASE: Record<TaskSnapshot['phase'], string> = {
@@ -121,7 +130,23 @@ function Panel({ sessionId }: PanelProps): ReactNode {
   </div>
 }
 
+/** Logged checkpoints stay visible when DSH folds the model's tool-heavy Turn. */
+function MilestoneCards({ turn }: TailProps): ReactNode {
+  const milestones = turn.data.get('task-supervisor-milestones')
+  if (milestones === undefined || milestones.length === 0) return null
+  return <div className="dsh-task-milestones" aria-label="任务督导检查点">
+    {milestones.map(item => <section key={item.seq} className="dsh-task-milestone"
+      data-verdict={item.verdict} data-milestone={item.kind}>
+      <strong>{item.title}</strong><p>{item.summary}</p>
+      {item.report && <p className="dsh-task-report"><span>主 Agent 汇报：</span>{item.report}</p>}
+      {item.detail && item.detail !== item.summary && <details><summary>查看完整{item.kind === 'plan' ? '阶段' : '审查发现'}</summary>
+        <pre>{item.detail}</pre></details>}
+    </section>)}
+  </div>
+}
+
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.uiConversation.events.register(milestoneDefinition), 'task-supervisor:milestones')
   ctx.effect(() => {
     const style = document.createElement('style')
     style.dataset.pluginCss = 'dsh-task-supervisor'
@@ -136,5 +161,8 @@ export function apply(ctx: ClientContext): void {
   }))
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
     { name: 'sidebar.right.pane.tab', key: PANEL_ID }, Panel,
+  )))
+  ctx.effect(() => ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register(
+    { name: 'conversation.chat.turnTail', id: `${PANEL_ID}/milestones` }, MilestoneCards,
   )))
 }
