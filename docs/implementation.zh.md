@@ -4,7 +4,7 @@
 
 ## 原生集成
 
-宿主入口是 [`src/index.ts`](../src/index.ts)：注册 `/task`、四个模型工具、生命周期监听器、工具执行保护和可选的 Web 路由。Web 客户端位于 [`src/client/index.tsx`](../src/client/index.tsx)，挂载到 DSH 右侧边栏标签，通过 Connection 已认证的 `/api/task-supervisor` Fetch 路由读取和控制绑定任务。客户端还把成功的计划提交、阶段审查和完成审查工具结果投影到原生对话轮次尾部；即使 DSH 折叠执行过程，摘要卡片仍可见，完整发现可以展开。卡片只读取已有 Session 事件，不写入新的模型回复。该路由不另开监听端口，返回由 Session 派生的状态。已关闭的 Session 可用有界的持久层分页读取；控制操作需要存活的 Agent。
+宿主入口是 [`src/index.ts`](../src/index.ts)：注册 `/task`、四个模型工具、生命周期监听器、工具执行保护和可选的 Web 路由。Web 客户端位于 [`src/client/index.tsx`](../src/client/index.tsx)，挂载到 DSH 右侧边栏标签，通过 Connection 已认证的 `/api/task-supervisor` Fetch 路由读取和控制绑定任务。客户端把计划提交、阶段审查和完成审查的成功工具结果投影到原生对话轮次尾部。计划显示为主 Agent 提交；阶段和完成检查点分成主 Agent 提交与 Supervisor 独立审查两张卡，分别注明主 Session 事件序号、审查 Session 身份，后续内容分别展开。即使 DSH 折叠执行过程，卡片仍可见。卡片只读取已有 Session 事件，不写入新的模型回复。该路由不另开监听端口，返回由 Session 派生的状态。已关闭的 Session 可用有界的持久层分页读取；控制操作需要存活的 Agent。
 
 任务记录作为 `extension/record` 事件保存在主 DSH Session。[`src/state.ts`](../src/state.ts)校验并折叠每次转换的完整状态。审查者使用自己的原生子 Session；主记录保存审查 Session ID、实际模型、证据 seq 和固定的主日志截止点。审查者持有绑定主 Session 的 `read_task_evidence`：每页最多 30 个事件，正文限长，并脱敏常见密钥模式。工具保护拒绝其他审查工具。主 Session 文本是证据，不能成为审查者的指令。
 
@@ -23,7 +23,7 @@
 - 隔离宿主 `doc-sync` 的 42 项检查全部通过；新增持久事件有中英文同版本变更记录。
 - Node 24 打包与 `pnpm pack --dry-run` 包含宿主 bundle patch 和 Web 客户端。在独立 `DSH_HOME` 中，DSH 的 `plugin add link:` 安装成功，`--dump-config` 出现已启用的插件行。
 - 隔离 DSH Web 宿主挂载了客户端。通过真实输入框创建的任务显示在右侧面板；面板的**关闭督导**和重新启用按钮改变原生 Session 状态；宿主重启后，任务重新出现，面板提供手动**恢复任务**按钮。
-- 将真实 `spec-parser` Session 在隔离 Web 宿主重新打开后，折叠的五个轮次下分别显示一张计划、三张阶段审查和一张完成审查卡片；完整审查发现可在对话中展开。
+- 将真实 `spec-parser` Session 在隔离 Web 宿主重新打开后，首轮显示一张主 Agent 计划卡，后四轮分别显示主 Agent 提交和 Supervisor 独立审查两张卡；审查 Session ID 与双方事件序号可见，剩余内容可分别展开。
 - 使用日常 profile 首个 CodeBuddy 模型的真实请求，验证自动续行、默认三轮未汇报时的进展审查、阶段与完成审查，以及关闭和宿主重启后的手动恢复。两题三组的[开发试跑](../eval/pilot-v1/results-20260926.zh.md)用工作区外检查器验收了 Goal、Plan 和 Supervisor；此试跑不能证明长程优势。
 
 ## 当前限制

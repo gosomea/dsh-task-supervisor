@@ -37,10 +37,10 @@ const CSS = `
 .dsh-task-actions button:hover{border-color:var(--dsw-alias-brand-primary)}.dsh-task-actions button:disabled{opacity:.5;cursor:default}.dsh-task-actions button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
 .dsh-task-actions button[data-action=off]{color:var(--dsw-alias-state-error-primary)}.dsh-task-error{margin-top:10px;color:var(--dsw-alias-state-error-primary)}
 .dsh-task-review{white-space:pre-wrap}.dsh-task-meta{font-size:11px;color:var(--dsw-alias-label-tertiary);margin-top:8px}
-.dsh-task-milestones{display:grid;gap:8px;margin:10px 0 14px}.dsh-task-milestone{border:1px solid var(--dsw-alias-border-l2);border-left:3px solid var(--dsw-alias-brand-primary);border-radius:8px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2);overflow-wrap:anywhere}
-.dsh-task-milestone[data-verdict=revise],.dsh-task-milestone[data-verdict=needs-user]{border-left-color:var(--dsw-alias-state-error-primary)}
-.dsh-task-milestone strong{display:block;font-size:13px}.dsh-task-milestone p{margin:5px 0 0;white-space:pre-wrap}.dsh-task-milestone details{margin-top:7px}.dsh-task-milestone summary{cursor:pointer;color:var(--dsw-alias-label-secondary)}
-.dsh-task-milestone .dsh-task-report{color:var(--dsw-alias-label-secondary)}.dsh-task-milestone .dsh-task-report span{font-weight:600}
+.dsh-task-milestones,.dsh-task-milestone-pair{display:grid;gap:8px}.dsh-task-milestones{margin:10px 0 14px}.dsh-task-milestone{border:1px solid var(--dsw-alias-border-l2);border-left:3px solid var(--dsw-alias-brand-primary);border-radius:8px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2);overflow-wrap:anywhere}
+.dsh-task-milestone[data-role=supervisor]{border-left-color:var(--dsw-alias-state-success-primary)}.dsh-task-milestone[data-verdict=revise],.dsh-task-milestone[data-verdict=needs-user]{border-left-color:var(--dsw-alias-state-error-primary)}
+.dsh-task-milestone .dsh-task-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-secondary);margin-bottom:5px}.dsh-task-milestone strong{display:block;font-size:13px}.dsh-task-milestone p{margin:5px 0 0;white-space:pre-wrap}.dsh-task-milestone details{margin-top:7px}.dsh-task-milestone summary{cursor:pointer;color:var(--dsw-alias-label-secondary)}
+.dsh-task-milestone .dsh-task-source{font-size:11px;color:var(--dsw-alias-label-tertiary);margin-top:7px}.dsh-task-milestone .dsh-task-source code{font:inherit;overflow-wrap:anywhere}
 .dsh-task-milestone pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:8px 0 0;color:var(--dsw-alias-label-secondary)}
 `
 
@@ -135,13 +135,26 @@ function MilestoneCards({ turn }: TailProps): ReactNode {
   const milestones = turn.data.get('task-supervisor-milestones')
   if (milestones === undefined || milestones.length === 0) return null
   return <div className="dsh-task-milestones" aria-label="任务督导检查点">
-    {milestones.map(item => <section key={item.seq} className="dsh-task-milestone"
-      data-verdict={item.verdict} data-milestone={item.kind}>
-      <strong>{item.title}</strong><p>{item.summary}</p>
-      {item.report && <p className="dsh-task-report"><span>主 Agent 汇报：</span>{item.report}</p>}
-      {item.detail && item.detail !== item.summary && <details><summary>查看完整{item.kind === 'plan' ? '阶段' : '审查发现'}</summary>
-        <pre>{item.detail}</pre></details>}
-    </section>)}
+    {milestones.map(item => <div key={item.seq} className="dsh-task-milestone-pair">
+      <section className="dsh-task-milestone" data-role="main" data-milestone={item.kind}
+        aria-label="主 Agent 在主 Session 的提交">
+        <div className="dsh-task-role">主 Agent · 主 Session</div>
+        <strong>{item.kind === 'plan' ? '提交计划' : item.kind === 'completion' ? '申请完成' : '提交阶段报告'}</strong>
+        <p>{item.kind === 'plan' ? item.summary : item.report ?? '已提交审查申请。'}</p>
+        {item.kind === 'plan' && item.detail && <details><summary>查看计划阶段</summary><pre>{item.detail}</pre></details>}
+        {item.kind !== 'plan' && item.reportDetail && <details><summary>继续阅读主 Agent 汇报</summary>
+          <pre>{item.reportDetail}</pre></details>}
+        <div className="dsh-task-source">主 Session · 提交事件 seq {item.mainSeq}</div>
+      </section>
+      {item.kind !== 'plan' && <section className="dsh-task-milestone" data-role="supervisor"
+        data-verdict={item.verdict} data-milestone={item.kind} aria-label="Supervisor 独立审查结论">
+        <div className="dsh-task-role">Supervisor · 独立审查 Session</div>
+        <strong>{item.title}</strong><p>{item.summary}</p>
+        {item.detail && <details><summary>继续阅读审查依据</summary><pre>{item.detail}</pre></details>}
+        <div className="dsh-task-source">审查结论 · 主 Session seq {item.seq}
+          {item.reviewerSessionId && <> · 审查 Session <code>{item.reviewerSessionId}</code></>}</div>
+      </section>}
+    </div>)}
   </div>
 }
 
