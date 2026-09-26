@@ -1,6 +1,6 @@
 # Implementation status
 
-This page describes the runnable prototype as of 2026-09-24. The other design pages describe the intended product, including behavior that this build has not implemented.
+This page describes the runnable prototype as of 2026-09-26. The other design pages describe the intended product, including behavior that this build has not implemented.
 
 ## Native integration
 
@@ -19,13 +19,14 @@ State and queued Supervisor messages are flushed before waking the Agent. On res
 ## Verification performed
 
 - Strict DSH Host typecheck and two focused Host tests passed, including refusal on resume without a compatible reader and refusal after reader removal before the next step.
-- Sixteen scripted tests against real DSH services passed. The six Supervisor integration tests cover plan approval guard, persistent manual recovery, automatic continuation after a passing progress review and pause for user input, interrupted review recovery, off/on behavior, stage review, and final completion. Scripted model output proves control wiring and safety gates, not review quality.
+- Nineteen kernel tests against real DSH services and scripted models passed. The nine Supervisor integration tests cover plan approval guard, persistent manual recovery, automatic continuation after a passing progress review and pause for user input, interrupted review recovery, off/on behavior, clearing queued work, fork without inherited execution authority, stage review, and final completion. Scripted model output proves control wiring and safety gates, not review quality.
 - The Host worktree's `doc-sync` gate passed all 42 checks. Its new persistence event has a bilingual same-version change record.
 - A Node 24 package build and `pnpm pack --dry-run` included the Host bundle patch and Web client. In a separate `DSH_HOME`, DSH's `plugin add link:` installed the package and `--dump-config` showed the enabled row.
-- An isolated DSH Web Host mounted the client. A task created through the real composer appeared in the right panel; the panel's **Close Supervisor** and reenable controls changed the native Session state; after Host restart the task reappeared with a manual **Resume task** control. The isolated profile had no model credential, so this Web run did not exercise real model judgment.
+- An isolated DSH Web Host mounted the client. A task created through the real composer appeared in the right panel; the panel's **Close Supervisor** and reenable controls changed the native Session state; after Host restart the task reappeared with a manual **Resume task** control.
+- Real requests through the first CodeBuddy model in the daily profile exercised automatic continuation, the default three-round progress review, stage and completion reviews, and manual recovery after closing and restarting the Host. A two-case, three-arm [development pilot](../eval/pilot-v1/results-20260926.zh.md) used an external checker for Goal, Plan, and Supervisor; it does not establish a long-horizon advantage.
 
 ## Current limits
 
-The prototype holds one task per Session. It has no `/task plan` shortcut, five-task queue, fork protocol, configurable user-decision timeout, independent executable artifact acceptance, or measured long-horizon advantage over Goal, Plan, or Team. A reviewer can cite Session evidence and judge completion, but its model decision is not the separate executable acceptance benchmark described in the design. Real model quality, cancellation during an in-flight remote request, Web control across every Session lifecycle, and a complete coding fixture still need validation. The isolated Host extension and plugin changes are local until reviewed and merged or published.
+The prototype holds one task per Session. It has no `/task plan` shortcut, five-task queue, complete product-level fork protocol, configurable user-decision timeout, or built-in executable artifact acceptance. It has no measured long-horizon advantage over Goal, Plan, or Team. A reviewer can cite Session evidence and judge completion, but its model decision is not independent benchmark scoring. The real-model trial found that, after an interrupted turn, stage and completion reviewers passed a task despite an unmet explicit separate-turn requirement. The reviewer prompt has been strengthened, but it still needs a real-model regression. Cancellation during an in-flight remote request, Web controls across every Session lifecycle, and a formal held-out long-task set also remain unverified. The isolated Host seam is not yet a public part of standard DSH.
 
 [简体中文](implementation.zh.md)

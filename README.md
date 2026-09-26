@@ -36,12 +36,12 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
-| [Evaluation](docs/evaluation.md) | Long-horizon dataset and Goal, Plan, and Team baselines. |
+| [Evaluation](docs/evaluation.md) and [development pilot](eval/pilot-v1/results-20260926.zh.md) | Long-horizon protocol and a two-case Goal, Plan, and Supervisor trial. |
 | [First prototype](docs/prototype.md) | Acceptance gates and comparison with Agent Team. |
 | [Supervisor Session](docs/session-runtime.md) | Durable control and recovery design. |
 | [Reviewer model](docs/review-model.md) | DSH profile model policy. |
 | [Kernel experiment](docs/host-spike.md) | Initial capability investigation. |
 
-The prototype currently supports one task per Session. The five-task queue, `/task plan` shortcut, independent executable acceptance fixture, user-configurable decision timeout, and long-horizon comparison are design work still to be implemented. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
+The prototype currently supports one task per Session. The five-task queue, `/task plan` shortcut, built-in executable acceptance, user-configurable decision timeout, and formal long-horizon comparison remain future work. A two-case external development checker now exists, and its lifecycle trial found one false completion decision on an explicit ordering constraint. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
 
 [简体中文](README.zh.md)

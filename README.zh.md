@@ -36,12 +36,12 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
-| [评测](docs/evaluation.zh.md) | 长程数据集及 Goal、Plan、Team 对照。 |
+| [评测](docs/evaluation.zh.md)与[开发试跑](eval/pilot-v1/results-20260926.zh.md) | 长程评测协议及 Goal、Plan、Supervisor 的两题试跑。 |
 | [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
 | [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |
 | [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |
 | [内核技术试验](docs/host-spike.zh.md) | 最初的能力调研。 |
 
-当前原型每个 Session 支持一个任务。五任务队列、`/task plan` 快捷入口、独立可执行验收 fixture、用户可配置的决策超时以及长程对照评测仍属后续设计。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
+当前原型每个 Session 支持一个任务。五任务队列、`/task plan` 快捷入口、插件内置的独立可执行验收、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑已具备两题的外部验收器，但也发现一次违反原始时序约束而被误判完成的情况。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
 
 [English](README.md)

@@ -1,6 +1,6 @@
 # Long-horizon evaluation proposal
 
-**Status: study design.** No dataset, benchmark run, or superiority claim exists yet. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
+**Status: study design plus a two-case development pilot.** [Pilot fixtures and results](../eval/pilot-v1/results-20260926.zh.md) are available; there is no frozen long-horizon holdout or superiority claim. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
 
 ## Summary
 
