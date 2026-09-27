@@ -51,10 +51,21 @@ def main() -> int:
                                   "steps": stats.get("steps"), "elapsedSec": int(time.time()) - state["startedAtUnix"]}), flush=True)
                 last_report = time.time()
         time.sleep(5)
-    subprocess.run(["docker", "--context", args.docker_context, "stop", args.container], check=True,
-                   stdout=subprocess.DEVNULL)
+    timeout_patch = f"/evalhome/run/{args.state.stem}-timeout.patch"
+    snapshot_error = None
+    try:
+        subprocess.run([
+            "docker", "--context", args.docker_context, "exec", args.container,
+            "python3", "/runner/extract_patch.py", f"/evalhome/run/{args.state.name}", timeout_patch,
+        ], check=True, timeout=60, stdout=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        snapshot_error = str(error)
+    finally:
+        subprocess.run(["docker", "--context", args.docker_context, "stop", args.container], check=True,
+                       stdout=subprocess.DEVNULL)
     print(json.dumps({"status": "time-limit", "limitSec": state["timeLimitSec"],
-                      "container": args.container}))
+                      "container": args.container, "patch": None if snapshot_error else timeout_patch,
+                      "snapshotError": snapshot_error}))
     return 124
 
 
