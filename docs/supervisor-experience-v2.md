@@ -51,7 +51,7 @@ Build bounded continuation context from authoritative state and reports: objecti
 
 ## Conversation and sidebar
 
-Keep main-Agent answers in their native rendering. The current-task summary shows a short title, state, accepted count, latest Supervisor heading, and controls. Links open the full DAG, node details, and reviews in the sidebar. Models generate short node titles and review first lines while retaining complete detail fields. Historical reviews identify the Supervisor; main-Agent submissions receive no duplicate cards. Accepted-node counts do not imply effort percentages.
+Keep main-Agent answers in their native rendering. The current-task overview shows a compact DAG, node status and executor, recorded participants, accepted count, latest Supervisor heading, and controls. Clicking a node opens its complete sidebar details. Models generate short node titles and review first lines while retaining complete detail fields. Historical reviews identify the Supervisor; main-Agent submissions receive no duplicate cards. Accepted-node counts do not imply effort percentages.
 
 The sidebar separates Task details and Supervisor conversation into two tabs. Details contain the objective, DAG, node descriptions, criteria, and review history. Conversation embeds its native Session. Switching tabs preserves drafts and the mounted conversation; common actions remain outside the scrolling body. Both surfaces share versioned state and actions, refresh after reconnect, and reject stale responses. Active review offers pause; interrupted or paused work offers resume.
 

@@ -7,7 +7,7 @@ date: "2026-09-27"
 
 # V2 UI hierarchy and native-answer validation
 
-## Changes and rationale
+## First-pass changes and rationale
 
 The main conversation presents the main Agent's native answer and concise task progress. The sidebar holds complete details and persistent consultation. This replaces duplicate submission cards and vertically stacked detail/chat content while preserving one task controller.
 
@@ -47,6 +47,28 @@ The new task retained native main-Agent rendering:
 Consultation reused its previously compacted native Session. A draft survived switching to details and back. Sending a read-only final-progress question returned a Chinese answer while the task remained complete at revision 23. The tab retained native history, composer, and model selection.
 
 ![Consultation](assets/v2-consultation-tab.png)
+
+## Inline graph and native-control correction
+
+The follow-up requirement keeps the DAG, current progress, and participating Agents directly in the main conversation, with complete details in the sidebar. The overview now reuses the dependency graph with compact status/title/executor nodes and brings the current node into view. Unfinished tasks default to expanded and completed tasks to collapsed. An explicit per-task browser preference survives reloads.
+
+Buttons and disclosure rows now use DSH's `Button` and `DisclosureRow`, including native sizing, hover, focus, and expansion behavior. Sidebar sections use separators and retain the Task details / Supervisor conversation tabs. A portal keeps graph tooltips outside the composer's backdrop-filter container, with scroll-aware positioning. UI primitives and react-dom are consumed from the host's preloaded platform modules rather than bundled again.
+
+Participants come from recorded execution Session IDs in the current plan; multiple nodes sharing a child Session produce one Worker. Planned delegation in a title does not invent a participant. Selecting an inline node or Worker opens its sidebar stage, whose evidence disclosure includes the execution Session ID. Main-Agent native answers retain the first-pass behavior.
+
+This follow-up verified:
+
+- Reuse of `supervisor-v2` and retained cases; isolated Node 24 build, strict host/client typechecks, and five focused graph/executor tests passed. The earlier 55-check result belongs to the first pass; no full model-task rerun was performed here.
+- The retained three-node case shows A/B → C, 3/3 accepted, Worker 1, Worker 2, and the main Agent inline. An explicit expanded choice survives reload. Selecting inline B selects B and Worker 2 in the sidebar, with execution Session `task-node-83403d6c-0c96-4ff2-bd21-f91066e336c3`.
+- Enter expands the native execution-evidence disclosure; clicking acceptance criteria expands its content. Keyboard-focus tooltip content remains visible outside the composer container.
+- The retained paused case defaults to a visible graph, 0/1 accepted, a decision-wait state, and native resume/close controls. Its execution was not resumed.
+- This pass verifies presentation and mapping, not new execution-quality evidence from historical worker behavior.
+
+![Inline DAG and participants](assets/v2-inline-dag.png)
+
+![Native disclosures and node details](assets/v2-native-disclosures.png)
+
+![Paused task and native controls](assets/v2-native-controls.png)
 
 ## Limits
 

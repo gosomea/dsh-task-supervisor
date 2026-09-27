@@ -19,7 +19,7 @@ export default defineConfig([{
   dts: false,
   clean: false,
   sourcemap: false,
-  deps: { neverBundle: ['react', 'react/jsx-runtime'] },
+  deps: { neverBundle: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/dsh-client-ui-primitives'] },
   outputOptions: {
     entryFileNames: 'client.js',
     banner: 'window.__ModuleLoader__.load({ id: "dsh-task-supervisor", factory: (require) => {',

@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { executionActors, executorLabel } from '../../src/client/presentation.ts'
 import { acceptedNodes, dependencies, finishNode, readyNodes, reworkNode, reviewNode, runsOf, validateGraph, withRuns, recoverRuns } from '../../src/graph.ts'
 import { newTask, taskJson, taskSchema, type TaskSnapshot } from '../../src/state.ts'
 
@@ -57,4 +58,19 @@ it('rejects missing dependencies and cycles, and preserves the legacy chain', ()
   expect(dependencies(legacy.stages, 1)).toEqual(['a'])
   expect(acceptedNodes(legacy)).toEqual(['a'])
   expect(readyNodes(legacy)).toEqual(['b'])
+})
+
+it('shows only recorded worker Sessions and deduplicates shared executors in the overview', () => {
+  const planned = diamond()
+  planned.stages[0]!.title = 'Worker A will implement this'
+  expect(executionActors(planned, 'main')).toEqual([])
+  const task = { ...planned, nodeRuns: [
+    { id: 'a', attempt: 1, status: 'passed' as const, sessionId: 'child-one' },
+    { id: 'b', attempt: 1, status: 'reviewing' as const, sessionId: 'child-one' },
+    { id: 'join', attempt: 1, status: 'pending' as const, sessionId: 'main' },
+  ] }
+  expect(executionActors(task, 'main')).toEqual([{ sessionId: 'child-one', label: 'Worker 1', nodeIds: ['a', 'b'] }])
+  expect(executorLabel(task, 'main', 'b')).toBe('Worker 1')
+  expect(executorLabel(task, 'main', 'join')).toBe('主 Agent')
+  expect(executionActors(reworkNode(task, 'a', 50), 'main')).toEqual([{ sessionId: 'child-one', label: 'Worker 1', nodeIds: ['b'] }])
 })
