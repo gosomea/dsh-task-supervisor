@@ -22,13 +22,13 @@ def main() -> None:
     if state["arm"] != "supervisor":
         parser.error("The run state is not a Supervisor arm")
     rpc = WebRpc(args.host_log, f"http://127.0.0.1:{args.port}")
+    projection = Path("/evalhome/storages/session_projcache/sessions") / f"{state['sessionId']}.json"
     deadline = state["startedAtUnix"] + state["timeLimitSec"]
     while time.time() < deadline:
-        items = rpc.call("session/list")["items"]
-        item = next((item for item in items if item["sessionId"] == state["sessionId"]), None)
-        if item is None:
-            raise RuntimeError("Main Session disappeared before plan approval")
-        snapshot = item["projections"]["values"].get("taskSupervisor", {}).get("current")
+        # session/list deliberately returns only core projections. The plugin
+        # projection is durable in the Host's per-Session projection cache.
+        rows = json.loads(projection.read_text())["record"]["rows"] if projection.exists() else {}
+        snapshot = rows.get("taskSupervisor", {}).get("val", {}).get("current")
         if snapshot is None:
             time.sleep(5)
             continue

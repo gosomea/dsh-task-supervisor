@@ -42,6 +42,28 @@ def main() -> None:
         raise ValueError("Harbor verifier error; the attempt is not scoreable")
     patch = args.patch.read_bytes()
     receipt = json.loads(args.approval_receipt.read_text()) if args.approval_receipt else None
+    auxiliary = []
+    for child in sorted(projection_path.parent.glob("task-*.json")):
+        if child.stat().st_mtime < state["startedAtUnix"] - 1:
+            continue
+        child_id = child.stem
+        if not child_id.startswith(("task-review-", "task-node-")):
+            continue
+        child_rows = json.loads(child.read_text())["record"]["rows"]
+        child_stats = child_rows.get("sessionStats", {}).get("val") or {}
+        child_tokens = (child_rows.get("tokenUsage", {}).get("val") or {}).get("totals")
+        auxiliary.append({
+            "sessionId": child_id,
+            "role": "review" if child_id.startswith("task-review-") else "node-worker",
+            "turns": child_stats.get("turns"),
+            "steps": child_stats.get("steps"),
+            "tokens": child_tokens,
+        })
+    token_fields = ("uncachedInputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens")
+    all_token_rows = [tokens, *(child["tokens"] for child in auxiliary)]
+    total_tokens = ({field: sum(row[field] for row in all_token_rows) for field in token_fields}
+                    if all(isinstance(row, dict) and all(field in row for field in token_fields)
+                           for row in all_token_rows) else None)
     native = {}
     if state["arm"] == "goal":
         current = (value("goal") or {}).get("current") or {}
@@ -77,6 +99,8 @@ def main() -> None:
             "tokens": tokens,
             "finalAnswer": final_answer,
         },
+        "auxiliarySessions": auxiliary,
+        "allRecordedSessionTokens": total_tokens,
         "approvalReceipt": receipt,
         "patch": {"sha256": hashlib.sha256(patch).hexdigest(), "bytes": len(patch)},
         "externalGrade": {

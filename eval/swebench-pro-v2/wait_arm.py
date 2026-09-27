@@ -39,7 +39,9 @@ def main() -> int:
                 plan = value("plan") or {}
                 phase = "planning" if plan.get("active") else "executing-or-finished"
                 approved = args.approval_receipt is not None and args.approval_receipt.exists()
-                finished = approved and not plan.get("active") and stats.get("turns", 0) >= 2 and idle and bool(answer)
+                # Native approval resumes the same user turn, so an entire
+                # plan-and-implementation run may still have turns == 1.
+                finished = approved and not plan.get("active") and idle and bool(answer)
             if finished:
                 print(json.dumps({"status": "finished", "phase": phase, "turns": stats.get("turns"),
                                   "steps": stats.get("steps"), "elapsedSec": int(time.time()) - state["startedAtUnix"]}))
