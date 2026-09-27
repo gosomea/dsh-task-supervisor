@@ -2,6 +2,8 @@
 
 这是[统一评测协议](../../docs/evaluation.zh.md)的 P0 接入记录。基准固定在 `scaleapi/SWE-bench_Pro-os` 提交 `66f92766bba642462d4bbe5479e83f91f9211862`。每道候选题先在官方 Harbor 环境运行 `nop` 与 `oracle`：前者必须得 0，后者必须得 1，且两次都不能有执行异常。`sanity.py` 检查 Harbor 的原始 job 和 trial 结果；未通过门禁的题不启动 Goal／Plan／Supervisor，也不计入模型成绩。
 
+三组 NodeBB 接入校准的完整结果见 [calibration-nodebb-20260928.zh.md](calibration-nodebb-20260928.zh.md)。这道题已用于调试，三组均通过外部验收；它不计入冻结样本。
+
 六题 P1 集成样本已用固定种子按仓库分层抽取并冻结在 [sample-v1.json](sample-v1.json)。`select_sample.py` 保留选择算法且拒绝覆盖现有样本。NodeBB 与 Flipt 的上述两道接入校准题事先排除，避免用已看过的校准题充当保留样本。样本尚未进入模型评分；逐题环境门禁仍要执行。
 
 ## 本机接入记录：2026-09-28
@@ -13,7 +15,7 @@
 - 另建不影响默认 Docker 的 Colima VZ/Rosetta profile `dsh-eval-rosetta`。同一 NodeBB 题在此环境的官方 Harbor 控制组为 `nop=0`、`oracle=1`，均无异常，已通过评分环境门禁。今后该题只在 VZ/Rosetta 环境评分，原 QEMU 运行保留为基础设施诊断。
 - Agent 端现直接运行在官方任务镜像的 `/app` 中；DSH 源码和插件以只读挂载提供，三个工作流分别使用从同一镜像启动的独立容器、独立 Home 和相同模型。容器限制为 1 CPU、4 GiB，禁止访问公网，仅允许连接宿主的模型代理。官方 `tests`、参考解和评分 job 不挂载到 Agent 容器。容器内 DSH 的 `workspace-write` 沙箱后端不可用；初次工具被拒的尝试已作废。正式试跑统一把 DSH 权限设为 `danger-full-access`，实际写入边界由容器文件系统、只读挂载与网络规则实现。
 - 接入校准题 `instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan` 的 Goal 组已结束：原生 Goal 显示 `complete`，61 步，1 轮。将 Agent 产生的补丁单独送入未修改的 Harbor verifier 后，reward 为 `1.0`、异常数为 0；原始 job 在 `nodebb-goal-calibration-grade`。这个适配重验结果证明一条真实模型链路可用，但校准题已用于调试，不进入冻结样本，也不是官方榜单提交或三组优越性结论。
-- 同一 NodeBB 题的 Plan 组正在运行；批准者只会在 DSH 原生计划审批卡出现时批准一次。Supervisor 组随后按同样输入和容器限制运行。
+- 同一校准题的 Plan 与 Supervisor 也已运行并独立重验；详情及审批器接入偏差见上方校准结果。
 - 冻结样本中的另一道 NodeBB 题 `instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649` 已在同一 VZ/Rosetta profile 过门禁：空补丁 `0`、参考解 `1`，异常数均为 0；任务镜像 digest 为 `sha256:f4c4cd26b64f893ddeb6bda15ded32bf2aab8993775f33a20b395ada2251bcdf`，公开指令的 SHA-256 与冻结清单一致。它是首道可以进入模型正式样本的题，尚无模型成绩。
 - `launch_container.py` 可从预拉取镜像和已有的干净 profile 模板，创建每次运行独立的 DSH Home、1 CPU／4 GiB 容器与仅允许模型代理的网络。初次套用在冻结 NodeBB 镜像时，镜像默认工作目录 `/app` 导致 `tsx` 未能从 `/dsh` 解析；该 Host 启动失败，没有 Agent Session。脚本已固定工作目录并用第二个全新容器验证 RPC、原始工作树和防火墙，失败记录仍保留。
 - 下一个环境候选为 `instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1`。它的验证脚本主要执行 Go 测试；仍需分别证明 `nop=0`、`oracle=1`，不能因语言不同预设可用。

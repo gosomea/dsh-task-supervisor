@@ -78,7 +78,7 @@ def main() -> None:
         native = {"taskSupervisor": value("taskSupervisor")}
 
     result = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": args.kind,
         "officialLeaderboardSubmission": False,
         "taskId": state["taskId"],
