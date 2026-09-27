@@ -587,7 +587,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }))
 
   ctx.tools.register(defineTool({
-    name: 'task_submit_plan', description: 'Submit or replace a pending plan with acceptance criteria and ordered stages.',
+    name: 'task_submit_plan', description: 'Submit or replace a pending DAG plan. Preserve requested node counts. dependsOn requires reviewed acceptance, not worker completion: integration checks needed to accept a worker belong inside its node, never in a blocked successor. Objective criteria use provenance {kind: user, reference: objective}.',
     parameters: {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {

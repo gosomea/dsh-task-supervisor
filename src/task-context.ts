@@ -30,7 +30,7 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     `Task ${task.id}; requirements v${task.requirementsVersion}; plan v${task.planVersion}; state v${task.revision}.`,
     `Objective (full): ${task.objective}`,
     `Accepted nodes: ${acceptedNodes(task).join(', ') || 'none'}.`,
-    task.stages.length === 0 ? 'No plan submitted yet; inspect and submit a plan before execution.'
+    task.stages.length === 0 ? 'No plan submitted yet; inspect and submit a plan before execution. Preserve requested node counts. dependsOn requires predecessor review passes; integrate worker outputs before reporting their nodes, never in a successor blocked on that review. Objective criteria use provenance {kind: user, reference: objective}.'
       : stage === undefined ? 'All planned stages accepted; request whole-task completion review.'
       : `Current node: ${stage.id} — ${stage.title}${stage.description ? `\nDetails: ${excerpt(stage.description, 2000)}` : ''}`,
     `Ready nodes: ${readyNodes(task).join(', ') || 'none'}. Node attempts: ${JSON.stringify(runsOf(task))}`,

@@ -87,3 +87,7 @@ Submitted workers enter awaiting-integration. A successful main-Session verifica
 All 50 checks and separate strict Host/Client typechecks pass. Native filesystem tests hold both model requests concurrently, reject foreign writes, overlapping claims, and reports before integration, and verify closure prevents writes and continuation. Successful tool execution is an admission condition, not proof of correct coverage. Arbitrary worker shell execution is intentionally unavailable in this shared-directory strategy; such nodes run serially in the main Agent. Worktree-isolated general tools remain a later extension.
 
 [简体中文](implementation.zh.md)
+
+## Planning semantics found during integration
+
+A real model placed predecessor integration checks in a successor gated on predecessor acceptance, and mislabeled explicit user requirements as implementation choices. Independent review initially missed both; that run is not a pass. Planning and review contracts now explain acceptance dependencies, checks before node review, explicit node counts, and source classification. All 50 kernel checks and both strict typechecks pass; real-model reruns are recorded separately.
