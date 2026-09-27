@@ -41,6 +41,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
 | [评测](docs/evaluation.zh.md)与[开发试跑](eval/pilot-v1/results-20260926.zh.md) | 长程评测协议及 Goal、Plan、Supervisor 的两题试跑。 |
+| [Eval Notes：近期评测重点](docs/notes-eval.zh.md) | 公开测试集优先、首轮必需指标、自动化产物及后续多任务 Session。 |
 | [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
 | [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |
 | [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |

@@ -2,6 +2,8 @@
 
 **Status: study design plus development pilots.** The [two-case Goal/Plan/Supervisor product pilot](../eval/pilot-v1/results-20260926.zh.md), [separate-turn regression](../eval/reliability-v1/results-20260927.zh.md), and [multi-stage requirement-revision development results](../eval/long-horizon-dev-v1/results-20260927.zh.md) provide different levels of evidence; there is no frozen long-horizon holdout or superiority claim. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
 
+See [Eval Notes](notes-eval.md) for the current order: public benchmarks with required metrics first, then multiple tasks in one Session.
+
 ## Summary
 
 The study asks whether DSH Task Supervisor keeps a coding task aligned with the user's instructions through long execution and reaches an independently accepted result more often than native DSH Goal or Plan. A faster or cheaper run is useful secondary evidence, but it does not substitute for task success.
@@ -62,13 +64,13 @@ The agreed default for the formal end-to-end comparison is independent planning 
 
 Protect external evaluation checks; allow edits to project tests when the task permits them. Capture tracked and untracked artifact changes as well as test-integrity evidence. Do not automatically fail every project-test edit or rely only on a tracked Git diff. Trigger scripted changes at a predefined observable event or workload checkpoint, not at an improvised time chosen after seeing one arm's behavior.
 
-Develop the first six pilot tasks from historical failures and ordinary successful work. Freeze a separate held-out set by repository or task family before tuning review policy. Repeat paired trials and report uncertainty at the task level; repeated runs of one task are not independent new tasks. Predefine treatment of infrastructure errors, interrupted runs, and resource-limit stops, retain every attempt, and report the full outcome denominator so retries cannot silently improve the score.
+Keep historical failures and ordinary successful work as development regressions; [Eval Notes](notes-eval.md) owns public-dataset selection and execution order for the first primary evaluation. Freeze a separate held-out set by repository or task family before tuning review policy. Repeat paired trials and report uncertainty at the task level; repeated runs of one task are not independent new tasks. Predefine treatment of infrastructure errors, interrupted runs, and resource-limit stops, retain every attempt, and report the full outcome denominator so retries cannot silently improve the score.
 
 ## First experiments
 
 First validate lifecycle behavior in isolated DSH scenarios: capacity overflow, editing while a review is in flight, clearing while a continuation is queued, closing while a timeout is pending, restart with interrupted work, and fork without inherited execution permission. These checks establish control correctness; they do not establish better task completion.
 
-Then pilot six task families before freezing the benchmark: a short repair, a multi-stage feature, a requirement change mid-task, repeated ineffective attempts, an unsupported completion claim, and a long stage with no reported milestone. The short repair checks whether supervision adds unnecessary work; the long-stage case checks whether milestone-only review misses drift. Pilot tasks are development data; reserve separate tasks for comparative claims.
+Development regressions cover six task families: a short repair, a multi-stage feature, a requirement change mid-task, repeated ineffective attempts, an unsupported completion claim, and a long stage with no reported milestone. The short repair checks whether supervision adds unnecessary work; the long-stage case checks whether milestone-only review misses drift. Pilot tasks are development data; reserve separate tasks for comparative claims.
 
 Add a diagnostic ablation that keeps the same task state, planning, continuation, and model configuration but disables semantic review. Score its outcomes with the same independent evaluator. If improvement appears only against a baseline with fewer continuation opportunities, it does not yet show that review prevents drift. An optional cadence comparison can test stage review alone against stage review with the watchdog. Report interruption count and accepted completion together so excessive pausing cannot look like success.
 
