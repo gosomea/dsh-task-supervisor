@@ -75,7 +75,7 @@ export function finishNode(task: TaskSnapshot, id: string, verdict: 'pass' | 're
 }
 
 /** Rework invalidates accepted descendants and advances all affected attempt IDs. */
-export function reworkNode(task: TaskSnapshot, id: string): TaskSnapshot {
+export function reworkNode(task: TaskSnapshot, id: string, evidenceAfterSeq = 0): TaskSnapshot {
   if (!task.stages.some(stage => stage.id === id)) throw new Error(`unknown node ${id}`)
   const affected = new Set([id])
   for (let changed = true; changed;) {
@@ -87,5 +87,5 @@ export function reworkNode(task: TaskSnapshot, id: string): TaskSnapshot {
     })
   }
   return withRuns(task, runsOf(task).map(run => affected.has(run.id)
-    ? { id: run.id, attempt: run.attempt + 1, status: 'pending' } : run))
+    ? { id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq } : run))
 }

@@ -273,7 +273,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
         phase: decision.verdict === 'needs-user' ? 'paused' : 'active', roundsSinceReview: 0,
         lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
-          evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
+          imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
       appendTask(ctx, agent, next)
       await flush(agent)
       life.armed = next.phase === 'active'
@@ -489,7 +489,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (life.armed) return reply('Supervisor already running', task, true)
           const interruptedReview = task.pendingReview
           const next: TaskSnapshot = { ...withRuns(task, runsOf(task).map(run => ['reviewing', 'awaiting-user', 'running'].includes(run.status)
-              ? { id: run.id, attempt: run.attempt + 1, status: 'pending' } : run)), revision: task.revision + 1,
+              ? { id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq: agent.session.seq } : run)), revision: task.revision + 1,
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,
@@ -581,6 +581,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, text: { type: 'string', required: true },
+          evidenceKind: { type: 'string', enum: ['text', 'visual'], description: 'Use visual when acceptance requires judging actual image appearance; text tests or descriptions cannot replace inspection.' },
           provenance: { type: 'object', required: true, additionalProperties: false, properties: {
             kind: { type: 'string', required: true, enum: ['user', 'project', 'implementation'] },
             reference: { type: 'string', required: true, description: 'Use objective for the current user objective; otherwise quote the user instruction, name the applicable project rule, or explain why this implementation choice is necessary.' },
@@ -638,7 +639,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const next: TaskSnapshot = { ...task, revision: task.revision + 1,
         planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages,
-        nodeRuns: parsed.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending' })), stageIndex: 0,
+        nodeRuns: parsed.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending', evidenceAfterSeq: agent.session.seq })), stageIndex: 0,
         readOnlyTurnsBeforeWrite, readOnlyGateStartSeq: task.everApproved ? agent.session.seq : null,
         roundsSinceReview: 0,
         phase: task.everApproved ? 'active' : 'awaiting-approval',
@@ -682,14 +683,14 @@ export function apply(ctx: Context, config: Config = {}): void {
         stageIndex: latest.stageIndex,
         roundsSinceReview: 0,
         lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
-          evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
+          imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
       const settled = kind === 'stage' ? finishNode(next, stageId, decision.verdict, agent.session.seq) : next
       appendTask(ctx, agent, settled)
       await flush(agent)
       runtime(agent).armed = settled.phase === 'active'
       exec.concludeTurn()
       return { verdict: decision.verdict, finding: decision.finding,
-        evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
+        imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
         nextStage: settled.stages[settled.stageIndex]?.id ?? null, phase: settled.phase }
     } catch (error: unknown) {
       const latest = current(agent)
@@ -735,7 +736,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const task = current(agent)
       if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
       if (!args.reason.trim()) throw new Error('rework needs a reason')
-      const next = { ...reworkNode(task, args.stage_id), revision: task.revision + 1, pendingReview: null, lastReview: null }
+      const next = { ...reworkNode(task, args.stage_id, agent.session.seq), revision: task.revision + 1, pendingReview: null, lastReview: null }
       appendTask(ctx, agent, next)
       await flush(agent)
       exec.concludeTurn()

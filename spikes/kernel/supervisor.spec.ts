@@ -1,4 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
+import { LocalAttachmentStore } from '@deepseek-ai/dsh-attachment-local'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
@@ -788,4 +789,49 @@ it('disabling the supervisor during an observation prevents the old reviewer fro
   expect(agent.inbox.nextTurn).toHaveLength(0)
   expect(agent.session.snapshotEvents().some(event => event.type === 'assistant/message'
     && event.data.message.content.some(block => block.type === 'text' && block.text === 'must not execute'))).toBe(false)
+})
+
+
+it.each(['image', 'text', 'stale'] as const)('admits native visual evidence only for capable routes and current attempts: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-image-'))
+  roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = {}
+  class ImageAdapter extends ScriptedAdapter {
+    sawImage = false
+    override resolveModel(provider: string, model: string) {
+      return Promise.resolve({ provider, id: model, name: model, inputModalities: mode === 'text' ? ['text' as const] : ['text' as const, 'image' as const] })
+    }
+    override async *stream(options: GenerateOptions) {
+      if (options.model === 'reviewer' && JSON.stringify(options.messages).includes('"type":"image"')) this.sawImage = true
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new ImageAdapter(scripts)
+  const ctx = await host(root, adapter, false)
+  await ctx.plugin(LocalAttachmentStore, { dshHome: root })
+  const attachment = await ctx.attachments.saveImage({ mediaType: 'image/png', data: Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWNgZGIGAAAOAAeCcsnOAAAAAElFTkSuQmCC', 'base64') })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`image-${mode}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect this artifact' }, { type: 'image', attachment }] }))
+  await agent.whenIdle()
+  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message')!.seq
+  const task = { ...newTask('Review visual quality'), criteria: [{ id: 'v', text: 'Image composition is correct', evidenceKind: 'visual' as const }],
+    stages: [{ id: 's', title: 'Visual check', criterionIds: ['v'] }],
+    nodeRuns: [{ id: 's', status: 'reviewing' as const, attempt: 1, evidenceAfterSeq: mode === 'stale' ? seq + 1 : seq }] }
+  scripts.reviewer = [
+    toolResponse('read_task_evidence', { from_seq: seq, limit: 1 }, 'read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'claim', evidence_seqs: [seq] }, 'premature-pass'),
+    toolResponse('read_task_image', { seq, image_index: 0 }, 'image'),
+    toolResponse('task_review_decision', { verdict: mode === 'image' ? 'pass' : 'needs-user', finding: 'Visual evidence capability checked', evidence_seqs: [seq] }, 'decision'),
+  ]
+  const decision = await reviewStage(ctx, agent, task, 's', 'review', new AbortController().signal, { provider: 'scripted', model: 'reviewer' })
+  expect(decision.verdict).toBe(mode === 'image' ? 'pass' : 'needs-user')
+  expect(decision.imageSeqs).toEqual(mode === 'image' ? [seq] : [])
+  expect(adapter.sawImage).toBe(mode === 'image')
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const results = (await reader.read()).events.filter(event => event.type === 'tool/result')
+    expect(results.find(event => event.data.message.source.callId === 'premature-pass')?.data.message.isError).toBe(true)
+    expect(results.find(event => event.data.message.source.callId === 'image')?.data.message.isError).toBe(mode !== 'image')
+  } finally { await reader.close() }
 })

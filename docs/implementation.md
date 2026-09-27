@@ -40,7 +40,7 @@ Task record version 2 adds optional `responseLanguage` and stage `description`; 
 
 Task record version 3 stores the last approval's plan version and direct user message sequence, while continuing to read versions 1 and 2. `task_status` exposes an eligible approval reference; `task_approve` checks task, plan, and direct user provenance, and repeated calls do not enqueue another continuation. The first version recognizes explicit short approvals such as “批准” and “批准当前计划”; negations, quotations, and requests with changes are not approval. Buttons and `/task approve` share the approval transition. Panel actions bind the task ID and state revision; stale clicks are rejected.
 
-The main conversation uses the native `conversation.input.dock` slot for a collapsible current-task panel. It shares one state store and action request stream with the sidebar. Expanded content includes all stages, selected-stage details, acceptance criteria, and the latest 50 reviews. Buttons follow Host capabilities. Active reviews offer pause; paused or interrupted work offers resume. Reconnection reloads state, and late reads cannot overwrite newer action results. The plan remains sequential; DAG support belongs to batch three.
+The main conversation uses the native `conversation.input.dock` slot for a collapsible current-task panel. It shares one state store and action request stream with the sidebar. Expanded content includes all stages, selected-stage details, acceptance criteria, and the latest 50 reviews. Buttons follow Host capabilities. Active reviews offer pause; paused or interrupted work offers resume. Reconnection reloads state, and late reads cannot overwrite newer action results. The first acceptance run used sequential plans; subsequent DAG changes are described below.
 
 Batch one has 34 passing tests, including exactly one continuation from approval inside a model turn, direct-user checks, stale control rejection, duplicate action coalescing, and polling convergence across remounts. A real CodeBuddy task verified Chinese plans and independent findings, chat approval, inline pause/resume with the sidebar closed, both stages, and final completion; an external rerun passed five Node tests. Raw model reasoning can still be English; the plugin cannot guarantee its language. See [batch-one validation](v2-batch1-validation.md) for environment and evidence.
 
@@ -48,7 +48,7 @@ Batch one has 34 passing tests, including exactly one continuation from approval
 
 New plan criteria must identify a user requirement, project constraint, or implementation choice with a checkable source. Conversation and sidebar show the same provenance labels. Record version 4 reads versions 1–3; missing legacy provenance stays unknown rather than becoming a user requirement.
 
-Review summaries expose truncation and continuation offsets. `read_task_text`, the extended `read_task_call`, and `read_task_context` retrieve event text and full task context inside the fixed cutoff. Independent review checks whether sources support criteria and excludes unrelated fixtures; structural origin validation does not replace semantic judgment. Long-turn observation and image reads remain unimplemented; see [provenance and evidence validation](v2-evidence-validation.md).
+Review summaries expose truncation and continuation offsets. `read_task_text`, the extended `read_task_call`, and `read_task_context` retrieve event text and full task context inside the fixed cutoff. Independent review checks whether sources support criteria and excludes unrelated fixtures; structural origin validation does not replace semantic judgment. Long-turn observation and image reads are described below; see [provenance and evidence validation](v2-evidence-validation.md).
 
 ## DAG state and attempt identity
 
@@ -61,5 +61,11 @@ Record version 5 adds dependencies and independent node runs. `dependsOn: []` de
 Native `agent/pre-step` boundaries trigger independent progress review by tool-result activity, elapsed time, or consecutive tool errors without another timer-driven continuation loop. Defaults are 24 tool results, 300000 milliseconds, or 3 consecutive errors, configured by `observationToolCalls`, `observationIntervalMs`, and `observationConsecutiveErrors`. `observeLongTurns: false` disables observation. Wall-clock time without new tool activity does not trigger a check.
 
 Persisted pass or revision findings enter the next model step as a native message within the same turn; they do not accept a node or start another execution turn. A user decision pauses execution. Callbacks must match the task revision; edits and closure cancel them. Scripted-model regressions cover activity and controlled-clock triggers, productive continuation, and stale results after closure. Real-model acceptance is deferred to combined batch-two/three integration.
+
+## Native image evidence
+
+Record version 6 stores visual criterion types, attempt evidence boundaries, and inspected image sequences. `read_task_image` accepts only native images from already-paged events within the review cutoff and current attempt. Attachment storage verifies content before a native image block enters the model request. Required visual criteria cannot pass without an inspected image. Routes without declared image input, unavailable attachments, or stale evidence return errors and require an unable-to-verify finding.
+
+All 47 kernel checks pass, including native attachment delivery to review requests, text-only route rejection, and stale-attempt rejection. These checks do not establish real-model visual judgment quality.
 
 [简体中文](implementation.zh.md)

@@ -10,8 +10,8 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 5
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5]
+export const RECORD_VERSION = 6
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6]
 
 export const provenanceSchema = z.object({
   kind: z.enum(['user', 'project', 'implementation']),
@@ -19,7 +19,7 @@ export const provenanceSchema = z.object({
   sourceSeq: z.number().int().nonnegative().optional(),
 }).strict()
 export const criterionSchema = z.object({
-  id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(),
+  id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(), evidenceKind: z.enum(['text', 'visual']).optional(),
 }).strict()
 export const stageSchema = z.object({
   dependsOn: z.array(z.string().min(1)).optional(), writePaths: z.array(z.string().min(1)).optional(),
@@ -29,6 +29,7 @@ const nodeRunSchema = z.object({
   id: z.string().min(1), attempt: z.number().int().positive(),
   status: z.enum(['pending', 'running', 'reviewing', 'passed', 'needs-revision', 'awaiting-user']),
   sessionId: z.string().optional(), startedAt: z.string().optional(), finishedAt: z.string().optional(),
+  evidenceAfterSeq: z.number().int().nonnegative().optional(),
   reviewSeq: z.number().int().nonnegative().optional(),
 }).strict()
 export type NodeRun = z.infer<typeof nodeRunSchema>
@@ -37,6 +38,7 @@ const reviewSchema = z.object({
   cutoff: z.number().int().nonnegative(),
   verdict: z.enum(['pass', 'revise', 'needs-user']),
   finding: z.string(),
+  imageSeqs: z.array(z.number().int().nonnegative()).optional(),
   evidenceSeqs: z.array(z.number().int().nonnegative()).optional(),
   reviewerSessionId: z.string().min(1).optional(),
   model: z.object({ provider: z.string().min(1), model: z.string().min(1),
@@ -90,7 +92,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 5,
+  stateVersion: 6,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema) }),
   init: (): TaskProjection => ({ current: null, failure: null, reviews: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
@@ -147,6 +149,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     requirementsVersion: state.requirementsVersion,
     planVersion: state.planVersion,
     criteria: state.criteria.map(item => ({ id: item.id, text: item.text,
+      ...item.evidenceKind === undefined ? {} : { evidenceKind: item.evidenceKind },
       ...item.provenance === undefined ? {} : { provenance: { kind: item.provenance.kind, reference: item.provenance.reference,
         ...item.provenance.sourceSeq === undefined ? {} : { sourceSeq: item.provenance.sourceSeq } } } })),
     ...state.nodeRuns === undefined ? {} : { nodeRuns: state.nodeRuns.map(run => ({
@@ -154,6 +157,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
       ...run.sessionId === undefined ? {} : { sessionId: run.sessionId },
       ...run.startedAt === undefined ? {} : { startedAt: run.startedAt },
       ...run.finishedAt === undefined ? {} : { finishedAt: run.finishedAt },
+      ...run.evidenceAfterSeq === undefined ? {} : { evidenceAfterSeq: run.evidenceAfterSeq },
       ...run.reviewSeq === undefined ? {} : { reviewSeq: run.reviewSeq },
     })) },
     stages: state.stages.map(item => ({ id: item.id, title: item.title,
@@ -171,6 +175,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     lastReview: state.lastReview === null ? null : {
       stageId: state.lastReview.stageId, cutoff: state.lastReview.cutoff,
       verdict: state.lastReview.verdict, finding: state.lastReview.finding,
+      ...state.lastReview.imageSeqs === undefined ? {} : { imageSeqs: [...state.lastReview.imageSeqs] },
       ...state.lastReview.evidenceSeqs === undefined ? {} : { evidenceSeqs: [...state.lastReview.evidenceSeqs] },
       ...state.lastReview.reviewerSessionId === undefined ? {} : { reviewerSessionId: state.lastReview.reviewerSessionId },
       ...state.lastReview.model === undefined ? {} : { model: {
