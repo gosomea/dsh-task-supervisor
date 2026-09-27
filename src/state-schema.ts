@@ -15,8 +15,9 @@ export const stageSchema = z.object({
 }).strict()
 const nodeRunSchema = z.object({
   id: z.string().min(1), attempt: z.number().int().positive(),
-  status: z.enum(['pending', 'running', 'reviewing', 'passed', 'needs-revision', 'awaiting-user']),
+  status: z.enum(['pending', 'running', 'reviewing', 'passed', 'needs-revision', 'awaiting-user', 'awaiting-integration']),
   sessionId: z.string().optional(), startedAt: z.string().optional(), finishedAt: z.string().optional(),
+  workerCutoff: z.number().int().nonnegative().optional(), integrationAfterSeq: z.number().int().nonnegative().optional(),
   evidenceAfterSeq: z.number().int().nonnegative().optional(),
   reviewSeq: z.number().int().nonnegative().optional(),
 }).strict()

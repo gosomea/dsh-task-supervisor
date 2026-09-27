@@ -10,8 +10,8 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 6
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6]
+export const RECORD_VERSION = 7
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
@@ -32,7 +32,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 6,
+  stateVersion: 7,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema) }),
   init: (): TaskProjection => ({ current: null, failure: null, reviews: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
@@ -97,6 +97,8 @@ export function taskJson(state: TaskSnapshot): JsonValue {
       ...run.sessionId === undefined ? {} : { sessionId: run.sessionId },
       ...run.startedAt === undefined ? {} : { startedAt: run.startedAt },
       ...run.finishedAt === undefined ? {} : { finishedAt: run.finishedAt },
+      ...run.workerCutoff === undefined ? {} : { workerCutoff: run.workerCutoff },
+      ...run.integrationAfterSeq === undefined ? {} : { integrationAfterSeq: run.integrationAfterSeq },
       ...run.evidenceAfterSeq === undefined ? {} : { evidenceAfterSeq: run.evidenceAfterSeq },
       ...run.reviewSeq === undefined ? {} : { reviewSeq: run.reviewSeq },
     })) },

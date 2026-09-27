@@ -48,7 +48,7 @@ export function acceptedNodes(task: TaskSnapshot): string[] {
 /** Keep the old display pointer as a derived selection, never an accepted count. */
 export function withRuns(task: TaskSnapshot, runs: NodeRun[]): TaskSnapshot {
   const next = { ...task, nodeRuns: runs }
-  const current = runs.find(run => ['running', 'reviewing', 'awaiting-user'].includes(run.status))?.id
+  const current = runs.find(run => ['running', 'reviewing', 'awaiting-user', 'awaiting-integration'].includes(run.status))?.id
     ?? readyNodes(next)[0]
   return { ...next, stageIndex: current === undefined ? task.stages.length : task.stages.findIndex(stage => stage.id === current) }
 }
@@ -63,7 +63,7 @@ export function beginNode(task: TaskSnapshot, id: string, sessionId: string): Ta
 export function reviewNode(task: TaskSnapshot, id: string, attempt: number | undefined): TaskSnapshot {
   const run = runsOf(task).find(item => item.id === id)
   if (run === undefined || (attempt ?? 1) !== run.attempt) throw new Error('node attempt is stale; read task_status')
-  if (!readyNodes(task).includes(id) && run.status !== 'running') throw new Error(`node ${id} is not ready for review`)
+  if (!readyNodes(task).includes(id) && !['running', 'awaiting-integration'].includes(run.status)) throw new Error(`node ${id} is not ready for review`)
   return withRuns(task, runsOf(task).map(item => item.id === id ? { ...item, status: 'reviewing' } : item))
 }
 

@@ -70,6 +70,7 @@ function nodeLabel(task: TaskSnapshot, id: string, armed: boolean, reviewing: bo
   if (run?.status === 'reviewing') return reviewing ? '◉ 审查中' : '审查待恢复'
   if (task.phase === 'awaiting-approval') return '等待批准'
   if (task.phase === 'paused' || !armed) return '等待继续'
+  if (run?.status === 'awaiting-integration') return '等待主 Agent 集成复验'
   if (run?.status === 'running') return '● 执行中'
   if (run?.status === 'needs-revision') return '需要修订'
   return readyNodes(task).includes(id) ? '可执行' : '等待依赖'

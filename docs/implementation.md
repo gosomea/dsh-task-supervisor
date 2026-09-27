@@ -78,4 +78,12 @@ The conversation fold and sidebar draw persisted dependency edges, with independ
 
 Explicit directives such as pause, resume, approval, disabling supervision, and replacing the full objective pass through `supervisor_control` to the existing controller. It checks the latest direct user message and task revision. The main log records received before execution and applied/failed afterward. Repeated user sequences cannot execute twice; interrupted received receipts require checking current effects. Forked or replaced-task conversations cannot control the original task, and pre-restart directives cannot replay automatically. All 48 Host checks pass; native embedding, actual compaction, and real-model consultation remain integration checks.
 
+## Controlled native delegation
+
+The main Agent can call `task_delegate_nodes` for dependency-ready nodes, defaulting to two concurrent workers (`maxParallelNodes`: 1–8). Record version 7 stores child Session identity, attempt, settled child cutoff, and main integration boundary. Write scopes are exact workspace files; native filesystem target identities must be disjoint. Directory claims are not admitted. Workers read/search/write/edit owned files, while the main Agent runs commands and integration. No second main-task continuation loop is introduced.
+
+Submitted workers enter awaiting-integration. A successful main-Session verification tool result after settlement (bash/read_image by default, configurable with `integrationTools`) is required before node review. The reviewer must inspect the bound worker log and main integration evidence before accepting a node. Pause, disable, and task edits cancel workers; stale results cannot settle. Recovery advances attempts and requires checking effects.
+
+All 50 checks and separate strict Host/Client typechecks pass. Native filesystem tests hold both model requests concurrently, reject foreign writes, overlapping claims, and reports before integration, and verify closure prevents writes and continuation. Successful tool execution is an admission condition, not proof of correct coverage. Arbitrary worker shell execution is intentionally unavailable in this shared-directory strategy; such nodes run serially in the main Agent. Worktree-isolated general tools remain a later extension.
+
 [简体中文](implementation.zh.md)

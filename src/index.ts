@@ -15,6 +15,7 @@ import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
+import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
@@ -37,6 +38,8 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Read tools available before the first plan approval. */
 export interface Config {
+  maxParallelNodes?: number
+  integrationTools?: string[]
   observeLongTurns?: boolean
   observationToolCalls?: number
   observationIntervalMs?: number
@@ -95,6 +98,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   for (const [key, value] of Object.entries(observationPolicy)) {
     if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`observation ${key} must be a positive integer`)
   }
+  if (config.observeLongTurns !== undefined && typeof config.observeLongTurns !== 'boolean') throw new TypeError('observeLongTurns must be a boolean')
+  if (config.integrationTools !== undefined && (!config.integrationTools.length || config.integrationTools.some(name => typeof name !== 'string' || !name.trim()))) throw new TypeError('integrationTools must contain nonempty native tool names')
   const planningReadTools = config.planningReadTools ?? []
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
@@ -140,6 +145,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   function withdrawOwned(agent: Agent): void {
+    delegation.cancel(agent)
     const life = runtime(agent)
     life.armed = false
     reviewAbort.get(agent)?.abort(new Error('Supervisor state changed'))
@@ -226,6 +232,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task)
     },
   })
+  const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
   const consultation = installConsultation(ctx, config.reviewerModel)
   installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
     actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation)
@@ -598,7 +605,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           id: { type: 'string', required: true }, title: { type: 'string', required: true },
           description: { type: 'string', description: 'Implementation scope, deliverables, and validation for this stage.' },
           dependsOn: { type: 'array', items: { type: 'string' }, description: 'Dependency node IDs; [] is an independent root. Omission preserves legacy adjacent ordering. All dependencies must pass review before this node runs.' },
-          writePaths: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative files/directories owned by this node; required for later parallel delegation.' },
+          writePaths: { type: 'array', items: { type: 'string' }, description: 'Exact workspace-relative files owned by this node; required for parallel delegation. Directories and overlapping targets are not admitted.' },
           criterionIds: { type: 'array', required: true, items: { type: 'string' } },
         },
       } },
@@ -728,6 +735,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       if (stage === undefined || !args.evidence.trim()) {
         throw new Error('report the current stage with concrete evidence')
       }
+      requireIntegration(agent, stage.id, config.integrationTools ?? ['bash', 'read_image'], ctx)
       return settleReview(agent, reviewNode(task, stage.id, args.attempt), stage.id, args.evidence, 'stage', exec)
     },
   }))

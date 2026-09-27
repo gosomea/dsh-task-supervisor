@@ -1,4 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
+import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
+import * as FsTools from '@deepseek-ai/dsh-tool-fs'
 import { LocalAttachmentStore } from '@deepseek-ai/dsh-attachment-local'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
@@ -9,7 +11,7 @@ import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -880,4 +882,80 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   await chatAgain.whenIdle()
   expect(taskOf(resumed, mainAgain.agent)).toEqual(paused)
   expect(mainAgain.agent.inbox.nextTurn).toHaveLength(0)
+})
+
+
+it.each(['complete', 'off'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)
+  const bothEntered = Promise.withResolvers<void>(); const release = Promise.withResolvers<void>()
+  const counts = new Map<string, number>()
+  const scripts: Record<string, StreamChunk[][]> = {}
+  class WorkerAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions) {
+      const node = options.model === 'reviewer' ? undefined : /Execute only node (a|b):/u.exec(JSON.stringify(options.messages))?.[1]
+      if (!node) { yield* super.stream(options); return }
+      const step = counts.get(node) ?? 0; counts.set(node, step + 1)
+      if (step === 0) { if (counts.size === 2) bothEntered.resolve(); await release.promise }
+      const chunks = step === 0 && node === 'a'
+        ? toolResponse('write', { file_path: 'b.txt', content: 'foreign overwrite' }, 'foreign')
+        : step < (node === 'a' ? 2 : 1)
+        ? toolResponse('write', { file_path: `${node}.txt`, content: node.toUpperCase() }, `write-${node}`)
+        : toolResponse('task_worker_done', { report: `${node}.txt produced; needs main integration` }, `done-${node}`)
+      for (const chunk of chunks) yield chunk
+    }
+  }
+  const ctx = await host(root, new WorkerAdapter(scripts), true, { provider: 'scripted', model: 'reviewer' })
+  await ctx.plugin(LocalFileSystem, { cwd: root }); await ctx.plugin(FsTools, {})
+  ctx.tools.register(defineContentToolFixture({ name: 'bash', description: 'integration fixture', parameters: {}, execute: async () => {
+    expect(await readFile(join(root, 'a.txt'), 'utf8')).toBe('A'); expect(await readFile(join(root, 'b.txt'), 'utf8')).toBe('B')
+    return [{ type: 'text', text: 'A + B integration passed' }]
+  } }))
+  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('worker-main'), meta: { cwd: root }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  const task = { ...newTask('Create A and B and integrate'), phase: 'active' as const, planVersion: 1, approvedPlanVersion: 1, everApproved: true,
+    criteria: [{ id: 'c', text: 'A and B integrate' }], stages: [
+      { id: 'a', title: 'A', criterionIds: ['c'], dependsOn: [], writePaths: ['a.txt'] },
+      { id: 'b', title: 'B', criterionIds: ['c'], dependsOn: [], writePaths: ['a.txt'] },
+      { id: 'join', title: 'Integrate', criterionIds: ['c'], dependsOn: ['a', 'b'] },
+    ] }
+  appendTask(ctx, main, task)
+  await ctx.commands.execute(main, '/task resume', [], signal); await main.whenIdle()
+  const delegate = () => ctx.tools.execute({ agent: main, signal, callId: ToolCallId('delegate'), name: 'task_delegate_nodes', arguments: { node_ids: ['a', 'b'] } })
+  expect((await delegate()).isError).toBe(true)
+  const latest = taskOf(ctx, main)!
+  appendTask(ctx, main, { ...latest, revision: latest.revision + 1, stages: latest.stages.map(stage => stage.id === 'b' ? { ...stage, writePaths: ['b.txt'] } : stage) })
+  const batch = delegate()
+  await Promise.race([bothEntered.promise, batch.then(result => { throw new Error(`batch ended before both workers entered: ${JSON.stringify(result)}`) })])
+  expect(taskOf(ctx, main)?.nodeRuns?.filter(run => run.status === 'running')).toHaveLength(2)
+  if (mode === 'off') await ctx.commands.execute(main, '/task off', [], signal)
+  release.resolve()
+  if (mode === 'off') {
+    expect((await batch).isError).toBe(true)
+    expect(taskOf(ctx, main)?.enabled).toBe(false)
+    expect(main.inbox.nextTurn).toHaveLength(0)
+    await expect(readFile(join(root, 'a.txt'))).rejects.toThrow()
+    await expect(readFile(join(root, 'b.txt'))).rejects.toThrow()
+    return
+  }
+  expect((await batch).isError).toBe(false)
+  const settled = taskOf(ctx, main)!
+  expect(settled.nodeRuns?.filter(run => run.status === 'awaiting-integration')).toHaveLength(2)
+  expect(settled.nodeRuns?.find(run => run.id === 'join')?.status).toBe('pending')
+  const run = settled.nodeRuns!.find(run => run.id === 'a')!
+  const workerLog = await ctx.sessionPersistence.open(SessionId(run.sessionId!), 'read')
+  try { const events = (await workerLog.read()).events
+    expect(events.find(e => e.type === 'tool/result' && e.data.message.source.callId === 'foreign')).toMatchObject({ data: { message: { isError: true } } })
+  } finally { await workerLog.close() }
+  const report = () => ctx.tools.execute({ agent: main, signal, callId: ToolCallId('report-a'), name: 'task_report_stage', arguments: { stage_id: 'a', attempt: 1, evidence: 'A and B integration passed in main Session' } })
+  expect((await report()).isError).toBe(true)
+  scripts.main = [toolResponse('bash', {}, 'integration'), textResponse('integrated')]
+  main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Integrate outputs' }] })); await main.whenIdle()
+  const result = main.session.snapshotEvents().find(e => e.type === 'tool/result' && e.data.message.source.callId === 'integration')!
+  scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: result.seq, limit: 1 }, 'main-check'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'premature', evidence_seqs: [result.seq] }, 'no-worker'),
+    toolResponse('read_task_worker', { node_id: 'a', from_seq: 0, limit: 30 }, 'worker-check'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'A output independently read with main integration', evidence_seqs: [result.seq] }, 'accept')]
+  expect((await report()).isError).toBe(false)
+  expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'a')?.status).toBe('passed')
+  expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'join')?.status).toBe('pending')
 })
