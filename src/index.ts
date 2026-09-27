@@ -9,7 +9,8 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
-import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
+import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
+import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
@@ -86,7 +87,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
   }
-  const planningTools = new Set([...planningReadTools, 'task_status', 'task_submit_plan'])
+  const planningTools = new Set([...planningReadTools, 'task_status', 'task_submit_plan', 'task_approve'])
   const gateReadTools = new Set(planningReadTools.filter(tool => ['read', 'glob', 'grep'].includes(tool)))
   const maxAutomaticRoundsWithoutReport = config.maxAutomaticRoundsWithoutReport ?? 3
   if (!Number.isSafeInteger(maxAutomaticRoundsWithoutReport) || maxAutomaticRoundsWithoutReport < 1) {
@@ -213,7 +214,8 @@ export function apply(ctx: Context, config: Config = {}): void {
       return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task)
     },
   })
-  installPanelApi(ctx, agent => runtime(agent).armed)
+  installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
+    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }))
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent)
@@ -293,7 +295,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           && latest.phase === 'reviewing') {
           appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused',
             lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1),
-              verdict: 'needs-user', finding: `Progress review did not settle: ${String(error)}` } })
+              verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } })
           await flush(agent)
         }
         throw error
@@ -356,7 +358,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       return `tool "${exec.name}" is unavailable before plan approval`
     }
     if (task.phase === 'active' && readOnlyGateRemaining(exec.agent, task) > 0
-      && exec.name !== 'task_status' && !gateReadTools.has(exec.name)) {
+      && exec.name !== 'task_status' && exec.name !== 'task_approve' && !gateReadTools.has(exec.name)) {
       return `tool "${exec.name}" is unavailable until a post-approval read-only model turn completes`
     }
     return undefined
@@ -367,7 +369,15 @@ export function apply(ctx: Context, config: Config = {}): void {
     description: 'Create, inspect, approve, pause, or resume a supervised task',
     input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|clear|off|on]' },
     async handler({ agent, rawInput }) {
-      const input = rawInput.trim()
+      let input = rawInput.trim()
+      const bound = /^(approve|pause|resume|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
+      if (bound !== null) {
+        const state = current(agent)
+        if (state === null || state.id !== bound[2] || state.revision !== Number(bound[3])) {
+          return { kind: 'error', text: '任务状态已变化，请刷新后操作。' }
+        }
+        input = bound[1]!
+      }
       const task = current(agent)
       const life = runtime(agent)
       try {
@@ -383,10 +393,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')
         if (input === 'approve') {
-          if (task.phase !== 'awaiting-approval') throw new Error('the plan is not awaiting approval')
-          const next: TaskSnapshot = { ...task, revision: task.revision + 1,
-            approvedPlanVersion: task.planVersion, everApproved: true, phase: 'active',
-            readOnlyGateStartSeq: agent.session.seq }
+          const next = approvedTask(task, agent.session.seq)
           await commitAndWake(agent, task, next,
             executionPrompt(agent, next,
               'Execute the current approved stage. Report stage evidence using task_report_stage.'))
@@ -415,6 +422,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
             throw new Error('this task cannot resume in its current state')
           }
+          if (reviewAbort.has(agent)) throw new Error('审查正在进行，请使用暂停而不是恢复。')
           if (life.armed) return reply('Supervisor already running', task, true)
           const interruptedReview = task.pendingReview
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
@@ -423,7 +431,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             pendingReview: null,
             lastReview: interruptedReview === null ? task.lastReview : {
               stageId: interruptedReview.stageId, cutoff: Math.max(0, agent.session.seq - 1),
-              verdict: 'needs-user', finding: 'The previous review did not finish; resubmit its evidence.' } }
+              verdict: 'needs-user', finding: interruptedReviewFinding(task) } }
           await commitAndWake(agent, task, next,
             interruptedReview !== null
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
@@ -470,7 +478,35 @@ export function apply(ctx: Context, config: Config = {}): void {
     parameters: {}, output: textOutput,
     async execute(_args, exec) {
       const task = current(toolAgent(exec))
-      return task === null ? null : taskJson(task)
+      return task === null ? null : { ...taskJson(task) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+        approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents(), task) }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'task_approve',
+    description: 'Apply a direct user approval of the current plan. Read task_status for task id, planVersion and approvalUserMessageSeq. Never invent user authorization; if the message is ambiguous ask the user to use the approval button.',
+    parameters: { task_id: { type: 'string', required: true }, plan_version: { type: 'integer', required: true },
+      user_message_seq: { type: 'integer', required: true } }, output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec)
+      const task = current(agent)
+      if (task === null || task.id !== args.task_id || task.planVersion !== args.plan_version) {
+        throw new Error('approval refers to a stale task or plan')
+      }
+      if (task.lastApproval?.planVersion === args.plan_version
+        && task.lastApproval.userMessageSeq === args.user_message_seq) return { approved: true, duplicate: true }
+      if (approvalMessage(agent.session.snapshotEvents(), task) !== args.user_message_seq) {
+        throw new Error('a current, unambiguous direct user approval is required')
+      }
+      const next = approvedTask(task, agent.session.seq, args.user_message_seq)
+      appendTask(ctx, agent, next)
+      await flush(agent)
+      runtime(agent).armed = true
+      exec.concludeTurn()
+      agent.followup(inputFor(next, executionPrompt(agent, next, 'Execute the approved stage and report its evidence.')))
+      await flush(agent)
+      return { approved: true, planVersion: next.planVersion }
     },
   }))
 
@@ -544,7 +580,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       return { phase: next.phase, planVersion: next.planVersion,
         ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
           finding: planDecision.finding },
-        message: next.phase === 'awaiting-approval' ? 'Ask the user to run /task approve.' : 'Continue with the revised plan.' }
+        message: next.phase === 'awaiting-approval' ? 'Ask the user to approve in chat, with the approval button, or /task approve. For direct chat approval use task_status then task_approve.' : 'Continue with the revised plan.' }
     },
   }))
 
@@ -585,7 +621,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       if (latest?.id === reviewing.id && latest.revision === reviewing.revision && latest.phase === 'reviewing') {
         appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused',
           lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1),
-            verdict: 'needs-user', finding: `Reviewer did not settle: ${String(error)}` } })
+            verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } })
         await flush(agent)
       }
       exec.concludeTurn()

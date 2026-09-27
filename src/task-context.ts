@@ -39,3 +39,16 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     `Next action: ${instruction}`,
   ].join('\n\n')
 }
+
+
+/** Controller-generated notices use the same persisted language as model findings. */
+export function interruptedReviewFinding(task: TaskSnapshot, error?: unknown): string {
+  const language = (task.responseLanguage ?? resolveLanguage(task.objective)).split('-')[0]
+  const notices: Record<string, string> = {
+    zh: '审查尚未完成；恢复后请重新提交证据。',
+    ja: 'レビューは未完了です。再開後に証拠を再提出してください。',
+    ko: '검토가 완료되지 않았습니다. 재개 후 근거를 다시 제출하세요.',
+  }
+  const notice = notices[language ?? ''] ?? 'The review did not finish; resubmit its evidence after resuming.'
+  return error === undefined ? notice : `${notice}\n${String(error)}`
+}

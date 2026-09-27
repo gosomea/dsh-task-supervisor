@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { continuationContext, languagePolicy, resolveLanguage } from '../../src/task-context.ts'
+import { continuationContext, languagePolicy, resolveLanguage, interruptedReviewFinding } from '../../src/task-context.ts'
 import { newTask, taskJson, taskSchema, taskProjection } from '../../src/state.ts'
 
 it('keeps Chinese prose authoritative over English code and supports explicit profile choices', () => {
@@ -36,5 +36,6 @@ it('reads legacy records while refusing unknown future record versions', () => {
   const legacy = taskProjection.apply(taskProjection.init(), record(1) as Parameters<typeof taskProjection.apply>[1])
   expect(legacy.failure).toBeNull()
   expect(languagePolicy(legacy.current!)).toContain('zh-CN')
+  expect(interruptedReviewFinding(legacy.current!)).toContain('审查尚未完成')
   expect(taskProjection.apply(taskProjection.init(), record(99) as Parameters<typeof taskProjection.apply>[1]).failure).toContain('unsupported')
 })

@@ -1,7 +1,7 @@
 ---
 title: "Supervisor interaction and long-horizon review proposal"
 description: "Use the shrine Session to design language, task graphs, user decisions, consultation, and progress review."
-status: "proposal"
+status: "in-progress"
 date: "2026-09-27"
 ---
 
@@ -9,7 +9,7 @@ date: "2026-09-27"
 
 ## Summary
 
-This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. These designs are not implemented; see [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
+This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. Batch one is implemented and validated with two real-model tasks; batches two and three remain designs. See [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
 
 ## Table of contents
 
@@ -125,6 +125,6 @@ Validate controls and interaction on small tasks, then rerun shrine-like work in
 
 ## Dev Note
 
-This inspection only decompressed existing logs and read source and public documentation. It did not intervene in the shrine task, rerun its tests, or modify active artifacts. Source evidence is in `src/state.ts`, `src/index.ts`, `src/reviewer.ts`, `src/client/index.tsx`, and `src/client/milestones.ts`. Proposed fields and interactions are not existing interfaces.
+The initial inspection only decompressed existing logs and read source and public documentation. It did not intervene in the shrine task, rerun its tests, or modify active artifacts. Source evidence is in `src/state.ts`, `src/index.ts`, `src/reviewer.ts`, `src/client/index.tsx`, and `src/client/milestones.ts`. Batch-one implementation and isolated verification are recorded in [the validation report](v2-batch1-validation.md); later-batch fields and interactions remain proposals.
 
 [简体中文](supervisor-experience-v2.zh.md)

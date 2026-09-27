@@ -1,7 +1,7 @@
 ---
 title: "督导交互与长程审查改进提案"
 description: "基于神社 Session 核对语言、任务图、用户决策、侧问及进展审查的设计。"
-status: "proposal"
+status: "in-progress"
 date: "2026-09-27"
 ---
 
@@ -9,7 +9,7 @@ date: "2026-09-27"
 
 ## 摘要
 
-本文以神社真实运行校准下一版交互与控制协议。目标是让用户在主 Session 看见工作、审查和待办决策，并让督导在长轮次中发现偏移。以下设计尚未实现，现有行为见[实现状态](implementation.zh.md)。保留主 Session 的权威控制记录、唯一续行控制器和独立只读审查，增加持久督导对话与真实任务依赖图。
+本文以神社真实运行校准下一版交互与控制协议。目标是让用户在主 Session 看见工作、审查和待办决策，并让督导在长轮次中发现偏移。第一批已实现并完成两条真实模型验收；第二、三批仍为设计，现有行为见[实现状态](implementation.zh.md)。保留主 Session 的权威控制记录、唯一续行控制器和独立只读审查，增加持久督导对话与真实任务依赖图。
 
 ## 目录
 
@@ -125,6 +125,6 @@ VS Code 提供 `github.copilot.chat.localeOverride`，默认 auto，可指定回
 
 ## Dev Note
 
-本轮仅解压读取已有日志、检查源码和公开资料，没有干预神社任务、重跑其测试或改动运行产物。源码依据为 `src/state.ts`、`src/index.ts`、`src/reviewer.ts`、`src/client/index.tsx`、`src/client/milestones.ts`。本文是待实现提案，字段和交互不代表现有接口。
+最初诊断仅解压读取已有日志、检查源码和公开资料，没有干预神社任务、重跑其测试或改动运行产物。源码依据为 `src/state.ts`、`src/index.ts`、`src/reviewer.ts`、`src/client/index.tsx`、`src/client/milestones.ts`。第一批实现与隔离验证见[验收记录](v2-batch1-validation.zh.md)；后续批次的字段与交互仍是提案。
 
 [English](supervisor-experience-v2.md)

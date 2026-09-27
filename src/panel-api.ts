@@ -34,7 +34,7 @@ async function coldState(ctx: Context, sessionId: string, signal: AbortSignal): 
 }
 
 /** Register the panel route only when a Web Connection exists. */
-export function installPanelApi(ctx: Context, isArmed: (agent: Agent) => boolean): void {
+export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }): void {
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
       path: PATH,
@@ -48,12 +48,13 @@ export function installPanelApi(ctx: Context, isArmed: (agent: Agent) => boolean
         const agent = ctx.agents.get(SessionId(sessionId))
         if (request.method === 'GET') {
           if (agent !== undefined) {
-            return response({ task: taskOf(ctx, agent), live: true, armed: isArmed(agent) })
+            return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
+              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [] })
           }
           const projected = await coldState(ctx, sessionId, request.signal)
           if (projected === null) return response({ error: 'Session not found' }, 404)
           if (projected.failure !== null) return response({ error: projected.failure }, 409)
-          return response({ task: projected.current, live: false, armed: false })
+          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], reviews: projected.reviews })
         }
         if (agent === undefined) return response({ error: 'Open the Session before using controls' }, 409)
         let body: unknown
@@ -62,10 +63,17 @@ export function installPanelApi(ctx: Context, isArmed: (agent: Agent) => boolean
         if (typeof action !== 'string' || !ACTIONS.has(action)) {
           return response({ error: 'Unknown Supervisor action' }, 400)
         }
-        const command = await ctx.commands.execute(agent, `/task ${action}`, [], request.signal)
+        const task = taskOf(ctx, agent)
+        if (task === null || typeof body !== 'object' || body === null || !('taskId' in body) || !('revision' in body)
+          || body.taskId !== task.id || body.revision !== task.revision) {
+          return response({ error: '任务状态已变化，请刷新后操作。' }, 409)
+        }
+        if (!controls(agent).actions.includes(action)) return response({ error: '当前状态不允许此操作。' }, 409)
+        const command = await ctx.commands.execute(agent, `/task ${action} ${task.id} ${task.revision}`, [], request.signal)
         if (command === undefined) return response({ error: 'Supervisor command unavailable' }, 503)
         if (command.result.kind === 'error') return response({ error: command.result.text }, 409)
-        return response({ task: taskOf(ctx, agent), live: true, armed: isArmed(agent), message: command.result.text })
+        return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
+              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [], message: command.result.text })
       },
     }), 'task-supervisor.panel-api')
   })

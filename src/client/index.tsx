@@ -1,15 +1,14 @@
 /** DSH right sidebar panel for the bound task; all actions use the host controller. */
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { taskStore } from './task-store.ts'
 import type { TaskSnapshot } from '../state.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
-const ENDPOINT = '/api/task-supervisor'
 
 interface PanelProps { sessionId: string }
 interface TailProps { turn: { data: { get(key: 'task-supervisor-milestones'): readonly Milestone[] | undefined } } }
-interface PanelState { task: TaskSnapshot | null; live: boolean; armed: boolean }
 interface ClientContext {
   effect(factory: () => (() => void) | void, label?: string): void
   uiConversation: { events: { register(definition: typeof milestoneDefinition): () => void } }
@@ -21,12 +20,18 @@ interface ClientContext {
     inject(name: string, factory: () => () => void): () => void
     register(definition: { name: string; key: string }, component: (props: PanelProps) => ReactNode): () => void
     register(definition: { name: string; id: string }, component: (props: TailProps) => ReactNode): () => void
+    register(definition: { name: string; id: string }, component: (props: PanelProps) => ReactNode): () => void
   }
 }
 
 export const inject = ['slots', 'sidebarRightTabs', 'uiSession', 'uiConversation']
 
 const CSS = `
+.dsh-task-inline{width:calc(100% - 2 * var(--dsh-composer-side-clearance,16px) - 2 * var(--dsh-composer-dock-inset,8px));max-width:calc(var(--dsh-composer-card-max-width,800px) - 2 * var(--dsh-composer-dock-inset,8px));margin:8px auto;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
+.dsh-task-inline>summary{padding:10px 14px;cursor:pointer;font:13px/1.5 system-ui}.dsh-task-inline .dsh-task-panel{max-height:38vh}
+.dsh-task-stages{list-style:none;margin:12px 0;padding:0;display:grid;gap:6px}.dsh-task-stages button{width:100%;text-align:left;display:grid;gap:3px;padding:9px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:inherit;cursor:pointer}
+.dsh-task-stages button[aria-current=step]{border-color:var(--dsw-alias-brand-primary)}.dsh-task-stages span{font-size:11px;color:var(--dsw-alias-label-secondary)}.dsh-task-actions{position:sticky;top:0;background:var(--dsw-alias-bg-layer-1);padding:8px 0;z-index:1}
+
 .dsh-task-panel{height:100%;overflow:auto;padding:18px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:13px/1.5 system-ui,sans-serif}
 .dsh-task-panel *{box-sizing:border-box}.dsh-task-panel h2{font-size:16px;margin:0 0 4px}.dsh-task-panel h3{font-size:12px;color:var(--dsw-alias-label-secondary);margin:18px 0 7px}
 .dsh-task-muted{color:var(--dsw-alias-label-tertiary)}.dsh-task-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0}
@@ -50,88 +55,64 @@ const PHASE: Record<TaskSnapshot['phase'], string> = {
 }
 const VERDICT = { pass: '通过', revise: '需要修订', 'needs-user': '等待用户决策' }
 
-function actions(task: TaskSnapshot, armed: boolean): Array<[string, string]> {
-  if (task.phase === 'cleared') return []
-  if (!task.enabled) return [['on', '重新启用督导']]
-  if (task.phase === 'awaiting-approval') return [['approve', '批准计划'], ['pause', '暂停'], ['off', '关闭督导']]
-  if (task.phase === 'paused' || task.phase === 'reviewing' || !armed && task.phase !== 'complete') {
-    return [['resume', '恢复任务'], ['off', '关闭督导']]
-  }
-  if (task.phase === 'complete') return [['clear', '清除任务']]
-  return [['pause', '暂停'], ['off', '关闭督导']]
+const ACTION_LABEL: Record<string, string> = { approve: '批准计划', pause: '暂停', resume: '恢复任务',
+  off: '关闭督导', on: '重新启用督导', clear: '清除任务' }
+
+function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolean }): ReactNode {
+  const store = useMemo(() => taskStore(sessionId), [sessionId])
+  const { state, error, busy } = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const [selected, setSelected] = useState<string | null>(null)
+  const task = state?.task
+  if (inline && (task === undefined || task === null || task.phase === 'cleared')) return null
+  const selectedIndex = task?.stages.findIndex(item => item.id === selected) ?? -1
+  const index = selectedIndex >= 0 ? selectedIndex : Math.min(task?.stageIndex ?? 0, (task?.stages.length ?? 0) - 1)
+  const status = !task ? '' : !task.enabled ? '督导已关闭' : state?.reviewing ? '独立审查进行中'
+    : !state?.armed && ['active', 'planning', 'reviewing'].includes(task.phase) ? '等待手动恢复' : PHASE[task.phase]
+  const stage = task?.stages[index]
+  const actionBar = <div className="dsh-task-actions">{state?.actions.map(action => <button key={action}
+    data-action={action} disabled={busy || !state.live} onClick={() => { void store.act(action) }}>
+    {ACTION_LABEL[action] ?? action}</button>)}</div>
+  const content = <>
+    {state === null ? <p>正在读取任务状态…</p> : task === null || task === undefined
+      ? <p>在输入框使用 <code>/task new &lt;目标&gt;</code> 创建任务。</p> : <>
+      <div className="dsh-task-status"><strong>{status}</strong>
+        <span>{task.stages.length > 0 ? <>计划 v{task.planVersion} · 已通过 {task.stageIndex}/{task.stages.length}</> : '正在准备计划'}</span></div>
+      {task.phase === 'awaiting-approval' && <p>等待你批准当前计划；也可以直接输入“批准”。</p>}
+      {task.phase === 'paused' && task.lastReview?.verdict === 'needs-user' && <p>需要你的决定，任务将保持等待。</p>}
+      {actionBar}
+      <details><summary>任务目标</summary><p className="dsh-task-review">{task.objective}</p></details>
+      <h3>执行节点</h3>
+      <ol className="dsh-task-stages">{task.stages.map((item, i) => <li key={item.id}>
+        <button aria-current={i === task.stageIndex ? 'step' : undefined} aria-pressed={index === i}
+          onClick={() => setSelected(item.id)} title={item.description ?? item.title}>
+          <span>{i < task.stageIndex ? '✓ 已通过' : i === task.stageIndex ? state.reviewing ? '◉ 审查中' : task.phase === 'awaiting-approval' ? '等待批准' : task.phase === 'paused' || !state.armed ? '等待继续' : '● 当前' : '○ 未开始'}</span>
+          <strong>{item.id} · {item.title}</strong></button>
+      </li>)}</ol>
+      {stage && <section className="dsh-task-card"><h3>{stage.id} · 节点详情</h3><p>{stage.description ?? stage.title}</p>
+        <ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}</li>)}</ul></section>}
+      {task.lastReview && <section className="dsh-task-card"><h3>Supervisor · 最近独立审查</h3>
+        <strong>{task.lastReview.stageId} · {VERDICT[task.lastReview.verdict]}</strong>
+        <p className="dsh-task-review">{task.lastReview.finding.slice(0, 240)}{task.lastReview.finding.length > 240 ? '…' : ''}</p>
+        <details><summary>审查全文与证据</summary><p className="dsh-task-review">{task.lastReview.finding}</p>
+          <small>主 Session 截至 seq {task.lastReview.cutoff} · 证据 {task.lastReview.evidenceSeqs?.join(', ')}<br />
+          审查 Session {task.lastReview.reviewerSessionId}</small></details></section>}
+      {(state.reviews?.length ?? 0) > 1 && <details><summary>审查历史（最近 {state.reviews?.length} 项）</summary>
+        {state.reviews?.slice().reverse().map(review => <details key={`${review.stageId}:${review.cutoff}`}>
+          <summary>{review.stageId} · {VERDICT[review.verdict]} · seq {review.cutoff}</summary>
+          <p className="dsh-task-review">{review.finding}</p><small>审查 Session {review.reviewerSessionId}</small>
+        </details>)}</details>}
+      {!state.live && <p>打开会话后可操作；恢复执行仍需手动操作。</p>}
+    </>}
+    {error && <p role="alert" className="dsh-task-error">{error}</p>}
+  </>
+  return inline ? <details className="dsh-task-inline"><summary>
+    <strong>任务督导</strong> · {status} · {task?.stages.length ? <>已通过 {task.stageIndex}/{task.stages.length}</> : '正在准备计划'}
+    {task?.stages[task.stageIndex] && <> · {task.stages[task.stageIndex]?.id}</>}
+    </summary><div className="dsh-task-panel">{content}</div></details>
+    : <div className="dsh-task-panel"><h2>任务督导</h2>{content}</div>
 }
-
-function Panel({ sessionId }: PanelProps): ReactNode {
-  const [state, setState] = useState<PanelState | null>(null)
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const load = useCallback(async (signal: AbortSignal) => {
-    const request = await fetch(`${ENDPOINT}?sessionId=${encodeURIComponent(sessionId)}`, { signal, cache: 'no-store' })
-    const body = await request.json() as PanelState & { error?: string }
-    if (!request.ok) throw new Error(body.error ?? '无法读取督导状态')
-    setState({ task: body.task, live: body.live, armed: body.armed })
-    setError('')
-  }, [sessionId])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const refresh = () => { void load(controller.signal).catch(reason => {
-      if (!controller.signal.aborted) setError(String(reason))
-    }) }
-    setState(null)
-    refresh()
-    const timer = window.setInterval(refresh, 2000)
-    return () => { controller.abort(); window.clearInterval(timer) }
-  }, [load])
-
-  async function act(action: string): Promise<void> {
-    setBusy(true)
-    try {
-      const request = await fetch(`${ENDPOINT}?sessionId=${encodeURIComponent(sessionId)}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action }),
-      })
-      const body = await request.json() as PanelState & { error?: string }
-      if (!request.ok) throw new Error(body.error ?? '督导操作失败')
-      setState({ task: body.task, live: body.live, armed: body.armed })
-      setError('')
-    } catch (reason) {
-      setError(String(reason))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const task: TaskSnapshot | null = state === null ? null : state.task
-  const stage = task?.stages[task.stageIndex]
-  return <div className="dsh-task-panel" aria-live="polite">
-    <h2>任务督导</h2>
-    <div className="dsh-task-muted">独立规划、审查与续行</div>
-    {state === null ? <p className="dsh-task-muted">正在读取会话状态…</p>
-      : task === null ? <div className="dsh-task-card" style={{ marginTop: 16 }}>
-        当前会话没有督导任务。在输入框使用 <code>/task new &lt;目标&gt;</code> 创建。
-      </div> : <>
-        <div className="dsh-task-status"><span className="dsh-task-badge">{PHASE[task.phase]}</span>
-          <span className="dsh-task-muted">{task.enabled ? '督导开启' : '督导关闭'} · 第 {task.revision} 版</span></div>
-        <div className="dsh-task-card"><div className="dsh-task-objective">{task.objective}</div>
-          <div className="dsh-task-meta">计划第 {task.planVersion} 版 · 阶段 {Math.min(task.stageIndex + 1, task.stages.length)}/{task.stages.length}</div>
-          {(task.readOnlyTurnsBeforeWrite ?? 0) > 0 && <div className="dsh-task-meta">
-            写入门禁：批准后先完成 {task.readOnlyTurnsBeforeWrite} 个只读轮次；中断轮次不计入
-          </div>}</div>
-        {stage !== undefined && <><h3>当前阶段</h3><div className="dsh-task-card">{stage.title}</div></>}
-        {task.criteria.length > 0 && <><h3>验收标准</h3><div className="dsh-task-card"><ol className="dsh-task-list">
-          {task.criteria.map(item => <li key={item.id}>{item.text}</li>)}
-        </ol></div></>}
-        {task.lastReview !== null && <><h3>最近审查 · {VERDICT[task.lastReview.verdict]}</h3>
-          <div className="dsh-task-card"><div className="dsh-task-review">{task.lastReview.finding}</div>
-            <div className="dsh-task-meta">检查点 {task.lastReview.stageId} · 主会话截止 seq {task.lastReview.cutoff}
-              {task.lastReview.evidenceSeqs === undefined ? '' : ` · 证据 ${task.lastReview.evidenceSeqs.join(', ')}`}</div></div></>}
-        <div className="dsh-task-actions">{actions(task, state.armed).map(([action, label]) => <button key={action}
-          data-action={action} disabled={busy || !state.live} onClick={() => { void act(action) }}>{label}</button>)}</div>
-        {!state.live && <p className="dsh-task-muted">打开该会话后可使用控制按钮；恢复执行仍需手动操作。</p>}
-      </>}
-    {error && <div className="dsh-task-error" role="alert">{error}</div>}
-  </div>
-}
+function Panel(props: PanelProps): ReactNode { return <TaskPanel {...props} /> }
+function InlineTask(props: PanelProps): ReactNode { return <TaskPanel {...props} inline /> }
 
 /** Logged checkpoints stay visible when DSH folds the model's tool-heavy Turn. */
 function MilestoneCards({ turn }: TailProps): ReactNode {
@@ -163,6 +144,9 @@ function MilestoneCards({ turn }: TailProps): ReactNode {
 }
 
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
+    { name: 'conversation.input.dock', id: `${PANEL_ID}/current` }, InlineTask,
+  )))
   ctx.effect(() => ctx.uiConversation.events.register(milestoneDefinition), 'task-supervisor:milestones')
   ctx.effect(() => {
     const style = document.createElement('style')

@@ -9,8 +9,8 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 2
-export const READABLE_RECORD_VERSIONS = [1, 2]
+export const RECORD_VERSION = 3
+export const READABLE_RECORD_VERSIONS = [1, 2, 3]
 
 const criterionSchema = z.object({ id: z.string().min(1), text: z.string().min(1) }).strict()
 const stageSchema = z.object({
@@ -37,6 +37,7 @@ export const taskSchema = z.object({
   revision: z.number().int().positive(),
   objective: z.string().min(1),
   responseLanguage: z.string().min(1).optional(),
+  lastApproval: z.object({ planVersion: z.number().int().nonnegative(), userMessageSeq: z.number().int().nonnegative().nullable() }).strict().optional(),
   requirementsVersion: z.number().int().positive(),
   planVersion: z.number().int().nonnegative(),
   criteria: z.array(criterionSchema),
@@ -60,6 +61,7 @@ export type TaskCriterion = z.infer<typeof criterionSchema>
 export interface TaskProjection {
   current: TaskSnapshot | null
   failure: string | null
+  reviews: z.infer<typeof reviewSchema>[]
 }
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
@@ -71,9 +73,9 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 2,
-  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable() }),
-  init: (): TaskProjection => ({ current: null, failure: null }),
+  stateVersion: 3,
+  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema) }),
+  init: (): TaskProjection => ({ current: null, failure: null, reviews: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
     if (event.type !== 'extension/record' || event.data.namespace !== NAMESPACE) return state
     if (state.failure !== null) return state
@@ -92,7 +94,11 @@ export const taskProjection = {
         throw new Error('new task identity requires a terminal predecessor')
       }
       if (next.stageIndex > next.stages.length) throw new Error('stage index exceeds the plan')
-      return { current: next, failure: null }
+      const reviews = previous?.id === next.id ? state.reviews : []
+      const review = next.lastReview
+      const fresh = review !== null && !reviews.some(item => item.stageId === review.stageId
+        && item.cutoff === review.cutoff && item.reviewerSessionId === review.reviewerSessionId)
+      return { current: next, failure: null, reviews: fresh ? [...reviews, review].slice(-50) : reviews }
     } catch (error: unknown) {
       return { ...state, failure: `Supervisor record at seq ${event.seq}: ${String(error)}` }
     }
@@ -114,6 +120,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     revision: state.revision,
     objective: state.objective,
     ...state.responseLanguage === undefined ? {} : { responseLanguage: state.responseLanguage },
+    ...state.lastApproval === undefined ? {} : { lastApproval: { ...state.lastApproval } },
     requirementsVersion: state.requirementsVersion,
     planVersion: state.planVersion,
     criteria: state.criteria.map(item => ({ id: item.id, text: item.text })),
