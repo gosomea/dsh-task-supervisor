@@ -9,7 +9,7 @@ date: "2026-09-27"
 
 ## Summary
 
-This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. Batch one is implemented and validated with two real-model tasks; batches two and three now implement provenance, pageable evidence, observation, native image reads, DAGs, persistent consultation, and controlled delegation, with combined real-model acceptance in progress. See [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
+This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. Batch one is implemented and validated with two real-model tasks; batches two and three now implement provenance, pageable evidence, observation, native image reads, DAGs, persistent consultation, and controlled delegation, with [combined real-model and browser acceptance](v2-integrated-validation.md) completed for controlled small tasks. A full shrine rerun and formal long-horizon comparison remain pending. See [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
 
 ## Table of contents
 
@@ -125,6 +125,6 @@ Batch one used small interaction tasks. Develop batches two and three together i
 
 ## Dev Note
 
-The initial inspection only decompressed existing logs and read source and public documentation. It did not intervene in the shrine task, rerun its tests, or modify active artifacts. Source evidence is in `src/state.ts`, `src/index.ts`, `src/reviewer.ts`, `src/client/index.tsx`, and `src/client/milestones.ts`. Batch-one implementation and isolated verification are recorded in [the validation report](v2-batch1-validation.md); later-batch fields and interactions remain proposals.
+The initial inspection only decompressed existing logs and read source and public documentation. It did not intervene in the shrine task, rerun its tests, or modify active artifacts. Source evidence is in `src/state.ts`, `src/index.ts`, `src/reviewer.ts`, `src/client/index.tsx`, and `src/client/milestones.ts`. Batch-one implementation and isolated verification are recorded in [the validation report](v2-batch1-validation.md); batches two and three are implemented with [joint validation](v2-integrated-validation.md). Product extensions beyond the verified scope remain future work.
 
 [简体中文](supervisor-experience-v2.zh.md)

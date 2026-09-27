@@ -36,6 +36,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | --- | --- |
 | [Implementation status](docs/implementation.md) | Actual code, installation prerequisite, tests, and limits. |
 | [Supervisor interaction proposal](docs/supervisor-experience-v2.md) | Shrine Session findings, response language, task graph, decisions, and persistent consultation. |
+| [V2 integrated validation](docs/v2-integrated-validation.md) | Real-model checks of batches two and three, DAGs, persistent consultation, workers, and failure repairs. |
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |

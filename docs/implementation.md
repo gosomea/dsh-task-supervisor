@@ -2,6 +2,10 @@
 
 This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.
 
+## V2 integrated acceptance
+
+Core implementation of batches two and three is complete. All 52 kernel checks, both strict typechecks, isolated builds, and real-model integration regressions passed. Evidence covers DAG joins, persistent consultation and native compaction, interrupted-review recovery, default in-turn observation, native image reads, and two workers writing owned files before main-Agent integration. The [joint validation report](v2-integrated-validation.md) records first failures, repair commits, Session identities, and limits. A full shrine rerun and formal long-horizon evaluation remain pending, as does generic child-Agent catalog browsing.
+
 ## Native integration
 
 The Host entry point is [`src/index.ts`](../src/index.ts). It registers `/task`, task model tools, lifecycle listeners, a tool execution guard, and an optional Web route. The Web client is [`src/client/index.tsx`](../src/client/index.tsx): it mounts into DSH's right sidebar tab and reads or controls the bound task through Connection's authenticated `/api/task-supervisor` Fetch route. The client projects successful plan, stage-review, and completion-review tool results into native conversation turn tails. Plan, stage, and completion checkpoints render separate cards for the main Agent's submission and the Supervisor's independent review, with main Session event sequences and the reviewer Session ID. Each side's remaining content can expand separately. Cards remain visible when DSH folds execution details and read existing Session events without adding synthetic model replies. The route has no separate listening port and returns state derived from the Session. A closed Session can be read in bounded persistence pages; control actions require a live Agent.
@@ -34,7 +38,6 @@ The prototype holds one task per Session. It has no `/task plan` shortcut, five-
 ## V2 batch one: language and continuation context
 
 Task record version 2 adds optional `responseLanguage` and stage `description`; the reader retains version 1 support without rewriting logs. New tasks detect Chinese, English, Japanese, or Korean prose, or use the plugin's explicit `responseLanguage` locale; `fallbackLanguage` defaults to `zh-CN`. Model system guidance, continuations, and independent reviews receive the language policy. Continuations retain the full objective and current criteria while adding the current stage, accepted nodes, and a bounded latest-review summary; truncation points to `task_status` for full content. Chinese output was verified in the batch-one real-model run; other languages remain untested.
-
 
 ## V2 batch one: decisions and current-task surfaces
 
