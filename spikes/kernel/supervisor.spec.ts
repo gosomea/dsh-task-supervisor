@@ -888,7 +888,7 @@ it('keeps native consultation questions read-only, deduplicates explicit control
 })
 
 
-it.each(['complete', 'off'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
+it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)
   const bothEntered = Promise.withResolvers<void>(); const release = Promise.withResolvers<void>()
   const counts = new Map<string, number>()
@@ -903,6 +903,7 @@ it.each(['complete', 'off'])('runs disjoint native workers with file ownership a
         ? toolResponse('write', { file_path: 'b.txt', content: 'foreign overwrite' }, 'foreign')
         : step < (node === 'a' ? 2 : 1)
         ? toolResponse('write', { file_path: `${node}.txt`, content: node.toUpperCase() }, `write-${node}`)
+        : node === 'b' ? textResponse(mode === 'empty' ? '' : 'b.txt produced; needs main integration')
         : toolResponse('task_worker_done', { report: `${node}.txt produced; needs main integration` }, `done-${node}`)
       for (const chunk of chunks) yield chunk
     }
@@ -930,7 +931,13 @@ it.each(['complete', 'off'])('runs disjoint native workers with file ownership a
   expect((await delegate()).isError).toBe(true)
   const latest = taskOf(ctx, main)!
   appendTask(ctx, main, { ...latest, revision: latest.revision + 1, stages: latest.stages.map(stage => stage.id === 'b' ? { ...stage, writePaths: ['b.txt'] } : stage) })
-  const batch = delegate()
+  let batch: Promise<{ isError?: boolean }>
+  if (mode === 'empty') {
+    scripts.main = [toolResponse('task_delegate_nodes', { node_ids: ['a', 'b'] }, 'batch-in-turn'), textResponse('must not retry after pause')]
+    main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Execute approved nodes' }] }))
+    batch = main.whenIdle().then(() => ({ isError: main.session.snapshotEvents().some(e => e.type === 'tool/result'
+      && e.data.message.source.callId === 'batch-in-turn' && e.data.message.isError) }))
+  } else batch = delegate()
   await Promise.race([bothEntered.promise, batch.then(result => { throw new Error(`batch ended before both workers entered: ${JSON.stringify(result)}`) })])
   expect(taskOf(ctx, main)?.nodeRuns?.filter(run => run.status === 'running')).toHaveLength(2)
   if (mode === 'off') await ctx.commands.execute(main, '/task off', [], signal)
@@ -941,6 +948,13 @@ it.each(['complete', 'off'])('runs disjoint native workers with file ownership a
     expect(main.inbox.nextTurn).toHaveLength(0)
     await expect(readFile(join(root, 'a.txt'))).rejects.toThrow()
     await expect(readFile(join(root, 'b.txt'))).rejects.toThrow()
+    return
+  }
+  if (mode === 'empty') {
+    expect((await batch).isError).toBe(true)
+    expect(taskOf(ctx, main)?.phase).toBe('paused')
+    expect(main.inbox.nextTurn).toHaveLength(0)
+    expect(scripts.main).toHaveLength(1)
     return
   }
   expect((await batch).isError).toBe(false)

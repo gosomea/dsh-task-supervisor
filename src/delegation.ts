@@ -6,7 +6,7 @@ import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
 import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import { createUserMessage, type ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
-import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
+import { childSessionMeta, finalAssistantOutput } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { beginNode, readyNodes, runsOf, withRuns } from './graph.ts'
 import { appendTask, taskOf } from './state.ts'
@@ -126,7 +126,11 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
           await handle.agent.whenIdle()
           signal.throwIfAborted()
           if (!await ctx.sessions.flush(handle.agent.session)) throw new Error('worker evidence is not durable')
-          if (report === null) throw new Error(`node ${node.stage.id} ended without a worker report`)
+          const events = handle.agent.session.snapshotEvents()
+          const end = [...events].reverse().find(event => event.type === 'turn/end')
+          if (end?.type !== 'turn/end' || end.data.reason.kind !== 'completed') throw new Error(`node ${node.stage.id} did not complete its worker turn`)
+          report ??= finalAssistantOutput(events)?.filter(block => block.type === 'text').map(block => block.text).join('\n') ?? null
+          if (!report?.trim()) throw new Error(`node ${node.stage.id} ended without a worker report`)
           return { nodeId: node.stage.id, attempt: run.attempt, sessionId: node.sessionId, cutoff: handle.agent.session.seq - 1, report }
         }).map(promise => promise.catch(error => { batch.abort.abort(error); throw error })))
         const failure = outcomes.find(outcome => outcome.status === 'rejected')
@@ -149,6 +153,7 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
           appendTask(ctx, main, withRuns({ ...latest, revision: latest.revision + 1, phase: 'paused' }, runsOf(latest).map(run =>
             args.node_ids.includes(run.id) ? { ...run, status: 'awaiting-user' } : run)))
           await ctx.sessions.flush(main.session)
+          exec.concludeTurn()
         }
         throw error
       } finally {

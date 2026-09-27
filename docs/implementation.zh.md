@@ -4,7 +4,7 @@
 
 ## 原生集成
 
-宿主入口是 [`src/index.ts`](../src/index.ts)：注册 `/task`、五个模型工具、生命周期监听器、工具执行保护和可选的 Web 路由。Web 客户端位于 [`src/client/index.tsx`](../src/client/index.tsx)，挂载到 DSH 右侧边栏标签，通过 Connection 已认证的 `/api/task-supervisor` Fetch 路由读取和控制绑定任务。客户端把计划提交、阶段审查和完成审查的成功工具结果投影到原生对话轮次尾部。计划、阶段和完成检查点分成主 Agent 提交与 Supervisor 独立审查两张卡，分别注明主 Session 事件序号、审查 Session 身份，后续内容分别展开。即使 DSH 折叠执行过程，卡片仍可见。卡片只读取已有 Session 事件，不写入新的模型回复。该路由不另开监听端口，返回由 Session 派生的状态。已关闭的 Session 可用有界的持久层分页读取；控制操作需要存活的 Agent。
+宿主入口是 [`src/index.ts`](../src/index.ts)：注册 `/task`、任务模型工具、生命周期监听器、工具执行保护和可选的 Web 路由。Web 客户端位于 [`src/client/index.tsx`](../src/client/index.tsx)，挂载到 DSH 右侧边栏标签，通过 Connection 已认证的 `/api/task-supervisor` Fetch 路由读取和控制绑定任务。客户端把计划提交、阶段审查和完成审查的成功工具结果投影到原生对话轮次尾部。计划、阶段和完成检查点分成主 Agent 提交与 Supervisor 独立审查两张卡，分别注明主 Session 事件序号、审查 Session 身份，后续内容分别展开。即使 DSH 折叠执行过程，卡片仍可见。卡片只读取已有 Session 事件，不写入新的模型回复。该路由不另开监听端口，返回由 Session 派生的状态。已关闭的 Session 可用有界的持久层分页读取；控制操作需要存活的 Agent。
 
 任务记录作为 `extension/record` 事件保存在主 DSH Session。[`src/state.ts`](../src/state.ts)校验并折叠每次转换的完整状态。审查者使用自己的原生子 Session；主记录保存审查 Session ID、实际模型、证据 seq 和固定的主日志截止点。审查者持有绑定主 Session 的 `read_task_evidence`：每页最多 30 个事件，正文限长，并脱敏常见密钥模式；需要核查时还能用 `read_task_call` 按事件序号读取单个工具参数。工具保护拒绝其他审查工具。主 Session 文本是证据，不能成为审查者的指令。
 
@@ -99,3 +99,7 @@
 ## Web 作用域集成修正
 
 真实 Web preset 把文件工具注册在主 Agent 作用域；仅读取全局工具目录导致 worker 没有文件工具。委派现从主 Agent 的原生工具视图显式注册 read/glob/grep/write/edit，保留工具执行和文件写入边界。内核测试改为同样的作用域布局，防止根作用域夹具掩盖问题。视觉读取也补齐 Cordis `llm` 服务注入；此前真实审查遇到服务缺失后正确暂停，没有凭主 Agent 描述放行。
+
+## Worker 正常结束与失败收敛
+
+原生 worker 可以通过 `task_worker_done` 或正常结束轮次后的最终文本提交报告；后者使用 DSH 的 `finalAssistantOutput` 规则，只接收正常完成且非空的文本，仍需主 Agent 集成和独立审查。异常/空报告进入暂停并结束当前主模型轮次，不在已暂停状态继续重试。回归包含父作用域文件工具、正常文本报告、空报告及暂停后不再产生模型步骤。
