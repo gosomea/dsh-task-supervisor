@@ -9,10 +9,17 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 3
-export const READABLE_RECORD_VERSIONS = [1, 2, 3]
+export const RECORD_VERSION = 4
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4]
 
-const criterionSchema = z.object({ id: z.string().min(1), text: z.string().min(1) }).strict()
+export const provenanceSchema = z.object({
+  kind: z.enum(['user', 'project', 'implementation']),
+  reference: z.string().min(1),
+  sourceSeq: z.number().int().nonnegative().optional(),
+}).strict()
+export const criterionSchema = z.object({
+  id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(),
+}).strict()
 const stageSchema = z.object({
   id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
 }).strict()
@@ -73,7 +80,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 3,
+  stateVersion: 4,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema) }),
   init: (): TaskProjection => ({ current: null, failure: null, reviews: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
@@ -123,7 +130,9 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     ...state.lastApproval === undefined ? {} : { lastApproval: { ...state.lastApproval } },
     requirementsVersion: state.requirementsVersion,
     planVersion: state.planVersion,
-    criteria: state.criteria.map(item => ({ id: item.id, text: item.text })),
+    criteria: state.criteria.map(item => ({ id: item.id, text: item.text,
+      ...item.provenance === undefined ? {} : { provenance: { kind: item.provenance.kind, reference: item.provenance.reference,
+        ...item.provenance.sourceSeq === undefined ? {} : { sourceSeq: item.provenance.sourceSeq } } } })),
     stages: state.stages.map(item => ({ id: item.id, title: item.title, ...item.description === undefined ? {} : { description: item.description }, criterionIds: [...item.criterionIds] })),
     stageIndex: state.stageIndex,
     roundsSinceReview: state.roundsSinceReview,

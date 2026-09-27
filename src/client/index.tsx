@@ -55,6 +55,8 @@ const PHASE: Record<TaskSnapshot['phase'], string> = {
 }
 const VERDICT = { pass: '通过', revise: '需要修订', 'needs-user': '等待用户决策' }
 
+const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementation: '实现选择' }
+
 const ACTION_LABEL: Record<string, string> = { approve: '批准计划', pause: '暂停', resume: '恢复任务',
   off: '关闭督导', on: '重新启用督导', clear: '清除任务' }
 
@@ -89,7 +91,9 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
           <strong>{item.id} · {item.title}</strong></button>
       </li>)}</ol>
       {stage && <section className="dsh-task-card"><h3>{stage.id} · 节点详情</h3><p>{stage.description ?? stage.title}</p>
-        <ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}</li>)}</ul></section>}
+        <ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
+          ? `${SOURCE_LABEL[item.provenance.kind]} · ${item.provenance.reference === 'objective' ? '任务目标' : item.provenance.reference}${item.provenance.sourceSeq === undefined ? '' : ` · seq ${item.provenance.sourceSeq}`}`
+          : '历史计划 · 来源未标注'}</small></li>)}</ul></section>}
       {task.lastReview && <section className="dsh-task-card"><h3>Supervisor · 最近独立审查</h3>
         <strong>{task.lastReview.stageId} · {VERDICT[task.lastReview.verdict]}</strong>
         <p className="dsh-task-review">{task.lastReview.finding.slice(0, 240)}{task.lastReview.finding.length > 240 ? '…' : ''}</p>

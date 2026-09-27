@@ -44,4 +44,10 @@ The main conversation uses the native `conversation.input.dock` slot for a colla
 
 Batch one has 34 passing tests, including exactly one continuation from approval inside a model turn, direct-user checks, stale control rejection, duplicate action coalescing, and polling convergence across remounts. A real CodeBuddy task verified Chinese plans and independent findings, chat approval, inline pause/resume with the sidebar closed, both stages, and final completion; an external rerun passed five Node tests. Raw model reasoning can still be English; the plugin cannot guarantee its language. See [batch-one validation](v2-batch1-validation.md) for environment and evidence.
 
+## V2 batch two: provenance and pageable evidence
+
+New plan criteria must identify a user requirement, project constraint, or implementation choice with a checkable source. Conversation and sidebar show the same provenance labels. Record version 4 reads versions 1–3; missing legacy provenance stays unknown rather than becoming a user requirement.
+
+Review summaries expose truncation and continuation offsets. `read_task_text`, the extended `read_task_call`, and `read_task_context` retrieve event text and full task context inside the fixed cutoff. Independent review checks whether sources support criteria and excludes unrelated fixtures; structural origin validation does not replace semantic judgment. Long-turn observation and image reads remain unimplemented; see [provenance and evidence validation](v2-evidence-validation.md).
+
 [简体中文](implementation.zh.md)

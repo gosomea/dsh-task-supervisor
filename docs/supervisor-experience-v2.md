@@ -9,7 +9,7 @@ date: "2026-09-27"
 
 ## Summary
 
-This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. Batch one is implemented and validated with two real-model tasks; batches two and three remain designs. See [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
+This proposal uses the shrine run to refine interaction and control. Users should see work, reviews, and pending decisions in the main Session, while the supervisor can detect drift during long turns. Batch one is implemented and validated with two real-model tasks; batch two has provenance and pageable evidence, while observation, visual reads, and batch three remain designs. See [implementation status](implementation.md). Retain authoritative main Session records, one continuation controller, and independent read-only reviews; add persistent consultation and actual task dependencies.
 
 ## Table of contents
 

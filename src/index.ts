@@ -11,10 +11,11 @@ import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
+import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
-  NAMESPACE, READABLE_RECORD_VERSIONS, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
+  NAMESPACE, READABLE_RECORD_VERSIONS, criterionSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
   type TaskSnapshot,
 } from './state.ts'
 
@@ -48,7 +49,7 @@ interface Runtime {
 }
 
 const planInput = z.object({
-  criteria: z.array(z.object({ id: z.string().min(1), text: z.string().min(1) }).strict()).min(1),
+  criteria: z.array(criterionSchema).min(1),
   stages: z.array(z.object({
     id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
   }).strict()).min(1),
@@ -388,7 +389,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           }
           const next = { ...newTask(input.slice(4)), responseLanguage: resolveLanguage(input.slice(4), config.responseLanguage, config.fallbackLanguage) }
           await commitAndWake(agent, task, next,
-            `Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Do not modify files before approval.`)
+            `Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.`)
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')
@@ -516,6 +517,11 @@ export function apply(ctx: Context, config: Config = {}): void {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, text: { type: 'string', required: true },
+          provenance: { type: 'object', required: true, additionalProperties: false, properties: {
+            kind: { type: 'string', required: true, enum: ['user', 'project', 'implementation'] },
+            reference: { type: 'string', required: true, description: 'Use objective for the current user objective; otherwise quote the user instruction, name the applicable project rule, or explain why this implementation choice is necessary.' },
+            sourceSeq: { type: 'integer', description: 'Direct user-message seq for user additions; successful project-file read result seq for project rules. Omit for objective and implementation choices.' },
+          } },
         },
       } },
       stages: { type: 'array', required: true, items: {
@@ -537,6 +543,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const parsed = planInput.parse(args)
       validatePlan(parsed.criteria, parsed.stages)
+      validateProvenance(parsed.criteria, agent.session.snapshotEvents())
       const readOnlyTurnsBeforeWrite = parsed.read_only_turns_before_write ?? 0
       if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
         throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')

@@ -13,7 +13,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import * as Supervisor from '../../src/index.ts'
-import { appendTask, taskOf } from '../../src/state.ts'
+import { reviewStage } from '../../src/reviewer.ts'
+import { validateProvenance } from '../../src/provenance.ts'
+import { appendTask, taskOf, newTask } from '../../src/state.ts'
 
 class ScriptedAdapter extends LlmAdapter {
   requests = 0
@@ -129,7 +131,7 @@ it('keeps one task in the native Session and resumes only after a human command'
   const plan = await first.tools.execute({
     callId: ToolCallId('submit-plan'), name: 'task_submit_plan', agent, signal,
     arguments: {
-      criteria: [{ id: 'c1', text: 'Import is persisted' }],
+      criteria: [{ id: 'c1', text: 'Import is persisted', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement import', criterionIds: ['c1'] }],
     },
   })
@@ -169,7 +171,7 @@ it('replaces an unapproved plan before the human approves it', async () => {
   await agent.whenIdle()
   const submit = (callId: string, stages: { id: string; title: string; criterionIds: string[] }[]) =>
     ctx.tools.execute({ callId: ToolCallId(callId), name: 'task_submit_plan', agent, signal,
-      arguments: { criteria: [{ id: 'c1', text: 'Tests pass' }], stages } })
+      arguments: { criteria: [{ id: 'c1', text: 'Tests pass', provenance: { kind: 'user', reference: 'objective' } }], stages } })
   expect((await submit('first-plan', [
     { id: 's1', title: 'Change code', criterionIds: ['c1'] },
     { id: 's2', title: 'Run tests', criterionIds: ['c1'] },
@@ -198,7 +200,7 @@ it('accepts a goal edit while an approved model turn is still running', async ()
   expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('live-edit-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'count report exists' }],
+    arguments: { criteria: [{ id: 'c1', text: 'count report exists', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
   adapter.pauseNext = true
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -227,7 +229,7 @@ it('invalidates an in-flight stage review when the user edits the objective', as
   expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('review-edit-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'count report exists' }],
+    arguments: { criteria: [{ id: 'c1', text: 'count report exists', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
   adapter.pauseNext = true
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -264,18 +266,18 @@ it('holds a plan with omitted objective constraints until independent coverage r
     '/task new Read input.csv in one completed read-only turn; write report.json in a later turn', [], signal))?.result.kind)
     .toBe('success')
   await agent.whenIdle()
-  const submit = (id: string, criteria: { id: string; text: string }[]) => ctx.tools.execute({
+  const submit = (id: string, criteria: import('../../src/state.ts').TaskCriterion[]) => ctx.tools.execute({
     callId: ToolCallId(id), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria, stages: [{ id: 's1', title: 'Read then write', criterionIds: criteria.map(c => c.id) }] },
+    arguments: { criteria: criteria.map(c => ({ ...c, provenance: { kind: 'user', reference: 'objective' } })), stages: [{ id: 's1', title: 'Read then write', criterionIds: criteria.map(c => c.id) }] },
   })
-  const rejected = await submit('missing-order', [{ id: 'c1', text: 'report.json exists' }])
+  const rejected = await submit('missing-order', [{ id: 'c1', text: 'report.json exists', provenance: { kind: 'user', reference: 'objective' } }])
   expect(rejected.isError).toBe(false)
   expect(rejected.content.some(block => block.type === 'text' && block.text.includes('"verdict":"revise"'))).toBe(true)
   expect(taskOf(ctx, agent)?.phase).toBe('planning')
   expect(taskOf(ctx, agent)?.planVersion).toBe(0)
   const accepted = await submit('with-order', [
-    { id: 'c1', text: 'report.json exists' },
-    { id: 'c2', text: 'A completed read-only turn precedes the report write turn' },
+    { id: 'c1', text: 'report.json exists', provenance: { kind: 'user', reference: 'objective' } },
+    { id: 'c2', text: 'A completed read-only turn precedes the report write turn', provenance: { kind: 'user', reference: 'objective' } },
   ])
   expect(accepted.isError).toBe(false)
   expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
@@ -305,7 +307,7 @@ it('blocks writes until a completed post-approval read-only model turn', async (
     .toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('gate-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Read-only turn precedes write' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Read-only turn precedes write', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Read then write', criterionIds: ['c1'] }],
       read_only_turns_before_write: 1 } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -337,7 +339,7 @@ it('automatically continues approved work and requests a progress decision at th
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('drive-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('paused'), { timeout: 5000 })
@@ -368,7 +370,7 @@ it('continues after a passing progress review and records both reviewer decision
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('progress-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('paused'), { timeout: 5000 })
@@ -397,7 +399,7 @@ it('requires manual recovery of an interrupted review and retains its evidence',
   expect((await first.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await first.tools.execute({ callId: ToolCallId('interrupted-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await first.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
@@ -434,7 +436,7 @@ it('turns the Supervisor off without discarding human input or silently rearming
   expect((await ctx.commands.execute(agent, '/task new Build endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('off-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Endpoint works' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Endpoint works', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
@@ -480,7 +482,7 @@ it('forked active tasks retain history but do not inherit execution authority', 
   expect((await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('fork-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Fixture inspected' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Fixture inspected', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Inspect', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
@@ -518,7 +520,7 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   expect((await ctx.tools.execute({ callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports' }],
+    arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
@@ -569,7 +571,7 @@ it('validates direct chat approval and rejects injected or stale authorization',
   await ctx.commands.execute(agent, '/task new 制作一个场景', [], signal)
   await agent.whenIdle()
   await ctx.tools.execute({ callId: ToolCallId('chat-plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'C1', text: '场景可运行' }],
+    arguments: { criteria: [{ id: 'C1', text: '场景可运行', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 'S1', title: '实现场景', description: '构建并验证', criterionIds: ['C1'] }] } })
   const task = taskOf(ctx, agent)!
   const approve = (seq: number, version = task.planVersion) => ctx.tools.execute({
@@ -636,7 +638,7 @@ it('hands off exactly one continuation after task_approve runs inside the model 
   await ctx.commands.execute(agent, '/task new 创建报告', [], signal)
   await agent.whenIdle()
   await ctx.tools.execute({ callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
-    arguments: { criteria: [{ id: 'C1', text: '报告可读' }],
+    arguments: { criteria: [{ id: 'C1', text: '报告可读', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 'S1', title: '创建报告', criterionIds: ['C1'] }] } })
   const task = taskOf(ctx, agent)!
   approval = () => ({ task_id: task.id, plan_version: task.planVersion,
@@ -651,4 +653,46 @@ it('hands off exactly one continuation after task_approve runs inside the model 
     && event.data.message.source.callId === ToolCallId('live-approval'))
   expect(result).toBeDefined()
   expect(agent.inbox.nextTurn).toHaveLength(0)
+})
+
+it('pages full review evidence within its cutoff and rejects injected requirement sources', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-evidence-'))
+  roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = { main: [
+    toolResponse('read', { path: 'AGENTS.md' }, 'long-read'), textResponse('inspected'),
+  ] }
+  const ctx = await host(root, new ScriptedAdapter(scripts), false)
+  ctx.tools.register(defineContentToolFixture({ name: 'read', description: 'read fixture', parameters: { path: { type: 'string', required: true } },
+    execute: async () => [{ type: 'text', text: 'OK\n'.repeat(700) + 'FAIL: required check did not pass' }] }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('evidence-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect project rules' }] }))
+  await agent.whenIdle()
+  const events = agent.session.snapshotEvents()
+  const result = events.find(event => event.type === 'tool/result')!
+  const user = events.find(event => event.type === 'user/message' && event.data.source.kind === 'user')!
+  expect(() => validateProvenance([{ id: 'c1', text: 'a project rule', provenance: { kind: 'project', reference: 'AGENTS.md', sourceSeq: result.seq } }], events)).not.toThrow()
+  expect(() => validateProvenance([{ id: 'c1', text: 'a user rule', provenance: { kind: 'user', reference: 'read result', sourceSeq: result.seq } }], events)).toThrow('no valid user source')
+  expect(() => validateProvenance([{ id: 'c1', text: 'a user rule', provenance: { kind: 'user', reference: 'Inspect project rules', sourceSeq: user.seq } }], events)).not.toThrow()
+  scripts.reviewer = [
+    toolResponse('read_task_text', { seq: result.seq }, 'before-page'),
+    toolResponse('read_task_evidence', { from_seq: result.seq, limit: 1 }, 'first-page'),
+    toolResponse('read_task_text', { seq: result.seq, offset: 700 }, 'tail'),
+    toolResponse('read_task_evidence', { from_seq: 999999, limit: 30 }, 'future'),
+    toolResponse('read_task_text', { seq: 999999 }, 'future-text'),
+    toolResponse('read_task_context', { field: 'objective', offset: 6000 }, 'context-tail'),
+    toolResponse('task_review_decision', { verdict: 'revise', finding: 'Failure found in the output tail', evidence_seqs: [result.seq] }, 'decision'),
+  ]
+  const decision = await reviewStage(ctx, agent, newTask('x'.repeat(6500) + 'Hard constraint at the end'), 's1', 'claimed success', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' })
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const outcomes = (await reader.read()).events.filter(event => event.type === 'tool/result')
+    const output = (id: string) => outcomes.find(event => event.data.message.source.callId === id)!.data.message
+    expect(output('before-page').isError).toBe(true)
+    expect(JSON.stringify(output('first-page').content)).toContain('nextOffset')
+    expect(JSON.stringify(output('tail').content)).toContain('FAIL: required check did not pass')
+    expect(JSON.stringify(output('future').content)).toContain('\\"events\\":[]')
+    expect(output('future-text').isError).toBe(true)
+    expect(JSON.stringify(output('context-tail').content)).toContain('Hard constraint at the end')
+  } finally { await reader.close() }
 })
