@@ -11,6 +11,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { languagePolicy } from './task-context.ts'
 import { NAMESPACE, taskSchema, type TaskSnapshot } from './state.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -215,6 +216,7 @@ export async function reviewStage(
     handle.agent.followup(createUserMessage({
       source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
       content: [{ type: 'text', text: [
+        languagePolicy(task),
         reviewKind === 'plan'
           ? 'Check the proposed plan before it can be approved or executed. Enumerate every explicit objective requirement and constraint, then map each to acceptance criteria and ordered stages. Check that each criterion is internally consistent and matches the objective exactly, including counts, named artifacts, and the subject of every ordering relation. When the objective says run X, then run Y in a later tool call, the plan must unambiguously require two distinct calls with Y after X; a criterion that says a later call runs X and Y is insufficient. Check causal order as well as word order: if running X produces the final artifact, the plan must not require X to run after that final artifact is written. A stage title alone does not cover an omitted acceptance criterion. Revise if any requirement is missing, ambiguous, contradictory, impossible, or weakened.'
           : reviewKind === 'completion'

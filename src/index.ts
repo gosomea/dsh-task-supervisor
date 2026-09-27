@@ -8,15 +8,17 @@ import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { z } from 'zod'
+import type {} from '@deepseek-ai/dsh-system-prompt'
+import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
-  NAMESPACE, RECORD_VERSION, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
+  NAMESPACE, READABLE_RECORD_VERSIONS, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
   type TaskSnapshot,
 } from './state.ts'
 
 export const name = 'task-supervisor'
-export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools']
+export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt']
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -30,6 +32,8 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Read tools available before the first plan approval. */
 export interface Config {
+  responseLanguage?: string
+  fallbackLanguage?: string
   planningReadTools?: string[]
   reviewerModel?: ReviewerModel
   planCoverageReview?: boolean
@@ -45,7 +49,7 @@ interface Runtime {
 const planInput = z.object({
   criteria: z.array(z.object({ id: z.string().min(1), text: z.string().min(1) }).strict()).min(1),
   stages: z.array(z.object({
-    id: z.string().min(1), title: z.string().min(1), criterionIds: z.array(z.string().min(1)).min(1),
+    id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
   }).strict()).min(1),
   read_only_turns_before_write: z.number().int().min(0).max(10).optional(),
 }).strict()
@@ -70,13 +74,14 @@ function reply(title: string, task: TaskSnapshot | null, armed: boolean): Comman
 
 function inputFor(task: TaskSnapshot, instruction: string) {
   return createUserMessage({
-    content: [{ type: 'text', text: instruction }],
+    content: [{ type: 'text', text: continuationContext(task, instruction) }],
     source: { kind: 'task-supervisor', taskId: task.id, revision: task.revision },
   })
 }
 
 /** Register one independently owned workflow on public DSH seams. */
 export function apply(ctx: Context, config: Config = {}): void {
+  resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
   const planningReadTools = config.planningReadTools ?? []
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
@@ -199,8 +204,15 @@ export function apply(ctx: Context, config: Config = {}): void {
     })
   }
 
-  ctx.agents.registerSessionControlReader(NAMESPACE, [RECORD_VERSION])
+  ctx.agents.registerSessionControlReader(NAMESPACE, READABLE_RECORD_VERSIONS)
   ctx.sessionProjections.register(taskProjection)
+  ctx.systemPrompt.section({ name: 'task-supervisor:language', order: 2450, interpolate: false,
+    text: ({ agent }) => {
+      if (agent === undefined) return ''
+      const task = taskOf(ctx, agent)
+      return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task)
+    },
+  })
   installPanelApi(ctx, agent => runtime(agent).armed)
   ctx.effect(() => () => {
     disposed = true
@@ -315,7 +327,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           roundsSinceReview: latest.roundsSinceReview + 1 }
         await commitAndWake(agent, latest, next,
           executionPrompt(agent, next,
-            `Continue the approved task: ${next.objective}. Current stage: ${next.stages[next.stageIndex]?.id}. `
+            'Continue the current approved stage. '
             + 'Report stage evidence with task_report_stage, or request completion after every stage passes.'))
       } catch (error: unknown) {
         runtime(agent).armed = false
@@ -364,9 +376,9 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (task !== null && task.phase !== 'complete' && task.phase !== 'cleared') {
             throw new Error('clear or finish the current task first')
           }
-          const next = newTask(input.slice(4))
+          const next = { ...newTask(input.slice(4)), responseLanguage: resolveLanguage(input.slice(4), config.responseLanguage, config.fallbackLanguage) }
           await commitAndWake(agent, task, next,
-            `Plan this objective: ${next.objective}\nInspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Do not modify files before approval.`)
+            `Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Do not modify files before approval.`)
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')
@@ -377,7 +389,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             readOnlyGateStartSeq: agent.session.seq }
           await commitAndWake(agent, task, next,
             executionPrompt(agent, next,
-              `Execute approved stage ${next.stages[next.stageIndex]?.id}. Objective: ${next.objective}. Report stage evidence using task_report_stage.`))
+              'Execute the current approved stage. Report stage evidence using task_report_stage.'))
           return reply('Plan approved', next, life.armed)
         }
         if (input === 'pause' || input === 'off' || input === 'clear') {
@@ -417,7 +429,7 @@ export function apply(ctx: Context, config: Config = {}): void {
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
               : next.phase === 'planning' ? `Resume planning: ${next.objective}. Submit the plan with task_submit_plan.`
                 : executionPrompt(agent, next,
-                  `Resume the approved task: ${next.objective}. Check the current workspace before repeating any uncertain effects.`))
+                  'Resume the approved task. Check the current workspace before repeating any uncertain effects.'))
           return reply('Task resumed', next, true)
         }
         if (input.startsWith('edit ')) {
@@ -473,6 +485,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       stages: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, title: { type: 'string', required: true },
+          description: { type: 'string', description: 'Implementation scope, deliverables, and validation for this stage.' },
           criterionIds: { type: 'array', required: true, items: { type: 'string' } },
         },
       } },

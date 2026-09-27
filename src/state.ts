@@ -9,11 +9,12 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 1
+export const RECORD_VERSION = 2
+export const READABLE_RECORD_VERSIONS = [1, 2]
 
 const criterionSchema = z.object({ id: z.string().min(1), text: z.string().min(1) }).strict()
 const stageSchema = z.object({
-  id: z.string().min(1), title: z.string().min(1), criterionIds: z.array(z.string().min(1)).min(1),
+  id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
 }).strict()
 const reviewSchema = z.object({
   stageId: z.string().min(1),
@@ -35,6 +36,7 @@ export const taskSchema = z.object({
   id: z.string().uuid(),
   revision: z.number().int().positive(),
   objective: z.string().min(1),
+  responseLanguage: z.string().min(1).optional(),
   requirementsVersion: z.number().int().positive(),
   planVersion: z.number().int().nonnegative(),
   criteria: z.array(criterionSchema),
@@ -69,14 +71,14 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 1,
+  stateVersion: 2,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable() }),
   init: (): TaskProjection => ({ current: null, failure: null }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
     if (event.type !== 'extension/record' || event.data.namespace !== NAMESPACE) return state
     if (state.failure !== null) return state
     try {
-      if (event.data.schemaVersion !== RECORD_VERSION || event.data.kind !== 'state') {
+      if (!READABLE_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'state') {
         throw new Error('unsupported Supervisor record')
       }
       const next = taskSchema.parse(event.data.payload)
@@ -111,10 +113,11 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     id: state.id,
     revision: state.revision,
     objective: state.objective,
+    ...state.responseLanguage === undefined ? {} : { responseLanguage: state.responseLanguage },
     requirementsVersion: state.requirementsVersion,
     planVersion: state.planVersion,
     criteria: state.criteria.map(item => ({ id: item.id, text: item.text })),
-    stages: state.stages.map(item => ({ id: item.id, title: item.title, criterionIds: [...item.criterionIds] })),
+    stages: state.stages.map(item => ({ id: item.id, title: item.title, ...item.description === undefined ? {} : { description: item.description }, criterionIds: [...item.criterionIds] })),
     stageIndex: state.stageIndex,
     roundsSinceReview: state.roundsSinceReview,
     approvedPlanVersion: state.approvedPlanVersion,

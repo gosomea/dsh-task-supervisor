@@ -31,4 +31,9 @@ State and queued Supervisor messages are flushed before waking the Agent. On res
 
 The prototype holds one task per Session. It has no `/task plan` shortcut, five-task queue, complete product-level fork protocol, configurable user-decision timeout, or built-in executable artifact acceptance. It has no measured long-horizon advantage over Goal, Plan, or Team. A reviewer can cite Session evidence and judge completion, but its model decision is not independent benchmark scoring. A real run showed that stronger reviewer prompts alone were insufficient: the reviewer first rejected a same-turn read and write, then accepted a later redo as if it repaired the historical violation. The current controller gate covers plans that explicitly declare a completed read-only-turn-before-write rule. Other irreversible constraints still lack a general deterministic representation and enforcement. Cancellation during an in-flight remote request, Web controls across every Session lifecycle, and a formal held-out long-task set also remain unverified. The isolated Host seam is not yet a public part of standard DSH.
 
+## V2 batch one: language and continuation context
+
+Task record version 2 adds optional `responseLanguage` and stage `description`; the reader retains version 1 support without rewriting logs. New tasks detect Chinese, English, Japanese, or Korean prose, or use the plugin's explicit `responseLanguage` locale; `fallbackLanguage` defaults to `zh-CN`. Model system guidance, continuations, and independent reviews receive the language policy. Continuations retain the full objective and current criteria while adding the current stage, accepted nodes, and a bounded latest-review summary; truncation points to `task_status` for full content. Real-model language compliance still needs acceptance.
+
+
 [简体中文](implementation.zh.md)
