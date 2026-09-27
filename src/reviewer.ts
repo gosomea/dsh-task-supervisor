@@ -217,7 +217,7 @@ export async function reviewStage(
         description: 'Submit one evidence-linked review. For progress checks, pass means continue the current stage.',
         parameters: {
           verdict: { type: 'string', required: true, enum: ['pass', 'revise', 'needs-user'] },
-          finding: { type: 'string', required: true },
+          finding: { type: 'string', required: true, description: 'Start with a short, human-readable conclusion title on its own line (about 12 Chinese characters or 6 English words). Then explain the evidence and any required changes. Keep protocol IDs and log details out of the title.' },
           evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } },
         },
         output: {

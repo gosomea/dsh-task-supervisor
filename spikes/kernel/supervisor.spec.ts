@@ -984,3 +984,54 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
   expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'a')?.status).toBe('passed')
   expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'join')?.status).toBe('pending')
 })
+
+it('keeps the supervised DAG authoritative without disabling ordinary-session todos', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-todo-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('todo-ownership'), agentOptions: { provider: 'scripted', model: 'main' } })
+  let calls = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'todo_write', description: 'native checklist fixture', parameters: {},
+    execute: async () => { calls++; return [{ type: 'text', text: 'updated' }] } }))
+  const run = () => ctx.tools.execute({ agent, name: 'todo_write', callId: ToolCallId(`todo-${calls}`), arguments: {}, signal: new AbortController().signal })
+  expect((await run()).isError).toBe(false)
+  appendTask(ctx, agent, { ...newTask('Implement a supervised feature'), phase: 'active' })
+  expect((await run()).isError).toBe(true)
+  expect(calls).toBe(1)
+  const task = taskOf(ctx, agent)!
+  appendTask(ctx, agent, { ...task, revision: task.revision + 1, phase: 'cleared' })
+  expect((await run()).isError).toBe(false)
+  expect(calls).toBe(2)
+})
+
+it.each(['text', 'unexpected-tool'])('preserves one native answer after a checkpoint without further execution: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-answer-')); roots.push(root)
+  const scripts = { main: [toolResponse('task_submit_plan', {
+    criteria: [{ id: 'c1', text: 'Create one file', provenance: { kind: 'user', reference: 'objective' } }],
+    stages: [{ id: 's1', title: '创建文件', criterionIds: ['c1'] }],
+  }, 'submit'), mode === 'text' ? textResponse('## 计划已就绪\n请批准后开始。') : toolResponse('unsafe_write', {}, 'must-not-write'),
+  textResponse('must not consume a third step')] }
+  const requests: GenerateOptions[] = []
+  class AnswerAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions) { requests.push(options); yield* super.stream(options) }
+  }
+  const ctx = await host(root, new AnswerAdapter(scripts))
+  let writes = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'unsafe_write', description: 'must not run', parameters: {},
+    execute: async () => { writes++; return [{ type: 'text', text: 'write' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('native-answer'), agentOptions: { provider: 'scripted', model: 'main' } })
+  appendTask(ctx, agent, newTask('Create one file'))
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '先制定计划' }] }))
+  await agent.whenIdle()
+  expect(requests).toHaveLength(2)
+  expect(requests[1]?.tools ?? []).toHaveLength(0)
+  expect(writes).toBe(0)
+  expect(scripts.main).toHaveLength(1)
+  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  if (mode === 'text') expect(agent.session.snapshotEvents().some(e => e.type === 'assistant/message'
+    && e.data.message.content.some(block => block.type === 'text' && block.text === '## 计划已就绪\n请批准后开始。'))).toBe(true)
+  scripts.main = [textResponse('仍在等待批准')]
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '现在进度如何' }] }))
+  await agent.whenIdle()
+  expect(scripts.main).toHaveLength(0)
+  expect(requests[2]?.tools?.some(tool => tool.name === 'task_status')).toBe(true)
+})

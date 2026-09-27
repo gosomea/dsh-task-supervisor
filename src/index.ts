@@ -1,6 +1,7 @@
 /** Native DSH task controller: durable state, human commands, and model tools. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { installClosingResponse, CLOSING_MESSAGE } from './closing-response.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { CommandResult } from '@deepseek-ai/dsh-commands'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -93,6 +94,7 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 /** Register one independently owned workflow on public DSH seams. */
 export function apply(ctx: Context, config: Config = {}): void {
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
+  const closeWithResponse = installClosingResponse(ctx)
   const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
     elapsedMs: config.observationIntervalMs ?? 300000, consecutiveErrors: config.observationConsecutiveErrors ?? 3 }
   for (const [key, value] of Object.entries(observationPolicy)) {
@@ -423,6 +425,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (exec.agent === undefined) return undefined
     const task = taskOf(ctx, exec.agent)
     if (task === null || task.phase === 'complete' || task.phase === 'cleared') return undefined
+    if (exec.name === 'todo_write') return 'This supervised task tracks progress in its DAG. Use task_status and task_report_stage rather than a second todo checklist.'
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
       return 'Supervisor is stopped or awaiting review'
     }
@@ -661,11 +664,11 @@ export function apply(ctx: Context, config: Config = {}): void {
       appendTask(ctx, agent, withRuns(next, runsOf(next)))
       await flush(agent)
       if (next.phase === 'active') runtime(agent).armed = true
-      exec.concludeTurn()
+      closeWithResponse(agent, next.revision)
       return { phase: next.phase, planVersion: next.planVersion,
         ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
           finding: planDecision.finding },
-        message: next.phase === 'awaiting-approval' ? 'Ask the user to approve in chat, with the approval button, or /task approve. For direct chat approval use task_status then task_approve.' : 'Continue with the revised plan.' }
+        message: CLOSING_MESSAGE }
     },
   }))
 
@@ -698,8 +701,8 @@ export function apply(ctx: Context, config: Config = {}): void {
       appendTask(ctx, agent, settled)
       await flush(agent)
       runtime(agent).armed = settled.phase === 'active'
-      exec.concludeTurn()
-      return { verdict: decision.verdict, finding: decision.finding,
+      closeWithResponse(agent, settled.revision)
+      return { verdict: decision.verdict, finding: decision.finding, message: CLOSING_MESSAGE,
         imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
         nextStage: settled.stages[settled.stageIndex]?.id ?? null, phase: settled.phase }
     } catch (error: unknown) {

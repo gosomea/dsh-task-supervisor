@@ -51,9 +51,11 @@ Build bounded continuation context from authoritative state and reports: objecti
 
 ## Conversation and sidebar
 
-Place one current-task disclosure in the main Session with task name, plan version, accepted node count, running/reviewing/waiting nodes, and last activity time. Expand for the DAG, details, and actions. Hover provides a summary; clicking or keyboard input opens stable details without requiring hover on touch. Node counts are not effort percentages. Attribute historical submissions, reviews, and user/control outcomes clearly; history does not impersonate current state.
+Keep main-Agent answers in their native rendering. The current-task summary shows a short title, state, accepted count, latest Supervisor heading, and controls. Links open the full DAG, node details, and reviews in the sidebar. Models generate short node titles and review first lines while retaining complete detail fields. Historical reviews identify the Supervisor; main-Agent submissions receive no duplicate cards. Accepted-node counts do not imply effort percentages.
 
-Share one versioned projection and action service across the conversation and sidebar, preferably using native event subscriptions, refreshed snapshots after reconnect, and stale-response rejection. Sidebar order is current status/decisions, all nodes, selected-node details, review history, and consultation. Collapse long objectives and keep common actions visible. Active review shows subject, duration, and pause; reserve resume for interrupted or recovery states. Host capabilities determine available actions.
+The sidebar separates Task details and Supervisor conversation into two tabs. Details contain the objective, DAG, node descriptions, criteria, and review history. Conversation embeds its native Session. Switching tabs preserves drafts and the mounted conversation; common actions remain outside the scrolling body. Both surfaces share versioned state and actions, refresh after reconnect, and reject stale responses. Active review offers pause; interrupted or paused work offers resume.
+
+A successful checkpoint permits one tool-free native closing step so the model can explain its plan or result. The plugin does not synthesize, rewrite, or replace main-Agent output. Only after that step can the controller schedule another turn. Supervised tasks no longer maintain a second `todo_write` progress checklist. See [UI validation](v2-ui-validation.md) for implementation evidence.
 
 ## Task graph and parallelism
 
