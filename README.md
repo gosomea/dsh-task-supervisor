@@ -12,6 +12,8 @@ The prototype currently requires a small DSH host extension for durable `extensi
 4. If a configured number of turns pass without a stage report, a progress reviewer decides whether to continue, correct course, or pause for the user. Once all stages pass, `task_request_completion` starts a separate final review. Only its `pass` decision marks the task complete.
 5. `/task pause`, `/task off`, `/task on`, `/task resume`, `/task edit <objective>`, and `/task clear` control the lifecycle. Plan, stage, and completion checkpoints show separate cards for the main Agent's submission and the Supervisor's independent review, with event and reviewer Session references. Each side's remaining content expands separately. The right sidebar shows state and the relevant controls, including an explicit **Close Supervisor** button. A host restart restores the task but waits for manual resume.
 
+After a task finishes, the same main Session can start another. The sidebar's **Task history** view reads completed and cleared tasks from the native Session log on demand, with read-only plans, nodes, and reviews. Its **New task** form submits to the existing `/task new` controller. The main Session's compact DAG follows only the current task; completed tasks show their final state without a prominent Clear task button. `/task clear` remains available for deliberate cancellation.
+
 For objectives that require completed read-only model turns after approval, the plan can set `read_only_turns_before_write` (0–10). The controller blocks writes until that many read-only turns have completed; interrupted turns do not count. This gate covers this explicit action-order constraint; it does not compile arbitrary natural-language timing requirements into rules.
 
 Reviewer model selection follows the main Agent's effective DSH route by default. `reviewerModel` may select another provider, model, and reasoning effort available through the active profile. Each review records its model, reviewer Session ID, evidence seqs, and main Session cutoff.
@@ -46,7 +48,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Reviewer model](docs/review-model.md) | DSH profile model policy. |
 | [Kernel experiment](docs/host-spike.md) | Initial capability investigation. |
 
-The prototype currently supports one task per Session. The five-task queue, `/task plan` shortcut, built-in executable acceptance, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
+The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, built-in executable acceptance, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
 
 [简体中文](README.zh.md)
 

@@ -34,7 +34,7 @@ export function approvedTask(task: TaskSnapshot, startSeq: number, userMessageSe
 export function controlActions(task: TaskSnapshot | null, armed: boolean, reviewing: boolean): string[] {
   if (task === null || task.phase === 'cleared') return []
   if (!task.enabled) return ['on']
-  if (task.phase === 'complete') return ['clear']
+  if (task.phase === 'complete') return []
   if (reviewing) return ['pause', 'off']
   if (task.phase === 'awaiting-approval') return ['approve', 'pause', 'off']
   if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']

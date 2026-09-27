@@ -887,6 +887,33 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   expect(mainAgain.agent.inbox.nextTurn).toHaveLength(0)
 })
 
+it('routes consultation task commands to the bound main Session and rejects stale conversations', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-consult-commands-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('consult-commands-main'),
+    agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(main, '/task new Inspect the directory', [], signal)
+  await main.whenIdle()
+  await ctx.commands.execute(main, '/task consult', [], signal)
+  const first = taskOf(ctx, main)!
+  const chat = ctx.agents.get(SessionId(`task-chat-${main.id}-${first.id}`))!
+
+  expect((await ctx.commands.execute(chat, '/task', [], signal))?.result.text).toContain(first.id)
+  expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(ctx, main)?.phase).toBe('paused')
+
+  const paused = taskOf(ctx, main)!
+  appendTask(ctx, main, { ...paused, revision: paused.revision + 1, phase: 'complete' })
+  expect((await ctx.commands.execute(chat, '/task new Report the Node version', [], signal))?.result.kind).toBe('success')
+  const second = taskOf(ctx, main)!
+  expect(second.id).not.toBe(first.id)
+  expect(second.objective).toBe('Report the Node version')
+  expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result).toMatchObject({ kind: 'error' })
+  expect(taskOf(ctx, main)?.id).toBe(second.id)
+})
+
 
 it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)

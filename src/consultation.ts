@@ -37,7 +37,10 @@ export function consultationDirective(text: string): string | null {
     '批准': 'approve', '批准计划': 'approve', '批准当前计划': 'approve' }
   if (simple[input]) return simple[input]
   if (/^\/task (approve|pause|resume|off|on)$/u.test(input)) return input.slice(6)
+  if (/^\/task new \S/u.test(input)) return input.slice(6)
   if (/^\/task edit \S/u.test(input)) return input.slice(6)
+  const create = /^新建任务[：:]\s*(\S[\s\S]*)$/u.exec(input)
+  if (create) return `new ${create[1]}`
   const edit = /^修改任务要求[：:]\s*(\S[\s\S]*)$/u.exec(input)
   return edit ? `edit ${edit[1]}` : null
 }
@@ -64,10 +67,16 @@ export function installConsultation(ctx: Context, fixedModel?: ReviewerModel) {
     && !['supervisor_read_status', 'supervisor_read_log', 'supervisor_control'].includes(exec.name)
     ? 'Supervisor consultation can only read bound evidence or relay an explicit user decision' : undefined)
   ctx.on('agent/pre-step', async ({ agent, messages, turn }, next) => {
-    if (consultationBinding(agent) === null) return next()
+    const binding = consultationBinding(agent)
+    if (binding === null) return next()
     const decision = await next()
     if (decision.kind === 'reject') return decision
     // A fresh persisted context restores binding after native compaction without changing main-task state.
+    const activeMain = ctx.agents.get(SessionId(binding.mainSessionId))
+    if (activeMain && taskOf(ctx, activeMain)?.id !== binding.taskId) {
+      return { ...decision, messages: [...decision.messages, createUserMessage({ source: { kind: 'task-consultation-context' },
+        content: [{ type: 'text', text: 'This is a historical Supervisor conversation. Its task has been replaced. Explain that its controls are disabled and direct the user to the current task in the main Session.' }] })] }
+    }
     const { main, task } = mainOf(agent)
     const contextKey = `${task.id}:${task.revision}:${turn}`
     if (contextVersions.get(agent) === contextKey && !messages.some(message => message.source.kind === 'user')) return decision
@@ -102,7 +111,7 @@ export function installConsultation(ctx: Context, fixedModel?: ReviewerModel) {
       } finally { await reader.close() }
     } }))
   agentCtx.tools.register(defineTool({ name: 'supervisor_control',
-    description: 'Relay an explicit latest user directive, bound to the task revision. A question is never approval. Read status first. Actions: approve/pause/resume/off/on or edit <full objective>. Returns a durable receipt; retries cannot execute the same user directive twice.',
+    description: 'Relay an explicit latest user directive, bound to the task revision. A question is never approval. Read status first. Actions: new <objective> after completion, approve/pause/resume/off/on, or edit <full objective>. Returns a durable receipt; retries cannot execute the same user directive twice.',
     parameters: { revision: { type: 'integer', required: true }, user_seq: { type: 'integer', required: true }, directive: { type: 'string', required: true } }, output,
     async execute(args, exec) {
       const agent = exec.agent

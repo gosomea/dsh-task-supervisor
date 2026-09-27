@@ -48,7 +48,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       <p title={stage?.title ?? task.objective}>{stage ? `${nodeLabel(task, stage.id, state)} · ${executorLabel(task, sessionId, stage.id)} · ${headline(stage.title)}` : headline(task.objective)}</p>
       {task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
-    <div className="dsh-task-inline-controls">{actions}</div>
+    {actions && <div className="dsh-task-inline-controls">{actions}</div>}
     {error && <p role="alert" className="dsh-task-error">{error}</p>}
   </section>
 }

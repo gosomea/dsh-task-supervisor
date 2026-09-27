@@ -65,3 +65,17 @@ it('does not restart a detached polling loop when a late read settles after remo
   await vi.advanceTimersByTimeAsync(2000)
   expect(request).toHaveBeenCalledTimes(4)
 })
+
+it('creates a following task against the completed task revision', async () => {
+  const done = { ...newTask('First task'), revision: 4, phase: 'complete' as const }
+  const initial: PanelState = { task: done, live: true, armed: false, reviewing: false, actions: [] }
+  const next: PanelState = { ...initial, task: newTask('Second task'), armed: true }
+  const request = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json(initial)).mockResolvedValueOnce(Response.json(next))
+  const store = createTaskStore('session', request)
+  cleanups.push(store.subscribe(() => {}))
+  await vi.waitFor(() => expect(store.getSnapshot().state?.task?.id).toBe(done.id))
+  expect(await store.create('  Second task  ')).toBe(true)
+  expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toEqual({ action: 'new', objective: 'Second task',
+    taskId: done.id, revision: 4 })
+  expect(store.getSnapshot().state?.task?.objective).toBe('Second task')
+})

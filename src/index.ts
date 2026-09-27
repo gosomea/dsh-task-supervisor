@@ -5,6 +5,7 @@ import { installClosingResponse, CLOSING_MESSAGE } from './closing-response.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { CommandResult } from '@deepseek-ai/dsh-commands'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
@@ -443,8 +444,18 @@ export function apply(ctx: Context, config: Config = {}): void {
     name: 'task',
     description: 'Create, inspect, approve, pause, or resume a supervised task',
     input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|clear|off|on]' },
-    async handler({ agent, rawInput }) {
-      if (consultationBinding(agent)) return { kind: 'error', text: '请在督导对话中直接输入控制要求，由 supervisor_control 转交主任务。' }
+    async handler({ agent, rawInput, signal }) {
+      const binding = consultationBinding(agent)
+      if (binding) {
+        const main = ctx.agents.get(SessionId(binding.mainSessionId))
+        if (!main) return { kind: 'error', text: '请先打开主会话，再操作任务。' }
+        const boundTask = current(main)
+        if (boundTask?.id !== binding.taskId) {
+          return { kind: 'error', text: '这是历史任务的督导对话；请打开当前任务后再操作。' }
+        }
+        const result = await ctx.commands.execute(main, `/task ${rawInput}`, [], signal)
+        return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
+      }
       let input = rawInput.trim()
       const bound = /^(approve|pause|resume|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {

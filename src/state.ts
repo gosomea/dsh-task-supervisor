@@ -23,6 +23,12 @@ export interface TaskProjection {
   reviews: z.infer<typeof reviewSchema>[]
 }
 
+export interface TaskHistoryEntry {
+  task: TaskSnapshot
+  reviews: z.infer<typeof reviewSchema>[]
+  lastSeq: number
+}
+
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionStateMap {
     taskSupervisor: TaskProjection
@@ -69,6 +75,30 @@ export const taskProjection = {
     }
   },
 } satisfies ProjectionDefinition<'taskSupervisor', TaskProjection>
+
+/** Read completed and cleared tasks from the same ordered Session records as the live projection. */
+export function createTaskHistoryCollector() {
+  let projection = taskProjection.init()
+  let lastSeq = 0
+  const entries: TaskHistoryEntry[] = []
+  const terminal = (task: TaskSnapshot) => task.phase === 'complete' || task.phase === 'cleared'
+  return {
+    add(event: SessionEvent) {
+      const previous = projection
+      projection = taskProjection.apply(projection, event)
+      if (projection.failure !== null) throw new Error(projection.failure)
+      if (previous.current && projection.current?.id !== previous.current.id && terminal(previous.current)) {
+        entries.push({ task: previous.current, reviews: previous.reviews, lastSeq })
+      }
+      if (event.type === 'extension/record' && event.data.namespace === NAMESPACE) lastSeq = event.seq
+    },
+    finish(): TaskHistoryEntry[] {
+      const current = projection.current && terminal(projection.current)
+        ? [{ task: projection.current, reviews: projection.reviews, lastSeq }] : []
+      return [...entries, ...current].reverse()
+    },
+  }
+}
 
 /** Read the exact folded state, refusing a damaged or unavailable projection. */
 export function taskOf(ctx: Context, agent: Agent): TaskSnapshot | null {

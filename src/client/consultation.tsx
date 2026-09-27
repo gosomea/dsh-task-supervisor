@@ -30,7 +30,7 @@ export function ConsultationHost({ id, sessions, SessionProvider, renderSlot }: 
     return () => { active = false; ref.release(); setReference(null) }
   }, [id, sessions])
   return <section aria-label="Supervisor 持久对话" className="dsh-task-consultation">
-    <div className="dsh-task-consultation-hint"><p>普通问询不会打断任务。明确输入“暂停任务”“恢复任务”可介入。</p><Disclosure title="对话与压缩"><p>这是持续保存的督导会话。修改要求可输入“修改任务要求：完整目标”；压缩使用原生 /compact 命令。</p></Disclosure></div>
+    <div className="dsh-task-consultation-hint"><p>这是当前任务的督导对话。普通问询不会打断任务；明确输入“暂停任务”“恢复任务”可介入。</p><Disclosure title="对话与压缩"><p>这里也可使用 /task 命令；任务完成后可输入“新建任务：完整目标”。控制会记录到主 Session。压缩使用原生 /compact 命令。</p></Disclosure></div>
     {error && <p role="alert">{error}</p>}
     <div className="dsh-task-consultation-content">
       {reference && <SessionProvider session={reference}>{renderSlot('task-supervisor.consultation', {})}</SessionProvider>}

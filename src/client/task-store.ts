@@ -73,6 +73,27 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
         if (view.busy) publish({ ...view, busy: false })
       }
     },
+    async create(objective: string): Promise<boolean> {
+      const state = view.state
+      if (view.busy || state === null || !state.live || !objective.trim()) return false
+      const current = ++sequence
+      poll?.abort()
+      publish({ ...view, busy: true, error: '' })
+      try {
+        const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'new', objective: objective.trim(),
+            taskId: state.task?.id ?? null, revision: state.task?.revision ?? null }) })
+        const body = await result.json() as PanelState & { error?: string }
+        if (!result.ok) throw new Error(body.error ?? '无法新建任务')
+        if (current === sequence) publish({ state: body, busy: false, error: '' })
+        return true
+      } catch (error) {
+        if (current === sequence) publish({ ...view, busy: false, error: String(error) })
+        return false
+      } finally {
+        if (view.busy) publish({ ...view, busy: false })
+      }
+    },
   }
 }
 
