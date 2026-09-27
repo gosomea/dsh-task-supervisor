@@ -96,15 +96,13 @@ A main agent ending a reply without submitting a stage report does not complete 
 2. Implement the event-backed task state, snapshot, edit and close handling. Use deterministic tests for duplicate admission, stale results, restart, and cancellation before invoking models.
 3. Connect the main-agent plan and progress operations to a fresh reviewer with bounded log access. Preserve model-visible instructions in the session record.
 4. Run the complete fixture through actual DSH model calls and isolated acceptance. Confirm manual resume and that Close Supervisor stops further owned work.
-5. Run the same fixture through the strongest practical Lead–Worker baseline before expanding the UI or task capacity.
+5. Retain the fixture for mechanism regressions; follow the [unified evaluation roadmap](evaluation.md) with public benchmarks first and add Team before formal replacement claims.
 
 Prototype acceptance requires the full loop and reliable stopping, not benchmark superiority. The stage-checkpoint scenario must reject an unsupported completion request and later accept the corrected artifact. The edit scenario must reject an old reviewer decision. The close scenario must reject late continuations and timeout callbacks. The restart scenario must preserve state and remain idle until manual resume.
 
 ## Evaluation against a team
 
-Add a root Lead plus one Worker, with native planning and Goal continuation on the Lead, as a required product baseline. Give the Lead an explicit instruction to verify work and correct it; provide equivalent access to task requirements, workspace artifacts, and execution evidence. Verify the combined preset and genuine task-control authority first. Do not intentionally use a summary-only or unprompted Lead to manufacture a weak baseline.
-
-Use the same main model, task fixtures, permissions, and predeclared execution limits. Record all Lead, Worker, and reviewer work. If the reviewer uses a stronger model, either match that resource in the Team arm or report it as a separate model-allocation comparison. Count user decisions, unsupported completions, corrections, needless extra work, and final independent acceptance. If the Team matches outcomes with a simpler setup, narrow the product claim or reuse that mechanism instead of assuming the plugin is superior.
+The earlier comparison on this page defines Team responsibilities; [evaluation design](evaluation.md#comparison-and-evidence-rules) owns arm configuration, model and evidence matching, resource accounting, and claim thresholds. The prototype fixture covers control regressions; public benchmarks support formal outcome comparisons.
 
 ## Dev Note
 

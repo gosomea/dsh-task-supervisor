@@ -1,100 +1,149 @@
-# Long-horizon evaluation proposal
+# Evaluation design and execution roadmap
 
-**Status: study design plus development pilots.** The [two-case Goal/Plan/Supervisor product pilot](../eval/pilot-v1/results-20260926.zh.md), [separate-turn regression](../eval/reliability-v1/results-20260927.zh.md), and [multi-stage requirement-revision development results](../eval/long-horizon-dev-v1/results-20260927.zh.md) provide different levels of evidence; there is no frozen long-horizon holdout or superiority claim. This document owns the evaluation question and protocol; the [architecture](architecture.md) owns intended product behavior.
-
-See [Eval Notes](notes-eval.md) for the current order: public benchmarks with required metrics first, then multiple tasks in one Session.
+**Updated: 2026-09-27. Status: study design and development pilots; public benchmark integration is pending.** This document owns evaluation questions, execution order, datasets, comparison arms, metrics, and result deliverables. There is no frozen long-horizon holdout or superiority claim; [architecture](architecture.md) owns product design and [implementation status](implementation.md) records working capabilities.
 
 ## Summary
 
-The study asks whether DSH Task Supervisor keeps a coding task aligned with the user's instructions through long execution and reaches an independently accepted result more often than native DSH Goal or Plan. A faster or cheaper run is useful secondary evidence, but it does not substitute for task success.
+The study asks whether Supervisor completes tasks that follow user instructions and pass independent acceptance more often than native DSH Goal or Plan, and sustains that ability over long execution.
 
-## Comparison
+First establish reproducible native DSH Goal, native Plan, and Task Supervisor baselines on public benchmarks, collecting independent acceptance, completion judgment, intervention, and resource measures from the first run. Evaluate multiple consecutive Tasks, Plans, or Goals in one Session after public benchmark execution is stable and a comparison report exists. Existing custom cases remain regressions rather than the first primary benchmark; a multi-task Session runner does not block public benchmark integration.
 
-| Arm | User-facing workflow under test |
+## Table of Contents
+
+- [Execution order](#execution-order)
+- [Public dataset selection](#public-dataset-selection)
+- [Initial comparison protocol](#initial-comparison-protocol)
+- [Comparison and evidence rules](#comparison-and-evidence-rules)
+- [Evaluation layers and development regressions](#evaluation-layers-and-development-regressions)
+- [Required metrics](#required-metrics)
+- [Automation and result artifacts](#automation-and-result-artifacts)
+- [Later multi-task Sessions](#later-multi-task-sessions)
+- [Existing evidence and next actions](#existing-evidence-and-next-actions)
+- [Claim threshold](#claim-threshold)
+- [Reuse sources](#reuse-sources)
+- [Dev Note](#dev-note)
+
+## Execution order
+
+| Priority | Work | Completion condition |
+| --- | --- | --- |
+| P0 | Select public dataset versions, task lists, and external graders; freeze metrics and baseline interactions | Reproducible environments, expected reference-solution and empty-patch results, identical inputs and normal execution opportunities for all three arms. |
+| P1 | Run all three arms end to end on a small public subset | Every attempt has logs, artifacts, independent scores, and metrics; distinguish infrastructure failures from task failures. |
+| P2 | Expand public samples, repeat paired runs, and report results | Full denominators, per-task outcomes, failure classes, task-family breakdowns, and uncertainty; reserve samples not used for tuning. |
+| P3 | Consecutive Tasks, Plans, or Goals in one Session | Fixed scripts evaluate task switching, lasting constraints, regressions, compaction, and recovery against a fresh-Session-per-task control. |
+
+Start with a suggested 6–12 public integration tasks selected by repository, task type, and difficulty rather than expected wins. This scale diagnoses integration issues; determine formal sample size and repetitions from pilot variance, failures, and available environments, then freeze them before comparative runs. Report official benchmark timeout settings separately from diagnostic runs with relaxed limits.
+
+## Public dataset selection
+
+| Order | Dataset | Purpose and integration scope |
+| --- | --- | --- |
+| First | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | Real repository tasks with official Harbor task directories, graders, reference solutions, containers, and independent patch regrading. Adapt DSH before expanding. |
+| Second | [SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | Add project evolution across files and features; independently validate environment and grading stability. |
+| Supplement | [Terminal-Bench](https://www.tbench.ai/news) | Add complex terminal work; pin a release, with Challenges as a candidate for longer single tasks. |
+
+These are researched candidates, not completed integrations in this project. Pin dataset commits or versions, sample IDs, image digests, grader versions, and initial repository commits; inspect licenses and environment requirements before running. SWE-bench Pro V2 documents linux/amd64 images, requiring a verified Linux execution environment. Do not pool versions or describe altered tasks, interactions, network rules, or time limits as official scores.
+
+Public coding datasets generally organize individual tasks. One task may contain many model interactions and continuations, which does not establish support for consecutive user tasks in one Session. Define that separately in P3; do not force tasks with incompatible repositories or base commits into one workspace.
+
+## Initial comparison protocol
+
+The first comparison uses native Goal, native Plan, and Task Supervisor. Match the main Agent's model route, reasoning settings, tool permissions, and context limits, recording the resolved model. Supervisor review defaults to the main model; count all reviewer and subagent resources. Start each arm in an independent environment from the same snapshot, randomize execution order, and repeat paired trials by task.
+
+The product track gives each arm normal native interactions and predefined approval opportunities. Define Plan approval, execution start, idle, user-wait, and termination conditions before running; do not count legitimate waiting as immediate failure or improvise rescue prompts. Label evaluator-provided continuation experiments as the mechanism track and report them separately. Tasks without a frozen protocol remain development pilots.
+
+Formal superiority claims still require the Lead–Worker Team control and the state-and-continuation-preserving ablation without semantic review defined below. Initial three-arm results support only comparisons of those workflows on selected tasks, not claims that review itself wins or that Supervisor beats Team.
+
+External grading is independent of product review. Keep hidden tests, reference solutions, and scoring material inaccessible to the tested Agent; grade an independent copy and retain original artifacts. Do not feed hidden failures back until the Agent passes. Agents may use public task tests. Verify reference success and expected empty-patch failure first to prevent spurious grader success.
+
+## Comparison and evidence rules
+
+The Team arm uses a root Lead plus one Worker, with native planning and Goal continuation on the Lead and explicit responsibility for verification and correction. Validate the combined preset and real task-control authority; provide equivalent access to requirements, artifacts, and execution evidence. Match a stronger reviewer model in the Team arm or report a separate allocation experiment; do not attribute resource differences to supervision. See the [first prototype](prototype.md) for Team composition and product responsibilities.
+
+The ablation without semantic review retains the same state, planning, continuation, and model configuration and uses the same external grader. Optionally compare stage-only review against stage review with fallback observation, reporting pauses and success together so excessive interruption cannot count as effective supervision.
+
+Each arm plans independently; compare progress through shared external outcome milestones, not hidden reference plans or self-declared stage counts. Stages should identify artifacts, checks, and reopening conditions after requirement changes. A shared prescribed plan is a separate diagnostic. Freeze public tasks, constraints, allowed edits, acceptance rules, event scripts, and initial environments before running.
+
+Protect external grading material; task-permitted project-test edits do not automatically fail. Capture tracked and untracked artifacts. Use predefined blinded review for requirements executable tests cannot cover, hiding arms when practical; report uncheckable requirements and evidence gaps rather than counting them as satisfied.
+
+## Evaluation layers and development regressions
+
+These are evidence categories, not execution order. Public benchmarks follow the [execution order](#execution-order); replay and lifecycle regressions preserve fixes and diagnose failures.
+
+| Layer | What it establishes | Limit |
+| --- | --- | --- |
+| Historical trajectory replay | Review findings, evidence quality, and intervention choices. | Expose only evidence available at that point; include normal progress and reasonable retries so constant criticism cannot score well; it cannot establish improved outcomes. |
+| Deterministic Host regressions | State transitions, cancellation, durable recovery, and stale-decision rejection. | Cover editing during review, clear with queued continuation, closing with pending timeouts, and manual recovery after restart; validate capacity and fork as those capabilities become available. |
+| End-to-end comparison | Task outcomes from identical inputs to independent acceptance. | Use frozen tasks and specified controls; product review is under test and grading is external. |
+
+Development cases cover short repairs, multi-stage features, requirement changes, ineffective retries, unsupported completion, and long stages without milestone reports. Short tasks reveal needless overhead and long stages reveal missed drift; these cases do not replace the public primary evaluation or an untuned holdout.
+
+## Required metrics
+
+Collect metrics during initial integration rather than choosing favorable numbers afterward. Store functional acceptance, constraint adherence, and completion declarations separately before aggregation.
+
+| Metric | Definition and reporting rule |
 | --- | --- |
-| Native Goal | DSH's current Goal workflow on the pinned version. |
-| Native Plan | DSH's current Plan workflow on the pinned version. |
-| Task Supervisor | The proposed unified task workflow, entered through independent Supervisor commands (provisionally `/task`), with autonomous continuation and review. |
-| Lead–Worker Team | A root Lead with native planning and Goal continuation delegates to one Worker and explicitly verifies its work; validate the combined preset first. |
+| Independent acceptance rate | Externally accepted task runs / task runs with valid grading; also report scheduled runs, all attempts, and ungradable runs. |
+| Constraint-respecting success rate (primary) | Runs passing external acceptance and all checkable explicit constraints / runs with valid grading; incomplete and execution-limit outcomes fail. |
+| False completion rate | Runs declaring final completion but failing external acceptance or constraints / gradable runs declaring final completion; report raw counts too. |
+| Stalls and termination reasons | Distinguish completion, legitimate waiting, no-progress stops, resource limits, model or tool errors, and infrastructure failure; record final state for every run. |
+| Human intervention | Count scripted approvals separately from extra rescue; primary comparisons forbid improvised rescue, whose outcomes belong to diagnostics. |
+| Review effectiveness | On independently labeled checkpoints, report true findings, false positives, misses, and unnecessary pauses; without labels, report only raw review and pause counts. |
+| Progress and resources | Total, active, and waiting time; main Agent, reviewer, and other subagent rounds and tokens; tool and review calls; cost when available. |
+| Drift and correction | With independent labels, record first observable drift, detection position, recovery rounds and duration, unsupported completion requests, and valid completions rejected; otherwise retain traces for analysis. |
+| Repeat reliability | Per-task repeated outcomes and paired differences; estimate uncertainty by task rather than treating repeated runs as new tasks. |
 
-Run a **product comparison** using each workflow as a user would normally invoke it. Run a separate **mechanism comparison** with matched model, tools, starting context, execution opportunity, and scripted user responses where possible. Keep these tracks separate in analysis: giving Plan an external continuation harness changes the product workflow but can isolate the value of supervision from the value of continuation.
+Report zero denominators as not applicable and missing logs or usage as missing rather than zero. Keep ungradable infrastructure failures in the attempt manifest; predefine bounded retries, retain every failed attempt and retry, and report failure counts and coverage effects. Cost and speed are secondary; do not hide success or false completion rates inside a weighted score.
 
-The [Team comparison](prototype.md) is required to test whether Supervisor adds value beyond a capable Lead coordinating a Worker. Match evidence access and model allocation where possible, and report differences instead of attributing them to supervision.
+P3 additionally reports whole-Session success, success by task position, regressions of prior functionality, task-boundary errors, and recovery success. Use Sessions as the primary statistical unit then; dependent tasks in one chain are not independent samples.
 
-## Dataset
+## Automation and result artifacts
 
-Use pinned real repository coding tasks as the primary set. Each task needs a starting commit, an initial user request, explicit constraints, a reproducible environment, and acceptance checks independent of the agent's own summary. Add controlled pressure cases that exercise drift, repeated unsuccessful approaches, changed requirements, premature completion, and violations of explicit task constraints. Preserve the complete task input and expected evaluation rules before running any arm.
+Drive tasks through native DSH interfaces or a headless profile; evaluate browser UI separately. Reuse public benchmark environments and grading rather than rebuilding the scoring system first. Manage isolation through the existing skill and registry; each formal task starts from a fixed snapshot without leftover manual-test files.
 
-The same task definition and starting state go to each arm. During a run, do not provide improvised human hints; any required user response comes from a prewritten script applied consistently. Repeat tasks across seeds or equivalent run IDs and randomize arm order to reduce order and environment effects. Record model version, DSH commit, plugin commit, tool configuration, context limits, and host environment for every run.
+Save at least the following per run; finalize file formats during runner integration:
 
-## Reusing earlier evaluation designs
+- Run manifest: dataset version, task ID, arm, repetition ID, DSH and plugin versions, model settings, tools and context configuration, approval policy, and execution limits.
+- Raw evidence: main Session, review, and subagent logs; state events; start and end times; patches and required untracked artifacts.
+- External grading: grader version, check results, constraint checks, completion declaration, termination reason, errors, and retry associations.
+- Metric details: individual runs, per-task summaries, paired arm comparisons, task-family outcomes, and failure examples.
 
-The local [forever-subagents evaluation design](../../../forever-subagents/docs/eval-design.md) supplies fixture, task, write-scope, checks, transcript, and run-result concepts. The [DSH harness design](../../../forever-fish/docs/harness-eval-design.md) supplies retrospective analysis, mechanism checks, and end-to-end comparison as separate layers. The [WorkDAG design](../../../forever-fish/docs/workdag-eval-design.md) supplies evidence-integrity checks and controlled recovery failures. These are source proposals, not proof that their proposed runners or datasets already work. The existing [trajectory analyzer](../../../forever-fish/eval/analyze_dsh.py) is candidate code; validate its parser against the pinned DSH event format before reuse.
+Split development and holdout sets by repository or task family before tuning review policy. Predefine violations, true interventions, stalls, and final completion; record model seeds when supported, otherwise traceable repetition IDs.
 
-| Earlier element | Supervisor adaptation |
-| --- | --- |
-| Dataset task, fixture, write scope, checks, provenance | Retain; add versioned user constraints, acceptance criteria, scripted changes, and external evaluation ownership. |
-| Result, trajectory, and efficiency metrics | Keep separate; accepted constraint-respecting completion is primary. Do not carry over the old weighted efficiency score. |
-| Evidence integrity and injected failures | Test stale review, unsupported completion, requirement changes, interruption, and recovery under the supervisor lifecycle. |
-| DAG execution and parallelism metrics | Replace with stage progress, drift detection, recovery, and correct stopping for the single execution slot. |
-| Trace and score export | Keep as an optional adapter. Local run artifacts must suffice to reproduce a result without a dashboard. |
-| Old Jev implementation lessons and host checks | Reuse evidence about structured outputs, reviewer termination, and recursion prevention after revalidation. Website demonstrations are excluded from the prototype and evaluation fixtures. |
+Reports show original acceptance results alongside compliance and completion-judgment measures for each dataset. Report datasets separately; freeze weights and aggregation rules before any pooled summary. Separate development samples from a frozen holdout and do not infer generalization from repeatedly tuned cases.
 
-Historical public-benchmark counts, model scores, SDK commands, and infrastructure estimates in the earlier documents are not adopted as current facts. Verify primary sources and the actual environment before selecting or integrating a public dataset. This study continues to compare DSH workflows on a pinned DSH version.
+## Later multi-task Sessions
 
-## Three evaluation layers
+Once public baselines are stable, add fixed scripts that create Task 1…N, Goal 1…N, or Plan 1…N in one Session, with matching user tasks at each position; each arm retains its own history and actual artifacts. Add fresh-Session-per-task controls to distinguish task difficulty from accumulated context.
 
-First, curate historical failures into development cases and label the relevant objective, constraint, evidence, and first observable deviation. At a fixed checkpoint, show reviewers only the evidence prefix available then. Include normal progress and acceptable repeated attempts as negative cases; otherwise an always-critical reviewer can score well. Report missed issues, false alarms, evidence quality, and intervention choice. Offline replay measures judgment quality, not whether advice improves execution.
+Cover independent task switching, ongoing project evolution, requirement edits, and compaction, pause, or restart recovery. Separate Session-wide constraints from task-local constraints; never silently replace prior artifacts with reference results. Label dependent-chain diagnostics using canonical prerequisite snapshots separately. Start with executable cases such as an evolving billing tool, then expand to real projects.
 
-Second, run deterministic lifecycle and failure-injection scenarios in an isolated host. Their oracle checks state transitions, cancellation, durable recovery, and stale-decision rejection. Passing this layer establishes reliable control; it does not establish model capability.
+Deliver the next task at predefined termination or limit conditions, not after hidden grading passes. Trigger mid-task changes at commonly observable events and record delivery and application positions; do not use Supervisor stage review and native first-file-write as different triggers. The [χ-Bench-Marathon same-Session protocol](https://arxiv.org/html/2605.16679v1) is a reference, not a transfer of its business domain or scores to DSH.
 
-Third, run the same held-out task fixtures through native Goal, native Plan, Supervisor, the Lead–Worker Team baseline, and the continuation-without-review diagnostic arm. Reviewers and the main agent must not access the external evaluator's private fixtures or labels. The production final evaluator is part of the tested system; benchmark scoring is a separate evaluation with its own evidence and checks.
+## Existing evidence and next actions
 
-## Task record and stage evidence
+The [short-task pilot](../eval/pilot-v1/results-20260926.zh.md), [ordering-constraint regression](../eval/reliability-v1/results-20260927.zh.md), and [requirement-revision development pilot](../eval/long-horizon-dev-v1/results-20260927.zh.md) preserve fixes and diagnose failures; they are not public long-horizon benchmark results. Revision delivery timing differs between arms in the development pilot, preventing a direct win-rate comparison.
 
-| Record part | Contents and visibility |
-| --- | --- |
-| Public task | Initial request, constraints, observable acceptance criteria, allowed changes, and necessary environment instructions; identical across arms. |
-| Reproducible fixture | Pinned repository and starting snapshot, dependency environment, reset instructions, and provenance. |
-| Evaluation package | External checks, reference outcomes, and evidence labels; protected from modification and withheld where they reveal the answer. |
-| Scripted events | Requirement updates or injected failures with a predefined trigger and identical payload across arms; record whether the trigger was reached. |
-| Run manifest | Workflow, model and reasoning settings, versions, execution limits, repeat ID, transcript, artifacts, and external scores. |
-
-The agreed default for the formal end-to-end comparison is independent planning by every arm with the same external acceptance criteria and evaluation procedure. Every arm receives the same objective, constraints, and public acceptance requirements. Dataset milestones describe independently observable outcomes, not a hidden reference plan that only Supervisor receives. A stage definition should connect an objective to an artifact or check, with conditions for reopening it when affected requirements change. Score progress against common external evidence milestones rather than the number of self-declared completed stages. Giving every arm the same prescribed plan is a separate diagnostic experiment; report its results separately from the primary comparison.
-
-Protect external evaluation checks; allow edits to project tests when the task permits them. Capture tracked and untracked artifact changes as well as test-integrity evidence. Do not automatically fail every project-test edit or rely only on a tracked Git diff. Trigger scripted changes at a predefined observable event or workload checkpoint, not at an improvised time chosen after seeing one arm's behavior.
-
-Keep historical failures and ordinary successful work as development regressions; [Eval Notes](notes-eval.md) owns public-dataset selection and execution order for the first primary evaluation. Freeze a separate held-out set by repository or task family before tuning review policy. Repeat paired trials and report uncertainty at the task level; repeated runs of one task are not independent new tasks. Predefine treatment of infrastructure errors, interrupted runs, and resource-limit stops, retain every attempt, and report the full outcome denominator so retries cannot silently improve the score.
-
-## First experiments
-
-First validate lifecycle behavior in isolated DSH scenarios: capacity overflow, editing while a review is in flight, clearing while a continuation is queued, closing while a timeout is pending, restart with interrupted work, and fork without inherited execution permission. These checks establish control correctness; they do not establish better task completion.
-
-Development regressions cover six task families: a short repair, a multi-stage feature, a requirement change mid-task, repeated ineffective attempts, an unsupported completion claim, and a long stage with no reported milestone. The short repair checks whether supervision adds unnecessary work; the long-stage case checks whether milestone-only review misses drift. Pilot tasks are development data; reserve separate tasks for comparative claims.
-
-Add a diagnostic ablation that keeps the same task state, planning, continuation, and model configuration but disables semantic review. Score its outcomes with the same independent evaluator. If improvement appears only against a baseline with fewer continuation opportunities, it does not yet show that review prevents drift. An optional cadence comparison can test stage review alone against stage review with the watchdog. Report interruption count and accepted completion together so excessive pausing cannot look like success.
-
-## Primary outcome
-
-The primary measure is the fraction of tasks that pass an **independent acceptance check while respecting the task's explicit constraints**. A task fails this measure if it claims completion without satisfying acceptance, violates a recorded constraint, or stops without a valid outcome. Acceptance checks may combine executable tests with blinded human review for requirements that tests cannot capture. Evaluators should not know which arm produced an artifact when practical.
-
-## Diagnostic measures
-
-| Measure | What to record |
-| --- | --- |
-| Drift and recovery | Evidence of objective or constraint drift, whether it was corrected, and how many rounds recovery took. |
-| Completion judgment | Unsupported completion requests, accepted false completions, and valid completions rejected by the supervisor. |
-| Intervention quality | True findings, false alarms, missed issues, unnecessary pauses, and user decisions requested. |
-| Progress | Productive rounds, repeated attempts without new evidence, stalls, and total time to accepted result. |
-| Resource use | Model tokens, reviewer calls, tool calls, wall time, and any additional monetary cost. |
-| Resilience | Whether state can be reconstructed after restart and whether the task resumes only after the intended user action. |
-
-Report per-task outcomes and failure examples alongside aggregate results. Predefine what counts as a violation, an intervention true positive, a stall, and a completed task before inspecting comparative results. Keep reviewer judgments and acceptance judgments separate so the plugin does not grade itself.
+- [ ] Pin the first public dataset and 6–12 integration tasks; validate Linux execution and external grading.
+- [ ] Freeze interactions, termination conditions, execution limits, retries, and metric definitions for all three arms.
+- [ ] Integrate the DSH runner and produce one real run record containing every required field.
+- [ ] Run the three-arm public pilot and report per-task results and failure classes.
+- [ ] Freeze a holdout, expand runs, and add controls required for the formal comparison.
+- [ ] Develop and run the multi-task Session protocol after the baseline is stable.
 
 ## Claim threshold
 
-Do not claim the supervisor is better than Goal or Plan until the dataset, protocol, and acceptance criteria are fixed and all product arms have been run. Report uncertainty and task-family breakdowns, not only an overall win rate. A credible replacement should improve accepted, constraint-respecting completion without making false interventions or user interruptions unacceptable; the acceptable trade-off is an explicit study decision.
+Three-arm pilots report observations on selected tasks only. A formal replacement claim requires frozen datasets, protocols, and acceptance rules plus native Goal, Plan, Supervisor, and Team comparisons; attributing gains to review also requires ablation evidence. Report uncertainty, task families, and failure cases, and predefine acceptable false interventions and user interruptions. If Team matches outcomes with simpler configuration, narrow the claim or reuse its mechanism.
+
+## Reuse sources
+
+The local [forever-subagents evaluation design](../../../forever-subagents/docs/eval-design.md) supplies fixture, task, write-scope, checks, transcript, and run-result concepts. The [DSH harness design](../../../forever-fish/docs/harness-eval-design.md) supplies retrospective analysis, mechanism checks, and end-to-end comparison as separate layers. The [WorkDAG design](../../../forever-fish/docs/workdag-eval-design.md) supplies evidence-integrity checks and controlled recovery failures. These are source proposals, not proof that their proposed runners or datasets already work. The existing [trajectory analyzer](../../../forever-fish/eval/analyze_dsh.py) is candidate code; validate its parser against the pinned DSH event format before reuse.
+
+Reuse task inputs, write scope, acceptance, transcript, and result concepts with versioned constraints, scripted events, and external scoring; report resources separately. DAG measures cover real dependencies, stage progress, recovery, and correct stopping rather than treating concurrency as success. Revalidate old Jev lessons on structured review, termination, and recursion prevention; exclude the old website demo from the primary evaluation. Trace export is optional; local artifacts must suffice for reproduction without a dashboard.
+
+Benchmark counts, model scores, SDK commands, and infrastructure estimates in source proposals are not current facts; verify primary sources and actual environments during integration.
 
 ## Dev Note
 
-Open study choices: task count and difficulty mix, exact DSH baseline versions, model and seed availability, time and token caps, how the Plan arm receives continuation in the mechanism track, blinded review rubric, statistical reporting method, and acceptable intervention rate. Pilot tasks should test whether acceptance rules are reproducible before the main comparison.
+This document records the unified evaluation protocol and pending work, not run results. Finalize task IDs, formal sample size, execution environment, exact model versions, and official-protocol adaptation during integration; record observed runs in their evaluation result documents.

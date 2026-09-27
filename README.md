@@ -40,8 +40,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
-| [Evaluation](docs/evaluation.md) and [development pilot](eval/pilot-v1/results-20260926.zh.md) | Long-horizon protocol and a two-case Goal, Plan, and Supervisor trial. |
-| [Eval Notes: near-term priorities](docs/notes-eval.md) | Public benchmarks first, required initial metrics, automation artifacts, and later multi-task Sessions. |
+| [Evaluation design and execution roadmap](docs/evaluation.md) | Public benchmarks first; datasets, comparison arms, metrics, checklist, and development-result links. |
 | [First prototype](docs/prototype.md) | Acceptance gates and comparison with Agent Team. |
 | [Supervisor Session](docs/session-runtime.md) | Durable control and recovery design. |
 | [Reviewer model](docs/review-model.md) | DSH profile model policy. |
