@@ -1,0 +1,60 @@
+{
+  "dataset": "SWE-bench Pro V2",
+  "datasetCommit": "66f92766bba642462d4bbe5479e83f91f9211862",
+  "seed": "dsh-task-supervisor-swebench-pro-v2-p1-20260928",
+  "selection": "SHA-256 rank: six repositories, then one non-calibration task per repository",
+  "calibrationExcluded": [
+    "instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan",
+    "instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1"
+  ],
+  "tasks": [
+    {
+      "id": "instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7",
+      "repository": "navidrome",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "30bdddea547db5c6183adb1b7badb5534929d44f75c28638aa5fc3e774a48644",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+      "repository": "internetarchive",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "f335c2f35598b25cfff340a02dce6af59dc87bc0b7f78e3ab75ec90d62c5e97a",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "repository": "qutebrowser",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "e8dbafb0b9b3dacc6e1ade3cf966a81683cef7410a635d85380117c2dc3372e7",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+      "repository": "flipt-io",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "f6413d8a06e874b126b13b441d31525e5401235c04c2e251e07f7c6519be39f4",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649",
+      "repository": "NodeBB",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "15add40176459e689747122a16f0e92665aec1e0366647db900e9317609006b1",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+      "repository": "ansible",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "531b5339e7ffe8948a0f2d89b89f6278ca2a597442fc2f427b04ddcfd1e8e9b8",
+      "controlStatus": "pending"
+    }
+  ]
+}
