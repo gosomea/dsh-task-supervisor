@@ -908,12 +908,15 @@ it.each(['complete', 'off'])('runs disjoint native workers with file ownership a
     }
   }
   const ctx = await host(root, new WorkerAdapter(scripts), true, { provider: 'scripted', model: 'reviewer' })
-  await ctx.plugin(LocalFileSystem, { cwd: root }); await ctx.plugin(FsTools, {})
+  await ctx.plugin(LocalFileSystem, { cwd: root })
   ctx.tools.register(defineContentToolFixture({ name: 'bash', description: 'integration fixture', parameters: {}, execute: async () => {
     expect(await readFile(join(root, 'a.txt'), 'utf8')).toBe('A'); expect(await readFile(join(root, 'b.txt'), 'utf8')).toBe('B')
     return [{ type: 'text', text: 'A + B integration passed' }]
   } }))
-  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('worker-main'), meta: { cwd: root }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('worker-main'), meta: { cwd: root }, agentOptions: { provider: 'scripted', model: 'main' },
+    async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+  expect(ctx.tools.get('write')).toBeUndefined()
+  expect(ctx.tools.get('write', main)).toBeDefined()
   const signal = new AbortController().signal
   const task = { ...newTask('Create A and B and integrate'), phase: 'active' as const, planVersion: 1, approvedPlanVersion: 1, everApproved: true,
     criteria: [{ id: 'c', text: 'A and B integrate' }], stages: [

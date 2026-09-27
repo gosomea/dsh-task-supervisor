@@ -95,3 +95,7 @@ A real model placed predecessor integration checks in a successor gated on prede
 ## Interrupted review and native compaction configuration
 
 Resuming a read-only review preserves the settled execution attempt and worker cutoff; interrupted execution or rework advances attempts. Regression coverage checks retained evidence and gated successors; all 51 checks pass. Browser acceptance found native compaction absent from the isolated Web profile. The README now specifies its native backend composition. A model falsely reporting success for an ordinary `/compact` message is recorded as a failure; consultation instructions now require a native command result.
+
+## Web scope integration fixes
+
+Web presets register filesystem tools in the main Agent scope. Looking only at the global catalog left workers without file tools. Delegation now explicitly registers read/glob/grep/write/edit from the main native tool view while retaining execution and filesystem guards. Kernel fixtures use the same scoped layout. Image reading also declares the Cordis llm service injection; the earlier real review correctly paused on the missing service rather than accepting an executor description.

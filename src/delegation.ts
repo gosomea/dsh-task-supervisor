@@ -105,8 +105,13 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
           const handle = await ctx.agents.create({ sessionId: node.sessionId, parentAgent: main, signal,
             meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false), agentOptions: options,
             setup(child) {
-              const readable = ['read', 'glob', 'grep', 'write', 'edit']
-              child.tools.restrict({ allow: readable.filter(name => child.tools.get(name) !== undefined) })
+              child.tools.restrict({ allow: [] })
+              // Web presets register filesystem tools on the parent Agent, not globally.
+              for (const name of ['read', 'glob', 'grep', 'write', 'edit']) {
+                const definition = ctx.tools.get(name, main)
+                if (definition !== undefined) child.tools.register(definition)
+              }
+              if (ctx.tools.get('write', main) === undefined) throw new Error('parallel file workers require the main Agent native write tool')
               child.tools.register(defineTool({ name: 'task_worker_done', description: 'Return produced files and limitations to the main Agent. This is not acceptance; integration and independent review still follow.',
                 parameters: { report: { type: 'string', required: true } }, output,
                 async execute(args, call) { if (!args.report.trim()) throw new Error('report required'); report = args.report; call.concludeTurn(); return { submitted: true } } }))

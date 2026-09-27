@@ -24,7 +24,7 @@ import {
 } from './state.ts'
 
 export const name = 'task-supervisor'
-export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt']
+export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt', 'llm']
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
