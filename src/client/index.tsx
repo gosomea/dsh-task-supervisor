@@ -1,7 +1,8 @@
 /** DSH right sidebar panel for the bound task; all actions use the host controller. */
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { acceptedNodes, dependencies, readyNodes, runsOf } from '../graph.ts'
+import { acceptedNodes, readyNodes, runsOf } from '../graph.ts'
+import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore } from './task-store.ts'
 import type { TaskSnapshot } from '../state.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
@@ -97,13 +98,9 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
       {actionBar}
       <details><summary>任务目标</summary><p className="dsh-task-review">{task.objective}</p></details>
       <h3>执行节点</h3>
-      <ol className="dsh-task-stages">{task.stages.map((item, i) => <li key={item.id}>
-        <button aria-current={i === task.stageIndex ? 'step' : undefined} aria-pressed={index === i}
-          onClick={() => setSelected(item.id)} title={item.description ?? item.title}>
-          <span>{nodeLabel(task, item.id, state.armed ?? false, state.reviewing ?? false)}</span>
-          <strong>{item.id} · {item.title}</strong><small>尝试 {runsOf(task).find(run => run.id === item.id)?.attempt} · 依赖 {dependencies(task.stages, i).join(', ') || '无'}</small></button>
-      </li>)}</ol>
-      {stage && <section className="dsh-task-card"><h3>{stage.id} · 节点详情</h3><p>{stage.description ?? stage.title}</p>
+      <TaskGraph task={task} selected={stage?.id} select={setSelected}
+        label={id => nodeLabel(task, id, state.armed ?? false, state.reviewing ?? false)} />
+      {stage && <section className="dsh-task-card"><h3>{stage.id} · 节点详情</h3><p>{stage.description ?? stage.title}</p><small>写入范围：{stage.writePaths?.join('、') || '主 Agent 执行，尚未分配并行写入范围'}</small>
         <ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
           ? `${SOURCE_LABEL[item.provenance.kind]} · ${item.provenance.reference === 'objective' ? '任务目标' : item.provenance.reference}${item.provenance.sourceSeq === undefined ? '' : ` · seq ${item.provenance.sourceSeq}`}`
           : '历史计划 · 来源未标注'}</small></li>)}</ul></section>}
@@ -168,7 +165,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => {
     const style = document.createElement('style')
     style.dataset.pluginCss = 'dsh-task-supervisor'
-    style.textContent = CSS
+    style.textContent = CSS + GRAPH_CSS
     document.head.append(style)
     return () => { style.remove() }
   })

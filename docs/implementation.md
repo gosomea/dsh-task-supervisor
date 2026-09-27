@@ -68,4 +68,8 @@ Record version 6 stores visual criterion types, attempt evidence boundaries, and
 
 All 47 kernel checks pass, including native attachment delivery to review requests, text-only route rejection, and stale-attempt rejection. These checks do not establish real-model visual judgment quality.
 
+## DAG presentation
+
+The conversation fold and sidebar draw persisted dependency edges, with independent roots grouped in one column and successors in later columns. Nodes show status, attempt, and title. Hover reveals context; click or keyboard selection retains full criteria and write scope. Narrow panes scroll horizontally. Strict typecheck passes; browser and live execution checks belong to combined batch-two/three acceptance.
+
 [简体中文](implementation.zh.md)
