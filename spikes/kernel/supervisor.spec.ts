@@ -1062,3 +1062,49 @@ it.each(['text', 'unexpected-tool'])('preserves one native answer after a checkp
   expect(scripts.main).toHaveLength(0)
   expect(requests[2]?.tools?.some(tool => tool.name === 'task_status')).toBe(true)
 })
+
+it('offers native completion tools immediately after the final stage review', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-final-stage-')); roots.push(root)
+  const mainRequests: GenerateOptions[] = []
+  const rawCall = '<｜｜DSML｜｜ invoke name="task_request_completion">'
+  class CompletionAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model !== 'main') { yield* super.stream(options); return }
+      mainRequests.push(options)
+      const turn = mainRequests.length
+      const response = turn === 1 ? textResponse('计划准备完成')
+        : turn === 2 ? toolResponse('task_report_stage', {
+          stage_id: 's1', evidence: '目标文件已创建并检查',
+        }, 'report-final-stage')
+        : turn === 3 && !options.tools?.some(tool => tool.name === 'task_request_completion')
+          ? textResponse(rawCall)
+          : turn <= 4 && options.tools?.some(tool => tool.name === 'task_request_completion')
+            ? toolResponse('task_request_completion', { evidence: '唯一节点通过，文件内容已核对' }, `complete-${turn}`)
+            : textResponse('## 任务完成\n整体审查通过。')
+      for (const chunk of response) yield chunk
+    }
+  }
+  const adapter = new CompletionAdapter({ reviewer: [
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'read-stage'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '节点证据充分', evidence_seqs: [0] }, 'pass-stage'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'read-completion'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '整体证据充分', evidence_seqs: [0] }, 'pass-completion'),
+  ] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('final-stage-transition'),
+    agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new 创建并验证目标文件', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ callId: ToolCallId('submit-final-stage-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c1', text: '目标文件已验证', provenance: { kind: 'user', reference: 'objective' } }],
+      stages: [{ id: 's1', title: '创建并验证', criterionIds: ['c1'] }] } })).isError).toBe(false)
+  expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('complete'), { timeout: 10000 })
+  await agent.whenIdle()
+  expect(mainRequests).toHaveLength(4)
+  expect(mainRequests[2]?.tools?.some(tool => tool.name === 'task_request_completion')).toBe(true)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'assistant/message')
+    .flatMap(event => event.data.message.content)
+    .some(block => block.type === 'text' && block.text.includes(rawCall))).toBe(false)
+})

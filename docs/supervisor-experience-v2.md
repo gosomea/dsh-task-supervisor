@@ -55,7 +55,7 @@ Keep main-Agent answers in their native rendering. The current-task overview sho
 
 The sidebar separates Task details and Supervisor conversation into two tabs. Details contain the objective, DAG, node descriptions, criteria, and review history. Conversation embeds its native Session. Switching tabs preserves drafts and the mounted conversation; common actions remain outside the scrolling body. Both surfaces share versioned state and actions, refresh after reconnect, and reject stale responses. Active review offers pause; interrupted or paused work offers resume.
 
-A successful checkpoint permits one tool-free native closing step so the model can explain its plan or result. The plugin does not synthesize, rewrite, or replace main-Agent output. Only after that step can the controller schedule another turn. Supervised tasks no longer maintain a second `todo_write` progress checklist. See [UI validation](v2-ui-validation.md) for implementation evidence.
+A successful checkpoint normally permits one tool-free native closing step so the model can explain its plan or result. After the final stage passes, the current turn ends instead; the controller starts a new turn with native tools so the main Agent can request whole-task completion review. This prevents a text rendition of `task_request_completion` in a tool-free step. The plugin does not synthesize, rewrite, or replace main-Agent output. Supervised tasks no longer maintain a second `todo_write` progress checklist. See [UI validation](v2-ui-validation.md) for implementation evidence.
 
 ## Task graph and parallelism
 

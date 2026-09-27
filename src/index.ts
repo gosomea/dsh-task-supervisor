@@ -712,8 +712,14 @@ export function apply(ctx: Context, config: Config = {}): void {
       appendTask(ctx, agent, settled)
       await flush(agent)
       runtime(agent).armed = settled.phase === 'active'
-      closeWithResponse(agent, settled.revision)
-      return { verdict: decision.verdict, finding: decision.finding, message: CLOSING_MESSAGE,
+      const awaitsCompletion = kind === 'stage' && settled.phase === 'active'
+        && acceptedNodes(settled).length === settled.stages.length
+      if (awaitsCompletion) exec.concludeTurn()
+      else closeWithResponse(agent, settled.revision)
+      return { verdict: decision.verdict, finding: decision.finding,
+        message: awaitsCompletion
+          ? 'All stages passed. The controller will start a new turn with tools for whole-task completion review.'
+          : CLOSING_MESSAGE,
         imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
         nextStage: settled.stages[settled.stageIndex]?.id ?? null, phase: settled.phase }
     } catch (error: unknown) {
