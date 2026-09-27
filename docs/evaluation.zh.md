@@ -42,7 +42,7 @@
 | 第二批 | [SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 补充跨文件、跨功能的项目演进任务；独立确认环境与验收稳定性。 |
 | 补充 | [Terminal-Bench](https://www.tbench.ai/news) | 补充复杂终端工作；固定一个发布版本，Challenges 可作为更长单任务的候选。 |
 
-SWE-bench Pro V2 已开始接入。默认 QEMU 环境首题参考解校验失败，独立的 VZ/Rosetta 环境对同题取得空补丁 0、参考解 1；该校准题的 Goal、Plan、Supervisor 补丁都获得外部 reward 1.0。六题冻结样本中的 NodeBB 与 Navidrome 已通过空补丁 0、参考解 1 的环境门禁。NodeBB 三组已封口：Goal 按时完成并获外部 reward 1.0；Plan 超时、Supervisor 因审查格式失败暂停至超时，两者截止补丁的诊断 reward 都为 1.0，但主指标失败。Navidrome Goal 已完成并外部通过，其余组正在运行或未投递。校准题不计入冻结样本；单道冻结题不能支持总体比较。固定数据集 commit／版本、样本 ID、容器 digest、验收器版本及初始仓库提交；运行前检查许可证与环境要求。SWE-bench Pro V2 官方镜像标注为 linux/amd64，需逐题验证参考解与空补丁。不要将不同版本分数合并，或将修改了任务、交互、联网规则或时间上限的结果称为官方成绩。
+SWE-bench Pro V2 已开始接入。默认 QEMU 环境首题参考解校验失败，独立的 VZ/Rosetta 环境对同题取得空补丁 0、参考解 1；该校准题的 Goal、Plan、Supervisor 补丁都获得外部 reward 1.0。六题冻结样本中的 NodeBB 与 Navidrome 已通过空补丁 0、参考解 1 的环境门禁。NodeBB 三组已封口：Goal 按时完成并获外部 reward 1.0；Plan 超时、Supervisor 因审查格式失败暂停至超时，两者截止补丁的诊断 reward 都为 1.0，但主指标失败。Navidrome Goal 与 Plan 已按时完成且外部通过，Supervisor 正在运行。校准题不计入冻结样本；单道冻结题不能支持总体比较。固定数据集 commit／版本、样本 ID、容器 digest、验收器版本及初始仓库提交；运行前检查许可证与环境要求。SWE-bench Pro V2 官方镜像标注为 linux/amd64，需逐题验证参考解与空补丁。不要将不同版本分数合并，或将修改了任务、交互、联网规则或时间上限的结果称为官方成绩。
 
 公开编码任务通常按单题组织。同一任务内部可以包含多次模型交互与续行，但这不等于同一 Session 连续多个用户任务。后者在 P3 单独定义；不用强行把不同仓库和基础提交的题目拼到一个工作区。
 
