@@ -852,6 +852,9 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   await ctx.commands.execute(main, '/task consult', [], signal)
   const chatId = SessionId(`task-chat-${main.id}-${before.id}`)
   const chat = ctx.agents.get(chatId)!
+  expect(ctx.tools.get('supervisor_read_status', main)).toBeUndefined()
+  expect(ctx.tools.get('supervisor_read_status', chat)).toBeDefined()
+  expect(ctx.tools.get('task_delegate_nodes', chat)).toBeUndefined()
   scripts.consult = [toolResponse('supervisor_read_status', {}, 'status'), textResponse('目前在规划中。')]
   chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '进展如何？' }] }))
   await chat.whenIdle()

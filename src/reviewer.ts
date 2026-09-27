@@ -113,6 +113,7 @@ export async function reviewStage(
     agentOptions: options,
     signal,
     setup(agentCtx) {
+      agentCtx.tools.restrict({ allow: [] })
       installImageEvidence(agentCtx, ctx, main, cutoff, imageAfterSeq, observedSeqs, imageSeqs, model)
       agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_worker', 'task_review_decision'].includes(exec.name)
         ? undefined : 'reviewers may only inspect evidence and submit a decision')
