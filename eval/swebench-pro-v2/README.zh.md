@@ -4,6 +4,8 @@
 
 三组 NodeBB 接入校准的完整结果见 [calibration-nodebb-20260928.zh.md](calibration-nodebb-20260928.zh.md)。这道题已用于调试，三组均通过外部验收；它不计入冻结样本。
 
+首道冻结样本的逐组进展见 [frozen-nodebb-20260928.zh.md](frozen-nodebb-20260928.zh.md)。目前 Goal 已评分，Plan 正在运行，尚不能进行三组比较。
+
 六题 P1 集成样本已用固定种子按仓库分层抽取并冻结在 [sample-v1.json](sample-v1.json)。`select_sample.py` 保留选择算法且拒绝覆盖现有样本。NodeBB 与 Flipt 的上述两道接入校准题事先排除，避免用已看过的校准题充当保留样本。样本尚未进入模型评分；逐题环境门禁仍要执行。
 
 ## 本机接入记录：2026-09-28
