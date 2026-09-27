@@ -696,3 +696,38 @@ it('pages full review evidence within its cutoff and rejects injected requiremen
     expect(JSON.stringify(output('context-tail').content)).toContain('Hard constraint at the end')
   } finally { await reader.close() }
 })
+
+it('reviews independent DAG branches out of order without releasing an unfinished join', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-dag-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter({ reviewer: [
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 1 }, 'b-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'B accepted', evidence_seqs: [0] }, 'b-pass'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 1 }, 'a-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'A accepted', evidence_seqs: [0] }, 'a-pass'),
+  ] }), true, { provider: 'scripted', model: 'reviewer' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('dag-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build two branches', [], signal)
+  await agent.whenIdle()
+  expect((await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('dag-plan'), agent, signal, arguments: {
+    criteria: [{ id: 'c', text: 'Integrated', provenance: { kind: 'user', reference: 'objective' } }],
+    stages: [{ id: 'a', title: 'A', criterionIds: ['c'], dependsOn: [] },
+      { id: 'b', title: 'B', criterionIds: ['c'], dependsOn: [] },
+      { id: 'j', title: 'Join', criterionIds: ['c'], dependsOn: ['a', 'b'] }],
+  } })).isError).toBe(false)
+  await ctx.commands.execute(agent, '/task approve', [], signal)
+  await agent.whenIdle()
+  const report = (id: string, attempt = 1) => ctx.tools.execute({ name: 'task_report_stage', callId: ToolCallId(`report-${id}-${attempt}`), agent, signal,
+    arguments: { stage_id: id, attempt, evidence: 'executed checks' } })
+  expect((await report('j')).isError).toBe(true)
+  expect((await report('b')).isError).toBe(false)
+  expect(taskOf(ctx, agent)?.stageIndex).toBe(0)
+  expect((await report('a')).isError).toBe(false)
+  expect(taskOf(ctx, agent)?.stageIndex).toBe(2)
+  expect((await ctx.tools.execute({ name: 'task_rework_node', callId: ToolCallId('rework-a'), agent, signal,
+    arguments: { stage_id: 'a', reason: 'A interface changed' } })).isError).toBe(false)
+  expect((await report('a', 1)).isError).toBe(true)
+  expect(taskOf(ctx, agent)?.nodeRuns?.map(run => [run.id, run.attempt, run.status]))
+    .toEqual([['a', 2, 'pending'], ['b', 1, 'passed'], ['j', 2, 'pending']])
+})

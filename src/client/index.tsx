@@ -1,6 +1,7 @@
 /** DSH right sidebar panel for the bound task; all actions use the host controller. */
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { acceptedNodes, dependencies, readyNodes, runsOf } from '../graph.ts'
 import { taskStore } from './task-store.ts'
 import type { TaskSnapshot } from '../state.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
@@ -55,6 +56,18 @@ const PHASE: Record<TaskSnapshot['phase'], string> = {
 }
 const VERDICT = { pass: '通过', revise: '需要修订', 'needs-user': '等待用户决策' }
 
+function nodeLabel(task: TaskSnapshot, id: string, armed: boolean, reviewing: boolean): string {
+  const run = runsOf(task).find(item => item.id === id)
+  if (run?.status === 'passed') return '✓ 已通过'
+  if (run?.status === 'awaiting-user') return '等待用户'
+  if (run?.status === 'reviewing') return reviewing ? '◉ 审查中' : '审查待恢复'
+  if (task.phase === 'awaiting-approval') return '等待批准'
+  if (task.phase === 'paused' || !armed) return '等待继续'
+  if (run?.status === 'running') return '● 执行中'
+  if (run?.status === 'needs-revision') return '需要修订'
+  return readyNodes(task).includes(id) ? '可执行' : '等待依赖'
+}
+
 const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementation: '实现选择' }
 
 const ACTION_LABEL: Record<string, string> = { approve: '批准计划', pause: '暂停', resume: '恢复任务',
@@ -78,7 +91,7 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
     {state === null ? <p>正在读取任务状态…</p> : task === null || task === undefined
       ? <p>在输入框使用 <code>/task new &lt;目标&gt;</code> 创建任务。</p> : <>
       <div className="dsh-task-status"><strong>{status}</strong>
-        <span>{task.stages.length > 0 ? <>计划 v{task.planVersion} · 已通过 {task.stageIndex}/{task.stages.length}</> : '正在准备计划'}</span></div>
+        <span>{task.stages.length > 0 ? <>计划 v{task.planVersion} · 已通过 {acceptedNodes(task).length}/{task.stages.length}</> : '正在准备计划'}</span></div>
       {task.phase === 'awaiting-approval' && <p>等待你批准当前计划；也可以直接输入“批准”。</p>}
       {task.phase === 'paused' && task.lastReview?.verdict === 'needs-user' && <p>需要你的决定，任务将保持等待。</p>}
       {actionBar}
@@ -87,8 +100,8 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
       <ol className="dsh-task-stages">{task.stages.map((item, i) => <li key={item.id}>
         <button aria-current={i === task.stageIndex ? 'step' : undefined} aria-pressed={index === i}
           onClick={() => setSelected(item.id)} title={item.description ?? item.title}>
-          <span>{i < task.stageIndex ? '✓ 已通过' : i === task.stageIndex ? state.reviewing ? '◉ 审查中' : task.phase === 'awaiting-approval' ? '等待批准' : task.phase === 'paused' || !state.armed ? '等待继续' : '● 当前' : '○ 未开始'}</span>
-          <strong>{item.id} · {item.title}</strong></button>
+          <span>{nodeLabel(task, item.id, state.armed ?? false, state.reviewing ?? false)}</span>
+          <strong>{item.id} · {item.title}</strong><small>尝试 {runsOf(task).find(run => run.id === item.id)?.attempt} · 依赖 {dependencies(task.stages, i).join(', ') || '无'}</small></button>
       </li>)}</ol>
       {stage && <section className="dsh-task-card"><h3>{stage.id} · 节点详情</h3><p>{stage.description ?? stage.title}</p>
         <ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
@@ -110,7 +123,7 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
     {error && <p role="alert" className="dsh-task-error">{error}</p>}
   </>
   return inline ? <details className="dsh-task-inline"><summary>
-    <strong>任务督导</strong> · {status} · {task?.stages.length ? <>已通过 {task.stageIndex}/{task.stages.length}</> : '正在准备计划'}
+    <strong>任务督导</strong> · {status} · {task?.stages.length ? <>已通过 {acceptedNodes(task).length}/{task.stages.length}</> : '正在准备计划'}
     {task?.stages[task.stageIndex] && <> · {task.stages[task.stageIndex]?.id}</>}
     </summary><div className="dsh-task-panel">{content}</div></details>
     : <div className="dsh-task-panel"><h2>任务督导</h2>{content}</div>

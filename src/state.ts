@@ -1,5 +1,6 @@
 /** Durable one-task state projected from the main DSH Session. */
 
+import { validateGraph } from './graph.ts'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -9,8 +10,8 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 4
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4]
+export const RECORD_VERSION = 5
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5]
 
 export const provenanceSchema = z.object({
   kind: z.enum(['user', 'project', 'implementation']),
@@ -20,9 +21,17 @@ export const provenanceSchema = z.object({
 export const criterionSchema = z.object({
   id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(),
 }).strict()
-const stageSchema = z.object({
+export const stageSchema = z.object({
+  dependsOn: z.array(z.string().min(1)).optional(), writePaths: z.array(z.string().min(1)).optional(),
   id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
 }).strict()
+const nodeRunSchema = z.object({
+  id: z.string().min(1), attempt: z.number().int().positive(),
+  status: z.enum(['pending', 'running', 'reviewing', 'passed', 'needs-revision', 'awaiting-user']),
+  sessionId: z.string().optional(), startedAt: z.string().optional(), finishedAt: z.string().optional(),
+  reviewSeq: z.number().int().nonnegative().optional(),
+}).strict()
+export type NodeRun = z.infer<typeof nodeRunSchema>
 const reviewSchema = z.object({
   stageId: z.string().min(1),
   cutoff: z.number().int().nonnegative(),
@@ -49,6 +58,7 @@ export const taskSchema = z.object({
   planVersion: z.number().int().nonnegative(),
   criteria: z.array(criterionSchema),
   stages: z.array(stageSchema),
+  nodeRuns: z.array(nodeRunSchema).optional(),
   stageIndex: z.number().int().nonnegative(),
   roundsSinceReview: z.number().int().nonnegative(),
   approvedPlanVersion: z.number().int().nonnegative().nullable(),
@@ -80,7 +90,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 4,
+  stateVersion: 5,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema) }),
   init: (): TaskProjection => ({ current: null, failure: null, reviews: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
@@ -99,6 +109,12 @@ export const taskProjection = {
       if (previous !== null && next.id !== previous.id
         && (!['complete', 'cleared'].includes(previous.phase) || next.revision !== 1)) {
         throw new Error('new task identity requires a terminal predecessor')
+      }
+      if (next.stages.length) validatePlan(next.criteria, next.stages)
+      if (next.nodeRuns && (next.nodeRuns.length !== next.stages.length
+        || new Set(next.nodeRuns.map(run => run.id)).size !== next.stages.length
+        || next.nodeRuns.some(run => !next.stages.some(stage => stage.id === run.id)))) {
+        throw new Error('node runs must match the plan')
       }
       if (next.stageIndex > next.stages.length) throw new Error('stage index exceeds the plan')
       const reviews = previous?.id === next.id ? state.reviews : []
@@ -133,7 +149,16 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     criteria: state.criteria.map(item => ({ id: item.id, text: item.text,
       ...item.provenance === undefined ? {} : { provenance: { kind: item.provenance.kind, reference: item.provenance.reference,
         ...item.provenance.sourceSeq === undefined ? {} : { sourceSeq: item.provenance.sourceSeq } } } })),
-    stages: state.stages.map(item => ({ id: item.id, title: item.title, ...item.description === undefined ? {} : { description: item.description }, criterionIds: [...item.criterionIds] })),
+    ...state.nodeRuns === undefined ? {} : { nodeRuns: state.nodeRuns.map(run => ({
+      id: run.id, attempt: run.attempt, status: run.status,
+      ...run.sessionId === undefined ? {} : { sessionId: run.sessionId },
+      ...run.startedAt === undefined ? {} : { startedAt: run.startedAt },
+      ...run.finishedAt === undefined ? {} : { finishedAt: run.finishedAt },
+      ...run.reviewSeq === undefined ? {} : { reviewSeq: run.reviewSeq },
+    })) },
+    stages: state.stages.map(item => ({ id: item.id, title: item.title,
+      ...item.dependsOn === undefined ? {} : { dependsOn: [...item.dependsOn] },
+      ...item.writePaths === undefined ? {} : { writePaths: [...item.writePaths] }, ...item.description === undefined ? {} : { description: item.description }, criterionIds: [...item.criterionIds] })),
     stageIndex: state.stageIndex,
     roundsSinceReview: state.roundsSinceReview,
     approvedPlanVersion: state.approvedPlanVersion,
@@ -198,5 +223,6 @@ export function validatePlan(criteria: readonly TaskCriterion[], stages: readonl
       covered.add(id)
     }
   }
+  validateGraph(stages)
   if (covered.size !== criteriaIds.size) throw new Error('every criterion must appear in a stage')
 }

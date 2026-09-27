@@ -11,11 +11,12 @@ import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
+import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
-  NAMESPACE, READABLE_RECORD_VERSIONS, criterionSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
+  NAMESPACE, READABLE_RECORD_VERSIONS, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
   type TaskSnapshot,
 } from './state.ts'
 
@@ -50,9 +51,7 @@ interface Runtime {
 
 const planInput = z.object({
   criteria: z.array(criterionSchema).min(1),
-  stages: z.array(z.object({
-    id: z.string().min(1), title: z.string().min(1), description: z.string().optional(), criterionIds: z.array(z.string().min(1)).min(1),
-  }).strict()).min(1),
+  stages: z.array(stageSchema).min(1),
   read_only_turns_before_write: z.number().int().min(0).max(10).optional(),
 }).strict()
 
@@ -426,7 +425,8 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (reviewAbort.has(agent)) throw new Error('审查正在进行，请使用暂停而不是恢复。')
           if (life.armed) return reply('Supervisor already running', task, true)
           const interruptedReview = task.pendingReview
-          const next: TaskSnapshot = { ...task, revision: task.revision + 1,
+          const next: TaskSnapshot = { ...withRuns(task, runsOf(task).map(run => ['reviewing', 'awaiting-user', 'running'].includes(run.status)
+              ? { id: run.id, attempt: run.attempt + 1, status: 'pending' } : run)), revision: task.revision + 1,
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,
@@ -450,7 +450,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           withdrawOwned(agent)
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             objective, requirementsVersion: task.requirementsVersion + 1,
-            planVersion: task.planVersion + 1, criteria: [], stages: [], stageIndex: 0, roundsSinceReview: 0,
+            planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
             approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
             phase: 'planning', pendingReview: null, lastReview: null }
           if (!next.enabled) {
@@ -479,7 +479,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     parameters: {}, output: textOutput,
     async execute(_args, exec) {
       const task = current(toolAgent(exec))
-      return task === null ? null : { ...taskJson(task) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+      return task === null ? null : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+        readyNodeIds: readyNodes(task),
         approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents(), task) }
     },
   }))
@@ -528,6 +529,8 @@ export function apply(ctx: Context, config: Config = {}): void {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, title: { type: 'string', required: true },
           description: { type: 'string', description: 'Implementation scope, deliverables, and validation for this stage.' },
+          dependsOn: { type: 'array', items: { type: 'string' }, description: 'Dependency node IDs; [] is an independent root. Omission preserves legacy adjacent ordering. All dependencies must pass review before this node runs.' },
+          writePaths: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative files/directories owned by this node; required for later parallel delegation.' },
           criterionIds: { type: 'array', required: true, items: { type: 'string' } },
         },
       } },
@@ -571,7 +574,8 @@ export function apply(ctx: Context, config: Config = {}): void {
         }
       }
       const next: TaskSnapshot = { ...task, revision: task.revision + 1,
-        planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages, stageIndex: 0,
+        planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages,
+        nodeRuns: parsed.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending' })), stageIndex: 0,
         readOnlyTurnsBeforeWrite, readOnlyGateStartSeq: task.everApproved ? agent.session.seq : null,
         roundsSinceReview: 0,
         phase: task.everApproved ? 'active' : 'awaiting-approval',
@@ -580,7 +584,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
           finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
           reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
-      appendTask(ctx, agent, next)
+      appendTask(ctx, agent, withRuns(next, runsOf(next)))
       await flush(agent)
       if (next.phase === 'active') runtime(agent).armed = true
       exec.concludeTurn()
@@ -612,17 +616,18 @@ export function apply(ctx: Context, config: Config = {}): void {
         phase: decision.verdict === 'needs-user' ? 'paused'
           : kind === 'completion' && decision.verdict === 'pass' ? 'complete' : 'active',
         pendingReview: null,
-        stageIndex: kind === 'stage' && decision.verdict === 'pass' ? latest.stageIndex + 1 : latest.stageIndex,
+        stageIndex: latest.stageIndex,
         roundsSinceReview: 0,
         lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
           evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
-      appendTask(ctx, agent, next)
+      const settled = kind === 'stage' ? finishNode(next, stageId, decision.verdict, agent.session.seq) : next
+      appendTask(ctx, agent, settled)
       await flush(agent)
-      runtime(agent).armed = next.phase === 'active'
+      runtime(agent).armed = settled.phase === 'active'
       exec.concludeTurn()
       return { verdict: decision.verdict, finding: decision.finding,
         evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
-        nextStage: next.stages[next.stageIndex]?.id ?? null, phase: next.phase }
+        nextStage: settled.stages[settled.stageIndex]?.id ?? null, phase: settled.phase }
     } catch (error: unknown) {
       const latest = current(agent)
       if (latest?.id === reviewing.id && latest.revision === reviewing.revision && latest.phase === 'reviewing') {
@@ -643,6 +648,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     description: 'Submit evidence for the current plan stage; an independent reviewer checks it.',
     parameters: {
       stage_id: { type: 'string', required: true },
+      attempt: { type: 'integer', description: 'Current node attempt from task_status. Required after rework; initial attempt is 1.' },
       evidence: { type: 'string', required: true, description: 'Concrete artifact and test evidence, with Session references when known.' },
     },
     output: textOutput,
@@ -650,11 +656,27 @@ export function apply(ctx: Context, config: Config = {}): void {
       const agent = toolAgent(exec)
       const task = current(agent)
       if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
-      const stage = task.stages[task.stageIndex]
-      if (stage === undefined || stage.id !== args.stage_id || !args.evidence.trim()) {
+      const stage = task.stages.find(stage => stage.id === args.stage_id)
+      if (stage === undefined || !args.evidence.trim()) {
         throw new Error('report the current stage with concrete evidence')
       }
-      return settleReview(agent, task, stage.id, args.evidence, 'stage', exec)
+      return settleReview(agent, reviewNode(task, stage.id, args.attempt), stage.id, args.evidence, 'stage', exec)
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'task_rework_node', description: 'Reopen a node and invalidate all dependent acceptance. Inspect task_status for the new attempt IDs before executing.',
+    parameters: { stage_id: { type: 'string', required: true }, reason: { type: 'string', required: true } }, output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec)
+      const task = current(agent)
+      if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
+      if (!args.reason.trim()) throw new Error('rework needs a reason')
+      const next = { ...reworkNode(task, args.stage_id), revision: task.revision + 1, pendingReview: null, lastReview: null }
+      appendTask(ctx, agent, next)
+      await flush(agent)
+      exec.concludeTurn()
+      return { task: taskJson(next), readyNodeIds: readyNodes(next), reason: args.reason }
     },
   }))
 
@@ -670,7 +692,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const agent = toolAgent(exec)
       const task = current(agent)
       if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
-      if (task.stages.length === 0 || task.stageIndex !== task.stages.length || !args.evidence.trim()) {
+      if (task.stages.length === 0 || acceptedNodes(task).length !== task.stages.length || !args.evidence.trim()) {
         throw new Error('every stage must pass before requesting final completion')
       }
       return settleReview(agent, task, 'completion', args.evidence, 'completion', exec)

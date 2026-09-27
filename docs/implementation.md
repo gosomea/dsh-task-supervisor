@@ -50,4 +50,10 @@ New plan criteria must identify a user requirement, project constraint, or imple
 
 Review summaries expose truncation and continuation offsets. `read_task_text`, the extended `read_task_call`, and `read_task_context` retrieve event text and full task context inside the fixed cutoff. Independent review checks whether sources support criteria and excludes unrelated fixtures; structural origin validation does not replace semantic judgment. Long-turn observation and image reads remain unimplemented; see [provenance and evidence validation](v2-evidence-validation.md).
 
+## DAG state and attempt identity
+
+Record version 5 adds dependencies and independent node runs. `dependsOn: []` denotes a root; omitted legacy dependencies retain the adjacent chain. `stageIndex` is a selection, not an accepted count. Reports may target any dependency-ready node; review passes release successors, and completion requires every node to pass.
+
+`task_rework_node` invalidates the selected node and its descendants, advances attempt IDs, and retains unrelated branches. Reports must identify the current `attempt` after rework. Resuming interrupted active nodes also starts a new attempt and requires checking uncertain side effects. Host regressions cover out-of-order independent reports, join gating, and rework invalidation. Graph rendering, parallel delegation, and combined real-model acceptance remain subsequent modules.
+
 [简体中文](implementation.zh.md)

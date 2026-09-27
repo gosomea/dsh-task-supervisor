@@ -1,4 +1,5 @@
 /** Task language and bounded continuation context, restored from durable state. */
+import { acceptedNodes, readyNodes, runsOf } from './graph.ts'
 import type { TaskSnapshot } from './state.ts'
 
 export function resolveLanguage(objective: string, configured = 'auto', fallback = 'zh-CN'): string {
@@ -28,10 +29,11 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     languagePolicy(task),
     `Task ${task.id}; requirements v${task.requirementsVersion}; plan v${task.planVersion}; state v${task.revision}.`,
     `Objective (full): ${task.objective}`,
-    `Accepted nodes: ${task.stages.slice(0, task.stageIndex).map(item => item.id).join(', ') || 'none'}.`,
+    `Accepted nodes: ${acceptedNodes(task).join(', ') || 'none'}.`,
     task.stages.length === 0 ? 'No plan submitted yet; inspect and submit a plan before execution.'
       : stage === undefined ? 'All planned stages accepted; request whole-task completion review.'
       : `Current node: ${stage.id} — ${stage.title}${stage.description ? `\nDetails: ${excerpt(stage.description, 2000)}` : ''}`,
+    `Ready nodes: ${readyNodes(task).join(', ') || 'none'}. Node attempts: ${JSON.stringify(runsOf(task))}`,
     `Current acceptance: ${JSON.stringify(task.criteria.filter(item => stage?.criterionIds.includes(item.id)))}`,
     task.lastReview === null ? 'No independent review yet.'
       : `Latest independent review: ${task.lastReview.stageId}; ${task.lastReview.verdict}; evidence cutoff ${task.lastReview.cutoff}.\n${excerpt(task.lastReview.finding, 1600)}`,
