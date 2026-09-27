@@ -17,6 +17,7 @@ def main() -> None:
     parser.add_argument("--approval-receipt", type=Path)
     parser.add_argument("--kind", choices=("public-benchmark-calibration", "public-benchmark-frozen-p1"),
                         default="public-benchmark-calibration")
+    parser.add_argument("--termination", choices=("completed", "time-limit"), default="completed")
     args = parser.parse_args()
     if args.output.exists():
         parser.error(f"Refusing to overwrite result: {args.output}")
@@ -78,8 +79,10 @@ def main() -> None:
         native = {"taskSupervisor": value("taskSupervisor")}
 
     result = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "kind": args.kind,
+        "termination": args.termination,
+        "primarySuccess": args.termination == "completed" and reward == 1.0,
         "officialLeaderboardSubmission": False,
         "taskId": state["taskId"],
         "arm": state["arm"],
@@ -107,6 +110,7 @@ def main() -> None:
             "harborJob": str(args.grade_job),
             "reward": reward,
             "errors": eval_result.get("n_errors"),
+            "diagnosticOnly": args.termination != "completed",
         },
     }
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
