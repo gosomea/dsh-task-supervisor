@@ -12,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
-import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode } from './graph.ts'
+import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
@@ -499,8 +499,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (reviewAbort.has(agent)) throw new Error('审查正在进行，请使用暂停而不是恢复。')
           if (life.armed) return reply('Supervisor already running', task, true)
           const interruptedReview = task.pendingReview
-          const next: TaskSnapshot = { ...withRuns(task, runsOf(task).map(run => ['reviewing', 'awaiting-user', 'running'].includes(run.status)
-              ? { id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq: agent.session.seq } : run)), revision: task.revision + 1,
+          const next: TaskSnapshot = { ...withRuns(task, recoverRuns(task, agent.session.seq)), revision: task.revision + 1,
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,

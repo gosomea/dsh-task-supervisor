@@ -91,3 +91,7 @@ All 50 checks and separate strict Host/Client typechecks pass. Native filesystem
 ## Planning semantics found during integration
 
 A real model placed predecessor integration checks in a successor gated on predecessor acceptance, and mislabeled explicit user requirements as implementation choices. Independent review initially missed both; that run is not a pass. Planning and review contracts now explain acceptance dependencies, checks before node review, explicit node counts, and source classification. All 50 kernel checks and both strict typechecks pass; real-model reruns are recorded separately.
+
+## Interrupted review and native compaction configuration
+
+Resuming a read-only review preserves the settled execution attempt and worker cutoff; interrupted execution or rework advances attempts. Regression coverage checks retained evidence and gated successors; all 51 checks pass. Browser acceptance found native compaction absent from the isolated Web profile. The README now specifies its native backend composition. A model falsely reporting success for an ordinary `/compact` message is recorded as a failure; consultation instructions now require a native command result.

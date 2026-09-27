@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { acceptedNodes, dependencies, finishNode, readyNodes, reworkNode, reviewNode, runsOf, validateGraph, withRuns } from '../../src/graph.ts'
+import { acceptedNodes, dependencies, finishNode, readyNodes, reworkNode, reviewNode, runsOf, validateGraph, withRuns, recoverRuns } from '../../src/graph.ts'
 import { newTask, taskJson, taskSchema, type TaskSnapshot } from '../../src/state.ts'
 
 function diamond(): TaskSnapshot {
@@ -9,6 +9,19 @@ function diamond(): TaskSnapshot {
     { id: 'join', title: 'Join', criterionIds: ['c'], dependsOn: ['a', 'b'] },
   ] }
 }
+
+it('resubmits interrupted review with settled worker evidence, but invalidates interrupted execution', () => {
+  const task = { ...diamond(), nodeRuns: [
+    { id: 'a', attempt: 1, status: 'reviewing' as const, sessionId: 'worker-a', workerCutoff: 20, integrationAfterSeq: 50, evidenceAfterSeq: 5 },
+    { id: 'b', attempt: 1, status: 'running' as const, sessionId: 'worker-b' },
+    { id: 'join', attempt: 1, status: 'pending' as const },
+  ] }
+  const resumed = withRuns(task, recoverRuns(task, 80))
+  expect(resumed.nodeRuns?.[0]).toEqual({ ...task.nodeRuns[0], status: 'awaiting-integration' })
+  expect(resumed.nodeRuns?.[1]).toEqual({ id: 'b', attempt: 2, status: 'pending', evidenceAfterSeq: 80 })
+  expect(() => reviewNode(resumed, 'a', 1)).not.toThrow()
+  expect(() => reviewNode(resumed, 'join', 1)).toThrow('not ready')
+})
 
 it('releases a join only after both independent branches pass review', () => {
   let task = diamond()

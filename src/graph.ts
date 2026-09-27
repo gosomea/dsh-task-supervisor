@@ -45,6 +45,17 @@ export function acceptedNodes(task: TaskSnapshot): string[] {
   return runsOf(task).filter(run => run.status === 'passed').map(run => run.id)
 }
 
+/** Review is read-only: interruption does not invalidate the already settled execution. */
+export function recoverRuns(task: TaskSnapshot, evidenceAfterSeq: number): NodeRun[] {
+  return runsOf(task).map(run => {
+    if (run.status === 'reviewing') return { ...run,
+      status: run.workerCutoff === undefined ? 'pending' : 'awaiting-integration' }
+    if (['awaiting-user', 'running'].includes(run.status)) return {
+      id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq }
+    return run
+  })
+}
+
 /** Keep the old display pointer as a derived selection, never an accepted count. */
 export function withRuns(task: TaskSnapshot, runs: NodeRun[]): TaskSnapshot {
   const next = { ...task, nodeRuns: runs }

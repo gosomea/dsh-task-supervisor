@@ -48,3 +48,5 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 当前原型每个 Session 支持一个任务。五任务队列、`/task plan` 快捷入口、插件内置的独立可执行验收、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
 
 [English](README.md)
+
+持久督导问询复用原生 Session 和压缩后端。在采用根作用域工具的专用隔离 Web profile 中，需要启用原生 `compaction-basic` 与 `command-compact` 行；Web 默认把它们移到 Agent preset，裸根 Session 不会自动获得它们。先确认命令菜单提供 `/compact`，并以持久 `command/done` 和 `compaction/summary` 为成功依据；把 `/compact` 当普通消息发送不构成压缩。使用 preset 的宿主应在相应作用域提供同一原生能力，不能同时挂载两份压缩后端。

@@ -29,7 +29,7 @@ export function ConsultationHost({ id, sessions, SessionProvider, renderSlot }: 
     return () => { active = false; ref.release(); setReference(null) }
   }, [id, sessions])
   return <section aria-label="Supervisor 持久对话" className="dsh-task-consultation">
-    <p className="dsh-task-muted">Supervisor · 持久督导对话。普通问询不打断任务；明确输入“暂停任务”“恢复任务”可介入，修改要求可输入“修改任务要求：完整目标”。支持原生 /compact。</p>
+    <p className="dsh-task-muted">Supervisor · 持久督导对话。普通问询不打断任务；明确输入“暂停任务”“恢复任务”可介入，修改要求可输入“修改任务要求：完整目标”。压缩使用宿主提供的原生 /compact 命令。</p>
     {error && <p role="alert">{error}</p>}
     <div style={{ height: '60vh', minHeight: 360, position: 'relative', display: 'flex', flexDirection: 'column' }}>
       {reference && <SessionProvider session={reference}>{renderSlot('task-supervisor.consultation', {})}</SessionProvider>}
