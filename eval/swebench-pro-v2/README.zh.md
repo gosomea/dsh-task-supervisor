@@ -4,9 +4,9 @@
 
 三组 NodeBB 接入校准的完整结果见 [calibration-nodebb-20260928.zh.md](calibration-nodebb-20260928.zh.md)。这道题已用于调试，三组均通过外部验收；它不计入冻结样本。
 
-首道冻结样本的逐组进展见 [frozen-nodebb-20260928.zh.md](frozen-nodebb-20260928.zh.md)。Goal 已按时完成且外部通过；Plan 的截止补丁虽通过外部诊断测试，但到 3000 秒仍未给最终回答，主指标为失败；Supervisor 正在运行。
+首道冻结样本的三组结果见 [frozen-nodebb-20260928.zh.md](frozen-nodebb-20260928.zh.md)：Goal 按时完成且外部通过；Plan 到时限未结束；Supervisor 的第三阶段审查未返回结构化决定，暂停到时限。后两组截止补丁虽通过外部诊断测试，主指标均为失败。第二道 [Navidrome 逐组记录](frozen-navidrome-20260928.zh.md)中，Goal 已按时完成且外部通过，Plan 正在运行。
 
-六题 P1 集成样本已用固定种子按仓库分层抽取并冻结在 [sample-v1.json](sample-v1.json)。`select_sample.py` 保留选择算法且拒绝覆盖现有样本。NodeBB 与 Flipt 的上述两道接入校准题事先排除，避免用已看过的校准题充当保留样本。样本尚未进入模型评分；逐题环境门禁仍要执行。
+六题 P1 集成样本已用固定种子按仓库分层抽取并冻结在 [sample-v1.json](sample-v1.json)。`select_sample.py` 保留选择算法且拒绝覆盖现有样本。NodeBB 与 Flipt 的上述两道接入校准题事先排除，避免用已看过的校准题充当保留样本。NodeBB 与 Navidrome 已过环境门禁并开始模型评分；其余样本仍须逐题过门禁。
 
 ## 本机接入记录：2026-09-28
 
@@ -18,8 +18,8 @@
 - Agent 端现直接运行在官方任务镜像的 `/app` 中；DSH 源码和插件以只读挂载提供，三个工作流分别使用从同一镜像启动的独立容器、独立 Home 和相同模型。容器限制为 1 CPU、4 GiB，禁止访问公网，仅允许连接宿主的模型代理。官方 `tests`、参考解和评分 job 不挂载到 Agent 容器。容器内 DSH 的 `workspace-write` 沙箱后端不可用；初次工具被拒的尝试已作废。正式试跑统一把 DSH 权限设为 `danger-full-access`，实际写入边界由容器文件系统、只读挂载与网络规则实现。
 - 接入校准题 `instance_NodeBB__NodeBB-00c70ce7b0541cfc94afe567921d7668cdc8f4ac-vnan` 的 Goal 组已结束：原生 Goal 显示 `complete`，61 步，1 轮。将 Agent 产生的补丁单独送入未修改的 Harbor verifier 后，reward 为 `1.0`、异常数为 0；原始 job 在 `nodebb-goal-calibration-grade`。这个适配重验结果证明一条真实模型链路可用，但校准题已用于调试，不进入冻结样本，也不是官方榜单提交或三组优越性结论。
 - 同一校准题的 Plan 与 Supervisor 也已运行并独立重验；详情及审批器接入偏差见上方校准结果。
-- 冻结样本中的另一道 NodeBB 题 `instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649` 已在同一 VZ/Rosetta profile 过门禁：空补丁 `0`、参考解 `1`，异常数均为 0；任务镜像 digest 为 `sha256:f4c4cd26b64f893ddeb6bda15ded32bf2aab8993775f33a20b395ada2251bcdf`，公开指令的 SHA-256 与冻结清单一致。Goal 组已获得外部 reward `1.0`；Plan 到时间上限未结束，Supervisor 正在运行。
-- 冻结样本 Navidrome 题 `instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7` 也已过门禁：空补丁 `0`、参考解 `1`，均无异常；镜像 digest 为 `sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818`，指令 SHA-256 与冻结清单一致。三组干净容器已经备好，模型任务尚未投递。控制组运行时另一题的 Plan Agent 正在使用独立的 1 CPU 容器做全量 API 测试；该 VM 配置为 4 CPU，资源比较时仍须保留这段并行记录。
+- 冻结样本中的另一道 NodeBB 题 `instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649` 已在同一 VZ/Rosetta profile 过门禁：空补丁 `0`、参考解 `1`，异常数均为 0；任务镜像 digest 为 `sha256:f4c4cd26b64f893ddeb6bda15ded32bf2aab8993775f33a20b395ada2251bcdf`，公开指令的 SHA-256 与冻结清单一致。三组已封口，主指标分别为 Goal 通过、Plan 未按时结束、Supervisor 审查格式失败后暂停至截止；详见逐组报告。
+- 冻结样本 Navidrome 题 `instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7` 也已过门禁：空补丁 `0`、参考解 `1`，均无异常；镜像 digest 为 `sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818`，指令 SHA-256 与冻结清单一致。三组干净容器已经备好；Goal 已完成且外部通过，Plan 正在运行。控制组运行时另一题的 Plan Agent 正在使用独立的 1 CPU 容器做全量 API 测试；该 VM 配置为 4 CPU，资源比较时仍须保留这段并行记录。
 - `launch_container.py` 可从预拉取镜像和已有的干净 profile 模板，创建每次运行独立的 DSH Home、1 CPU／4 GiB 容器与仅允许模型代理的网络。初次套用在冻结 NodeBB 镜像时，镜像默认工作目录 `/app` 导致 `tsx` 未能从 `/dsh` 解析；该 Host 启动失败，没有 Agent Session。脚本已固定工作目录并用第二个全新容器验证 RPC、原始工作树和防火墙，失败记录仍保留。
 - 另一个接入校准候选为 `instance_flipt-io__flipt-02e21636c58e86c51119b63e0fb5ca7b813b07b1`。它的验证脚本主要执行 Go 测试；仍需分别证明 `nop=0`、`oracle=1`，不能因语言不同预设可用。
 
