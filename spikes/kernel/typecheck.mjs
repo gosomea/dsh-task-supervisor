@@ -7,40 +7,26 @@ const project = fileURLToPath(new URL('../..', import.meta.url))
 const source = resolve(process.env.DSH_SOURCE ?? resolve(project, '../../deepseek-harness'))
 const requireFromDsh = createRequire(resolve(source, 'package.json'))
 const ts = requireFromDsh('typescript')
-const configPath = resolve(source, 'tsconfig.host.json')
-const config = ts.readConfigFile(configPath, ts.sys.readFile)
-if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
-const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, source, undefined, configPath)
-const options = {
-  ...parsed.options,
-  composite: false,
-  incremental: false,
-  noEmit: true,
-  jsx: ts.JsxEmit.ReactJSX,
-  typeRoots: [resolve(source, 'node_modules/@types')],
-  paths: {
-    ...parsed.options.paths,
-    vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')],
-  },
+
+let failed = false
+for (const side of ['host', 'client']) {
+  const configPath = resolve(source, `tsconfig.${side}.json`)
+  const config = ts.readConfigFile(configPath, ts.sys.readFile)
+  if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'))
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, source, undefined, configPath)
+  const options = { ...parsed.options, composite: false, incremental: false, noEmit: true,
+    jsx: ts.JsxEmit.ReactJSX, typeRoots: [resolve(source, 'scripts/types'), resolve(source, 'node_modules/@types')],
+    paths: { ...parsed.options.paths, vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')] } }
+  const program = ts.createProgram({ rootNames: side === 'host' ? [
+    resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
+  ] : [resolve(project, 'src/client/index.tsx'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
+    options, projectReferences: parsed.projectReferences })
+  const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
+  if (diagnostics.length) {
+    process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+      getCanonicalFileName: name => name, getCurrentDirectory: () => project, getNewLine: () => '\n',
+    }))
+    failed = true
+  } else process.stdout.write(`Kernel ${side} strict typecheck passed.\n`)
 }
-const program = ts.createProgram({
-  rootNames: [
-    resolve(project, 'spikes/kernel/capabilities.spec.ts'),
-    resolve(project, 'spikes/kernel/supervisor.spec.ts'),
-    resolve(project, 'src/index.ts'),
-    resolve(project, 'src/client/index.tsx'),
-  ],
-  options,
-  projectReferences: parsed.projectReferences,
-})
-const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
-if (diagnostics.length) {
-  process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics, {
-    getCanonicalFileName: name => name,
-    getCurrentDirectory: () => project,
-    getNewLine: () => '\n',
-  }))
-  process.exitCode = 1
-} else {
-  process.stdout.write('Kernel spike strict typecheck passed.\n')
-}
+if (failed) process.exitCode = 1

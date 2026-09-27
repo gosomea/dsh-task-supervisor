@@ -1,7 +1,7 @@
 /** Dependency layout uses persisted edges; accepted counts never stand in for work percentage. */
 import { useMemo } from 'react'
 import { dependencies, runsOf } from '../graph.ts'
-import type { TaskSnapshot } from '../state.ts'
+import type { TaskSnapshot } from '../state-schema.ts'
 
 const WIDTH = 196
 const HEIGHT = 102

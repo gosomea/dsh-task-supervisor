@@ -1,5 +1,5 @@
 /** Dependency scheduling and attempt invalidation over durable task snapshots. */
-import type { TaskSnapshot, TaskStage, NodeRun } from './state.ts'
+import type { TaskSnapshot, TaskStage, NodeRun } from './state-schema.ts'
 
 export function dependencies(stages: readonly TaskStage[], index: number): readonly string[] {
   return stages[index]?.dependsOn ?? (index === 0 ? [] : [stages[index - 1]!.id])

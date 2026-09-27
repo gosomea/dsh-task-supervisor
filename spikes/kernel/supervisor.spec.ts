@@ -835,3 +835,49 @@ it.each(['image', 'text', 'stale'] as const)('admits native visual evidence only
     expect(results.find(event => event.data.message.source.callId === 'image')?.data.message.isError).toBe(mode !== 'image')
   } finally { await reader.close() }
 })
+
+
+it('keeps native consultation questions read-only, deduplicates explicit controls, and restores its binding', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-consult-'))
+  roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = { main: [textResponse('planning')] }
+  const ctx = await host(root, new ScriptedAdapter(scripts), true, { provider: 'scripted', model: 'consult' })
+  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('consult-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(main, '/task new 实现一个模块', [], signal)
+  await main.whenIdle()
+  const before = taskOf(ctx, main)!
+  await ctx.commands.execute(main, '/task consult', [], signal)
+  const chatId = SessionId(`task-chat-${main.id}-${before.id}`)
+  const chat = ctx.agents.get(chatId)!
+  scripts.consult = [toolResponse('supervisor_read_status', {}, 'status'), textResponse('目前在规划中。')]
+  chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '进展如何？' }] }))
+  await chat.whenIdle()
+  expect(taskOf(ctx, main)).toEqual(before)
+  expect(main.inbox.nextTurn).toHaveLength(0)
+  const questionSeq = chat.session.snapshotEvents().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+  const call = (id: string, userSeq: number, revision: number) => ctx.tools.execute({ agent: chat, signal,
+    callId: ToolCallId(id), name: 'supervisor_control', arguments: { directive: 'pause', user_seq: userSeq, revision } })
+  expect((await call('question-not-control', questionSeq, before.revision)).isError).toBe(true)
+  chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '暂停任务' }] }))
+  await chat.whenIdle()
+  const userSeq = [...chat.session.snapshotEvents()].reverse().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+  expect((await call('stale-control', userSeq, before.revision + 99)).isError).toBe(true)
+  expect((await call('pause-control', userSeq, before.revision)).isError).toBe(false)
+  expect(taskOf(ctx, main)?.phase).toBe('paused')
+  const paused = taskOf(ctx, main)!
+  expect((await call('duplicate', userSeq, before.revision)).isError).toBe(false)
+  expect(taskOf(ctx, main)).toEqual(paused)
+  const commands = main.session.snapshotEvents().filter(e => e.type === 'command/run' && e.data.args?.trim().startsWith('pause'))
+  expect(commands).toHaveLength(1)
+  await ctx.fiber.dispose(); contexts.splice(contexts.indexOf(ctx), 1)
+  const resumed = await host(root, new ScriptedAdapter())
+  const mainAgain = await resumed.agents.resume({ resumeSessionId: main.id, agentOptions: { provider: 'scripted', model: 'main' } })
+  await resumed.commands.execute(mainAgain.agent, '/task consult', [], signal)
+  const chatAgain = resumed.agents.get(chatId)!
+  expect(chatAgain.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(2)
+  chatAgain.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '现在如何？' }] }))
+  await chatAgain.whenIdle()
+  expect(taskOf(resumed, mainAgain.agent)).toEqual(paused)
+  expect(mainAgain.agent.inbox.nextTurn).toHaveLength(0)
+})

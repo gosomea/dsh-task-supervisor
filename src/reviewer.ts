@@ -39,7 +39,7 @@ export interface ReviewDecision {
 }
 
 /** Select the profile's pending route first, then the last used or creation route. */
-function reviewerOptions(ctx: Context, main: Agent, fixed?: ReviewerModel): { options: AgentOptions; model: ReviewerModel } {
+export function reviewerOptions(ctx: Context, main: Agent, fixed?: ReviewerModel): { options: AgentOptions; model: ReviewerModel } {
   const selection = ctx.sessionProjections.stateOf(main.session, 'modelSelection')
   const selected = fixed ?? selection?.pending ?? selection?.lastUsed ?? main.session.requestHeader()?.config ?? main.options
   if (!selected.provider || !selected.model) throw new Error('reviewer model is not configured in this DSH profile')

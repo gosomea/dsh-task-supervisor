@@ -15,6 +15,7 @@ import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
+import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
   NAMESPACE, READABLE_RECORD_VERSIONS, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
@@ -225,8 +226,9 @@ export function apply(ctx: Context, config: Config = {}): void {
       return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task)
     },
   })
+  const consultation = installConsultation(ctx, config.reviewerModel)
   installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
-    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }))
+    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation)
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent)
@@ -432,6 +434,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     description: 'Create, inspect, approve, pause, or resume a supervised task',
     input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|clear|off|on]' },
     async handler({ agent, rawInput }) {
+      if (consultationBinding(agent)) return { kind: 'error', text: '请在督导对话中直接输入控制要求，由 supervisor_control 转交主任务。' }
       let input = rawInput.trim()
       const bound = /^(approve|pause|resume|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {
@@ -444,6 +447,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const task = current(agent)
       const life = runtime(agent)
       try {
+        if (input === 'consult') return { kind: 'success', text: `Supervisor Session: ${(await consultation.open(agent)).id}` }
         if (input === '') return reply('Supervisor', task, life.armed)
         if (input.startsWith('new ')) {
           if (task !== null && task.phase !== 'complete' && task.phase !== 'cleared') {

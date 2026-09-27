@@ -1,5 +1,5 @@
 /** One live task snapshot and action stream per displayed Session. */
-import type { TaskSnapshot } from '../state.ts'
+import type { TaskSnapshot } from '../state-schema.ts'
 
 export interface PanelState {
   task: TaskSnapshot | null

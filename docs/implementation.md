@@ -72,4 +72,10 @@ All 47 kernel checks pass, including native attachment delivery to review reques
 
 The conversation fold and sidebar draw persisted dependency edges, with independent roots grouped in one column and successors in later columns. Nodes show status, attempt, and title. Hover reveals context; click or keyboard selection retains full criteria and write scope. Narrow panes scroll horizontally. Strict typecheck passes; browser and live execution checks belong to combined batch-two/three acceptance.
 
+## Persistent consultation
+
+`/task consult` and the sidebar button reuse a native Session bound to the main Session and task. The sidebar embeds SessionProvider and conversation.content for native history, composer, model controls, and /compact rather than implementing a second chat log or compressor. New questions receive timestamped, versioned task context. Ordinary questions are read-only. Restart retains the binding while main execution still needs manual recovery.
+
+Explicit directives such as pause, resume, approval, disabling supervision, and replacing the full objective pass through `supervisor_control` to the existing controller. It checks the latest direct user message and task revision. The main log records received before execution and applied/failed afterward. Repeated user sequences cannot execute twice; interrupted received receipts require checking current effects. Forked or replaced-task conversations cannot control the original task, and pre-restart directives cannot replay automatically. All 48 Host checks pass; native embedding, actual compaction, and real-model consultation remain integration checks.
+
 [简体中文](implementation.zh.md)

@@ -2,9 +2,12 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { acceptedNodes, readyNodes, runsOf } from '../graph.ts'
+import { ConsultationHost, ConsultationConversation, type ConsultationPanelProps } from './consultation.tsx'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { PropsRuntime, PropsRenderFactories } from '@deepseek-ai/dsh-client-ui-slots'
 import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore } from './task-store.ts'
-import type { TaskSnapshot } from '../state.ts'
+import type { TaskSnapshot } from '../state-schema.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
@@ -12,6 +15,7 @@ const PANEL_ID = 'dsh-task-supervisor/sidebar'
 interface PanelProps { sessionId: string }
 interface TailProps { turn: { data: { get(key: 'task-supervisor-milestones'): readonly Milestone[] | undefined } } }
 interface ClientContext {
+  sessions: ISessions
   effect(factory: () => (() => void) | void, label?: string): void
   uiConversation: { events: { register(definition: typeof milestoneDefinition): () => void } }
   sidebarRightTabs: {
@@ -19,6 +23,8 @@ interface ClientContext {
       guide: Array<{ id: string; order: number; title: () => string; description: () => string }> }): () => void
   }
   slots: {
+    register(definition: { name: 'sidebar.right.pane.tab'; key: string; children: { 'task-supervisor.consultation': { kind: 'single'; scope: 'session' } } }, component: (props: ConsultationPanelProps) => ReactNode): () => void
+    register(definition: { name: 'task-supervisor.consultation' }, component: (props: PropsRuntime<'task-supervisor.consultation'> & PropsRenderFactories) => ReactNode): () => void
     inject(name: string, factory: () => () => void): () => void
     register(definition: { name: string; key: string }, component: (props: PanelProps) => ReactNode): () => void
     register(definition: { name: string; id: string }, component: (props: TailProps) => ReactNode): () => void
@@ -26,7 +32,7 @@ interface ClientContext {
   }
 }
 
-export const inject = ['slots', 'sidebarRightTabs', 'uiSession', 'uiConversation']
+export const inject = ['sessions', 'slots', 'sidebarRightTabs', 'uiSession', 'uiConversation']
 
 const CSS = `
 .dsh-task-inline{width:calc(100% - 2 * var(--dsh-composer-side-clearance,16px) - 2 * var(--dsh-composer-dock-inset,8px));max-width:calc(var(--dsh-composer-card-max-width,800px) - 2 * var(--dsh-composer-dock-inset,8px));margin:8px auto;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
@@ -74,9 +80,12 @@ const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementa
 const ACTION_LABEL: Record<string, string> = { approve: '批准计划', pause: '暂停', resume: '恢复任务',
   off: '关闭督导', on: '重新启用督导', clear: '清除任务' }
 
-function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolean }): ReactNode {
+function TaskPanel({ sessionId, inline = false, renderConsult }: PanelProps & { inline?: boolean; renderConsult?: (id: string) => ReactNode }): ReactNode {
   const store = useMemo(() => taskStore(sessionId), [sessionId])
   const { state, error, busy } = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  const [consultation, setConsultation] = useState<string | null>(null)
+  const [consultError, setConsultError] = useState('')
+  const [opening, setOpening] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const task = state?.task
   if (inline && (task === undefined || task === null || task.phase === 'cleared')) return null
@@ -115,6 +124,18 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
           <summary>{review.stageId} · {VERDICT[review.verdict]} · seq {review.cutoff}</summary>
           <p className="dsh-task-review">{review.finding}</p><small>审查 Session {review.reviewerSessionId}</small>
         </details>)}</details>}
+      {!inline && renderConsult && <section><h3>持续问询</h3>
+        <button disabled={opening || !state.live} onClick={() => {
+          setOpening(true); setConsultError('')
+          void fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}`, { method: 'POST',
+            headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'consult', taskId: task.id, revision: task.revision }) })
+            .then(async response => { const body = await response.json() as { consultationSessionId?: string; error?: string }
+              if (!response.ok || !body.consultationSessionId) throw new Error(body.error ?? '无法打开督导对话')
+              setConsultation(body.consultationSessionId)
+            }).catch(error => setConsultError(String(error))).finally(() => setOpening(false))
+        }}>{opening ? '正在打开…' : consultation ? '恢复 / 刷新督导对话' : '打开督导对话'}</button>
+        {consultError && <p role="alert">{consultError}</p>}
+        {consultation && renderConsult(consultation)}</section>}
       {!state.live && <p>打开会话后可操作；恢复执行仍需手动操作。</p>}
     </>}
     {error && <p role="alert" className="dsh-task-error">{error}</p>}
@@ -125,7 +146,6 @@ function TaskPanel({ sessionId, inline = false }: PanelProps & { inline?: boolea
     </summary><div className="dsh-task-panel">{content}</div></details>
     : <div className="dsh-task-panel"><h2>任务督导</h2>{content}</div>
 }
-function Panel(props: PanelProps): ReactNode { return <TaskPanel {...props} /> }
 function InlineTask(props: PanelProps): ReactNode { return <TaskPanel {...props} inline /> }
 
 /** Logged checkpoints stay visible when DSH folds the model's tool-heavy Turn. */
@@ -158,6 +178,11 @@ function MilestoneCards({ turn }: TailProps): ReactNode {
 }
 
 export function apply(ctx: ClientContext): void {
+  const Panel = (props: ConsultationPanelProps) => <TaskPanel sessionId={props.sessionId}
+    renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
+  ctx.effect(() => ctx.slots.inject('task-supervisor.consultation', () => ctx.slots.register(
+    { name: 'task-supervisor.consultation' }, ConsultationConversation,
+  )))
   ctx.effect(() => ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
     { name: 'conversation.input.dock', id: `${PANEL_ID}/current` }, InlineTask,
   )))
@@ -175,7 +200,7 @@ export function apply(ctx: ClientContext): void {
       description: () => '查看任务阶段、审查结果及暂停和恢复控制' }],
   }))
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
-    { name: 'sidebar.right.pane.tab', key: PANEL_ID }, Panel,
+    { name: 'sidebar.right.pane.tab', key: PANEL_ID, children: { 'task-supervisor.consultation': { kind: 'single', scope: 'session' } } }, Panel,
   )))
   ctx.effect(() => ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register(
     { name: 'conversation.chat.turnTail', id: `${PANEL_ID}/milestones` }, MilestoneCards,

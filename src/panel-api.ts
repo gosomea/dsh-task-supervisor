@@ -7,7 +7,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { taskOf, taskProjection, type TaskProjection } from './state.ts'
 
 const PATH = '/api/task-supervisor'
-const ACTIONS = new Set(['approve', 'pause', 'resume', 'clear', 'off', 'on'])
+const ACTIONS = new Set(['consult', 'approve', 'pause', 'resume', 'clear', 'off', 'on'])
 
 function response(value: unknown, status = 200): Response {
   return Response.json(value, { status, headers: { 'cache-control': 'no-store' } })
@@ -34,7 +34,7 @@ async function coldState(ctx: Context, sessionId: string, signal: AbortSignal): 
 }
 
 /** Register the panel route only when a Web Connection exists. */
-export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }): void {
+export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }, consultation: { open(main: Agent): Promise<Agent> }): void {
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
       path: PATH,
@@ -67,6 +67,10 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
         if (task === null || typeof body !== 'object' || body === null || !('taskId' in body) || !('revision' in body)
           || body.taskId !== task.id || body.revision !== task.revision) {
           return response({ error: '任务状态已变化，请刷新后操作。' }, 409)
+        }
+        if (action === 'consult') {
+          try { return response({ consultationSessionId: (await consultation.open(agent)).id }) }
+          catch (error) { return response({ error: String(error) }, 409) }
         }
         if (!controls(agent).actions.includes(action)) return response({ error: '当前状态不允许此操作。' }, 409)
         const command = await ctx.commands.execute(agent, `/task ${action} ${task.id} ${task.revision}`, [], request.signal)
