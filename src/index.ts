@@ -11,6 +11,7 @@ import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
+import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
@@ -35,6 +36,10 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Read tools available before the first plan approval. */
 export interface Config {
+  observeLongTurns?: boolean
+  observationToolCalls?: number
+  observationIntervalMs?: number
+  observationConsecutiveErrors?: number
   responseLanguage?: string
   fallbackLanguage?: string
   planningReadTools?: string[]
@@ -47,6 +52,7 @@ export interface Config {
 interface Runtime {
   armed: boolean
   ownedTurn: boolean
+  observation?: ObservationCursor
 }
 
 const planInput = z.object({
@@ -83,6 +89,11 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 /** Register one independently owned workflow on public DSH seams. */
 export function apply(ctx: Context, config: Config = {}): void {
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
+  const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
+    elapsedMs: config.observationIntervalMs ?? 300000, consecutiveErrors: config.observationConsecutiveErrors ?? 3 }
+  for (const [key, value] of Object.entries(observationPolicy)) {
+    if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`observation ${key} must be a positive integer`)
+  }
   const planningReadTools = config.planningReadTools ?? []
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
@@ -236,19 +247,71 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
   })
 
-  ctx.on('agent/pre-step', async ({ agent, messages }, next) => {
+  async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal): Promise<TaskSnapshot | null> {
+    const life = runtime(agent)
+    if (config.observeLongTurns === false || !life.armed || !task.enabled || task.phase !== 'active'
+      || reviewAbort.has(agent)) return null
+    const node = task.stages[task.stageIndex]
+    const key = `${task.id}:${task.planVersion}:${node?.id}:${runsOf(task).find(run => run.id === node?.id)?.attempt}`
+    if (life.observation?.key !== key) {
+      life.observation = { key, seq: agent.session.seq, time: Date.now() }
+      return null
+    }
+    const reason = observationReason(agent.session.snapshotEvents(), life.observation, observationPolicy, Date.now())
+    if (reason === null) return null
+    const stageId = node?.id ?? 'completion'
+    const abort = new AbortController()
+    reviewAbort.set(agent, abort)
+    try {
+      const reviewSignal = AbortSignal.any([signal, abort.signal])
+      const decision = await reviewStage(ctx, agent, task, stageId,
+        `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
+        reviewSignal, config.reviewerModel, 'progress')
+      reviewSignal.throwIfAborted()
+      const latest = current(agent)
+      if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) return null
+      const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
+        phase: decision.verdict === 'needs-user' ? 'paused' : 'active', roundsSinceReview: 0,
+        lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
+          evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
+      appendTask(ctx, agent, next)
+      await flush(agent)
+      life.armed = next.phase === 'active'
+      life.observation = { key, seq: agent.session.seq, time: Date.now() }
+      return next
+    } catch (error: unknown) {
+      const latest = current(agent)
+      if (!signal.aborted && !abort.signal.aborted && latest?.id === task.id && latest.revision === task.revision) {
+        const paused: TaskSnapshot = { ...latest, revision: latest.revision + 1, phase: 'paused',
+          lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1), verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } }
+        appendTask(ctx, agent, paused)
+        life.armed = false
+        await flush(agent)
+        return paused
+      }
+      throw error
+    } finally {
+      reviewAbort.delete(agent)
+    }
+  }
+
+  ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
     const task = taskOf(ctx, agent)
     if (task === null) return next()
     const owned = messages.some(message => message.source.kind === 'task-supervisor')
-    if (!owned) return next()
     const life = runtime(agent)
-    if (!life.armed || !task.enabled || (task.phase !== 'active' && task.phase !== 'planning')
-      || messages.some(message => message.source.kind === 'task-supervisor'
-        && (message.source.taskId !== task.id || message.source.revision !== task.revision))) {
-      return { kind: 'reject' }
+    if (owned) {
+      if (!life.armed || !task.enabled || (task.phase !== 'active' && task.phase !== 'planning')
+        || messages.some(message => message.source.kind === 'task-supervisor'
+          && (message.source.taskId !== task.id || message.source.revision !== task.revision))) return { kind: 'reject' }
+      life.ownedTurn = true
     }
-    life.ownedTurn = true
-    return next()
+    const observed = await observeStep(agent, task, signal)
+    if (observed?.phase === 'paused') return { kind: 'reject' }
+    const decision = await next()
+    if (observed === null || decision.kind === 'reject') return decision
+    return { ...decision, messages: [...decision.messages, inputFor(observed,
+      `Continue in this same turn under the progress finding: ${observed.lastReview?.finding}. A progress pass does not complete a node.`)] }
   })
 
   async function reviewProgress(agent: Agent, expected: TaskSnapshot): Promise<void> {

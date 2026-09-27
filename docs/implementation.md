@@ -56,4 +56,10 @@ Record version 5 adds dependencies and independent node runs. `dependsOn: []` de
 
 `task_rework_node` invalidates the selected node and its descendants, advances attempt IDs, and retains unrelated branches. Reports must identify the current `attempt` after rework. Resuming interrupted active nodes also starts a new attempt and requires checking uncertain side effects. Host regressions cover out-of-order independent reports, join gating, and rework invalidation. Graph rendering, parallel delegation, and combined real-model acceptance remain subsequent modules.
 
+## Long-turn observations
+
+Native `agent/pre-step` boundaries trigger independent progress review by tool-result activity, elapsed time, or consecutive tool errors without another timer-driven continuation loop. Defaults are 24 tool results, 300000 milliseconds, or 3 consecutive errors, configured by `observationToolCalls`, `observationIntervalMs`, and `observationConsecutiveErrors`. `observeLongTurns: false` disables observation. Wall-clock time without new tool activity does not trigger a check.
+
+Persisted pass or revision findings enter the next model step as a native message within the same turn; they do not accept a node or start another execution turn. A user decision pauses execution. Callbacks must match the task revision; edits and closure cancel them. Scripted-model regressions cover activity and controlled-clock triggers, productive continuation, and stale results after closure. Real-model acceptance is deferred to combined batch-two/three integration.
+
 [简体中文](implementation.zh.md)

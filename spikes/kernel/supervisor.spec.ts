@@ -79,13 +79,14 @@ afterEach(async () => {
     for (const ctx of contexts.splice(0).reverse()) await ctx.fiber.dispose()
   } finally {
     for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
+    vi.restoreAllMocks()
   }
 })
 
 async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   reviewerModel?: { provider: string; model: string }, automaticContinuation = false,
   maxAutomaticRoundsWithoutReport = 3, planCoverageReview = false,
-  planningReadTools: string[] = []): Promise<Context> {
+  planningReadTools: string[] = [], extra: Supervisor.Config = {}): Promise<Context> {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(LlmRuntime)
@@ -98,7 +99,7 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
   if (supervisor) await ctx.plugin(Supervisor, { planningReadTools, automaticContinuation,
-    maxAutomaticRoundsWithoutReport, planCoverageReview,
+    maxAutomaticRoundsWithoutReport, planCoverageReview, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
   ctx.llm.registerAdapter(['scripted'], adapter)
   return ctx
@@ -730,4 +731,61 @@ it('reviews independent DAG branches out of order without releasing an unfinishe
   expect((await report('a', 1)).isError).toBe(true)
   expect(taskOf(ctx, agent)?.nodeRuns?.map(run => [run.id, run.attempt, run.status]))
     .toEqual([['a', 2, 'pending'], ['b', 1, 'passed'], ['j', 2, 'pending']])
+})
+
+it.each(['activity', 'elapsed'] as const)('observes %s inside one turn without accepting the node or adding a turn', async trigger => {
+  let now = 100000
+  const clock = vi.spyOn(Date, 'now').mockImplementation(() => now)
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-observe-'))
+  roots.push(root)
+  const adapter = new ScriptedAdapter({ main: [textResponse('plan'),
+    toolResponse('read', {}, 'work-1'), toolResponse('read', {}, 'work-2'), textResponse('still productive')],
+  reviewer: [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'observe-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'Productive progress; continue', evidence_seqs: [0] }, 'observe-pass')] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, ['read'], { observationToolCalls: trigger === 'activity' ? 2 : 999, observationIntervalMs: trigger === 'elapsed' ? 200 : 300000 })
+  ctx.tools.register(defineContentToolFixture({ name: 'read', description: 'read progress fixture', parameters: {}, execute: async () => { now += 100; return [{ type: 'text', text: 'inspected next module' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('observe-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Inspect modules', [], signal)
+  await agent.whenIdle()
+  await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('observe-plan'), agent, signal,
+    arguments: { criteria: [{ id: 'c', text: 'Modules inspected', provenance: { kind: 'user', reference: 'objective' } }],
+      stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
+  await ctx.commands.execute(agent, '/task approve', [], signal)
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('active')
+  expect(taskOf(ctx, agent)?.nodeRuns?.[0]?.status).toBe('pending')
+  expect(taskOf(ctx, agent)?.lastReview?.finding).toBe('Productive progress; continue')
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/start')).toHaveLength(2)
+  expect(agent.session.snapshotEvents().some(event => event.type === 'user/message'
+    && event.data.content.some(block => block.type === 'text' && block.text.includes('Continue in this same turn')))).toBe(true)
+  expect(adapter.requests).toBe(6)
+  clock.mockRestore()
+})
+
+it('disabling the supervisor during an observation prevents the old reviewer from resuming the turn', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-observe-off-'))
+  roots.push(root)
+  const adapter = new PausingAdapter({ main: [textResponse('plan'), toolResponse('read', {}, 'one-read'), textResponse('must not execute')] })
+  adapter.pauseModel = 'reviewer'
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, ['read'], { observationToolCalls: 1 })
+  ctx.tools.register(defineContentToolFixture({ name: 'read', description: 'read', parameters: {}, execute: async () => [{ type: 'text', text: 'ok' }] }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('observe-off-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Inspect modules', [], signal)
+  await agent.whenIdle()
+  await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('off-plan'), agent, signal,
+    arguments: { criteria: [{ id: 'c', text: 'Done', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
+  adapter.pauseNext = true
+  await ctx.commands.execute(agent, '/task approve', [], signal)
+  await adapter.entered.promise
+  await ctx.commands.execute(agent, '/task off', [], signal)
+  adapter.release.resolve()
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.enabled).toBe(false)
+  expect(taskOf(ctx, agent)?.lastReview).toBeNull()
+  expect(agent.inbox.nextStep).toHaveLength(0)
+  expect(agent.inbox.nextTurn).toHaveLength(0)
+  expect(agent.session.snapshotEvents().some(event => event.type === 'assistant/message'
+    && event.data.message.content.some(block => block.type === 'text' && block.text === 'must not execute'))).toBe(false)
 })
