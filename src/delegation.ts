@@ -24,12 +24,15 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
   if (!Number.isSafeInteger(maxParallelNodes) || maxParallelNodes < 1 || maxParallelNodes > 8) throw new Error('maxParallelNodes must be between 1 and 8')
   const batches = new Map<Agent, Batch>()
   const owners = new Map<Agent, Ownership>()
+  const failedTurns = new WeakSet<Agent>()
   ctx.agents.registerSessionControlReader(NAMESPACE, [1])
   // Closed workers are evidence only. A new attempt must be dispatched by the main controller.
   ctx.on('agent/pre-step', ({ agent }, next) => {
+    if (failedTurns.has(agent)) return Promise.resolve({ kind: 'reject' as const })
     const worker = agent.session.snapshotEvents().some(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE)
     return worker && !owners.has(agent) ? Promise.resolve({ kind: 'reject' as const }) : next()
   })
+  ctx.on('agent/status', ({ agent, status }) => { if (status === 'idle') failedTurns.delete(agent) })
   function cancel(main: Agent) { batches.get(main)?.abort.abort(new Error('task control changed')) }
   ctx.effect(() => () => { for (const main of batches.keys()) cancel(main) })
   ctx.on('agent/disposed', ({ agent }) => cancel(agent))
@@ -153,7 +156,9 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
           appendTask(ctx, main, withRuns({ ...latest, revision: latest.revision + 1, phase: 'paused' }, runsOf(latest).map(run =>
             args.node_ids.includes(run.id) ? { ...run, status: 'awaiting-user' } : run)))
           await ctx.sessions.flush(main.session)
-          exec.concludeTurn()
+          // Failed tool results cannot conclude a turn. Reject its next model step;
+          // the idle boundary releases this guard so later user questions still work.
+          if (main.status === 'running') failedTurns.add(main)
         }
         throw error
       } finally {

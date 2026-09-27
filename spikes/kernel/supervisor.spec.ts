@@ -955,6 +955,11 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
     expect(taskOf(ctx, main)?.phase).toBe('paused')
     expect(main.inbox.nextTurn).toHaveLength(0)
     expect(scripts.main).toHaveLength(1)
+    scripts.main = [textResponse('Paused; waiting for your explicit resume.')]
+    main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Why did it pause?' }] }))
+    await main.whenIdle()
+    expect(scripts.main).toHaveLength(0)
+    expect(taskOf(ctx, main)?.phase).toBe('paused')
     return
   }
   expect((await batch).isError).toBe(false)
