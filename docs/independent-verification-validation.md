@@ -8,6 +8,16 @@ The independent TMP negative fixture passed with denial and unchanged-file asser
 
 This is tool admission, not protection against external writers or isolation of old files after explicit clear or new-task creation. Ordinary browser journeys, autonomous long tasks and the enhanced repair integration remain unaccepted.
 
+## Isolated Web UI recheck
+
+Repair commit `d17eb5c` was deployed to the registered instance at 58331 after all eight Sessions were idle. Only its independent plugin copy and Host were refreshed; native Session, review and completion state remained. Deployed bundles match the local build byte for byte. A separate headless Chrome profile and fresh authenticated context opened existing positive and negative cases through normal clicks, without model messages or simulated repair confirmation.
+
+The positive main Session renders exactly one native `/task new` user bubble and unchanged native assistant text. Its overview and details both show 1/1 passed. Normal buttons open details and the repair form; after closing the form, state remains complete/revision 8 with zero repair proposals. Details/consultation tabs switch and load the native composer. The negative case shows a user decision and 0/1 with the same node; the independent API returns paused and reviewFault=null. The UI does not label this product defect as an internal failure or completion.
+
+Screenshots: [native task input](assets/independent-native-task-new-bubble.png), [completed details](assets/independent-completed-task-detail.png), [defect decision](assets/independent-paused-defect-detail.png). The [sanitized machine summary](independent-ui-validation-20260928.json) records states, screenshot hashes and limitations. The owned browser process group exited; 58331 remains available for user verification. Daily Chrome debugging, 59909/61454 and the frozen public evaluation were unchanged.
+
+This verifies supervisor Web UI against durable state, not reviewer-owned independent browser execution. Game startup, saved state, water interaction and autonomous long tasks remain outside this run; steps 4–5 are still unaccepted.
+
 ## Step 2: artifact snapshots and plugin-owned check runtime
 
 Status: the plugin runtime foundation is validated. DSH keeps its existing extension-record seam baseline without new sandbox fields. User deployments and the frozen public runner remain unchanged. Step 3 owns model integration status.

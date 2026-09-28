@@ -1,0 +1,40 @@
+{
+  "sourceCommit": "d17eb5c4c53ecb9df16b74380642cd392236e4f3",
+  "date": "2026-09-28",
+  "deployment": "supervisor-independent",
+  "port": 58331,
+  "browser": "isolated headless Chrome profile; fresh authenticated context",
+  "modelRequestsSent": 0,
+  "checks": {
+    "taskNewNativeBubbleCount": 1,
+    "mainAnswerUnwrapped": true,
+    "positivePhase": "complete",
+    "positiveRevision": 8,
+    "positivePassedNodes": 1,
+    "positiveRepairProposalsAfterForm": 0,
+    "negativePhase": "paused",
+    "negativeReviewFault": null,
+    "negativePassedNodes": 0,
+    "detailsAndConsultationTabs": true,
+    "runningSessionsAfter": 0
+  },
+  "limitations": [
+    "Browser checked supervisor UI and historical evidence, not independent reviewer browser execution.",
+    "Repair form opened then closed; no proposal submitted or user confirmation simulated.",
+    "No new automatic long-task or game journey run."
+  ],
+  "screenshots": {
+    "completed-task-detail.png": {
+      "path": "assets/independent-completed-task-detail.png",
+      "sha256": "178bf5e40f8f7ca8ceb72748b9b5a62debec6a48fce6130a18bec06f621568ea"
+    },
+    "native-task-new-bubble.png": {
+      "path": "assets/independent-native-task-new-bubble.png",
+      "sha256": "b586dd2fb10bcf23a9fbfc932b1b5f953108956a62548c873d7625de87ad194d"
+    },
+    "paused-defect-detail.png": {
+      "path": "assets/independent-paused-defect-detail.png",
+      "sha256": "7c831520586a304e9dcbdda220f2470a5f4805a0b7ee64381eba16112a252dd8"
+    }
+  }
+}
