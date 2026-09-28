@@ -42,6 +42,25 @@ class AuditTests(unittest.TestCase):
         self.assertIsNone(result['reviewWaitMs'])
         self.assertEqual(result['unmeasuredOrUnfinishedWindows'], 1)
 
+    def test_stale_decision_does_not_count_as_a_user_pause(self):
+        job = {'id': 'stale', 'kind': 'progress', 'runtimeId': 'r', 'status': 'stale',
+               'decision': {'verdict': 'needs-user'}}
+        result = summarize([event(job)], {'stale': {'drift': False}})
+        self.assertEqual(result['effectiveNeedsUserJobs'], 0)
+        self.assertEqual(result['falsePauseRate'], 0)
+
+    def test_manual_success_preserves_earlier_automatic_exhaustion(self):
+        base = {'id': 'a', 'kind': 'stage', 'runtimeId': 'automatic', 'status': 'repairing',
+                'fault': {'code': 'protocol-missing'}}
+        failed = {**base, 'status': 'failed'}
+        manual = {**base, 'runtimeId': 'manual', 'status': 'applied', 'fault': None,
+                  'decision': {'verdict': 'pass'}}
+        result = summarize([event(base), event(failed), event(manual)])
+        self.assertEqual(result['jobsRecoveredAfterRepair'], 0)
+        self.assertEqual(result['jobsExhaustedAfterRepair'], 1)
+        self.assertEqual(result['manualRecoveryWindows'], 1)
+        self.assertEqual(result['jobs'], 1)
+
 
 if __name__ == '__main__':
     unittest.main()

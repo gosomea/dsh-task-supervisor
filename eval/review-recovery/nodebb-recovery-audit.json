@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "review-recovery-audit",
+  "jobs": 4,
+  "checksByKind": {
+    "plan": 1,
+    "stage": 2,
+    "completion": 1
+  },
+  "faultsByCode": {},
+  "protocolMissingJobs": 0,
+  "protocolMissingRate": 0.0,
+  "repairTurns": 0,
+  "jobsRecoveredAfterRepair": 0,
+  "jobsWithRepair": 0,
+  "jobsExhaustedAfterRepair": 0,
+  "manualRecoveryWindows": 0,
+  "faultPauseJobs": 0,
+  "effectiveNeedsUserJobs": 0,
+  "reviewWaitMs": 770093.0,
+  "measuredWindows": 4,
+  "unmeasuredOrUnfinishedWindows": 0,
+  "reviewerSessionIds": [
+    "task-review-07d28801-3c98-46f7-8ab9-3cb04cb6aaad",
+    "task-review-a50f0c38-095c-4482-81ca-f04b71261da4",
+    "task-review-abffdf5c-3860-4a99-819a-f991c6e3039b",
+    "task-review-d4a49400-f144-491b-8ae4-10a5356479c4"
+  ],
+  "settings": {
+    "{\"consecutiveErrors\": 3, \"elapsedMs\": 300000, \"inTurn\": true, \"mode\": \"current\", \"rounds\": 3, \"toolCalls\": 24}": 4
+  },
+  "labelledJobs": 0,
+  "falsePauseRate": null,
+  "correctionsConfirmed": null,
+  "limitations": [
+    "External task success and reward require independent grading.",
+    "All-session tokens require native token usage from main, review, worker and consultation Sessions.",
+    "No labels means correction quality, false pauses and missed drift remain unmeasured."
+  ],
+  "source": {
+    "sessionId": "session-6ff5f4e7-550a-47d7-82c0-d2b23b544f4e",
+    "nativeLog": "/Users/yuqixian/.cache/dsh-public-eval/linux-homes/recovery-nodebb-supervisor-r1/sessions/--app--/session-6ff5f4e7-550a-47d7-82c0-d2b23b544f4e/session.v4.jsonl.zstd",
+    "sha256": "d47a88316e8a97be48a8294907ff472331a3c63aa9052834a96c7332925051c8"
+  }
+}

@@ -1,0 +1,26 @@
+
+ RUN  v4.1.8 /private/var/folders/kg/klnm7xcn56lbsvcwp5tqnxh00000gn/T/supervisor-step-check-udbhu1wt
+
+···················································································
+
+ Test Files  9 passed (9)
+      Tests  83 passed (83)
+   Start at  12:45:21
+   Duration  6.74s (transform 959ms, setup 0ms, import 1.49s, tests 4.63s, environment 0ms)
+
+Kernel host strict typecheck passed.
+Kernel client strict typecheck passed.
+$ tsdown
+ℹ tsdown v0.22.2 powered by rolldown v1.1.5
+ℹ config file: /private/var/folders/kg/klnm7xcn56lbsvcwp5tqnxh00000gn/T/supervisor-step-check-udbhu1wt/tsdown.config.ts
+ℹ entry: src/index.ts
+ℹ target: es2024
+ℹ entry: src/client/index.tsx
+ℹ target: es2024
+ℹ Build start
+ℹ [CJS] lib/client.js  77.26 kB │ gzip: 17.46 kB
+ℹ [CJS] 1 files, total: 77.26 kB
+✔ Build complete in 38ms
+ℹ [ESM] lib/index.mjs  156.36 kB │ gzip: 38.60 kB
+ℹ [ESM] 1 files, total: 156.36 kB
+✔ Build complete in 40ms

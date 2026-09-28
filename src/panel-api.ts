@@ -5,6 +5,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { draftOf } from './drafts.ts'
+import { evidenceRecord } from './evidence.ts'
 import type { ConsultationMode } from './consultation.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
 
@@ -72,6 +73,28 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
         }
         const agent = ctx.agents.get(SessionId(sessionId))
         if (request.method === 'GET') {
+          if (url.searchParams.get('view') === 'review-log') {
+            try {
+              const state = agent ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor') : await coldState(ctx, sessionId, request.signal)
+              const reviewerId = url.searchParams.get('reviewerSessionId')
+              if (!reviewerId || !state?.reviewJobs.some(job => job.reviewerSessionId === reviewerId)) return response({ error: '审查不属于当前主 Session 的记录窗口' }, 404)
+              const id = SessionId(reviewerId)
+              const stat = await ctx.sessionPersistence.stat(id, { signal: request.signal })
+              if (!stat) return response({ error: '审查原始日志不存在' }, 404)
+              const reader = await ctx.sessionPersistence.open(id, 'read', { signal: request.signal })
+              try {
+                // Tail in bounded pages without opening a reviewer Agent.
+                let tail: import('@deepseek-ai/dsh-session').SessionEvent[] = []
+                for (let offset = 0;;) {
+                  request.signal.throwIfAborted()
+                  const page = await reader.read(offset, 256, { signal: request.signal })
+                  if (!page.events.length) break
+                  tail = [...tail, ...page.events].slice(-100); offset += page.events.length
+                }
+                return response({ events: tail.map(evidenceRecord) })
+              } finally { await reader.close() }
+            } catch (error) { return response({ error: String(error) }, 409) }
+          }
           if (url.searchParams.get('view') === 'history') {
             try {
               const entries = await taskHistory(ctx, sessionId, agent, request.signal)

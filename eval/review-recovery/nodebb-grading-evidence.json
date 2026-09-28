@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "modelAttempts": 1,
+  "scoreableModelAttempts": 1,
+  "completedWithinLimit": 1,
+  "externalPassing": 1,
+  "elapsedSec": 1342,
+  "gradingAttempts": [
+    {
+      "job": "/Users/yuqixian/.cache/dsh-public-eval/harbor-jobs/recovery-nodebb-supervisor-r1-grade",
+      "status": "infrastructure-error-before-tests",
+      "reason": "global amd64 override conflicts with cached arm64 egress sidecar",
+      "errors": 1,
+      "reward": null
+    },
+    {
+      "job": "/Users/yuqixian/.cache/dsh-public-eval/harbor-jobs/recovery-nodebb-supervisor-r1-grade-native-sidecar",
+      "status": "scored",
+      "errors": 0,
+      "reward": 1.0
+    }
+  ],
+  "officialMaterial": {
+    "officialTask": "instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649",
+    "verifiedOfficialFiles": [
+      "environment/Dockerfile",
+      "instruction.md",
+      "task.toml",
+      "tests/config.json",
+      "tests/parser.py",
+      "tests/run_script.sh",
+      "tests/test.sh",
+      "tests/test_patch.patch"
+    ],
+    "agentPatchSha256": "56f07c38a80b7b98be047f3cafa40a8b4adc1282e57ffd3cabd2f2393f392dd4",
+    "stagedTask": "/Users/yuqixian/.cache/dsh-public-eval/staged-recovery-nodebb-supervisor-r1",
+    "solutionChanged": true
+  },
+  "agentRetrainedOrRerun": false,
+  "originalFrozenResultsModified": false
+}

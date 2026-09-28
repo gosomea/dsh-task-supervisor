@@ -738,7 +738,9 @@ export function apply(ctx: Context, config: Config = {}): void {
       return { phase: next.phase, planVersion: next.planVersion,
         ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
           finding: planDecision.finding },
-        message: CLOSING_MESSAGE }
+        message: next.phase === 'awaiting-approval'
+          ? `${planDecision ? 'The independent plan review passed. ' : ''}The user has not approved execution. Tell the user the plan is waiting for approval; do not claim no further decision is needed. ${CLOSING_MESSAGE}`
+          : CLOSING_MESSAGE }
     },
   }))
 

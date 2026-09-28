@@ -9,4 +9,4 @@
 | c | passed |  |
 | d | passed |  |
 | e | passed |  |
-| f | ready |  |
+| f | passed |  |

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "kind": "pre-registered-followup-protocol",
+  "id": "review-frequency-p2-20260928",
+  "status": "frozen-before-followup-model-runs",
+  "datasetCommit": "66f92766bba642462d4bbe5479e83f91f9211862",
+  "developmentExcluded": [
+    "instance_navidrome__navidrome-10108c63c9b5bdf2966ffb3239bbfd89683e37b7",
+    "instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649"
+  ],
+  "tasks": [
+    {
+      "id": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+      "repository": "internetarchive",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "f335c2f35598b25cfff340a02dce6af59dc87bc0b7f78e3ab75ec90d62c5e97a",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+      "repository": "qutebrowser",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "e8dbafb0b9b3dacc6e1ade3cf966a81683cef7410a635d85380117c2dc3372e7",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+      "repository": "flipt-io",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "f6413d8a06e874b126b13b441d31525e5401235c04c2e251e07f7c6519be39f4",
+      "controlStatus": "pending"
+    },
+    {
+      "id": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+      "repository": "ansible",
+      "difficulty": "medium",
+      "category": "debugging",
+      "instructionSha256": "531b5339e7ffe8948a0f2d89b89f6278ca2a597442fc2f427b04ddcfd1e8e9b8",
+      "controlStatus": "pending"
+    }
+  ],
+  "repeats": 3,
+  "plannedAttempts": 60,
+  "conditions": [
+    {
+      "id": "goal",
+      "arm": "goal"
+    },
+    {
+      "id": "plan",
+      "arm": "plan"
+    },
+    {
+      "id": "supervisor-current",
+      "arm": "supervisor",
+      "progressReviewMode": "current"
+    },
+    {
+      "id": "supervisor-sparse",
+      "arm": "supervisor",
+      "progressReviewMode": "configured",
+      "observationToolCalls": 48,
+      "observationIntervalMs": 600000,
+      "observationConsecutiveErrors": 3,
+      "maxAutomaticRoundsWithoutReport": 6
+    },
+    {
+      "id": "supervisor-required",
+      "arm": "supervisor",
+      "progressReviewMode": "required-only"
+    }
+  ],
+  "timeLimitSec": 3000,
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "approval": "one initial plan approval where applicable; no extra rescue",
+  "controls": "same official image/base, 1 CPU, 4 GiB; sequential model runs; nop 0/oracle 1/no errors eligibility",
+  "orderSeed": "review-frequency-p2-20260928",
+  "orderAlgorithm": "SHA-256 rank seed/task/repeat/condition before each paired repeat",
+  "primarySuccess": "finished by deadline AND independent Harbor reward 1 AND verifier errors 0",
+  "failures": "retain all eligible attempted runs, fault pauses and timeouts in primary denominator; infrastructure errors separately; do not replace tasks after outcome",
+  "humanLabels": "blind label progress checkpoints for drift/correction/false pause; unavailable labels stay null",
+  "multiTask": "separate P3 protocol after this public single-task comparison",
+  "releasePolicy": "freeze exact plugin/host tree hashes and effective config before first followup model run; all Supervisor conditions same release"
+}

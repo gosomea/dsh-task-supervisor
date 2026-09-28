@@ -15,7 +15,7 @@ def main() -> None:
     parser.add_argument("grade_job", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--approval-receipt", type=Path)
-    parser.add_argument("--kind", choices=("public-benchmark-calibration", "public-benchmark-frozen-p1"),
+    parser.add_argument("--kind", choices=("public-benchmark-calibration", "public-benchmark-frozen-p1", "public-benchmark-development-regression"),
                         default="public-benchmark-calibration")
     parser.add_argument("--termination", choices=("completed", "time-limit"), default="completed")
     args = parser.parse_args()

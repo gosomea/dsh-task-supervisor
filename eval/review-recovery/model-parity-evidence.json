@@ -1,0 +1,13 @@
+{
+  "configuredRouteMatches": true,
+  "profileReference": "canonical ~/.dsh/profiles/web",
+  "isolatedProfile": "supervisor-web-smoke",
+  "route": {
+    "api": "openai-completions",
+    "baseURL": "http://127.0.0.1:15721/tencent/v1",
+    "apiKeyEnv": "DEEPSEEK_CODEBUDY_API_KEY",
+    "firstModel": "deepseek-v4.1-flash"
+  },
+  "runtimeEvidence": "Main, consultation and reviewer request/header identities are checked in smoke-result.json and nodebb-model-evidence.json",
+  "separateDailyProcess": "The running RC8 official Host on 3081 uses its own ~/.dsh-rc8 route and was not modified; no runtime parity claim is made for it."
+}

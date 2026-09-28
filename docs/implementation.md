@@ -1,22 +1,33 @@
 # Implementation status
 
-The unified client entry is implemented: history opens the persistent consultation, drafts and explicit creation live beside the native composer, and input mode is visible. Review faults expose diagnostics and a read-only native transcript. Integrated browser acceptance remains pending in F.
+**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 9 reads versions 1–8 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
 
-Persistent main-Session consultation and versioned drafts are implemented. Discussion works without a task; explicit subsequent confirmation promotes an exact draft. Restart requires fresh authorization. Unified client entry and integrated deployment checks remain in progress.
+| Step | Capability | Acceptance |
+| --- | --- | --- |
+| A | Durable review jobs, immutable evidence context and fault classification | Passed; `98d4b0e`. |
+| B | Bounded same-Session repair, manual retry and stale-result isolation | Passed; `02783c5`. |
+| C | Taskless discussion, versioned drafts, explicit creation and persistent consultation | Passed; `eb3c841`. |
+| D | Unified input, creation controls, mode selection and fault diagnostics | Passed; `dbc63b2`. |
+| E | Recorded observation policies, recovery and timing metrics | Passed; `f566a06`. |
+| F | Isolated model/browser acceptance, consecutive tasks, public grading and follow-up protocol | Passed; this commit. |
 
-This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.
+83 Vitest checks, five independent Python audit fixtures, both strict typechecks and isolated builds pass. Three read-only tasks completed in one main Session on the reused registered 31973 deployment. Button, consultation-text and main-text approval paths were exercised. Durable logs and independent APIs verify persistent consultation, native compaction, retained drafts after restart, fork isolation, non-interfering questions and task history. Main answers retain native rendering.
+
+Browser acceptance exposed a duplicate slot declaration. F replaces reviewer transcript embedding with a read-only Host endpoint that never opens a writable reviewer Agent. It also aligns the short creation phrase, unresolved-question semantics and initial-approval notices, and fixes metrics that confused later manual success with automatic repair or stale decisions with applied pauses.
+
+The E-frozen NodeBB development regression completed in 1342 seconds and earned independent Harbor reward=1.0 with zero verifier errors; four reviews recorded valid decisions without protocol failures. An initial sidecar platform failure remains an infrastructure record; grading retried the same patch. This is one new attempt, not evidence of repair probability or long-horizon superiority. The [60-attempt follow-up frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) is frozen but has not run. Browser deployment includes F integration fixes; the public run remained fixed at E.
 
 ## Bounded protocol repair and manual recovery (B)
 
 Missing or invalid decisions receive one repair in the same reviewer Session by default. `reviewRepairAttempts` accepts 0–3; `reviewDeadlineMs` defaults to 600000 milliseconds and accepts 1–3600000. Repair does not reset the total deadline. These are development defaults, not optimal-frequency or formal long-horizon results. Provider/read faults do not enter protocol repair; a recorded valid decision survives turn-ending hook errors.
 
-After exhaustion, `/task retry-review` checks the original job and resumes its Session, model, and cutoff. Explicit manual retries start a new bounded recovery window with recorded attempts. They do not approve a plan or automatically resume paused execution; approve or `/task resume` according to the resulting state. Stale, cancelled, edited, or disabled jobs cannot apply late results. See [step B](10-plans/conversation-and-review-recovery/evidence/b.md); real-model/deployment checks await integrated acceptance.
+After exhaustion, `/task retry-review` checks the original job and resumes its Session, model, and cutoff. Explicit manual retries start a new bounded recovery window with recorded attempts. They do not approve a plan or automatically resume paused execution; approve or `/task resume` according to the resulting state. Stale, cancelled, edited, or disabled jobs cannot apply late results. See [step B](10-plans/conversation-and-review-recovery/evidence/b.md); deterministic native-Host fault fixtures validate recovery; see F for integrated runs and their limits.
 
 ## Review fault records (A)
 
 Step A on 2026-09-28 adds independent durable review job records for plan, progress, node, and completion reviews, preserving task version, evidence cutoff, model, Session, and result event references. Task schema 8 still reads versions 1–7. Typed pause reasons and `reviewFault` represent internal failures without manufacturing `needs-user`; legacy unclassified records remain unchanged. The Web state API also returns bounded review jobs.
 
-This step implements records and classification only; bounded repair, dedicated recovery controls, and draft conversations remain pending. Deterministic regressions using the registered isolated source and immutable source acceptance are in [step evidence](10-plans/conversation-and-review-recovery/evidence/a.md). These checks do not claim deployment to the user Web instance.
+A independently validated records and classification; steps B–D subsequently implemented repair, recovery controls and draft conversations. Deterministic regressions using the registered isolated source and immutable source acceptance are in [step evidence](10-plans/conversation-and-review-recovery/evidence/a.md). These checks do not claim deployment to the user Web instance.
 
 ## V2 integrated acceptance
 

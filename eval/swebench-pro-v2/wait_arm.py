@@ -56,7 +56,7 @@ def main() -> int:
     try:
         subprocess.run([
             "docker", "--context", args.docker_context, "exec", args.container,
-            "python3", "/runner/extract_patch.py", f"/evalhome/run/{args.state.name}", timeout_patch,
+            "python3", "/runner/extract_patch.py", f"/evalhome/{args.state.resolve().relative_to(args.home.resolve()).as_posix()}", timeout_patch,
         ], check=True, timeout=60, stdout=subprocess.DEVNULL)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         snapshot_error = str(error)

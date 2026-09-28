@@ -15,3 +15,5 @@
 标注文件按 jobId 记录 `drift`（是否真实偏离）与 `correctionEffective`（纠偏是否被之后证据证实）。没有标注时误暂停率与纠偏效果返回 null；正常探索的 needs-user 判断需人工复核。遗漏偏离需要另外标注未触发审查的区间，不能由该工具推断。外部 reward、按时结束、全 Session Token 从独立评分器与原生 tokenUsage 另行采集。
 
 Python 独立夹具覆盖成功补交、服务错误后手动恢复、无数据和旧记录未知耗时；通过 Vitest 宿主门禁运行。真实模型与公开题回归证据在 [A–F 执行记录](../../docs/10-plans/conversation-and-review-recovery/evidence/)。
+
+后续四题、五组、三次重复的运行前冻结条件见[频率比较协议](frequency-p2-protocol.zh.md)。60 次计划尝试未运行；本轮 NodeBB 仅为开发回归。

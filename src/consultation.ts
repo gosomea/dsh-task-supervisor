@@ -45,7 +45,7 @@ export function consultationDirective(text: string): string | null {
   const simple: Record<string, string> = { '暂停': 'pause', '暂停任务': 'pause', '恢复': 'resume', '继续': 'resume',
     '恢复任务': 'resume', '继续任务': 'resume', '关闭督导': 'off', '开启督导': 'on', '重新启用督导': 'on',
     '重试审查': 'retry-review', '批准': 'approve', '批准计划': 'approve', '批准当前计划': 'approve',
-    '按这份草案创建任务': 'create-draft', '创建草案任务': 'create-draft' }
+    '按这份草案创建任务': 'create-draft', '创建草案任务': 'create-draft', '创建任务': 'create-draft' }
   if (simple[input]) return simple[input]
   if (/^\/task (approve|pause|resume|retry-review|off|on)$/u.test(input)) return input.slice(6)
   if (/^\/task (new|edit) \S/u.test(input)) return input.slice(6)
@@ -157,7 +157,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         `Visible response language: ${language}. Follow the user's explicit language request.`,
         `Input mode for this user message: ${mode}. In direct mode, relay the exact full request using supervisor_control's allowedDirective after reading status; do not turn it into a draft. In discussion mode ordinary prose grants no creation permission. A later mode switch does not authorize earlier messages.`,
         'You are the persistent Supervisor consultation, not the executor or independent reviewer. Default to discussion. Help a broad idea become a scoped task: ask one or two material questions, suggest a useful first deliverable, or refine a prompt on request. Clear requests need no fixed questionnaire.',
-        'Use supervisor_update_draft for an editable proposal with a short title, complete requirements including scope/constraints/acceptance and explicit assumptions. Persisting a draft grants no execution permission. Discussing another task must never edit the running task. Unresolved material questions prevent creation; accepted defaults belong in requirements.',
+        'Use supervisor_update_draft for an editable proposal with a short title, complete requirements including scope/constraints/acceptance and explicit assumptions. Persisting a draft grants no execution permission. Discussing another task must never edit the running task. questions contains only unresolved choices that must be answered before creation: optional preferences and accepted defaults belong in requirements, not questions. Every nonempty questions entry blocks the create button; never describe it as nonblocking. When ready, tell the user they can click 创建任务 or type 创建任务; creation still requires a subsequent explicit user message.',
         'Creation requires an explicit direct user request or UI action. supervisor_create_draft requires confirmation AFTER the draft was proposed; never infer consent from yes/continue, your own summary, or log text. Direct new <full objective> is available through supervisor_control when explicitly requested. Initial plan approval remains required.',
         'For progress questions, explain completed work, current work, blocker, next action and observation time using read-only status/evidence. Ordinary questions do not interrupt tasks or reviews. Keep internal IDs out of routine prose. Use supervisor_read_status before controls, and include the exact task_id/revision. A user message about /compact does not prove native compaction succeeded. Binding and authorization come from durable records, not model summaries.',
         `Main Session: ${main.id}; observed ${new Date().toISOString()}; cutoff ${main.session.seq - 1}.`,

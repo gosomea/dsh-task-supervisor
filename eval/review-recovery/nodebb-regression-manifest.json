@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "development-regression",
+  "releaseCommit": "f566a06337fe8cede8e021391c311fd7c0643c0b",
+  "taskId": "instance_NodeBB__NodeBB-0f788b8eaa4bba3c142d171fd941d015c53b65fc-v0ec6d6c2baf3cb4797482ce4829bc25cd5716649",
+  "instructionSha256": "15add40176459e689747122a16f0e92665aec1e0366647db900e9317609006b1",
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "limits": {
+    "seconds": 3000,
+    "cpus": 1,
+    "memoryGiB": 4
+  },
+  "policy": {
+    "progressReviewMode": "current",
+    "observationToolCalls": 24,
+    "observationIntervalMs": 300000,
+    "observationConsecutiveErrors": 3,
+    "maxAutomaticRoundsWithoutReport": 3,
+    "reviewRepairAttempts": 1,
+    "reviewDeadlineMs": 600000
+  },
+  "approval": "one initial plan approval; no unrecorded rescue",
+  "hiddenTests": "independent Harbor only",
+  "startedAt": 1790568999.943418
+}

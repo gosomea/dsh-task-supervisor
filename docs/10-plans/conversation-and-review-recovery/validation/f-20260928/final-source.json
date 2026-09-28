@@ -1,0 +1,20 @@
+{
+  "kind": "supplemental-final-source-gate",
+  "archive": "docs/10-plans/conversation-and-review-recovery/evidence/f-final.tar.gz",
+  "sha256": "0748ad26e2629d05d3223f3d68ec8c1908840f790c0cced1b9d60f09034902c0",
+  "command": [
+    "python3",
+    "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+    "docs/10-plans/conversation-and-review-recovery/evidence/f-final.tar.gz"
+  ],
+  "nodeVersion": "24.19.0",
+  "checks": [
+    "83 Vitest checks",
+    "five Python audit fixtures through Vitest",
+    "Host strict typecheck",
+    "client strict typecheck",
+    "isolated build"
+  ],
+  "exitCode": 0,
+  "reason": "Metric review found later manual success could mask exhausted automatic repair; preserved the earlier F snapshot and validated this immutable final snapshot."
+}

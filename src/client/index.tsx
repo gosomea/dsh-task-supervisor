@@ -2,9 +2,9 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { runsOf } from '../graph.ts'
 import type { TaskHistoryEntry } from '../state.ts'
-import { ConsultationHost, ConsultationConversation, ReviewEvidence, type ConsultationPanelProps } from './consultation.tsx'
+import { ConsultationHost, ConsultationConversation, type ConsultationPanelProps } from './consultation.tsx'
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { PropsRuntime, PropsRenderFactories, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsRuntime, PropsRenderFactories } from '@deepseek-ai/dsh-client-ui-slots'
 import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore, type PanelState } from './task-store.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
@@ -30,9 +30,8 @@ interface ClientContext {
       guide: Array<{ id: string; order: number; title: () => string; description: () => string }> }): () => void
   }
   slots: {
-    register(definition: { name: 'sidebar.right.pane.tab'; key: string; children: { 'task-supervisor.consultation': { kind: 'single'; scope: 'session' }; 'task-supervisor.evidence': { kind: 'single'; scope: 'session' } } }, component: (props: ConsultationPanelProps) => ReactNode): () => void
+    register(definition: { name: 'sidebar.right.pane.tab'; key: string; children: { 'task-supervisor.consultation': { kind: 'single'; scope: 'session' } } }, component: (props: ConsultationPanelProps) => ReactNode): () => void
     register(definition: { name: 'task-supervisor.consultation' }, component: (props: PropsRuntime<'task-supervisor.consultation'> & PropsRenderFactories) => ReactNode): () => void
-    register(definition: { name: 'task-supervisor.evidence'; children: { 'conversation.session': { kind: 'single'; scope: 'session' } } }, component: (props: PropsRuntime<'task-supervisor.evidence'> & PropsRenderSlots<'conversation.session'>) => ReactNode): () => void
     inject(name: string, factory: () => () => void): () => void
     register(definition: { name: string; key: string }, component: (props: PanelProps) => ReactNode): () => void
     register(definition: { name: string; id: string }, component: (props: TailProps) => ReactNode): () => void
@@ -97,8 +96,27 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
     </section>}
   </>
 }
-function TaskPanel({ sessionId, navigation, renderConsult, renderEvidence }: PanelProps & {
-  navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode; renderEvidence: (id: string) => ReactNode
+/** Read retained records through the Host; no reviewer Agent or writable composer is opened. */
+function ReviewLog({ sessionId, reviewerSessionId }: { sessionId: string; reviewerSessionId: string }) {
+  const [records, setRecords] = useState<Array<{ seq: number; type: string; data: unknown }>>([])
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const abort = new AbortController(); setError(''); setRecords([])
+    void fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}&view=review-log&reviewerSessionId=${encodeURIComponent(reviewerSessionId)}`,
+      { signal: abort.signal, cache: 'no-store' }).then(async response => {
+        const body = await response.json() as { events?: typeof records; error?: string }
+        if (!response.ok || !body.events) throw new Error(body.error ?? '无法读取审查原始记录')
+        if (!abort.signal.aborted) setRecords(body.events)
+      }).catch(error => { if (!abort.signal.aborted) setError(String(error)) })
+    return () => abort.abort()
+  }, [sessionId, reviewerSessionId])
+  return <section className="dsh-task-section" aria-label="只读审查原始记录"><h3>原始审查记录 · 只读</h3>
+    <p className="dsh-task-meta">{reviewerSessionId} · 最近 100 条记录，长文本按证据协议截断</p>
+    {error && <p role="alert">{error}</p>}{records.map(record => <Disclosure key={record.seq} title={`seq ${record.seq} · ${record.type}`}>
+      <pre className="dsh-task-log-record">{JSON.stringify(record, null, 2)}</pre></Disclosure>)}</section>
+}
+function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
+  navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode
 }): ReactNode {
   const { state, error, busy, store } = useTask(sessionId)
   const [tab, setTab] = useState<'details' | 'consultation'>('details')
@@ -206,7 +224,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, renderEvidence }: Pan
       {error && <p role="alert" className="dsh-task-error">{error}</p>}
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
-      {reviewId && !review && <div className="dsh-task-evidence-chat">{renderEvidence(reviewId)}</div>}
+      {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} /></div>}
       {reviewId && (reviewSection ?? <p role="status">这次审查已超出当前历史窗口，请从原生会话日志查看原始记录。</p>)}
       {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>任务已暂停，已保存审查现场。重试只恢复审查；后续执行仍需明确恢复。</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
       {!task ? <p>在督导对话中讨论想法、整理草案，或直接创建明确的任务。</p> : <>
@@ -263,13 +281,11 @@ export function apply(ctx: ClientContext): void {
   const Panel = (props: ConsultationPanelProps) => {
     const { tab } = props.useTabInfo()
     return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation}
-      renderEvidence={id => <ConsultationHost readOnly id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />}
       renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
   }
   const Inline = (props: PanelProps) => <InlineTask {...props} open={open} />
   const Notes = (props: TailProps) => <ReviewNotes {...props} open={open} />
   ctx.effect(() => ctx.slots.inject('task-supervisor.consultation', () => ctx.slots.register({ name: 'task-supervisor.consultation' }, ConsultationConversation)))
-  ctx.effect(() => ctx.slots.inject('task-supervisor.evidence', () => ctx.slots.register({ name: 'task-supervisor.evidence', children: { 'conversation.session': { kind: 'single', scope: 'session' } } }, ReviewEvidence)))
   ctx.effect(() => ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: `${PANEL_ID}/current` }, Inline)))
   ctx.effect(() => ctx.uiConversation.events.register(milestoneDefinition), 'task-supervisor:milestones')
   ctx.effect(() => { const style = document.createElement('style'); style.dataset.pluginCss = 'dsh-task-supervisor'; style.textContent = CSS + GRAPH_CSS
@@ -277,6 +293,6 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.sidebarRightTabs.register({ id: PANEL_ID, kind: 'task-supervisor', priority: 'extension', title: () => '任务督导',
     guide: [{ id: 'task-supervisor', order: 5, title: () => '任务督导', description: () => '查看任务详情或与督导对话' }] }))
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({ name: 'sidebar.right.pane.tab', key: PANEL_ID,
-    children: { 'task-supervisor.consultation': { kind: 'single', scope: 'session' }, 'task-supervisor.evidence': { kind: 'single', scope: 'session' } } }, Panel)))
+    children: { 'task-supervisor.consultation': { kind: 'single', scope: 'session' } } }, Panel)))
   ctx.effect(() => ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register({ name: 'conversation.chat.turnTail', id: `${PANEL_ID}/milestones` }, Notes)))
 }

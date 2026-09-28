@@ -35,16 +35,20 @@ def summarize(events, labels=None):
         missing += 'protocol-missing' in seen_faults
         repaired = [row for row in rows if row['status'] == 'repairing']
         repairs += len(repaired)
-        decision = any(row.get('decision') for row in rows)
-        recovered += bool(repaired and decision)
-        exhausted += bool(repaired and not decision and rows[-1]['status'] == 'failed')
         windows = {}
         for row in rows:
-            windows[row['runtimeId']] = row
+            windows.setdefault(row['runtimeId'], []).append(row)
             if row.get('reviewerSessionId'):
                 sessions.add(row['reviewerSessionId'])
+        # A later manual recovery is not success of an exhausted automatic repair.
+        recovered += any(any(row['status'] == 'repairing' for row in window)
+                         and any(row.get('decision') for row in window) for window in windows.values())
+        exhausted += any(any(row['status'] == 'repairing' for row in window)
+                         and not any(row.get('decision') for row in window)
+                         and window[-1]['status'] == 'failed' for window in windows.values())
         retries += max(0, len(windows) - 1)
-        for row in windows.values():
+        for window in windows.values():
+            row = window[-1]
             if not row.get('finishedAt'):
                 unfinished_windows += 1
                 continue
@@ -60,7 +64,8 @@ def summarize(events, labels=None):
         policy_counts[json.dumps(settings, sort_keys=True) if settings else 'unrecorded'] += 1
     labelled = [(job, labels[job['id']]) for job in final if job['id'] in labels]
     false_pause_denominator = [(job, label) for job, label in labelled if label.get('drift') is False]
-    false_pauses = sum((job.get('decision') or {}).get('verdict') == 'needs-user' for job, _ in false_pause_denominator)
+    false_pauses = sum(job['status'] == 'applied' and (job.get('decision') or {}).get('verdict') == 'needs-user'
+                       for job, _ in false_pause_denominator)
     return {
         'schemaVersion': 1, 'kind': 'review-recovery-audit', 'jobs': len(final),
         'checksByKind': dict(Counter(row['kind'] for row in final)),

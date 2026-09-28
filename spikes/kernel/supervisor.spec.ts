@@ -141,6 +141,7 @@ it('keeps one task in the native Session and resumes only after a human command'
     },
   })
   expect(plan.isError).toBe(false)
+  expect(JSON.stringify(plan)).toContain('The user has not approved execution')
   expect(taskOf(first, agent)?.phase).toBe('awaiting-approval')
   expect((await first.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
@@ -959,7 +960,7 @@ it('requires subsequent exact-draft consent and deduplicates concurrent creation
   const { draft } = await save()
   const ambiguous = await say('可以')
   expect((await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: ambiguous })).isError).toBe(true)
-  const seq = await say('按这份草案创建任务')
+  const seq = await say('创建任务')
   await Promise.all([call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq }),
     call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })])
   await main.whenIdle()

@@ -2,6 +2,8 @@
 
 **Updated: 2026-09-27. Status: study design and development pilots; public benchmark integration is pending.** This document owns evaluation questions, execution order, datasets, comparison arms, metrics, and result deliverables. There is no frozen long-horizon holdout or superiority claim; [architecture](architecture.md) owns product design and [implementation status](implementation.md) records working capabilities.
 
+See [step F](10-plans/conversation-and-review-recovery/evidence/f.md) for the new development regression and audit, and the [frozen frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) for follow-up conditions. Original frozen outcomes remain unchanged; the 60 follow-up attempts have not run.
+
 ## Summary
 
 The study asks whether Supervisor completes tasks that follow user instructions and pass independent acceptance more often than native DSH Goal or Plan, and sustains that ability over long execution.

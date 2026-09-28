@@ -9,3 +9,5 @@ A sparse configured condition may fix 48 results, 600000 ms, three errors and si
 Metrics use unique review jobs as their denominator, including missing protocol recovered by repair. Manual waiting is excluded from recorded runtime review windows; absent old timing remains unknown. Labels keyed by job ID can state `drift` and `correctionEffective`. Without labels, false pauses and correction quality remain null. Missed drift needs separate annotation of unreviewed intervals. External reward, timely completion and all Session tokens require independent grading and native usage records.
 
 Independent Python fixtures cover repair success, manual provider recovery, empty samples and legacy timing. They run through the focused Vitest gate. Integrated evidence lives in [the A–F execution record](../../docs/10-plans/conversation-and-review-recovery/evidence/).
+
+See the [frozen follow-up comparison](frequency-p2-protocol.md): four candidate tasks, five conditions and three repeats. The 60 planned attempts have not run; the current NodeBB run is development regression only.

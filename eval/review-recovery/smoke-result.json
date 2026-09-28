@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-model-browser-integration",
+  "mainSessionId": "session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+  "consultationSessionId": "supervisor-chat-session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+  "workspace": "/private/var/folders/kg/klnm7xcn56lbsvcwp5tqnxh00000gn/T/supervisor-conversation-recovery-yx2vko9p",
+  "tasks": [
+    {
+      "id": "478a4825-95ff-4415-87ec-ac38f4143db1",
+      "phase": "complete",
+      "objective": "目标：对当前工作区下的 data.txt 做一次只读统计，给出非空行数，并用中文汇报计数与证据。这是本任务唯一的一项要求。\n\n范围（唯一要求）：\n1. 定位工作区中的 data.txt，读取其真实内容（不得凭空推断、不得使用示例或编造数据）。\n2. 统计其中「非空行」的数量。非空行的判定口径：该行去除首尾空白字符（空格、制表符、\\r）后仍有内容，即计为非空行；完全空白或仅含空白的行不计入。\n3. 用中文给出结论：明确写出非空行数（数字），并附可核验的证据——总行数、非空行数、被跳过的空白行数，以及前若干条非空行的原文摘录（若文件较长，摘录前 5 条与最后 1 条即可，并注明为节选）。\n4. 汇报需说明所用统计口径，使结果可被独立复核。\n\n明确不做（硬约束）：\n- 不写入、不修改、不创建、不删除任何文件；不对 data.txt 做格式化、转换或另存。\n- 不安装依赖、不执行会改变工作区状态或网络状态的命令；仅允许只读命令（如 cat、wc、awk、sed -n 等读取类操作）。\n- 不做超出「计数 + 证据」范围的深度分析、清洗或修复；若发现编码异常或二进制内容，只如实报告，不做处理。\n- 不执行本会话此前讨论的「方块世界」相关任何内容，该讨论仅作保留记录。\n\n默认假设（已接受，无需再确认）：\n- 目标文件为工作区根目录下的 data.txt（相对路径 data.txt）。\n- 非空行判定采用上述「去除首尾空白后非空」口径。\n- 若 data.txt 不存在或不可读，如实报告该情况并停止，不推测内容、不创建替代文件。\n- 汇报语言为中文。\n\n交付物：\n1. 一条中文汇报，含：非空行数（数字）、总行数、空白行数、统计口径说明、非空行原文摘录。\n2. 支撑该数字的只读命令或其输出片段作为证据。\n\n验收方式（逐条对照，全部满足即完成）：\n1. 汇报中明确出现一个非空行数的具体数字，且该数字可由所给证据（总行数 − 空白行数）复核一致。\n2. 汇报给出所用统计口径（去除首尾空白后非空），并说明空白行的处理方式。\n3. 汇报包含 data.txt 中真实存在的非空行原文摘录，摘录内容与文件实际内容一致、非编造。\n4. 汇报为中文。\n5. 全程未写入或修改任何文件（如无法以文件时间戳佐证，需在汇报中明确声明所执行命令均为只读）。\n6. 若文件中存在仅含空白的行，汇报的空白行数应与之相符；数字对不上即视为未完成。",
+      "stages": 1
+    },
+    {
+      "id": "e586dad9-2f6e-4dc2-8823-3ba3d11f6100",
+      "phase": "complete",
+      "objective": "目标：只读地查看当前环境中实际生效的 Node.js 版本号，并用中文给出真实版本与命令证据。这是本任务唯一的一项要求。\n\n范围（唯一要求）：\n1. 在当前环境中执行只读命令查询 Node.js 版本（例如 `node -v` / `node --version`），以命令的真实输出为准，不得凭记忆或推测填写版本号。\n2. 用中文汇报：实际版本号（如 vXX.YY.ZZ 的原样输出）、执行的确切命令、以及该命令的原始输出片段作为证据。\n3. 若命令报错、node 不存在或不可用，如实报告该情况（含报错原文），不推测版本、不尝试安装或修复。\n4. 可选补充：如发现有多个 node（如 nvm/系统路径并存），只如实说明所观测到的路径与版本对应关系，不做切换或修改。\n\n明确不做（硬约束）：\n- 不写入、不修改、不创建、不删除任何文件；不生成 package.json、锁文件、日志或任何落盘产物。\n- 不安装、不升级、不卸载任何依赖或工具链（禁止 npm install / nvm install / brew install 等一切改动类命令）。\n- 不执行与查看版本无关的命令，不运行构建、测试或启动任何服务。\n- 不执行本会话此前讨论的「方块世界」相关任何内容，也不改动正在进行的 data.txt 统计任务，该两者仅作保留记录。\n\n默认假设（已接受，无需再确认）：\n- 判定对象是当前 shell 环境中 PATH 解析到的 node，即直接运行 `node -v` 的那一个。\n- 汇报语言为中文，版本号按命令输出原样引用（不做改写、不省略 v 前缀）。\n- 只读命令允许的输出获取方式不做额外限制，但必须可复现。\n\n交付物：\n1. 一条中文汇报，含：实际 Node.js 版本号、所执行的命令、命令原始输出。\n2. 如遇异常，含报错原文与「未做任何修改」的明确说明。\n\n验收方式（逐条对照，全部满足即完成）：\n1. 汇报中出现一个具体的 Node.js 版本号，格式与 `node -v` 的真实输出一致。\n2. 汇报给出所执行的确切命令，且该命令的输出与所报版本号相符、可复现。\n3. 汇报为中文，且未混入推测或占位式版本号（如「大概 v20 左右」视为不满足）。\n4. 全程未写入或修改任何文件、未安装任何依赖（如无法以时间戳佐证，需在汇报中明确声明所执行的命令均为只读）。\n5. 若 node 不可用或报错，如实呈现报错原文并停止，且不尝试安装或改动环境。\n6. 未对正在进行的 data.txt 统计任务做任何干预。",
+      "stages": 1
+    },
+    {
+      "id": "706c364c-15e2-4a50-91a5-6edd0933b7dd",
+      "phase": "complete",
+      "objective": "只读计算工作区 data.txt 的 SHA-256，用中文给出实际摘要和命令证据，不写任何文件，不安装依赖。这是一个独立的新任务。",
+      "stages": 1
+    }
+  ],
+  "completed": 3,
+  "attempted": 3,
+  "creationPaths": [
+    "displayed-draft button",
+    "post-compaction typed 创建任务",
+    "explicit direct mode"
+  ],
+  "approvalPaths": [
+    "main overview button",
+    "consultation typed 批准计划",
+    "main typed 批准"
+  ],
+  "nativeCompactionSummaries": 1,
+  "inputModes": [
+    "direct",
+    "discussion"
+  ],
+  "questionUserSeq": 192,
+  "questionToolNames": [
+    "supervisor_read_log"
+  ],
+  "historyTasks": 3,
+  "fixtureSha256": "880553fca8fcea94e325ee2cfb48e5a985cc797f39a14cc6d3cedecfeb2ae4d2",
+  "workspaceUnchanged": true,
+  "nativeLog": {
+    "path": "/private/tmp/dsh-task-supervisor-smoke.Fhxusi/sessions/--private-var-folders-kg-klnm7xcn56lbsvcwp5tqnxh00000gn-T-supervisor-conversation-recovery-yx2vko9p--/session-55f3374b-ac71-4173-806e-4eb49683d3a5/session.v4.jsonl.zstd",
+    "sha256": "eced1ee66c382d9f403e1c83ff3c3fde523d6a86b8c2e53239fb092d5f6ebac5"
+  },
+  "consultationLog": {
+    "path": "/private/tmp/dsh-task-supervisor-smoke.Fhxusi/sessions/--private-var-folders-kg-klnm7xcn56lbsvcwp5tqnxh00000gn-T-supervisor-conversation-recovery-yx2vko9p--/supervisor-chat-session-55f3374b-ac71-4173-806e-4eb49683d3a5/session.v4.jsonl.zstd",
+    "sha256": "dbd09aebe2e9bd046ad020f976bf32819b590b5b21f4edc97864b5a3b565219d"
+  },
+  "routes": [
+    {
+      "sessionId": "session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "supervisor-chat-session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-2ac1314f-ddce-409f-b828-9a0150706673",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-2bd95ca3-7493-4371-84ed-a555282982c5",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-6f83bbcd-033b-45d6-a5a2-03519f260130",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-887ec512-48b4-4608-ac0f-7060c66ac5fa",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-a699c7bf-dc07-4c16-a646-2a8a223bfaa2",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-d798688f-d4d5-4d2b-a808-a9da7fc5a265",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-e819a6e4-b6b1-4b09-8210-9ae9c5003caa",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-eacb8a03-7a70-4057-8245-f6f040c25f95",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-ffb4921c-a439-4ba1-a0bc-995192743bd8",
+      "routes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    }
+  ],
+  "tokens": [
+    {
+      "sessionId": "session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+      "tokens": {
+        "uncachedInputTokens": 92279,
+        "outputTokens": 15646,
+        "cacheReadTokens": 689280,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "supervisor-chat-session-55f3374b-ac71-4173-806e-4eb49683d3a5",
+      "tokens": {
+        "uncachedInputTokens": 110377,
+        "outputTokens": 17471,
+        "cacheReadTokens": 708224,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-2ac1314f-ddce-409f-b828-9a0150706673",
+      "tokens": {
+        "uncachedInputTokens": 24124,
+        "outputTokens": 1927,
+        "cacheReadTokens": 57856,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-2bd95ca3-7493-4371-84ed-a555282982c5",
+      "tokens": {
+        "uncachedInputTokens": 39231,
+        "outputTokens": 5717,
+        "cacheReadTokens": 94080,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-6f83bbcd-033b-45d6-a5a2-03519f260130",
+      "tokens": {
+        "uncachedInputTokens": 36070,
+        "outputTokens": 3392,
+        "cacheReadTokens": 127872,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-887ec512-48b4-4608-ac0f-7060c66ac5fa",
+      "tokens": {
+        "uncachedInputTokens": 64361,
+        "outputTokens": 5590,
+        "cacheReadTokens": 206848,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-a699c7bf-dc07-4c16-a646-2a8a223bfaa2",
+      "tokens": {
+        "uncachedInputTokens": 61330,
+        "outputTokens": 9094,
+        "cacheReadTokens": 365696,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-d798688f-d4d5-4d2b-a808-a9da7fc5a265",
+      "tokens": {
+        "uncachedInputTokens": 13019,
+        "outputTokens": 2740,
+        "cacheReadTokens": 22656,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-e819a6e4-b6b1-4b09-8210-9ae9c5003caa",
+      "tokens": {
+        "uncachedInputTokens": 49357,
+        "outputTokens": 7240,
+        "cacheReadTokens": 232064,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-eacb8a03-7a70-4057-8245-f6f040c25f95",
+      "tokens": {
+        "uncachedInputTokens": 35912,
+        "outputTokens": 10003,
+        "cacheReadTokens": 176128,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-ffb4921c-a439-4ba1-a0bc-995192743bd8",
+      "tokens": {
+        "uncachedInputTokens": 30278,
+        "outputTokens": 2643,
+        "cacheReadTokens": 117888,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "reviewAudit": {
+    "schemaVersion": 1,
+    "kind": "review-recovery-audit",
+    "jobs": 9,
+    "checksByKind": {
+      "plan": 3,
+      "stage": 3,
+      "completion": 3
+    },
+    "faultsByCode": {},
+    "protocolMissingJobs": 0,
+    "protocolMissingRate": 0.0,
+    "repairTurns": 0,
+    "jobsRecoveredAfterRepair": 0,
+    "jobsWithRepair": 0,
+    "jobsExhaustedAfterRepair": 0,
+    "manualRecoveryWindows": 0,
+    "faultPauseJobs": 0,
+    "effectiveNeedsUserJobs": 0,
+    "reviewWaitMs": 353066.0,
+    "measuredWindows": 9,
+    "unmeasuredOrUnfinishedWindows": 0,
+    "reviewerSessionIds": [
+      "task-review-2ac1314f-ddce-409f-b828-9a0150706673",
+      "task-review-2bd95ca3-7493-4371-84ed-a555282982c5",
+      "task-review-6f83bbcd-033b-45d6-a5a2-03519f260130",
+      "task-review-887ec512-48b4-4608-ac0f-7060c66ac5fa",
+      "task-review-a699c7bf-dc07-4c16-a646-2a8a223bfaa2",
+      "task-review-d798688f-d4d5-4d2b-a808-a9da7fc5a265",
+      "task-review-e819a6e4-b6b1-4b09-8210-9ae9c5003caa",
+      "task-review-eacb8a03-7a70-4057-8245-f6f040c25f95",
+      "task-review-ffb4921c-a439-4ba1-a0bc-995192743bd8"
+    ],
+    "settings": {
+      "{\"consecutiveErrors\": 3, \"elapsedMs\": 300000, \"inTurn\": true, \"mode\": \"current\", \"rounds\": 3, \"toolCalls\": 24}": 9
+    },
+    "labelledJobs": 0,
+    "falsePauseRate": null,
+    "correctionsConfirmed": null,
+    "limitations": [
+      "External task success and reward require independent grading.",
+      "All-session tokens require native token usage from main, review, worker and consultation Sessions.",
+      "No labels means correction quality, false pauses and missed drift remain unmeasured."
+    ]
+  },
+  "reviewLogNegativeControl": {
+    "reviewerSessionId": "task-review-6f83bbcd-033b-45d6-a5a2-03519f260130",
+    "boundedRecords": 63,
+    "crossSessionStatus": 404,
+    "sessionCountBefore": 162,
+    "sessionCountAfter": 162
+  },
+  "fork": {
+    "forkId": "session-b5296118-5d24-44f7-9e24-2ed19bec2d7a",
+    "draft": null,
+    "armed": false,
+    "actions": [],
+    "taskPhase": "complete"
+  },
+  "limitations": [
+    "Small read-only tasks test workflow usability, not long-horizon quality.",
+    "This run had no protocol failures; bounded recovery is validated by deterministic native-Host fault fixtures.",
+    "The browser was open during restart; persisted identities were checked, not a cold no-client restart of an active task."
+  ]
+}
