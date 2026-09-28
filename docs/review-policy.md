@@ -63,4 +63,6 @@ Persist review inputs, output, cursor advancement, intervention, and delivered m
 
 ## Dev Note
 
+The next implementation steps for protocol repair, fault versus user-decision classification, failed review identity, and progress observation experiments are in the [conversation and review recovery plan](10-plans/conversation-and-review-recovery/plans.md). This proposal is not implemented and does not change frozen evaluation scores.
+
 Calibrate watchdog thresholds, severity rules, timeout duration, false-positive suppression, and transient review retries. Verify safe step-boundary scheduling, event pagination, redaction, workspace-copy fidelity, and host user-decision transport in an isolated DSH instance before fixing tool schemas.

@@ -40,6 +40,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | --- | --- |
 | [实现状态](docs/implementation.zh.md) | 实际代码、安装前提、测试与限制。 |
 | [督导交互改进提案](docs/supervisor-experience-v2.zh.md) | 神社 Session 核对、响应语言、任务图、用户决策与持久侧问。 |
+| [督导对话与审查恢复方案](docs/10-plans/conversation-and-review-recovery/plans.zh.md) | 待实现：从讨论形成任务、有限协议补交、故障追踪和审查频率实验。 |
 | [V2 联合验收](docs/v2-integrated-validation.zh.md) | 第二、三批的真实模型、DAG、持续侧问、原生并行与失败修复记录。 |
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
