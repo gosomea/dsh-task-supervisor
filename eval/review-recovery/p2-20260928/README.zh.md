@@ -50,3 +50,5 @@ python3 eval/review-recovery/freeze_frequency.py \
 [16:10 运行核对](progress-20260928-1610.zh.md)记录未封口 Goal 第 1 轮因 `max-tokens` 停止、原 Goal 仍 active 的现象；等待原截止评分，没有追加继续指令。
 
 [三项封口与续行规则](progress-20260928-1629.zh.md)归档 Goal 的正式独立评分，解释冻结 driver 在 `max-tokens` 后撤销续行而保留 active 的规则，并校正原生执行截止计时。下一项 Supervisor-current 已由原控制器启动。
+
+[19:48 六项封口核对](progress-20260928-1948.zh.md)记录首个 reward=1 但超时的截止补丁、完整分母和控制器身份。此前“每小时跟进”与“automation 启用”是历史记录；用户已关闭定时跟进，本次未恢复。原独立控制器仍执行冻结协议。

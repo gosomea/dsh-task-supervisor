@@ -2,7 +2,7 @@
 
 **Updated: 2026-09-27. Status: study design and development pilots; public benchmark integration is pending.** This document owns evaluation questions, execution order, datasets, comparison arms, metrics, and result deliverables. There is no frozen long-horizon holdout or superiority claim; [architecture](architecture.md) owns product design and [implementation status](implementation.md) records working capabilities.
 
-See [step F](10-plans/conversation-and-review-recovery/evidence/f.md) for the new development regression and audit, and the [frozen frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) for follow-up conditions. Original frozen outcomes remain unchanged; the 60 follow-up attempts have not run.
+See [step F](10-plans/conversation-and-review-recovery/evidence/f.md) for the new development regression and audit, and the [frozen frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) for follow-up conditions. Original frozen outcomes remain unchanged; the frozen frequency comparison has started, with 6/60 sealed results in the [latest check](../eval/review-recovery/p2-20260928/progress-20260928-1948.zh.md). Enhanced independent verification uses a separate protocol and batch.
 
 ## Summary
 

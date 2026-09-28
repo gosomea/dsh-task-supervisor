@@ -1,0 +1,186 @@
+{
+  "sessions": [
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "logSha256": "016325c24fbb4f9470c47877b8df9dc42bdaf2dcc1caf4e0f73afc44d4a5aa81",
+      "tokens": {
+        "uncachedInputTokens": 244664,
+        "outputTokens": 291291,
+        "cacheReadTokens": 10977536,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-0670124f-d8d2-4481-97c4-35c4f91a1d6c",
+      "logSha256": "53fd09cf5f89812a635384e577a02d956705b70e7b103bd93b6bd03d60c1d4cb",
+      "tokens": {
+        "uncachedInputTokens": 18177,
+        "outputTokens": 18273,
+        "cacheReadTokens": 57344,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-081ec1e2-7a71-4193-b55e-533eb4ac0df2",
+      "logSha256": "31ae0c05b2e792d99a4525a995544c057b360d24758ebcff7bc94f188c27be44",
+      "tokens": {
+        "uncachedInputTokens": 64542,
+        "outputTokens": 73176,
+        "cacheReadTokens": 889088,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-3681a68a-89a7-42c3-bfa1-e2367e23fc03",
+      "logSha256": "4d34aefe1a20a2a8ca32b7c82d14970aada278cd20378b954ceeb360e6a26021",
+      "tokens": {
+        "uncachedInputTokens": 32535,
+        "outputTokens": 14152,
+        "cacheReadTokens": 177152,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-9f94a99c-a2c2-4175-9844-af29ed5d94d3",
+      "logSha256": "64f571e70ec1f356371ebc69a74e27de31d50481f7d78a064ff659cccc637a17",
+      "tokens": {
+        "uncachedInputTokens": 80026,
+        "outputTokens": 96471,
+        "cacheReadTokens": 1707776,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-c19bf917-ab4b-40b8-addb-c0f6ec6b7331",
+      "logSha256": "d170fa768a4fa0474d093b513fa317c137655c7902d50faa68688e2387a3c041",
+      "tokens": {
+        "uncachedInputTokens": 54160,
+        "outputTokens": 35365,
+        "cacheReadTokens": 407552,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-f139954c-9e69-4587-a625-24f5c0586b65",
+      "logSha256": "e986088c7a4d494bde34bcf27cff6cf4d1114006777866ef464be3922236b4a8",
+      "tokens": {
+        "uncachedInputTokens": 24765,
+        "outputTokens": 34545,
+        "cacheReadTokens": 113408,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "allSessionTokens": {
+    "uncachedInputTokens": 518869,
+    "cacheReadTokens": 14329856,
+    "outputTokens": 563273,
+    "cacheWriteTokens": 0
+  },
+  "modelRequests": [
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 23,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 74,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 86,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 349,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 360,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 483,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-247d6849-2b46-48c2-acf3-78e898a272c6",
+      "seq": 494,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-0670124f-d8d2-4481-97c4-35c4f91a1d6c",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-081ec1e2-7a71-4193-b55e-533eb4ac0df2",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-3681a68a-89a7-42c3-bfa1-e2367e23fc03",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-9f94a99c-a2c2-4175-9844-af29ed5d94d3",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-c19bf917-ab4b-40b8-addb-c0f6ec6b7331",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-f139954c-9e69-4587-a625-24f5c0586b65",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

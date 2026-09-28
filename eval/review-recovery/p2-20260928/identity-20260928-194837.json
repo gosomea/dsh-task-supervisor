@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-09-28T11:48:37.602987+00:00",
+  "controllerPid": 53077,
+  "controllerCommandMatches": true,
+  "activeContainer": {
+    "name": "p2-t1-r2-goal",
+    "id": "62e0f52788ebd09292b52ee91f4fb5325876aec574b1aeff787157b62f866c79",
+    "imageId": "sha256:d1869bd5a264044c7b58a948422e2d6b457385e34077bafaa68191bc5be46440",
+    "running": true,
+    "oomKilled": false,
+    "nanoCpus": 1000000000,
+    "memoryBytes": 4294967296
+  },
+  "sealedResults": [
+    {
+      "name": "p2-t1-r1-goal",
+      "reward": 0.0,
+      "primarySuccess": false,
+      "nativePhase": "active",
+      "status": "time-limit"
+    },
+    {
+      "name": "p2-t1-r1-plan",
+      "reward": 0.0,
+      "primarySuccess": false,
+      "nativePhase": null,
+      "status": "time-limit"
+    },
+    {
+      "name": "p2-t1-r1-supervisor-current",
+      "reward": 0.0,
+      "primarySuccess": false,
+      "nativePhase": "active",
+      "status": "time-limit"
+    },
+    {
+      "name": "p2-t1-r1-supervisor-required",
+      "reward": 0.0,
+      "primarySuccess": false,
+      "nativePhase": "active",
+      "status": "time-limit"
+    },
+    {
+      "name": "p2-t1-r1-supervisor-sparse",
+      "reward": 0.0,
+      "primarySuccess": false,
+      "nativePhase": "paused",
+      "status": "time-limit"
+    },
+    {
+      "name": "p2-t1-r2-supervisor-sparse",
+      "reward": 1.0,
+      "primarySuccess": false,
+      "nativePhase": "active",
+      "status": "time-limit"
+    }
+  ],
+  "planned": 60,
+  "newModelRequests": 0,
+  "automationResumed": false
+}

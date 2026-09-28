@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "review-recovery-audit",
+  "jobs": 4,
+  "checksByKind": {
+    "plan": 1,
+    "stage": 3
+  },
+  "faultsByCode": {},
+  "protocolMissingJobs": 0,
+  "protocolMissingRate": 0.0,
+  "repairTurns": 0,
+  "jobsRecoveredAfterRepair": 0,
+  "jobsWithRepair": 0,
+  "jobsExhaustedAfterRepair": 0,
+  "manualRecoveryWindows": 0,
+  "faultPauseJobs": 0,
+  "effectiveNeedsUserJobs": 0,
+  "reviewWaitMs": 1381923.0,
+  "measuredWindows": 4,
+  "unmeasuredOrUnfinishedWindows": 0,
+  "reviewerSessionIds": [
+    "task-review-5318912f-5ab5-4718-ac5e-3dd25df6780d",
+    "task-review-8c8faaf0-e4f4-4e26-b97e-c5f1ef028010",
+    "task-review-d4390f7d-908b-4c69-a364-bba3bfae236e",
+    "task-review-fe09fea1-1222-437e-a455-ba87187cf886"
+  ],
+  "settings": {
+    "{\"consecutiveErrors\": 3, \"elapsedMs\": 300000, \"inTurn\": true, \"mode\": \"required-only\", \"rounds\": 3, \"toolCalls\": 24}": 4
+  },
+  "labelledJobs": 0,
+  "falsePauseRate": null,
+  "correctionsConfirmed": null,
+  "limitations": [
+    "External task success and reward require independent grading.",
+    "All-session tokens require native token usage from main, review, worker and consultation Sessions.",
+    "No labels means correction quality, false pauses and missed drift remain unmeasured."
+  ]
+}

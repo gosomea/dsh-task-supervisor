@@ -1,0 +1,158 @@
+{
+  "sessions": [
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "logSha256": "7a5c6f5f0fbf872db29a6349037fa2d4a2271a165ce0c03400c0eda67eae3816",
+      "tokens": {
+        "uncachedInputTokens": 234022,
+        "outputTokens": 286931,
+        "cacheReadTokens": 10720640,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-5318912f-5ab5-4718-ac5e-3dd25df6780d",
+      "logSha256": "37a1724c95f843799f432f9b53a4745acaa1829b10030920959d1c12c3fa0066",
+      "tokens": {
+        "uncachedInputTokens": 22001,
+        "outputTokens": 32260,
+        "cacheReadTokens": 122624,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-8c8faaf0-e4f4-4e26-b97e-c5f1ef028010",
+      "logSha256": "8b5571c45593c179325e7f61abb1a053536cea64c2b4f8c0521af7a5176fc434",
+      "tokens": {
+        "uncachedInputTokens": 84854,
+        "outputTokens": 90528,
+        "cacheReadTokens": 1799296,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-d4390f7d-908b-4c69-a364-bba3bfae236e",
+      "logSha256": "55cb0971579cda3fd456cc7588a4ebe22a4beb3a2d22383794ad43ef9a94da50",
+      "tokens": {
+        "uncachedInputTokens": 65868,
+        "outputTokens": 106759,
+        "cacheReadTokens": 1062784,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-fe09fea1-1222-437e-a455-ba87187cf886",
+      "logSha256": "1f7ce62215ded907ac4881969bb13eef71bcd030d85916560380b7b017ac5aaa",
+      "tokens": {
+        "uncachedInputTokens": 69599,
+        "outputTokens": 35537,
+        "cacheReadTokens": 972928,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "allSessionTokens": {
+    "uncachedInputTokens": 476344,
+    "cacheReadTokens": 14678272,
+    "outputTokens": 552015,
+    "cacheWriteTokens": 0
+  },
+  "modelRequests": [
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 23,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 81,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 93,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 413,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 423,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 479,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 489,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+      "seq": 777,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-5318912f-5ab5-4718-ac5e-3dd25df6780d",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-8c8faaf0-e4f4-4e26-b97e-c5f1ef028010",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-d4390f7d-908b-4c69-a364-bba3bfae236e",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-fe09fea1-1222-437e-a455-ba87187cf886",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "repeat": 1,
+  "condition": "supervisor-required",
+  "arm": "supervisor",
+  "rank": "cd5f443b1829878816a1665b3fd0272730590a2ca927b91651470573e01d0aa3",
+  "name": "p2-t1-r1-supervisor-required",
+  "status": "scored",
+  "admitted": true,
+  "terminal": {
+    "status": "time-limit",
+    "limitSec": 3000,
+    "container": "p2-t1-r1-supervisor-required",
+    "patch": "/evalhome/run/state-timeout.patch",
+    "snapshotError": null
+  },
+  "nativePhase": "active",
+  "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+  "approval": {
+    "sessionId": "session-5f6301b3-4a5a-4227-979c-d6dfc55279be",
+    "taskId": "04db58de-00ec-4076-a506-758f1cd23260",
+    "planRevision": 1,
+    "approvedAtUnix": 1790587376,
+    "decision": "approve"
+  },
+  "grade": {
+    "reward": 0.0,
+    "infrastructureError": null
+  },
+  "primarySuccess": false,
+  "patchSha256": "c8b20fbad75a06d3442e0071092f99312064eca585360c69632d024db893b0d2",
+  "patchBytes": 20297,
+  "mainSessionStats": {
+    "turns": 5,
+    "steps": 125,
+    "llmMs": 1534637,
+    "toolMs": 1453350,
+    "ttftMs": 340419,
+    "ttftSteps": 125,
+    "decodeMs": 1194218,
+    "decodeTokens": 286931,
+    "lastTurn": 5,
+    "openStep": {
+      "turn": 5,
+      "step": 53,
+      "startTime": 1790590141820,
+      "firstTokenTime": null
+    },
+    "pendingCalls": {}
+  },
+  "responseLanguage": "en",
+  "falsePauseRate": null,
+  "correctionBenefit": null
+}

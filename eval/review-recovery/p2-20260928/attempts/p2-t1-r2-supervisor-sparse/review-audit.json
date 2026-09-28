@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "review-recovery-audit",
+  "jobs": 6,
+  "checksByKind": {
+    "plan": 2,
+    "progress": 2,
+    "stage": 2
+  },
+  "faultsByCode": {},
+  "protocolMissingJobs": 0,
+  "protocolMissingRate": 0.0,
+  "repairTurns": 0,
+  "jobsRecoveredAfterRepair": 0,
+  "jobsWithRepair": 0,
+  "jobsExhaustedAfterRepair": 0,
+  "manualRecoveryWindows": 0,
+  "faultPauseJobs": 0,
+  "effectiveNeedsUserJobs": 0,
+  "reviewWaitMs": 1440044.0,
+  "measuredWindows": 6,
+  "unmeasuredOrUnfinishedWindows": 0,
+  "reviewerSessionIds": [
+    "task-review-0670124f-d8d2-4481-97c4-35c4f91a1d6c",
+    "task-review-081ec1e2-7a71-4193-b55e-533eb4ac0df2",
+    "task-review-3681a68a-89a7-42c3-bfa1-e2367e23fc03",
+    "task-review-9f94a99c-a2c2-4175-9844-af29ed5d94d3",
+    "task-review-c19bf917-ab4b-40b8-addb-c0f6ec6b7331",
+    "task-review-f139954c-9e69-4587-a625-24f5c0586b65"
+  ],
+  "settings": {
+    "{\"consecutiveErrors\": 3, \"elapsedMs\": 600000, \"inTurn\": true, \"mode\": \"configured\", \"rounds\": 6, \"toolCalls\": 48}": 6
+  },
+  "labelledJobs": 0,
+  "falsePauseRate": null,
+  "correctionsConfirmed": null,
+  "limitations": [
+    "External task success and reward require independent grading.",
+    "All-session tokens require native token usage from main, review, worker and consultation Sessions.",
+    "No labels means correction quality, false pauses and missed drift remain unmeasured."
+  ]
+}
