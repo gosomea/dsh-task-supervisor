@@ -15,3 +15,9 @@ An initial loader-read experiment left macOS processes waiting in kernel exit de
 ## Step 3
 
 Pending: job binding, two-stage visibility, independent findings, per-criterion decisions, durable recovery and real-model validation.
+
+## Plugin boundary correction (2026-09-28)
+
+The user requested a plugin-first implementation. The sandbox evidence above comes from an isolated DSH source experiment: three native code files plus tests, documentation and generated catalog changes. User instances 59909 and 61454 and the frozen public comparison were not modified. Native commit `58153b7a78` is retained on a fork experimental branch and has not been merged upstream.
+
+Production delivery moves to a plugin-owned check runtime, reusing existing native subprocess and Session services and removing the new sandbox-field dependency. Step 2 commit `e11a6e2` is experimental groundwork, not acceptance of an installable host-independent plugin. Step 3 code remains uncommitted. A scripted negative control independently executed the defective implementation before reading the main report and rejected it. Real-model validation reached host loading, a minimal request and planning, without approving node execution. Revalidate actual isolation and node review after migration.

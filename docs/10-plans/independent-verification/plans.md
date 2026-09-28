@@ -1,6 +1,6 @@
 # Independent verification and repair after completion
 
-**Status: step 1 validated in isolation; step 2 snapshot and native-runner foundations implemented; steps 3–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
+**Status: step 1 validated in isolation; step 2 snapshot and native-runner experiments implemented, with migration to a plugin-owned runtime pending; step 3 has an uncommitted prototype without completed real-model acceptance; steps 4–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
 
 ## Summary
 
@@ -103,9 +103,13 @@ Builds, caches, and check outputs may write to verification copies. A check that
 
 The plugin orchestrates tools through native Session, process, attachment, and browser services. Resolve the main model DSH profile or explicit override once per review job. Keep independent review per checkpoint rather than turning the reviewer into an Agent Team directing implementation.
 
-### Native isolation and execution
+### Plugin check runtime and isolation
 
-Prefer DSH native isolation and services, with containers as an explicit optional backend. Current macOS workspace-write policy permits broad temporary-directory writes while main tasks also live there; another cwd does not isolate the main task. The host must provide a verification policy granting writes only to this check copy, probe directory, output, and private temporary space. Validate actual platform and backend capabilities first.
+Keep the production implementation in this plugin without requiring changes to the generic DSH sandbox contract or rebuilding its native sandbox packages. Reuse public Session, filesystem and subprocess services. The plugin owns the dedicated check runtime, policy configuration, job binding and evidence protocol. A separate provider or adapter integrates an existing isolation component, with an explicit container backend when needed. Do not replace the main Agent global sandbox or maintain another full platform sandbox implementation.
+
+Current macOS workspace-write policy permits broad temporary-directory writes while main tasks also live there; another cwd does not isolate the main task. The selected check backend must actually restrict reads, writes and networking, granting writes only to the check copy, probes, output and private temporary space. Ordinary workspace-write is not proof of this contract. Validate adapter dependencies, platform coverage and actual denial behavior separately.
+
+The 2026-09-28 native experiment added `verification.readRoots`, `verificationEnforced` and local enforcement rules, recorded as `58153b7a78` on the DSH fork experimental branch. Retain it as capability evidence and experience, not a production plugin installation prerequisite. Remove the current `runCheck` dependency on those new fields during the plugin-runtime migration. Two-phase review retains its evidence requirements.
 
 Use a separate HOME, caches, and environment without main DSH identity, model credentials, user browser logins, or other task directories. Disable external networking by default and allow only bound local verification ports. External-service requirements use explicit profile configuration. Missing isolation is an infrastructure fault, never a reason to fall back to unrestricted execution.
 
@@ -154,6 +158,6 @@ Beyond final success, elapsed time, and tokens, record known-defect recall, fals
 
 ## Dev Note
 
-Implementation primarily touches `src/index.ts`, `src/task-context.ts`, `src/state.ts`, `src/graph.ts`, the review runner, and panel API and client. The host provides bounded file, process, and browser capabilities; the plugin provides task binding and evidence protocols. Do not duplicate platform sandbox implementations inside the plugin. Validate native services and isolation before fixing tool schemas, cycle fields, and migration policy.
+Implementation primarily touches `src/index.ts`, `src/task-context.ts`, `src/state.ts`, `src/graph.ts`, the review runner, and panel API and client. The host provides existing public filesystem, subprocess, Session and browser services; the plugin owns the dedicated check runtime and evidence protocol. Integrate existing isolation components through bounded adapters, without maintaining a copy of DSH platform sandbox code or making experimental host interfaces installation prerequisites. Validate the plugin backend and native service composition before fixing tool schemas, cycle fields and migration policy.
 
 This proposal builds on [conversation and review recovery](../conversation-and-review-recovery/plans.md) and [rework and execution validation](../../rework-progress-validation.md) without replacing completed evidence. Reopening after completion is a new explicit authorization action, distinct from routine directive synchronization. The user-selected click confirmation takes precedence over the general convention against redundant synchronization confirmation.
