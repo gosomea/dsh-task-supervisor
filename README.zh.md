@@ -23,6 +23,8 @@
 
 审查模型默认跟随主 Agent 当前有效的 DSH 路由。也可通过 `reviewerModel` 指定当前 profile 可用的提供方、模型和推理等级。每次审查记录实际模型、审查 Session ID、证据 seq 和主 Session 截止点。
 
+独立检查默认关闭。配置 `independentVerification` 后，节点与整体验收先读取当前产物快照并执行自己的检查，再对照主 Agent 汇报；运行时标准需要独立执行证据。当前提供插件内 Docker 后端，独立浏览器检查待开发。配置与限制见[实现状态](docs/implementation.zh.md#独立产物检查与两阶段审查)，真实正反例见[验收记录](docs/independent-verification-validation.zh.md)。
+
 ## 开发与隔离验证
 
 使用 Node 24 和包含 `extension/record` 宿主接缝的隔离 DSH checkout。日常 DSH checkout 与 profile 不需要修改。测试脚本通过 `DSH_SOURCE` 定位该工作树：
@@ -46,7 +48,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [督导对话与审查恢复方案](docs/10-plans/conversation-and-review-recovery/plans.zh.md) | 待实现：从讨论形成任务、有限协议补交、故障追踪和审查频率实验。 |
 | [V2 联合验收](docs/v2-integrated-validation.zh.md) | 第二、三批的真实模型、DAG、持续侧问、原生并行与失败修复记录。 |
 | [返工与执行状态验收](docs/rework-progress-validation.zh.md) | 主节点显式开始、此前通过、下游影响与旧日志恢复。 |
-| [独立验收与完成后返工方案](docs/10-plans/independent-verification/plans.zh.md) | 待开发：独立读取、运行与真实交互；完成后展示影响并点击确认回原 DAG。 |
+| [独立验收与完成后返工方案](docs/10-plans/independent-verification/plans.zh.md) | 完成后修复、快照与两阶段独立运行已验收；独立浏览器与联合回归仍待开发。 |
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
@@ -56,7 +58,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |
 | [内核技术试验](docs/host-spike.zh.md) | 最初的能力调研。 |
 
-当前原型每个 Session 同时只执行一个任务，结束后可连续创建后续任务。五任务并行队列、`/task plan` 快捷入口、插件内置的独立可执行验收、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
+当前原型每个 Session 同时只执行一个任务，结束后可连续创建后续任务。五任务并行队列、`/task plan` 快捷入口、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
 
 [English](README.md)
 

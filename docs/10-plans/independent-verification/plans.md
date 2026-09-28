@@ -1,6 +1,6 @@
 # Independent verification and repair after completion
 
-**Status: step 1 validated in isolation; step 2 plugin-owned container runtime validated; step 3 has an uncommitted prototype without completed real-model acceptance; steps 4–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
+**Status: step 1 validated in isolation; step 2 plugin-owned container runtime validated; step 3 two-stage review and real positive/negative cases validated; steps 4–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
 
 ## Summary
 
@@ -20,7 +20,7 @@ A defect within the original objective is repaired through the original task and
 
 ## Current state and problems
 
-Existing review can read main Session text, tool inputs and outputs, and image evidence; review recovery, node rework, and explicit starts already exist. Reading logs and the main Agent test report does not replace independent checks of the current artifact. Completed-task reopening is implemented in step 1; independent inspection tools and snapshots remain planned for steps 2–4.
+Existing review can read main Session text, tool inputs and outputs, and image evidence; review recovery, node rework, and explicit starts already exist. Reading logs and the main Agent test report does not replace independent checks of the current artifact. Completed-task reopening is implemented in step 1; snapshots and two-stage checks are validated, while independent browser support remains step 4.
 
 In the game case, the task was complete when the main Agent diagnosed spawn and water movement issues and called rework, receiving `task is not executing`. The screenshot supplies defect leads to verify; this proposal does not claim every diagnosis in that screenshot has been independently reproduced.
 
@@ -109,7 +109,7 @@ Keep the production implementation in this plugin without requiring changes to t
 
 Current macOS workspace-write policy permits broad temporary-directory writes while main tasks also live there; another cwd does not isolate the main task. The selected check backend must actually restrict reads, writes and networking, granting writes only to the check copy, probes, output and private temporary space. Ordinary workspace-write is not proof of this contract. Validate adapter dependencies, platform coverage and actual denial behavior separately.
 
-The 2026-09-28 native experiment added `verification.readRoots`, `verificationEnforced` and local enforcement rules, recorded as `58153b7a78` on the DSH fork experimental branch. Retain it as capability evidence and experience, not a production plugin installation prerequisite. Remove the current `runCheck` dependency on those new fields during the plugin-runtime migration. Two-phase review retains its evidence requirements.
+The 2026-09-28 native experiment added `verification.readRoots`, `verificationEnforced` and local enforcement rules, recorded as `58153b7a78` on the DSH fork experimental branch. Retain it as capability evidence and experience, not a production plugin installation prerequisite. The plugin `runCheck` uses local Docker without those fields. Two-phase review retains its evidence requirements.
 
 Use a separate HOME, caches, and environment without main DSH identity, model credentials, user browser logins, or other task directories. Disable external networking by default and allow only bound local verification ports. External-service requirements use explicit profile configuration. Missing isolation is an infrastructure fault, never a reason to fall back to unrestricted execution.
 

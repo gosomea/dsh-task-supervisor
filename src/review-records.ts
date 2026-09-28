@@ -5,8 +5,10 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { z } from 'zod'
 import { reviewFaultSchema, taskSchema } from './state-schema.ts'
+import { verificationSchema, findingSchema } from './verification-schema.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
+export const REVIEW_RECORD_VERSIONS = [1, 2]
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
   rounds: z.number().int().positive(), inTurn: z.boolean() }).strict()
@@ -22,7 +24,9 @@ export const reviewJobSchema = z.object({
   attemptStartedAt: z.string().optional(), observationSettings: observationSettingsSchema.optional(),
   startedAt: z.string(), finishedAt: z.string().nullable(), trigger: z.string(),
   input: taskSchema, evidence: z.string(), fault: reviewFaultSchema.nullable(),
+  verification: verificationSchema.optional(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
+    criteria: z.array(findingSchema).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict()
 export type ReviewJob = z.infer<typeof reviewJobSchema>
@@ -34,14 +38,14 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  agent.session.append('extension/record', { namespace: REVIEW_NAMESPACE, schemaVersion: 1,
+  agent.session.append('extension/record', { namespace: REVIEW_NAMESPACE, schemaVersion: job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
 
 export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent): ReviewJob[] {
   if (event.type !== 'extension/record' || event.data.namespace !== REVIEW_NAMESPACE) return [...jobs]
-  if (event.data.schemaVersion !== 1 || event.data.kind !== 'job') throw new Error('unsupported review record')
+  if (!REVIEW_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'job') throw new Error('unsupported review record')
   const job = reviewJobSchema.parse(event.data.payload)
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
@@ -50,6 +54,9 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || job.mainSessionId !== previous.mainSessionId || job.planVersion !== previous.planVersion
     || job.stageId !== previous.stageId || job.kind !== previous.kind || job.nodeAttempt !== previous.nodeAttempt
     || job.evidence !== previous.evidence || JSON.stringify(job.input) !== JSON.stringify(previous.input)
+    || previous.verification && JSON.stringify(job.verification?.snapshot) !== JSON.stringify(previous.verification.snapshot)
+    || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
+    || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
   return [...jobs.filter(item => item.id !== job.id), job].slice(-50)

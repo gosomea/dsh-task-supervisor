@@ -20,8 +20,9 @@ import { installRepairs } from './repair-runtime.ts'
 import { taskExecutionError } from './repairs.ts'
 import { validateProvenance } from './provenance.ts'
 import { DRAFT_NAMESPACE } from './drafts.ts'
-import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
+import { REVIEW_NAMESPACE, REVIEW_RECORD_VERSIONS, faultFrom, recordReview } from './review-records.ts'
 import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
+import { verificationPolicy, type VerificationConfig } from './verification.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
@@ -43,7 +44,7 @@ declare module '@deepseek-ai/dsh-llm' {
   }
 }
 
-/** Deployment policy for supervised tasks and review. */
+/** Deployment policy for supervised tasks, review and optional independent checks. */
 export interface Config {
   repairMaxFiles?: number
   repairMaxBytes?: number
@@ -59,6 +60,7 @@ export interface Config {
   planningReadTools?: string[]
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
+  independentVerification?: VerificationConfig
   reviewerModel?: ReviewerModel
   planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
@@ -128,7 +130,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
   const progressReviewMode = config.progressReviewMode ?? 'current'
   if (!['current', 'configured', 'required-only'].includes(progressReviewMode)) throw new TypeError('invalid progressReviewMode')
-  const selectedReviewPolicy = { ...reviewerPolicy, observationSettings: { ...observationPolicy,
+  const selectedReviewPolicy = { ...reviewerPolicy,
+    ...config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
+    observationSettings: { ...observationPolicy,
     mode: progressReviewMode, rounds: maxAutomaticRoundsWithoutReport, inTurn: config.observeLongTurns !== false } }
   if (config.reviewerModel !== undefined
     && (!config.reviewerModel.provider.trim() || !config.reviewerModel.model.trim())) {
@@ -247,7 +251,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   ctx.agents.registerSessionControlReader(NAMESPACE, READABLE_RECORD_VERSIONS)
-  ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, [1])
+  ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, REVIEW_RECORD_VERSIONS)
   ctx.agents.registerSessionControlReader(DRAFT_NAMESPACE, [1])
   ctx.sessionProjections.register(taskProjection)
   ctx.systemPrompt.section({ name: 'task-supervisor:planning', order: 2451, interpolate: false,
@@ -691,7 +695,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, text: { type: 'string', required: true },
-          evidenceKind: { type: 'string', enum: ['text', 'visual'], description: 'Use visual when acceptance requires judging actual image appearance; text tests or descriptions cannot replace inspection.' },
+          evidenceKind: { type: 'string', enum: ['text', 'runtime', 'visual'], description: 'Use runtime for behavior requiring execution or reproduction, visual for judging actual appearance, and text for static artifacts. Independent verification cannot accept runtime criteria using code reads alone.' },
           provenance: { type: 'object', required: true, additionalProperties: false, properties: {
             kind: { type: 'string', required: true, enum: ['user', 'project', 'implementation'] },
             reference: { type: 'string', required: true, description: 'Use objective for the current user objective; otherwise quote the user instruction, name the applicable project rule, or explain why this implementation choice is necessary.' },

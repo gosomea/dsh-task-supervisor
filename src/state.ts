@@ -12,8 +12,8 @@ import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
   type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 10
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+export const RECORD_VERSION = 11
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
@@ -51,7 +51,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 11,
+  stateVersion: 12,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),

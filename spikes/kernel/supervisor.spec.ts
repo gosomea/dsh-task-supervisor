@@ -2,6 +2,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import * as FsTools from '@deepseek-ai/dsh-tool-fs'
 import { LocalAttachmentStore } from '@deepseek-ai/dsh-attachment-local'
+import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
+import { verificationPolicy } from '../../src/verification.ts'
 import { PtcRuntime, type PtcRunRequest, type PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
@@ -12,7 +14,7 @@ import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { mkdtemp, rm, readFile, writeFile, symlink } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, symlink, mkdir, readdir, lstat, chmod } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -85,7 +87,10 @@ afterEach(async () => {
   try {
     for (const ctx of contexts.splice(0).reverse()) await ctx.fiber.dispose()
   } finally {
-    for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
+    for (const root of roots.splice(0)) {
+      async function writable(dir: string): Promise<void> { await chmod(dir, 0o700); for (const name of await readdir(dir)) { const path = join(dir, name); if ((await lstat(path)).isDirectory()) await writable(path) } }
+      await writable(root); await rm(root, { recursive: true, force: true })
+    }
     vi.restoreAllMocks()
   }
 })
@@ -133,7 +138,7 @@ it('keeps one task in the native Session and resumes only after a human command'
   const denied = await first.tools.execute({
     callId: ToolCallId('blocked-write'), name: 'unsafe_write', arguments: {}, agent, signal,
   })
-  // Planning retains the native permission policy without a tool-name whitelist.
+  // Planning does not override native permissions or blanket-disable general tools.
   expect(denied.isError).toBe(false)
   expect(unsafeCalls).toBe(1)
 
@@ -1637,6 +1642,106 @@ it('lets the persistent consultation propose repair without turning the proposal
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('original')
 })
 
+
+it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT)('records independent execution before reading a misleading main report and rejects the actual defect', async () => {
+  const root = await mkdtemp(join(process.env.DSH_CHECK_STORAGE_BASE ?? tmpdir(), 'dsh-independent-review-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace)
+  await writeFile(join(workspace, 'add.mjs'), 'export const add = (a,b) => a-b')
+  let checkId = '', calls = 0
+  const observedInputs: string[] = []
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      const input = JSON.stringify(options.messages); observedInputs.push(input)
+      const id = input.match(/\\"id\\":\\"([a-f0-9-]{36})\\",\\"snapshotId/)
+      if (id) checkId = id[1]!
+      const finding = { criterionId: 'c', status: 'failed', method: 'run', finding: '独立断言证明加法返回了减法结果', evidenceIds: [checkId] }
+      const steps: [string, Record<string, unknown>][] = [
+        ['read_task_context', { field: 'report' }],
+        ['inspect_task_artifact', { action: 'read', path: 'add.mjs' }],
+        ['run_review_check', { argv: ['node', '--input-type=module', '-e', "import {add} from './add.mjs'; import assert from 'node:assert/strict'; assert.equal(add(2,3),5)"], cwd: 'tree' }],
+        ['read_review_evidence', { check_id: checkId, stream: 'stdout' }],
+        ['read_review_evidence', { check_id: checkId, stream: 'stderr' }],
+        ['task_review_observations', { findings: [finding] }],
+        ['read_task_context', { field: 'report' }],
+        ['read_task_evidence', { from_seq: 0, limit: 30 }],
+        ['task_review_decision', { verdict: 'revise', finding: '加法实现错误\n独立运行失败，主汇报与产物不一致', evidence_seqs: [0], criteria: [finding] }],
+      ]
+      const step = steps[calls++]
+      yield* step ? toolResponse(step[0], step[1], `independent-${calls}`) : textResponse('missing protocol')
+    }
+  }()
+  const ctx = await host(join(root, 'sessions'), adapter)
+  await ctx.plugin(LocalFileSystem); await ctx.plugin(LocalSubprocess)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('independent-main'), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
+  const task = newTask('加法正确返回两数之和')
+  task.criteria = [{ id: 'c', text: 'add(2,3) 返回 5', evidenceKind: 'runtime', provenance: { kind: 'user', reference: 'objective' } }]
+  task.stages = [{ id: 's', title: '加法', criterionIds: ['c'] }]
+  appendTask(ctx, agent, task)
+  const policy = verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: process.env.DSH_CHECK_DOCKER_CONTEXT ?? 'default', image: process.env.DSH_CHECK_DOCKER_IMAGE ?? ('sha256:' + '0'.repeat(64)), cpus: 1, memoryMiB: 512, pids: 64 } })
+  const decision = await reviewStage(ctx, agent, task, 's', 'PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, 'stage', { verification: policy, repairAttempts: 0 })
+  expect(decision.verdict).toBe('revise')
+  expect(decision.criteria?.[0]?.status).toBe('failed')
+  expect(observedInputs.slice(0, 7).every(input => !input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
+  expect(observedInputs.slice(7).some(input => input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.verification?.phase).toBe('comparison')
+  expect(job.verification?.checks[0]).toMatchObject({ exitCode: 1, changed: [], timedOut: false, cancelled: false })
+  expect(job.verification?.observations[0]?.status).toBe('failed')
+  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.reviewJobs).toEqual(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs)
+  expect(await readFile(join(workspace, 'add.mjs'), 'utf8')).toBe('export const add = (a,b) => a-b')
+})
+
+
+it.each(['fresh', 'changed', 'unverified', 'runtime'] as const)('independent acceptance retains artifact identity and limitations: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-independent-admission-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'answer.txt'), 'correct')
+  const finding = { criterionId: 'c', status: mode === 'unverified' ? 'unverified' : 'satisfied', method: 'read', finding: '独立阅读产物', evidenceIds: mode === 'unverified' ? [] : ['file:answer.txt'] }
+  let calls = 0
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(_options: GenerateOptions): AsyncIterable<StreamChunk> {
+      const steps: [string, Record<string, unknown>][] = [
+        ['inspect_task_artifact', { action: 'read', path: 'answer.txt' }],
+        ['task_review_observations', { findings: [finding] }],
+        ['read_task_evidence', { from_seq: 0, limit: 30 }],
+        ['task_review_decision', { verdict: 'pass', finding: '独立阅读已通过', evidence_seqs: [0], criteria: [finding] }],
+      ]
+      if (calls === 3 && mode === 'changed') await writeFile(join(workspace, 'answer.txt'), 'now different')
+      const step = steps[calls++]
+      yield* step ? toolResponse(step[0], step[1], `admission-${calls}`) : textResponse('done')
+    }
+  }()
+  const ctx = await host(join(root, 'sessions'), adapter); await ctx.plugin(LocalFileSystem); await ctx.plugin(LocalSubprocess)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`independent-${mode}`), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
+  const task = newTask('检查 answer.txt'); task.criteria = [{ id: 'c', text: '内容为 correct', ...mode === 'runtime' ? { evidenceKind: 'runtime' as const } : {}, provenance: { kind: 'user', reference: 'objective' } }]
+  task.stages = [{ id: 's', title: '检查', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
+  const promise = reviewStage(ctx, agent, task, 's', 'main claim', new AbortController().signal, { provider: 'scripted', model: 'reviewer' }, 'stage',
+    { repairAttempts: 0, verification: verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: process.env.DSH_CHECK_DOCKER_CONTEXT ?? 'default', image: process.env.DSH_CHECK_DOCKER_IMAGE ?? ('sha256:' + '0'.repeat(64)), cpus: 1, memoryMiB: 512, pids: 64 } }) })
+  if (mode === 'fresh') expect((await promise).verdict).toBe('pass')
+  else await expect(promise).rejects.toMatchObject({ fault: { code: mode === 'changed' ? 'stale' : 'decision-invalid' } })
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.verification?.observations).toEqual([finding])
+})
+
+
+it.skipIf(process.platform !== 'darwin')('records native check admission failure as infrastructure, not a semantic user decision', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-independent-infrastructure-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'code.mjs'), 'export const value=1')
+  const ctx = await host(join(root, 'sessions'), new ScriptedAdapter({ reviewer: [toolResponse('run_review_check', { argv: ['node', '-e', '0'], cwd: 'tree' }, 'infra-check')] }))
+  await ctx.plugin(LocalFileSystem); await ctx.plugin(LocalSubprocess)
+  // A missing executable/runtime is an internal fault, never a task verdict.
+  vi.spyOn(ctx.subprocess, 'resolveExecutable').mockRejectedValue(new Error('runtime unavailable'))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('infra-main'), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
+  const task = newTask('检查现有代码'); task.criteria = [{ id: 'c', text: '运行正确', provenance: { kind: 'user', reference: 'objective' } }]; task.stages = [{ id: 's', title: '检查', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
+  await expect(reviewStage(ctx, agent, task, 's', 'passed', new AbortController().signal, { provider: 'scripted', model: 'reviewer' }, 'stage',
+    { verification: verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: process.env.DSH_CHECK_DOCKER_CONTEXT ?? 'default', image: process.env.DSH_CHECK_DOCKER_IMAGE ?? ('sha256:' + '0'.repeat(64)), cpus: 1, memoryMiB: 512, pids: 64 } }) }))
+    .rejects.toMatchObject({ fault: { code: 'check-infrastructure', outcomeKnown: false } })
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.decision).toBeNull(); expect(job.fault?.reviewerSessionId).toBe(job.reviewerSessionId)
+  expect(job.verification?.checks).toEqual([])
+})
+
 it('keeps run_code available for planning investigation and emits the exact task-new input as a native user message', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-planning-input-')); roots.push(root)
   const adapter = new ScriptedAdapter({ scripted: [toolResponse('run_code', { code: 'return await tools.inspect_workspace({})', description: '只读查看工作区' }, 'planning-inspect'), textResponse('已完成只读勘察，等待批准计划')] })
@@ -1659,4 +1764,33 @@ it('keeps run_code available for planning investigation and emits the exact task
   expect(JSON.stringify(messages[0])).toContain(input)
   const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
   expect(replay.current?.objective).toBe('开发一个我的世界，先看看工作区')
+})
+
+it('recovers the same independent review Session and snapshot after a missing decision without rewriting observations', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-independent-recovery-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'answer.txt'), 'correct')
+  const finding = { criterionId: 'c', status: 'satisfied', method: 'read', finding: '独立读到 correct', evidenceIds: ['file:answer.txt'] }
+  const adapter = new ScriptedAdapter({ reviewer: [
+    toolResponse('inspect_task_artifact', { action: 'read', path: 'answer.txt' }, 'recover-read'),
+    toolResponse('task_review_observations', { findings: [finding] }, 'recover-observe'),
+    textResponse('故意不提交结构化决定'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'recover-context'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '补交决定；独立产物正确', evidence_seqs: [0], criteria: [finding] }, 'recover-decision'),
+  ] })
+  const ctx = await host(join(root, 'sessions'), adapter); await ctx.plugin(LocalFileSystem); await ctx.plugin(LocalSubprocess)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('independent-recovery'), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
+  const task = newTask('检查 answer.txt'); task.criteria = [{ id: 'c', text: '内容为 correct', provenance: { kind: 'user', reference: 'objective' } }]
+  task.stages = [{ id: 's', title: '检查', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
+  const policy = { repairAttempts: 0, verification: verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: 'default', image: 'sha256:' + '0'.repeat(64), cpus: 1, memoryMiB: 512, pids: 64 } }) }
+  const signal = new AbortController().signal
+  await expect(reviewStage(ctx, agent, task, 's', 'main report', signal, { provider: 'scripted', model: 'reviewer' }, 'stage', policy)).rejects.toMatchObject({ fault: { code: 'protocol-missing' } })
+  const previous = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(previous.verification?.phase).toBe('comparison')
+  const decision = await reviewStage(ctx, agent, task, 's', 'main report', signal, { provider: 'scripted', model: 'reviewer' }, 'stage', policy, previous)
+  const recovered = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(decision.verdict).toBe('pass'); expect(recovered.id).toBe(previous.id)
+  expect(recovered.reviewerSessionId).toBe(previous.reviewerSessionId); expect(recovered.cutoff).toBe(previous.cutoff)
+  expect(recovered.verification?.snapshot).toEqual(previous.verification?.snapshot)
+  expect(recovered.verification?.observations).toEqual(previous.verification?.observations)
+  expect(recovered.attempt).toBe(previous.attempt + 1)
 })

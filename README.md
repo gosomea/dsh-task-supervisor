@@ -21,6 +21,8 @@ Before implementing a node, the main Agent records its node and attempt with `ta
 
 Reviewer model selection follows the main Agent's effective DSH route by default. `reviewerModel` may select another provider, model, and reasoning effort available through the active profile. Each review records its model, reviewer Session ID, evidence seqs, and main Session cutoff.
 
+Independent checks are opt-in. `independentVerification` makes node and completion review inspect current artifact snapshots and run independent checks before comparing the main report. Runtime criteria require independent execution. The plugin provides a Docker backend; independent browser checks remain pending. See [configuration and limits](docs/implementation.md#independent-artifact-checks-and-two-stage-review) and [real positive/negative evidence](docs/independent-verification-validation.md).
+
 ## Development and isolated validation
 
 Use Node 24 and an isolated DSH checkout containing the `extension/record` host seam. The daily DSH checkout and profile need no changes. The test runner resolves the checkout from `DSH_SOURCE`:
@@ -44,7 +46,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Conversation and review recovery plan](docs/10-plans/conversation-and-review-recovery/plans.md) | Proposed: forming tasks through discussion, bounded protocol repair, fault tracing, and review frequency experiments. |
 | [V2 integrated validation](docs/v2-integrated-validation.md) | Real-model checks of batches two and three, DAGs, persistent consultation, workers, and failure repairs. |
 | [Rework and execution validation](docs/rework-progress-validation.md) | Explicit main-node starts, prior acceptance, affected descendants, and older-log recovery. |
-| [Independent verification and repair after completion](docs/10-plans/independent-verification/plans.md) | Proposed: independent inspection, execution, and real interaction; show impact and confirm reopening into the original DAG. |
+| [Independent verification and repair after completion](docs/10-plans/independent-verification/plans.md) | Repair, snapshots and two-stage independent execution are validated; independent browser and joint regression remain pending. |
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
@@ -54,7 +56,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Reviewer model](docs/review-model.md) | DSH profile model policy. |
 | [Kernel experiment](docs/host-spike.md) | Initial capability investigation. |
 
-The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, built-in executable acceptance, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
+The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Native Goal and Plan remain installed and retain their own commands; use a dedicated supervised Session to avoid two continuation controllers acting on one task.
 
 [简体中文](README.zh.md)
 

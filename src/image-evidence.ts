@@ -6,7 +6,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ReviewerModel } from './reviewer.ts'
 
 export function installImageEvidence(ctx: Context, owner: Context, main: Agent, cutoff: number,
-  afterSeq: number, observed: Set<number>, inspected: Set<number>, model: ReviewerModel): void {
+  afterSeq: number, observed: Set<number>, inspected: Set<number>, model: ReviewerModel, admit: () => void = () => {}): void {
   ctx.tools.register(defineTool({
     name: 'read_task_image',
     description: 'Inspect an immutable native image from an already-read main Session event. Use the zero-based image index. No filesystem path or arbitrary attachment ID is accepted; fresh evidence must belong to this task/node attempt.',
@@ -24,6 +24,7 @@ export function installImageEvidence(ctx: Context, owner: Context, main: Agent, 
       ],
     },
     async execute(args, exec) {
+      admit()
       if (!observed.has(args.seq) || args.seq < afterSeq || args.seq > cutoff) throw new Error('image must be read from this task/node attempt inside the review cutoff')
       const info = await owner.llm.resolveModelInfo(model.provider, model.model, exec.signal)
       if (!info.inputModalities?.includes('image')) throw new Error('review model does not declare image input; return needs-user for required visual judgments')

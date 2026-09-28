@@ -36,7 +36,9 @@ export function checkEnvironment(snapshot: ArtifactSnapshot, policy: CheckPolicy
 /** Observe the exact native managed range even when cancellation arrives before done. */
 async function managed(ctx: Context, argv: string[], cwd: string, env: NodeJS.ProcessEnv, policy: CheckPolicy, signal: AbortSignal) {
   signal.throwIfAborted()
-  const handle = ctx.subprocess.spawn({ argv, cwd, env, signal, graceMs: policy.graceMs,
+  const subprocess = ctx.get('subprocess')
+  if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
+  const handle = subprocess.spawn({ argv, cwd, env, signal, graceMs: policy.graceMs,
     stdio: { stdin: 'ignore', stdout: { maxBytes: policy.outputBytes }, stderr: { maxBytes: policy.outputBytes } } })
   try {
     let outcome
@@ -86,7 +88,9 @@ export async function recoverCheckContainers(ctx: Context, snapshot: ArtifactSna
     try { await lstat(join(snapshot.root, `removed-${id}.json`)); continue } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
     const record = JSON.parse(await readFile(join(snapshot.root, file), 'utf8')) as { name: string; endpoint: string; snapshotId: string }
     if (record.snapshotId !== snapshot.id || record.name !== `dsh-review-${id}` || !record.endpoint.startsWith('unix:///') || record.endpoint.includes('\0')) throw new Error('CHECK_INFRASTRUCTURE: invalid interrupted container identity')
-    const docker = await ctx.subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
+    const subprocess = ctx.get('subprocess')
+    if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
+    const docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
     await removeOwned(ctx, [docker, '--host', record.endpoint], record.name, snapshot, env, policy)
     await writeFile(join(snapshot.root, `removed-${id}.json`), JSON.stringify({ name: record.name, removed: true, recovery: true }), { flag: 'wx', mode: 0o600 })
   }
@@ -97,10 +101,11 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
   policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult> {
   signal.throwIfAborted()
   if (!argv.length || argv.some(arg => arg.includes('\0')) || argv[0]!.startsWith('-')) throw new TypeError('check argv must contain a program and valid arguments')
-  if (!ctx.get('subprocess')) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
+  const subprocess = ctx.get('subprocess')
+  if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
   const workingDirectory = await reviewPath(snapshot.check, cwd)
   if (!(await lstat(workingDirectory)).isDirectory()) throw new Error('CHECK_CWD: directory required')
-  const env = checkEnvironment(snapshot, policy), docker = await ctx.subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
+  const env = checkEnvironment(snapshot, policy), docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
   const timer = AbortSignal.timeout(policy.commandMs), combined = AbortSignal.any([signal, timer])
   const context = await managed(ctx, [docker, 'context', 'inspect', policy.container.context], snapshot.check, env, policy, combined)
   if (context.exitCode !== 0 || context.stdout.lossy) throw new Error('CHECK_INFRASTRUCTURE: Docker context unavailable')

@@ -1,6 +1,6 @@
 # Implementation status
 
-**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 10 reads versions 1–10 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
+**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 11 reads versions 1–11 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
 
 | Step | Capability | Acceptance |
 | --- | --- | --- |
@@ -23,7 +23,24 @@ Step 1 of the independent-verification enhancement is implemented and validated 
 
 All 101 kernel tests, both strict typechecks and the isolated build pass. Real CodeBuddy DeepSeek runs completed two reopenings and three acceptance cycles of one task. Files stayed unchanged before confirmation; a pending proposal survived restart; an external Node command verified every completed cycle. See the [repair protocol](completed-task-repair.md) and [validation evidence](completed-task-repair-validation.md).
 
-The workspace digest binds a proposal to confirmation; this step adds no independent acceptance snapshot or runner. Existing review still examines main-Session evidence. Enhancement steps 2–5 remain pending. Neither the user instance at 59909 nor the frozen public evaluation was replaced. The [P2 run record](../eval/review-recovery/p2-20260928/README.zh.md) owns current evaluation progress and denominators.
+The workspace digest binds a proposal to confirmation; this step adds no independent acceptance snapshot or runner. Existing review still examines main-Session evidence. Enhancement steps 2 and 3 are validated in isolation; steps 4 and 5 remain pending. Neither the user instance at 59909 nor the frozen public evaluation was replaced. The [P2 run record](../eval/review-recovery/p2-20260928/README.zh.md) owns current evaluation progress and denominators.
+
+## Independent artifact checks and two-stage review
+
+Enhancement steps 2 and 3 are validated in isolation. Checks are disabled by default; `independentVerification` enables them for node and completion review. A current artifact snapshot is fixed before the reviewer independently reads, writes probes and executes checks. Durable per-criterion observations unlock comparison with main reports and logs. Plan coverage and progress remain lightweight log reviews. See [validation](independent-verification-validation.md) for real positive/negative cases, the first failure and fixes.
+
+| Configuration | Meaning |
+| --- | --- |
+| `storageRoot` | Required private absolute path visible to the actual Docker VM, outside the original workspace. |
+| `container.context`, `container.image` | Required local Unix Docker context and cached immutable image ID/digest. Image provides timeout and the required toolchain; no automatic pull. |
+| `container.cpus`, `container.memoryMiB`, `container.pids` | Required deployment resource limits, validated and unavailable for model changes. |
+| `excludedPaths`, `maxFiles`, `maxBytes` | Default .git-only exclusion, 10000 entries and 256 MiB. Exclusions are visible; limits and escaped links fail. |
+| `commandDeadlineMs`, `commandOutputBytes` | Default 300000 ms per command and 1 MiB per stream. Timeout, cancellation and incomplete output cannot establish acceptance. |
+| `deadlineMs` | Default 1800000 ms total for snapshot, checks and protocol repair; independent checks do not inherit the ordinary ten-minute log-review default. |
+
+The plugin explicitly queries existing Host filesystem and subprocess services only when enabled. It adds no universally required services or new sandbox fields. The backend requires a local Host filesystem mapping, local Docker and a task-compatible image; production platform coverage is unvalidated. Only /check is mounted, with no network, read-only root and no original workspace, credentials or Docker socket. Missing capabilities and cleanup failures are internal faults without unconstrained-host fallback.
+
+Text criteria cover static artifacts; runtime criteria require executed behavior. Visual criteria cannot pass until independent browser support exists. Game spawn, save and water behavior are not independently validated by this release. Task record 11 reads 1–11, review record 2 reads 1–2 and projection cache 12 rebuilds; historical evidence levels remain unchanged. The controller validates paging, job identity, source changes and check mutations; model judgment still requires an external oracle.
 
 ## Bounded protocol repair and manual recovery (B)
 

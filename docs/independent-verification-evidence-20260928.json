@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-09-28T10:19:39.110065+00:00",
+  "host": {
+    "port": 58331,
+    "dshCommit": "bec53c60ceedd8897e6772705a2713ef0b6aba6e",
+    "nativeSandboxExperimentUsed": false
+  },
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "cases": [
+    {
+      "case": "negative",
+      "sessionId": "session-cb918f05-ae67-43b2-9dbe-d026741a129c",
+      "taskId": "527bc67c-4cff-4336-85f8-2cf0a9493df7",
+      "phase": "paused",
+      "lastVerdict": "needs-user",
+      "nodes": [
+        {
+          "id": "s1",
+          "status": "awaiting-user"
+        }
+      ],
+      "originalTaskCommandUserMessages": 0,
+      "artifacts": {
+        "add.mjs": "577b3f8de17b0a06f131cead8e49b2171e17126f0c074581047992a5f45427ba",
+        "public.test.mjs": "72e4ead7d4145a86ebf15c7124097ef96df676f064678262270be5a2d6915d7b"
+      },
+      "jobs": [
+        {
+          "id": "20bdb079-039d-40e0-99d3-85f702b7880b",
+          "kind": "plan",
+          "status": "applied",
+          "reviewerSessionId": "task-review-09da0d18-1c63-49dd-9248-ddde1db5555f",
+          "cutoff": 34,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": null,
+          "decisionVerdict": "pass"
+        },
+        {
+          "id": "f9c47758-3274-4bdd-922a-162c0fd1a986",
+          "kind": "stage",
+          "status": "failed",
+          "reviewerSessionId": "task-review-160a4c3b-2de5-4248-b2a3-2f170e371585",
+          "cutoff": 94,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": "check-infrastructure",
+          "decisionVerdict": null,
+          "verification": {
+            "snapshotId": "bfb9fed9-4142-48c6-8c33-d42bb0693983",
+            "digest": "cc03ba5de5a385eb722b0f6996e2af9cbf0c1963d4bf86f06f57e714798bcb1e",
+            "phase": "comparison",
+            "observations": [
+              {
+                "criterionId": "c1",
+                "status": "failed",
+                "method": "read",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs"
+                ]
+              },
+              {
+                "criterionId": "c2",
+                "status": "unverified",
+                "method": "read",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs"
+                ]
+              }
+            ],
+            "checks": []
+          },
+          "observationsSeq": 80,
+          "reportReadSeq": 85,
+          "toolErrors": 28
+        },
+        {
+          "id": "273121b5-4173-46fb-b691-6be0df92a2d6",
+          "kind": "stage",
+          "status": "applied",
+          "reviewerSessionId": "task-review-8fc2066e-7966-43f2-9320-777169a32a49",
+          "cutoff": 136,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": null,
+          "decisionVerdict": "needs-user",
+          "verification": {
+            "snapshotId": "cb4791b9-98f3-4e13-ad24-fbbabcf770b1",
+            "digest": "cc03ba5de5a385eb722b0f6996e2af9cbf0c1963d4bf86f06f57e714798bcb1e",
+            "phase": "comparison",
+            "observations": [
+              {
+                "criterionId": "c1",
+                "status": "failed",
+                "method": "run",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs",
+                  "62004d91-fae1-4317-8418-1699cd75f88f",
+                  "19f0da14-2775-441f-903f-64000c49f6dc"
+                ]
+              },
+              {
+                "criterionId": "c2",
+                "status": "satisfied",
+                "method": "run",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs",
+                  "2073becf-002c-42eb-9701-ec3ce6c47ede"
+                ]
+              }
+            ],
+            "checks": [
+              {
+                "id": "62004d91-fae1-4317-8418-1699cd75f88f",
+                "argv": [
+                  "node",
+                  "public.test.mjs"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-62004d91-fae1-4317-8418-1699cd75f88f"
+                }
+              },
+              {
+                "id": "19f0da14-2775-441f-903f-64000c49f6dc",
+                "argv": [
+                  "node",
+                  "probes/probe_add.mjs"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-19f0da14-2775-441f-903f-64000c49f6dc"
+                }
+              },
+              {
+                "id": "2073becf-002c-42eb-9701-ec3ce6c47ede",
+                "argv": [
+                  "sh",
+                  "-c",
+                  "ls -la . tree probes 2>/dev/null; echo '--- hashes ---'; sha256sum tree/add.mjs tree/public.test.mjs 2>/dev/null; echo '--- find ---'; find . -type f -not -path './.git/*' -printf '%p %s %TY-%Tm-%TdT%TH:%TM:%TS\\n' 2>/dev/null | sort"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-2073becf-002c-42eb-9701-ec3ce6c47ede"
+                }
+              }
+            ]
+          },
+          "observationsSeq": 67,
+          "reportReadSeq": 72,
+          "toolErrors": 0
+        }
+      ]
+    },
+    {
+      "case": "positive",
+      "sessionId": "session-30fe3c7d-58d2-4198-8993-95cee7b88d7f",
+      "taskId": "dd828486-133f-487a-b938-a5fd952ff06c",
+      "phase": "complete",
+      "lastVerdict": "pass",
+      "nodes": [
+        {
+          "id": "verify-add",
+          "status": "passed"
+        }
+      ],
+      "originalTaskCommandUserMessages": 1,
+      "artifacts": {
+        "add.mjs": "a94468f11b9e176ff2b3cf31080d67c2a31efc3dc4c0757abf90585f4e765f6a",
+        "public.test.mjs": "4737c96d3cc4f5fa71a49ee78ed0c74df63574c2b3aee97477c9504398f6ae38"
+      },
+      "jobs": [
+        {
+          "id": "1cd612f5-ab48-4ea5-8a6c-e15eef81f6f5",
+          "kind": "plan",
+          "status": "applied",
+          "reviewerSessionId": "task-review-cccbf5eb-9278-4379-959c-da6a9a217a25",
+          "cutoff": 32,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": null,
+          "decisionVerdict": "pass"
+        },
+        {
+          "id": "f59deaa7-686d-439e-a456-49605e69614c",
+          "kind": "stage",
+          "status": "applied",
+          "reviewerSessionId": "task-review-337e5839-408d-4499-a8aa-555084a7caeb",
+          "cutoff": 83,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": null,
+          "decisionVerdict": "pass",
+          "verification": {
+            "snapshotId": "fbe48d5f-79a3-4f26-9f32-a24e69953f71",
+            "digest": "dfea12040d55011ada204a405e5f8a5d0e641cfc4057b1c1dc15460458856f11",
+            "phase": "comparison",
+            "observations": [
+              {
+                "criterionId": "c1",
+                "status": "satisfied",
+                "method": "run",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs",
+                  "47d6f9dc-3db7-4625-a15c-ebcfa750a4b4",
+                  "cb9dd8b7-0ed9-40ed-a71e-d48c28553be7"
+                ]
+              }
+            ],
+            "checks": [
+              {
+                "id": "47d6f9dc-3db7-4625-a15c-ebcfa750a4b4",
+                "argv": [
+                  "node",
+                  "probes/verify_add.mjs"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-47d6f9dc-3db7-4625-a15c-ebcfa750a4b4"
+                }
+              },
+              {
+                "id": "cb9dd8b7-0ed9-40ed-a71e-d48c28553be7",
+                "argv": [
+                  "node",
+                  "public.test.mjs"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-cb9dd8b7-0ed9-40ed-a71e-d48c28553be7"
+                }
+              }
+            ]
+          },
+          "observationsSeq": 52,
+          "reportReadSeq": 57,
+          "toolErrors": 0
+        },
+        {
+          "id": "bb6948b4-0be4-4dd1-b963-abece198bd24",
+          "kind": "completion",
+          "status": "applied",
+          "reviewerSessionId": "task-review-b09dec2e-1124-46f4-a0dd-50d3304ed505",
+          "cutoff": 109,
+          "attempt": 1,
+          "model": {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          "faultCode": null,
+          "decisionVerdict": "pass",
+          "verification": {
+            "snapshotId": "8a58d58b-159d-4777-8c5c-0f019d7583d7",
+            "digest": "dfea12040d55011ada204a405e5f8a5d0e641cfc4057b1c1dc15460458856f11",
+            "phase": "comparison",
+            "observations": [
+              {
+                "criterionId": "c1",
+                "status": "satisfied",
+                "method": "run",
+                "evidenceIds": [
+                  "file:add.mjs",
+                  "file:public.test.mjs",
+                  "de6c32da-8dd8-4113-bb6b-fd525e8648bc",
+                  "aba0b55b-fad1-44a3-a542-852365f929fe"
+                ]
+              }
+            ],
+            "checks": [
+              {
+                "id": "aba0b55b-fad1-44a3-a542-852365f929fe",
+                "argv": [
+                  "node",
+                  "public.test.mjs"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-aba0b55b-fad1-44a3-a542-852365f929fe"
+                }
+              },
+              {
+                "id": "de6c32da-8dd8-4113-bb6b-fd525e8648bc",
+                "argv": [
+                  "node",
+                  "-e",
+                  "import('./add.mjs').then(m=>{const a=m.add;const cases=[[2,3,5],[100,250,350],[-2,-3,-5],[-7,4,-3],[0,0,0],[0,5,5],[-5,0,-5],[0,-0,0],[-1000000,-2000000,-3000000],[9007199254740991,0,9007199254740991]];let ok=true;for(const [x,y,e] of cases){const r=a(x,y);const p=Object.is(r,e)||r===e;if(!p)ok=false;console.log(`add(${x},${y}) => ${r} expected ${e} ${p?'PASS':'FAIL'}`);}console.log('ALL:',ok?'PASS':'FAIL');process.exit(ok?0:1)})"
+                ],
+                "exitCode": 0,
+                "timedOut": false,
+                "changed": [],
+                "outputIncomplete": false,
+                "runtime": {
+                  "kind": "docker",
+                  "context": "colima",
+                  "image": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+                  "containerName": "dsh-review-de6c32da-8dd8-4113-bb6b-fd525e8648bc"
+                }
+              }
+            ]
+          },
+          "observationsSeq": 49,
+          "reportReadSeq": 74,
+          "toolErrors": 0
+        }
+      ]
+    }
+  ]
+}

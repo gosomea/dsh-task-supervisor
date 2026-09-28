@@ -26,11 +26,27 @@ Checks use separate `colima`, an immutable Node 24 image, one CPU, 512 MiB and 6
 
 ## Step 3: two-stage model review
 
-Status: code is integrated and scripted counterexamples pass; real CodeBuddy acceptance is running. Full production acceptance is not claimed.
+Status: integration and real positive/negative cases pass. Independent checks are opt-in for node and completion reviews. Plan coverage and progress remain log-based. Independent browser checks remain step 4; these command checks do not validate the game user journey.
 
-A scripted reviewer cannot read the main report before durable independent observations. Its container assertion rejects subtraction presented as addition, then unlocks and compares the report. Admission fixtures reject incomplete output, changed artifacts, unverified criteria and static-only runtime acceptance. Infrastructure failures remain separate from task decisions. Native task input and PTC investigation regressions pass.
+Initial tools expose objective, criteria, scope and snapshot; main reports, Session logs, worker logs and previous conclusions remain locked. The reviewer reads artifacts, writes probes, executes the copy and reads both complete output streams. Durable `task_review_observations` unlocks comparison. Final decisions cover every criterion with this job's inspected evidence. Failed/unverified criteria cannot pass, runtime criteria require independent execution, and visual criteria cannot use static/command evidence as a substitute.
 
-The first real node review exposed missing subprocess injection; independent commands did not succeed. The test was paused, preserving its reviewer Session and failed calls. Optional service declarations and fault-ending behavior are corrected before real positive/negative checks. The failed run does not count as successful independent execution.
+Jobs bind task/version, node attempt, Session cutoff, effective model and artifacts. Task record 11, review record 2 and projection cache 12 read historical formats without rewriting logs or inventing prior checks. Protocol repair preserves snapshot, Session and cutoff; comparison cannot rewrite independent observations. Infrastructure failures end the turn and use fault recovery instead of repeated unavailable checks until the total deadline.
+
+### Acceptance
+
+| Case | Independent evidence and result |
+| --- | --- |
+| Scripted misleading report | Report remains locked; independent assertion rejects subtraction presented as addition, then comparison unlocks; revise. |
+| Real defective implementation | Main `session-cb918f05-ae67-43b2-9dbe-d026741a129c`; original test exits 0, independent probe finds five of nine sum cases fail. Reviewer `task-review-8fc2066e-7966-43f2-9320-777169a32a49` records c1 failed before reading the report. Repair is forbidden by the user, so needs-user pauses without passing the node or completing the task. |
+| Real correct implementation | Main `session-30fe3c7d-58d2-4198-8993-95cee7b88d7f`; reviewer `task-review-337e5839-408d-4499-a8aa-555084a7caeb` independently runs original tests and its own positive/negative/zero/boundary assertions. Node passes; a fresh completion snapshot and independent checks pass; task completes. |
+| Native input | Exactly one original `/task new …` user message in the positive case. Pre-approval bash/glob/read succeeds; native PTC run_code has a separate regression. Main replies retain native rendering. |
+| Artifact/status checks | No source mutation, timeout or incomplete output in successful checks; original fixture contents remain intact. |
+
+Main and reviewer use the daily first CodeBuddy `deepseek-v4.1-flash`. Each case receives one initial approval with automatic continuation disabled; one explicit message requests positive completion after node acceptance. Negative recovery follows the initial service failure, retaining its old failed job and tools. These are development checks, not frozen-public scores or automatic-repair evidence. See [sanitized machine evidence](independent-verification-evidence-20260928.json).
+
+The first real node review lacked subprocess access and recorded 28 tool errors without independent command execution; that failed job remains. The final plugin explicitly queries existing services only when checks are enabled instead of requiring them for all installations. Missing services end review with an infrastructure fault. A real restricted plugin context tests access, and disabled-enhancement cases retain loading.
+
+All 122 kernel checks plus one new focused same-snapshot recovery case, strict Host/Client checks, build and package inspection pass. The package contains only two bundles, patch, READMEs and manifest. An additional real restricted-context container check passes after the service-access correction. Registered instance 58331 holds this work; active user instance 59909 is neither restarted nor replaced.
 
 ## Native sandbox experiment record
 

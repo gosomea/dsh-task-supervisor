@@ -7,7 +7,7 @@ export const provenanceSchema = z.object({
   sourceSeq: z.number().int().nonnegative().optional(),
 }).strict()
 export const criterionSchema = z.object({
-  id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(), evidenceKind: z.enum(['text', 'visual']).optional(),
+  id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(), evidenceKind: z.enum(['text', 'runtime', 'visual']).optional(),
 }).strict()
 export const stageSchema = z.object({
   dependsOn: z.array(z.string().min(1)).optional(), writePaths: z.array(z.string().min(1)).optional(),
@@ -43,7 +43,7 @@ const pendingReviewSchema = z.object({
 export const reviewFaultSchema = z.object({
   jobId: z.string().uuid(), stageId: z.string(), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(),
-  code: z.enum(['protocol-missing', 'decision-invalid', 'provider', 'evidence-read', 'timeout', 'cancelled', 'stale', 'internal']),
+  code: z.enum(['protocol-missing', 'decision-invalid', 'provider', 'evidence-read', 'timeout', 'cancelled', 'stale', 'internal', 'snapshot', 'check-infrastructure']),
   message: z.string(), retryable: z.boolean(), attempt: z.number().int().positive(),
   errorSeq: z.number().int().nonnegative().nullable(), outcomeKnown: z.boolean(),
 }).strict()
@@ -86,4 +86,3 @@ export const taskSchema = z.object({
 export type TaskSnapshot = z.infer<typeof taskSchema>
 export type TaskStage = z.infer<typeof stageSchema>
 export type TaskCriterion = z.infer<typeof criterionSchema>
-

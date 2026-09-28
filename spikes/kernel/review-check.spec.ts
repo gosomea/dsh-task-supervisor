@@ -34,7 +34,9 @@ it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_C
     for (const action of [()=>fs.readFileSync(${JSON.stringify(source)}),()=>fs.writeFileSync(${JSON.stringify(source)},'bad')]) {try {action(); throw Error('escaped')} catch(e) {if(e.message==='escaped') throw e; console.log('denied',e.code)}}
     if(process.env.DSH_HOME || process.env.NODE_OPTIONS || Object.keys(process.env).some(k=>/KEY|SECRET|TOKEN|PASSWORD/.test(k))) throw Error('env leaked');
     const s=net.connect(9,'127.0.0.1'); s.on('error',e=>{if(!['EPERM','EACCES','ECONNREFUSED','ENETUNREACH'].includes(e.code)) throw e; console.log('network-denied')});`
-  const result = await runCheck(ctx, snapshot, SessionId('check-native-test'), [program, '-e', script], 'tree', policy, signal)
+  let pending: ReturnType<typeof runCheck> | undefined
+  await ctx.plugin({ name: 'check-consumer', inject: [], apply(owner: Context) { pending = runCheck(owner, snapshot, SessionId('check-native-test'), [program, '-e', script], 'tree', policy, signal) } })
+  const result = await pending!
   expect(result.exitCode, result.stderr).toBe(0); expect(result.timedOut).toBe(false); expect(result.cancelled).toBe(false)
   expect(result.stdout).toContain('network-denied'); expect(result.changed).toEqual([])
   expect(await readFile(source, 'utf8')).toBe('export const value = 7')
