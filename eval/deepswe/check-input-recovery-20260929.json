@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-check-input-recovery",
+  "id": "native-input-recovery-668c9e9-20260929-1",
+  "sourceCommit": "668c9e9b50df3eb70527b7bd1c5cbfbc8a57e136",
+  "passed": true,
+  "modelRequests": 0,
+  "formalPositions": 0,
+  "checks": {
+    "missingProgram127Complete": true,
+    "typedBadCwd": true,
+    "badCwdNoNewLedger": true,
+    "correctedSameSnapshotSuccess": true,
+    "mutationVisible": true,
+    "mutatedSnapshotReuseRejected": true,
+    "originalWorkspaceUnchanged": true,
+    "trueInfrastructureRemainsFault": true,
+    "nativeRemovalAndDaemonAbsence": true,
+    "recordsPresentForCommandOutcomes": true,
+    "modelAndFormalZero": true,
+    "exactActorCleanup": true
+  },
+  "sourceFilesByteVerified": 97,
+  "checkResourceRecords": 4,
+  "successfulContainerCreations": 3,
+  "nativeRemovalAndDaemonAbsence": true,
+  "actorCleanupAcknowledged": true,
+  "artifactHashes": {
+    "bundle/fixture.mjs": "721d2203381f3c66e84567bb32e27402bb7696e2ea4364e3275865ebafe25f59",
+    "plugin/lib/client.js": "e38eb24e618e944e0144c4568e23172d95238ff79df60cd0088fb60954511cae",
+    "plugin/lib/check-gateway.mjs": "b884ee83492ff9d4c5f42052ebda3686210f282f8530d614d64f39f8efacd1fc",
+    "plugin/lib/review-check-Dl04xF86.mjs": "08285388c1c4c4ab76f390a0f5162a380fc34d6b9087e03bd50ad02aa60764a8",
+    "plugin/lib/index.mjs": "2fc684d139a855582d1099f1e564258c82647d5bd7d245b0431c58af9245dcb4"
+  },
+  "parentVerifiedEvidence": [
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/bundle/fixture.mjs",
+      "sha256": "721d2203381f3c66e84567bb32e27402bb7696e2ea4364e3275865ebafe25f59"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/plugin/lib/client.js",
+      "sha256": "e38eb24e618e944e0144c4568e23172d95238ff79df60cd0088fb60954511cae"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/plugin/lib/check-gateway.mjs",
+      "sha256": "b884ee83492ff9d4c5f42052ebda3686210f282f8530d614d64f39f8efacd1fc"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/plugin/lib/review-check-Dl04xF86.mjs",
+      "sha256": "08285388c1c4c4ab76f390a0f5162a380fc34d6b9087e03bd50ad02aa60764a8"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/plugin/lib/index.mjs",
+      "sha256": "2fc684d139a855582d1099f1e564258c82647d5bd7d245b0431c58af9245dcb4"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/native-ledger-phase4.json",
+      "sha256": "b0691dd7916cebf1235eee24bccc7ca7f9ed58d2d28b10af6de7472416b26bf2"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/admin.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/infra-admin-cleanup.json",
+      "sha256": "7184a30093855d7d640be5a7ddbf43a050b8b5c2c396665b1f4275882c50ea88"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/result.json",
+      "sha256": "9cc3189f302b9cb4e90dbf6233aa0809af18c7126d3d8ea0e487ddf44fcaf3f9"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/native-ledger-phase5.json",
+      "sha256": "ec8403009df0d00f130dd5a03af53a4bad344f4bb08497d30abb2e0421c419b8"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/tsdown.fixture.ts",
+      "sha256": "18d71037b1225fbe117c1faf31c161e15b96f24ca88ef4db00a22ccbe1395fd3"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/prepared.json",
+      "sha256": "6c1ef49d86e8e89641e0142a369149d0ab19c8ff22796867f9d2b77b7d7d1704"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/infra-admin-receipt.json",
+      "sha256": "6081b7a5f920cbf7b627b0dd41f476dd8a0a253f83466dc7472eafa13719f62e"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/infra-admin.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/native-ledger-phase2.json",
+      "sha256": "0d5dc437fdd9bb861ce77686e836b70b523b0c828131ca98babae93cd77984fc"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/native-ledger-phase3.json",
+      "sha256": "1c3669ca643e9915ce7bb1a4841d07c71688bc17c4053e8f4f8423fa19e65dd0"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/started.json",
+      "sha256": "fcad44be4fc591b5f9ddca9c32b82f597f57a31d025d401843330ffd48f2fc2b"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/admin-receipt.json",
+      "sha256": "835ff01a63b301ffe39be7737bf0869bfb8e8ba2e06413ae59b85920388683dd"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/native-ledger-phase1.json",
+      "sha256": "0d5dc437fdd9bb861ce77686e836b70b523b0c828131ca98babae93cd77984fc"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/task-cleanup.json",
+      "sha256": "c3e981ce0a474cfad62ded44e0bffdc16980fa125fa660f36418a0cd2de78287"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/task.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/task-receipt.json",
+      "sha256": "f46a4f75421890814b10b88cf294df58b4aab43ae718c39897e1b2de5e9b870c"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/admin-cleanup.json",
+      "sha256": "03ca3c2125d49b2cc4c6cf752a86ddcbb9c27338b4b8649e0f9de6461eecca1f"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/driver.py",
+      "sha256": "7cee6c5dcbf8461fe635525709084dfdebe6971d2aaa82b598be4e79cdc5eb72"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/storage.json",
+      "sha256": "5a54599989239ad4d0f48367b27222529f19de9b8fcbf15523c275fda2f69c7e"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/fixture.ts",
+      "sha256": "843b16bad7f2fc415a7ee65bd4af01c505e2a249b03f2cd89e0da5ecfbbcc244"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/__pycache__/driver.cpython-314.pyc",
+      "sha256": "43a82e8c14bcc3604fbe67eb28cc349317293615a184b8f315c3fa88c18f3dda"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/safe-summary.json",
+      "sha256": "5dda3f422d8375b0847e09a1e756ac3f8f500e66ab8a3133dd55101484e53a5e"
+    },
+    {
+      "relativePath": "native-input-recovery-668c9e9-20260929-1/post-seal-verification-receipt.json",
+      "sha256": "ba031127b60ca666cacb5ab3b98698f1eee7596530c15b3edf5b2297d8f4900c"
+    }
+  ],
+  "limitations": {
+    "agentDecisionIntegration": "covered by source tests, this regression exercises native gateway transport and subprocess",
+    "extraCheckCpuNs": null,
+    "formalAdmission": false
+  },
+  "kernelRegression": {
+    "passed": 16,
+    "nativeCasesSkipped": 12,
+    "hostStrictTypecheck": true,
+    "clientStrictTypecheck": true,
+    "typecheckRuntime": "Existing patched DSH runtime with extension/record support; default upstream checkout was not claimed compatible."
+  },
+  "notes": [
+    "One resource record is a genuine container-create failure; it did not produce a command outcome.",
+    "Twelve keyless assertions are not twelve model trials or twelve native Vitest cases.",
+    "The original failed model calibration remains sealed; no model was replayed."
+  ]
+}
