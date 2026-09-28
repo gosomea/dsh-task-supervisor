@@ -5,8 +5,8 @@
 | 节点 | 状态 | 原因 |
 | --- | --- | --- |
 | a | passed |  |
-| b | ready |  |
-| c | blocked | dependencies not passed or stale: b |
+| b | passed |  |
+| c | ready |  |
 | d | blocked | dependencies not passed or stale: c |
 | e | blocked | dependencies not passed or stale: d |
 | f | blocked | dependencies not passed or stale: e |

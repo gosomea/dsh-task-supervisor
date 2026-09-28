@@ -34,9 +34,9 @@ export function consultationDirective(text: string): string | null {
   const input = text.trim().replace(/[。！!]+$/u, '').replace(/^请/u, '').trim()
   const simple: Record<string, string> = { '暂停': 'pause', '暂停任务': 'pause', '恢复': 'resume', '继续': 'resume',
     '恢复任务': 'resume', '继续任务': 'resume', '关闭督导': 'off', '开启督导': 'on', '重新启用督导': 'on',
-    '批准': 'approve', '批准计划': 'approve', '批准当前计划': 'approve' }
+    '重试审查': 'retry-review', '批准': 'approve', '批准计划': 'approve', '批准当前计划': 'approve' }
   if (simple[input]) return simple[input]
-  if (/^\/task (approve|pause|resume|off|on)$/u.test(input)) return input.slice(6)
+  if (/^\/task (approve|pause|resume|retry-review|off|on)$/u.test(input)) return input.slice(6)
   if (/^\/task new \S/u.test(input)) return input.slice(6)
   if (/^\/task edit \S/u.test(input)) return input.slice(6)
   const create = /^新建任务[：:]\s*(\S[\s\S]*)$/u.exec(input)

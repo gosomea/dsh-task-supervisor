@@ -37,6 +37,7 @@ export function controlActions(task: TaskSnapshot | null, armed: boolean, review
   if (task.phase === 'complete') return []
   if (reviewing) return ['pause', 'off']
   if (task.phase === 'awaiting-approval') return ['approve', 'pause', 'off']
+  if (task.phase === 'paused' && task.pauseReason === 'review-fault') return task.reviewFault?.retryable ? ['retry-review', 'off'] : ['off']
   if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']
   return ['pause', 'off']
 }

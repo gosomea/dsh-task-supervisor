@@ -17,7 +17,7 @@ import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
 import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
-import { reviewStage, type ReviewerModel } from './reviewer.ts'
+import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
@@ -50,6 +50,8 @@ export interface Config {
   responseLanguage?: string
   fallbackLanguage?: string
   planningReadTools?: string[]
+  reviewRepairAttempts?: number
+  reviewDeadlineMs?: number
   reviewerModel?: ReviewerModel
   planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
@@ -95,6 +97,8 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 
 /** Register one independently owned workflow on public DSH seams. */
 export function apply(ctx: Context, config: Config = {}): void {
+  const reviewerPolicy = reviewPolicy({ ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
+    ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
   const closeWithResponse = installClosingResponse(ctx)
   const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
@@ -298,7 +302,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const reviewSignal = AbortSignal.any([signal, abort.signal])
       const decision = await reviewStage(ctx, agent, task, stageId,
         `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
-        reviewSignal, config.reviewerModel, 'progress')
+        reviewSignal, config.reviewerModel, 'progress', reviewerPolicy)
       reviewSignal.throwIfAborted()
       const latest = current(agent)
       if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
@@ -361,7 +365,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const signal = AbortSignal.any([maintenanceSignal, abort.signal])
       try {
         const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence,
-          signal, config.reviewerModel, 'progress')
+          signal, config.reviewerModel, 'progress', reviewerPolicy)
         signal.throwIfAborted()
         const latest = current(agent)
         if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision
@@ -459,7 +463,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.commands.register({
     name: 'task',
     description: 'Create, inspect, approve, pause, or resume a supervised task',
-    input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|clear|off|on]' },
+    input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|retry-review|clear|off|on]' },
     async handler({ agent, rawInput, signal }) {
       const binding = consultationBinding(agent)
       if (binding) {
@@ -473,7 +477,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
       }
       let input = rawInput.trim()
-      const bound = /^(approve|pause|resume|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
+      const bound = /^(approve|pause|resume|retry-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {
         const state = current(agent)
         if (state === null || state.id !== bound[2] || state.revision !== Number(bound[3])) {
@@ -496,6 +500,10 @@ export function apply(ctx: Context, config: Config = {}): void {
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')
+        if (input === 'retry-review') {
+          await retryReview(agent, task, signal)
+          return reply('审查恢复完成；检查结果后批准计划或手动恢复任务。', current(agent), false)
+        }
         if (input === 'approve') {
           const next = approvedTask(task, agent.session.seq)
           await commitAndWake(agent, task, next,
@@ -524,6 +532,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           return reply('Supervisor on; use /task resume to continue', next, false)
         }
         if (input === 'resume') {
+          if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请使用 /task retry-review，或编辑任务要求。')
           if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
             throw new Error('this task cannot resume in its current state')
           }
@@ -662,7 +671,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           planDecision = await reviewStage(ctx, agent,
             { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
             'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
-            config.reviewerModel, 'plan')
+            config.reviewerModel, 'plan', reviewerPolicy)
         } catch (error) {
           await pauseForReviewFailure(agent, task, error)
           exec.concludeTurn()
@@ -713,6 +722,57 @@ export function apply(ctx: Context, config: Config = {}): void {
     },
   }))
 
+  async function retryReview(agent: Agent, expected: TaskSnapshot, commandSignal: AbortSignal): Promise<void> {
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === expected.reviewFault?.jobId)
+    if (!job || job.status !== 'failed' || !expected.enabled || expected.phase !== 'paused'
+      || expected.pauseReason !== 'review-fault' || !job.fault?.retryable) throw new Error('no retryable review fault')
+    if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
+      || job.input.requirementsVersion !== expected.requirementsVersion
+      || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
+    await agent.runMaintenance(async maintenanceSignal => {
+      const latest = current(agent)
+      if (latest?.id !== expected.id || latest.revision !== expected.revision || reviewAbort.has(agent)) throw new Error('task changed before review recovery')
+      const reviewing: TaskSnapshot = { ...latest, revision: latest.revision + 1, phase: 'reviewing', reviewFault: null, pauseReason: null }
+      appendTask(ctx, agent, reviewing)
+      await flush(agent)
+      const abort = new AbortController()
+      reviewAbort.set(agent, abort)
+      const signal = AbortSignal.any([commandSignal, maintenanceSignal, abort.signal])
+      try {
+        const decision = await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
+          config.reviewerModel, job.kind, reviewerPolicy, job)
+        const actual = current(agent)
+        if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled) {
+          await finishReviewRecord(agent, decision.jobId, 'stale')
+          throw new Error('review recovery became stale')
+        }
+        let next: TaskSnapshot = { ...actual, revision: actual.revision + 1, pendingReview: null, reviewFault: null,
+          pauseReason: decision.verdict === 'needs-user' ? 'decision' : null, roundsSinceReview: 0,
+          phase: decision.verdict === 'needs-user' ? 'paused' : job.kind === 'completion' && decision.verdict === 'pass' ? 'complete' : 'active',
+          lastReview: { jobId: decision.jobId, stageId: job.stageId, cutoff: decision.cutoff,
+            verdict: decision.verdict, finding: decision.finding, evidenceSeqs: decision.evidenceSeqs,
+            imageSeqs: decision.imageSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
+        if (job.kind === 'plan') {
+          next = { ...next, phase: decision.verdict === 'needs-user' ? 'paused' : decision.verdict === 'revise' ? 'planning'
+            : expected.everApproved ? 'active' : 'awaiting-approval' }
+          if (decision.verdict === 'pass') next = { ...next, criteria: job.input.criteria, stages: job.input.stages,
+            planVersion: expected.planVersion + 1, stageIndex: 0,
+            nodeRuns: job.input.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending', evidenceAfterSeq: agent.session.seq })),
+            readOnlyTurnsBeforeWrite: job.input.readOnlyTurnsBeforeWrite ?? 0,
+            approvedPlanVersion: expected.everApproved ? expected.planVersion + 1 : null }
+        } else if (job.kind === 'stage') next = finishNode(next, job.stageId, decision.verdict, agent.session.seq)
+        appendTask(ctx, agent, next)
+        await finishReviewRecord(agent, decision.jobId, 'applied')
+        await flush(agent)
+        // Retrying is review permission. Previously paused execution is resumed explicitly.
+        runtime(agent).armed = false
+      } catch (error) {
+        await pauseForReviewFailure(agent, reviewing, error)
+        throw error
+      } finally { reviewAbort.delete(agent) }
+    })
+  }
+
   async function settleReview(agent: Agent, task: TaskSnapshot, stageId: string,
     evidence: string, kind: 'stage' | 'completion', exec: ToolRunContext) {
     runtime(agent).armed = false
@@ -724,7 +784,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     reviewAbort.set(agent, abort)
     const signal = AbortSignal.any([exec.signal, abort.signal])
     try {
-      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind)
+      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, reviewerPolicy)
       signal.throwIfAborted()
       const latest = current(agent)
       if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision || latest.phase !== 'reviewing') {

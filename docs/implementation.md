@@ -2,6 +2,12 @@
 
 This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.
 
+## Bounded protocol repair and manual recovery (B)
+
+Missing or invalid decisions receive one repair in the same reviewer Session by default. `reviewRepairAttempts` accepts 0–3; `reviewDeadlineMs` defaults to 600000 milliseconds and accepts 1–3600000. Repair does not reset the total deadline. These are development defaults, not optimal-frequency or formal long-horizon results. Provider/read faults do not enter protocol repair; a recorded valid decision survives turn-ending hook errors.
+
+After exhaustion, `/task retry-review` checks the original job and resumes its Session, model, and cutoff. Explicit manual retries start a new bounded recovery window with recorded attempts. They do not approve a plan or automatically resume paused execution; approve or `/task resume` according to the resulting state. Stale, cancelled, edited, or disabled jobs cannot apply late results. See [step B](10-plans/conversation-and-review-recovery/evidence/b.md); real-model/deployment checks await integrated acceptance.
+
 ## Review fault records (A)
 
 Step A on 2026-09-28 adds independent durable review job records for plan, progress, node, and completion reviews, preserving task version, evidence cutoff, model, Session, and result event references. Task schema 8 still reads versions 1–7. Typed pause reasons and `reviewFault` represent internal failures without manufacturing `needs-user`; legacy unclassified records remain unchanged. The Web state API also returns bounded review jobs.

@@ -29,6 +29,15 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
+export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number }
+export function reviewPolicy(policy: ReviewPolicy = {}) {
+  const repairAttempts = policy.repairAttempts ?? 1
+  const deadlineMs = policy.deadlineMs ?? 600000
+  if (!Number.isSafeInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 3) throw new TypeError('review repairAttempts must be 0–3')
+  if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('review deadlineMs must be 1–3600000')
+  return { repairAttempts, deadlineMs }
+}
+
 export interface ReviewDecision {
   jobId: string
   verdict: 'pass' | 'revise' | 'needs-user'
@@ -81,24 +90,30 @@ function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
 /** Every attempt has an identity before creating the read-only reviewer. */
 export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
   evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
-  kind: ReviewJob['kind'] = 'stage'): Promise<ReviewDecision> {
-  const job: ReviewJob = { id: randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
+  kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob): Promise<ReviewDecision> {
+  const limits = reviewPolicy(policy)
+  signal = AbortSignal.any([signal, AbortSignal.timeout(limits.deadlineMs)])
+  const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
+    status: 'started', fault: null, decision: null, finishedAt: null, trigger: 'manual-retry',
+    attempt: previous.attempt + 1, repairLimit: limits.repairAttempts, runtimeId: randomUUID(),
+    deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString() } : { id: randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
     kind, cutoff: main.session.seq - 1, reviewerSessionId: `task-review-${randomUUID()}`,
-    model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: 0,
+    model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
     startedAt: new Date().toISOString(), finishedAt: null, trigger: kind,
     input: task, evidence, fault: null, decision: null }
   await recordReview(ctx, main, job)
   try {
-    job.model = reviewerOptions(ctx, main, fixedModel).model
+    signal.throwIfAborted()
+    job.model ??= reviewerOptions(ctx, main, fixedModel).model
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
-    const decision = await runReviewStage(ctx, main, task, stageId, evidence, signal, fixedModel, kind, job)
+    const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job)
     return { ...decision, jobId: job.id }
   } catch (error) {
     const fault = error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
-      reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? 'cancelled' as const : 'internal' as const,
-      message: String(error), retryable: !signal.aborted, attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+      reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? signal.reason instanceof Error && signal.reason.name === 'TimeoutError' ? 'timeout' as const : 'cancelled' as const : 'internal' as const,
+      message: String(error), retryable: !signal.aborted || signal.reason?.name === 'TimeoutError', attempt: job.attempt, errorSeq: null, outcomeKnown: false }
     await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
     throw new ReviewFailure(fault, { cause: error })
   }
@@ -139,13 +154,8 @@ async function runReviewStage(
   const visualRequired = (reviewKind === 'stage' || reviewKind === 'completion')
     && task.criteria.some(criterion => criterion.evidenceKind === 'visual' && (reviewKind === 'completion' || stage?.criterionIds.includes(criterion.id)))
   const imageAfterSeq = runsOf(task).find(run => run.id === stageId)?.evidenceAfterSeq ?? task.readOnlyGateStartSeq ?? 0
-  const handle = await ctx.agents.create({
-    sessionId: reviewerSessionId,
-    parentAgent: main,
-    meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false),
-    agentOptions: options,
-    signal,
-    setup(agentCtx) {
+  const setup = {
+    setup(agentCtx: Context) {
       agentCtx.tools.restrict({ allow: [] })
       installImageEvidence(agentCtx, ctx, main, cutoff, imageAfterSeq, observedSeqs, imageSeqs, model)
       agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_worker', 'task_review_decision'].includes(exec.name)
@@ -274,7 +284,11 @@ async function runReviewStage(
         },
       }))
     },
-  })
+  }
+  const exists = await ctx.sessionPersistence.stat(reviewerSessionId)
+  const handle = exists ? await ctx.agents.resume({ resumeSessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal, ...setup })
+    : await ctx.agents.create({ sessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal,
+      meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false), ...setup })
   const abort = () => handle.agent.cancel({ kind: 'parent' })
   signal.addEventListener('abort', abort, { once: true })
   try {
@@ -311,14 +325,32 @@ async function runReviewStage(
         'Submit exactly one task_review_decision with supporting Session seqs.',
       ].join('\n') }],
     }))
-    await handle.agent.whenIdle()
-    signal.throwIfAborted()
+    const firstAttempt = job.attempt
+    while (true) {
+      await handle.agent.whenIdle()
+      if (submitted !== undefined) break
+      signal.throwIfAborted()
+      const events = handle.agent.session.snapshotEvents()
+      const last = events.findLast(event => event.type === 'turn/end')
+      const errorResult = events.findLast(event => event.type === 'tool/result' && event.data.message.isError === true)
+      const errorCall = errorResult?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === errorResult.data.message.source.callId) : undefined
+      const repairable = last?.type === 'turn/end' && last.data.reason.kind === 'completed'
+        && (!errorCall || errorCall.type === 'tool/call' && errorCall.data.name === 'task_review_decision')
+      if (!repairable || job.attempt - firstAttempt >= job.repairLimit) break
+      job.attempt++
+      job.status = 'repairing'
+      await recordReview(ctx, main, { ...job, revision: ++job.revision })
+      signal.throwIfAborted()
+      handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
+        content: [{ type: 'text', text: `${languagePolicy(task)}\nThe previous turn did not record a valid task_review_decision. This is repair ${job.attempt - firstAttempt}/${job.repairLimit} for the SAME review, Session and cutoff ${cutoff}. Submit the decision using the tool, not prose. Required fields: verdict (pass, revise, needs-user), finding, evidence_seqs (nonempty, all read through the bound tools). Evidence gaps are revise or needs-user, not a reason to invent a pass. Inspect the preceding tool validation error if any. Read evidence again if required; do not inspect anything beyond cutoff ${cutoff}.` }] }))
+    }
     if (submitted === undefined) {
       const events = handle.agent.session.snapshotEvents()
       const last = events.findLast(event => event.type === 'turn/end')
       const invalid = events.findLast(event => event.type === 'tool/result' && event.data.message.isError === true)
       const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
       const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
+        : last?.type === 'turn/end' && last.data.reason.kind === 'aborted' ? 'cancelled'
         : call?.type === 'tool/call' ? call.data.name === 'task_review_decision' ? 'decision-invalid' : 'evidence-read' : 'protocol-missing'
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
         message: code === 'protocol-missing' ? 'reviewer ended without a valid structured decision'
@@ -336,6 +368,6 @@ async function runReviewStage(
     return { jobId: job.id, ...submitted, imageSeqs: [...imageSeqs], cutoff, model, reviewerSessionId }
   } finally {
     signal.removeEventListener('abort', abort)
-    await handle.dispose()
+    try { await handle.dispose() } catch (error) { if (job.status !== 'submitted') throw error }
   }
 }

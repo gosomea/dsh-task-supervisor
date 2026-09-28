@@ -102,7 +102,7 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
   if (supervisor) await ctx.plugin(Supervisor, { planningReadTools, automaticContinuation,
-    maxAutomaticRoundsWithoutReport, planCoverageReview, ...extra,
+    maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
   ctx.llm.registerAdapter(['scripted'], adapter)
   return ctx
@@ -1117,7 +1117,7 @@ it.each(['plan', 'stage', 'progress', 'completion'] as const)('retains the immut
   const cutoff = agent.session.seq - 1
   const task = newTask('只读核对，不修改文件')
   await expect(reviewStage(ctx, agent, task, kind === 'plan' ? 'plan' : 's1', 'report', new AbortController().signal,
-    { provider: 'scripted', model: 'reviewer' }, kind)).rejects.toMatchObject({ fault: { code: 'protocol-missing', cutoff, attempt: 1, outcomeKnown: true } })
+    { provider: 'scripted', model: 'reviewer' }, kind, { repairAttempts: 0 })).rejects.toMatchObject({ fault: { code: 'protocol-missing', cutoff, attempt: 1, outcomeKnown: true } })
   const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
   expect(projection.failure).toBeNull()
   expect(projection.reviews).toEqual([])
@@ -1153,4 +1153,137 @@ it.each([false, true])('pauses a failed review without inventing a user decision
   } else expect(result.isError).toBe(true)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'review-fault', lastReview: null,
     reviewFault: { code: 'protocol-missing', reviewerSessionId: expect.stringMatching(/^task-review-/u) } })
+})
+
+it.each(['missing', 'invalid'] as const)('repairs a %s decision once in the same review Session and original evidence prefix', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-repair-'))
+  roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = {}
+  const ctx = await host(root, new ScriptedAdapter(scripts))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect the existing fixture' }] }))
+  await agent.whenIdle()
+  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message')!.seq
+  const cutoff = agent.session.seq - 1
+  scripts.reviewer = [...mode === 'invalid' ? [toolResponse('task_review_decision', { verdict: 'pass', finding: 'Unsupported', evidence_seqs: [] }, 'invalid-decision')] : [], textResponse('Decision: pass'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'repair-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'Fixture inspected', evidence_seqs: [seq] }, 'repair-submit')]
+  const decision = await reviewStage(ctx, agent, newTask('Inspect the fixture'), 's', 'inspected', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' })
+  expect(decision.cutoff).toBe(cutoff)
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1)
+  expect(jobs[0]).toMatchObject({ status: 'submitted', attempt: 2, repairLimit: 1, reviewerSessionId: decision.reviewerSessionId })
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    expect(events.filter(event => event.type === 'turn/start')).toHaveLength(2)
+    const repair = events.filter(event => event.type === 'user/message').at(-1)
+    expect(JSON.stringify(repair)).toContain(`cutoff ${cutoff}`)
+  } finally { await reader.close() }
+})
+
+it('bounds exhausted protocol repair and distinguishes provider failure without repair', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-exhaustion-'))
+  roots.push(root)
+  const adapter = new ScriptedAdapter({ reviewer: [textResponse('pass'), textResponse('still pass')] })
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('exhaustion-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await expect(reviewStage(ctx, agent, newTask('Inspect'), 's', 'report', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' })).rejects.toMatchObject({ fault: { code: 'protocol-missing', attempt: 2 } })
+  expect(adapter.requests).toBe(2)
+  const failureAdapter = new class extends ScriptedAdapter {
+    override async *stream(_options: GenerateOptions): AsyncIterable<StreamChunk> { this.requests++; throw new Error('synthetic provider unavailable') }
+  }()
+  const second = await host(await mkdtemp(join(root, 'provider-')), failureAdapter)
+  const main = await second.agents.create({ sessionId: SessionId('provider-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await expect(reviewStage(second, main.agent, newTask('Inspect'), 's', 'report', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' })).rejects.toMatchObject({ fault: { code: 'provider', attempt: 1 } })
+  expect(failureAdapter.requests).toBe(1)
+})
+
+it('recovers the failed plan review manually without silently approving or waking execution', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-manual-review-'))
+  roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = { reviewer: [textResponse('No decision')] }
+  const ctx = await host(root, new ScriptedAdapter(scripts), true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('manual-review-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal)
+  await agent.whenIdle()
+  await ctx.tools.execute({ callId: ToolCallId('manual-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c', text: 'Inspect the fixture', provenance: { kind: 'user', reference: 'objective' } }],
+      stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(taskOf(ctx, agent)?.pauseReason).toBe('review-fault')
+  expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
+  scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'manual-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'Plan covers the request', evidence_seqs: [0] }, 'manual-submit')]
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false, reviewFault: null,
+    lastReview: { reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, verdict: 'pass' } })
+  const recovered = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(recovered).toHaveLength(1)
+  expect(recovered[0]).toMatchObject({ id: job.id, status: 'applied', attempt: 2, trigger: 'manual-retry' })
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
+})
+
+it('keeps a successful decision when the reviewer turn-ending hook fails', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-ending-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter({ reviewer: [
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'ending-read'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'Inspected', evidence_seqs: [0] }, 'ending-decision')],
+  }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('ending-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  appendTask(ctx, agent, newTask('Inspect'))
+  ctx.on('agent/turn-stopping', ({ agent: reviewer }) => {
+    if (reviewer.id.startsWith('task-review-')) throw new Error('synthetic ending failure')
+  })
+  const decision = await reviewStage(ctx, agent, newTask('Inspect'), 's', 'inspected', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' })
+  expect(decision.verdict).toBe('pass')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ status: 'submitted', attempt: 1, fault: null })
+})
+
+it('cancels a review at its total deadline without starting another reviewer', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-deadline-'))
+  roots.push(root)
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      this.requests++
+      const signal = options.signal
+      if (!signal) throw new Error('test adapter requires a cancellation signal')
+      signal.throwIfAborted()
+      await new Promise<void>((_resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))
+    }
+  }()
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('deadline-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await expect(reviewStage(ctx, agent, newTask('Inspect'), 's', 'reported', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, 'stage', { deadlineMs: 100 })).rejects.toMatchObject({ fault: { code: 'timeout', attempt: 1 } })
+  expect(adapter.requests).toBe(1)
+  expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toEqual([])
+})
+
+it('cancels during the repair turn and disposes its single reviewer', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-cancel-'))
+  roots.push(root)
+  const adapter = new PausingAdapter({ reviewer: [textResponse('No decision'), textResponse('Late pass')] })
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-cancel-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  adapter.pauseModel = 'reviewer'
+  ctx.on('agent/status', ({ agent: reviewer, status }) => {
+    if (status === 'idle' && reviewer.id.startsWith('task-review-')
+      && reviewer.session.snapshotEvents().filter(event => event.type === 'turn/end').length === 1) adapter.pauseNext = true
+  })
+  const abort = new AbortController()
+  const review = reviewStage(ctx, agent, newTask('Inspect'), 's', 'reported', abort.signal, { provider: 'scripted', model: 'reviewer' })
+  const rejected = expect(review).rejects.toMatchObject({ fault: { code: 'cancelled', attempt: 2 } })
+  await adapter.entered.promise
+  abort.abort(new Error('user changed task'))
+  adapter.release.resolve()
+  await rejected
+  expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toEqual([])
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]?.decision).toBeNull()
 })

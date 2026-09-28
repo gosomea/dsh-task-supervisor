@@ -13,8 +13,9 @@ export const reviewJobSchema = z.object({
   planVersion: z.number().int().nonnegative(), stageId: z.string().min(1), nodeAttempt: z.number().int().positive().nullable(),
   kind: z.enum(['plan', 'stage', 'progress', 'completion']), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(), model: z.object({ provider: z.string(), model: z.string(), reasoningEffort: z.string().optional() }).nullable(),
-  runtimeId: z.string().uuid(), status: z.enum(['started', 'submitted', 'failed', 'applied', 'stale']),
+  runtimeId: z.string().uuid(), status: z.enum(['repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
   attempt: z.number().int().positive(), repairLimit: z.number().int().nonnegative(),
+  deadlineAt: z.string().optional(),
   startedAt: z.string(), finishedAt: z.string().nullable(), trigger: z.string(),
   input: taskSchema, evidence: z.string(), fault: reviewFaultSchema.nullable(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
@@ -41,7 +42,11 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
-    || job.cutoff !== previous.cutoff || job.reviewerSessionId !== previous.reviewerSessionId)) throw new Error('review identity changed')
+    || job.cutoff !== previous.cutoff || job.reviewerSessionId !== previous.reviewerSessionId
+    || job.mainSessionId !== previous.mainSessionId || job.planVersion !== previous.planVersion
+    || job.stageId !== previous.stageId || job.kind !== previous.kind || job.nodeAttempt !== previous.nodeAttempt
+    || job.evidence !== previous.evidence || JSON.stringify(job.input) !== JSON.stringify(previous.input)
+    || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
   return [...jobs.filter(item => item.id !== job.id), job].slice(-50)
 }
 
