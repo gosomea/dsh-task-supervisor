@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-review-control-calibration",
+  "id": "control-supervisor-independent-20260929-1",
+  "condition": "supervisor-independent",
+  "runtimePluginCommit": "b0efb3e42c04f863c8e260cf7cb72c7b716edfe6",
+  "requiredReviewGatePassed": false,
+  "formalPositionsDelivered": 0,
+  "officialReward": null,
+  "mainSessionId": "session-2f25683b-059c-4c1e-a9d6-3a534347c774",
+  "status": "deadline",
+  "nativeFinished": false,
+  "finishedBeforeDeadline": false,
+  "elapsedSec": 900.0054841041565,
+  "deadlineSec": 900,
+  "cleanupAcknowledged": true,
+  "initialApprovalCount": 1,
+  "rescueCount": 0,
+  "containerStopped": true,
+  "submittedHeadMatchedCutoff": true,
+  "lateCommitDetected": false,
+  "patchSha256": "f455af670e91bd12107a915987fc61d97c6349193b84b653805f1057db1631c8",
+  "originalVerifyUnmodified": true,
+  "independentPosthocFixtureTestExitCode": 0,
+  "checkQuiescence": {
+    "acknowledged": true,
+    "nativeRemovalAcknowledged": true,
+    "checkContainers": 37,
+    "allNativeRemoved": true,
+    "fallbackRemovedCount": 0,
+    "adminStopped": true,
+    "extraCheckCpuNs": null
+  },
+  "imageDifference": "Official Kea image for native Node check capability; prior Goal/Plan/log calibrations used Helm. Not a fair benchmark comparison.",
+  "actualRoutesMatched": true,
+  "planDecisionVerified": true,
+  "stageDecisionVerified": false,
+  "completionDecisionVerified": false,
+  "stageJobStatus": "failed",
+  "finalFaultCode": "check-infrastructure",
+  "phaseOrder": {
+    "successfulObservations": {
+      "name": "task_review_observations",
+      "callSeq": 198,
+      "resultSeq": 199,
+      "succeeded": true
+    },
+    "successfulComparisonEvidenceReads": [
+      {
+        "name": "read_task_evidence",
+        "callSeq": 210,
+        "resultSeq": 211,
+        "succeeded": true
+      },
+      {
+        "name": "read_task_evidence",
+        "callSeq": 215,
+        "resultSeq": 216,
+        "succeeded": true
+      },
+      {
+        "name": "read_task_evidence",
+        "callSeq": 220,
+        "resultSeq": 221,
+        "succeeded": true
+      }
+    ],
+    "noSuccessfulMainEvidenceBeforeObservations": true,
+    "earlyMainEvidenceDenied": true
+  },
+  "observations": [
+    {
+      "criterionId": "c1",
+      "status": "satisfied",
+      "method": "run",
+      "evidenceCount": 2
+    },
+    {
+      "criterionId": "c2",
+      "status": "satisfied",
+      "method": "run",
+      "evidenceCount": 3
+    },
+    {
+      "criterionId": "c3",
+      "status": "satisfied",
+      "method": "read",
+      "evidenceCount": 2
+    },
+    {
+      "criterionId": "c4",
+      "status": "satisfied",
+      "method": "read",
+      "evidenceCount": 3
+    },
+    {
+      "criterionId": "c5",
+      "status": "unverified",
+      "method": "run",
+      "evidenceCount": 2
+    }
+  ],
+  "checks": {
+    "count": 36,
+    "exitCodeCounts": {
+      "0": 32,
+      "2": 3,
+      "1": 1
+    },
+    "changedCheckCount": 1,
+    "timeoutCount": 0,
+    "cancelledCount": 0,
+    "waitMs": 44542.0
+  },
+  "decisionSubmissionAttempts": 28,
+  "successfulDecisionSubmissions": 0,
+  "processEvidenceBoundaries": {
+    "c2": {
+      "mainRunnerPath": "/eval/node24",
+      "pathPresentInCheckRuntime": false,
+      "independentSubstituteProgram": "node",
+      "independentNodeVersion": "v24.12.0",
+      "observedIndependentStatus": "satisfied",
+      "exactMainRuntimeInvocationIndependentlyProven": false
+    },
+    "c5": {
+      "gitExcludedFromSnapshot": true,
+      "independentObservationStatus": "unverified",
+      "comparisonReached": true,
+      "validFinalDecision": false
+    }
+  },
+  "failureChain": {
+    "missingMainRuntimeCommandSeq": 29,
+    "missingMainRuntimeResultSeq": 30,
+    "malformedCwdCommandSeq": 261,
+    "malformedCwdResultSeq": 262,
+    "stickyInfrastructureFaultConfirmed": true,
+    "laterPrivateTreeChanged": true
+  },
+  "routeRequestGroups": [
+    {
+      "kind": "main",
+      "sessionId": "session-2f25683b-059c-4c1e-a9d6-3a534347c774",
+      "actualHttpRequests": 15,
+      "normalSuccessfulStreams": 15,
+      "httpStatusCounts": {
+        "200": 15
+      }
+    },
+    {
+      "kind": "plan",
+      "sessionId": "task-review-f9c55e28-b302-4901-81ad-47ce3b7b43ad",
+      "actualHttpRequests": 4,
+      "normalSuccessfulStreams": 4,
+      "httpStatusCounts": {
+        "200": 4
+      }
+    },
+    {
+      "kind": "stage",
+      "sessionId": "task-review-65925497-e9e5-47de-ae0c-1a24a6e41072",
+      "actualHttpRequests": 113,
+      "normalSuccessfulStreams": 112,
+      "httpStatusCounts": {
+        "200": 113
+      }
+    }
+  ],
+  "tokenCoverageComplete": false,
+  "unreportedAttempts": 1,
+  "tokensReportedLowerBound": {
+    "uncachedInputTokens": 120168,
+    "outputTokens": 93454,
+    "cacheReadTokens": 5235968,
+    "cacheWriteTokens": 0
+  },
+  "allSessionTokens": null,
+  "metrics": {
+    "checkWaitMs": 44542.0,
+    "reviewWaitMs": 655218.0,
+    "repairTurns": 0,
+    "internalReviewFaults": {
+      "check-infrastructure": 1
+    },
+    "extraCheckCpuNs": null,
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "failureClassification": {
+    "correctableInputMistakenForInfrastructure": [
+      "missing executable /eval/node24",
+      "malformed cwd"
+    ],
+    "realSnapshotInvalidation": {
+      "checkIdPrefix": "1e73bdf7",
+      "callSeq": 636,
+      "resultSeq": 637,
+      "changed": [
+        "."
+      ],
+      "cause": "Reviewer cleanup command deleted /check/tree; rejecting reuse of this private copy is correct."
+    }
+  },
+  "parentVerifiedEvidence": [
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/validation.json",
+      "sha256": "91db00642742b1162d0e3c450112295f3e4da86a3faa13e6642a5e4425671034"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/verification-posterior.json",
+      "sha256": "9ec06ba8fbc930721a70d5c80b2b5c1f386e9b0b457c64c04b92c4d1f295c803"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/route-result.json",
+      "sha256": "5cdb35b890a779fcfb0a6b67d70758f56ae65f829d015d8922457c9e012959a2"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/metrics.json",
+      "sha256": "3a3a17610b32d64030160476019219ff10457e11e1566d63406a767aab8f5cc6"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/terminal.json",
+      "sha256": "a7f593622e830cb76006693caf4be26c38ef688d1f9aa37cfee15eac5ac0db22"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/failure-evidence-observed.json",
+      "sha256": "3d72a1f2a5d361b8764b368eac0dbd9a6981e5d527f5f10fbed43790e71293bf"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/failure-evidence-final.json",
+      "sha256": "b2a46ac2e7724e740ee24c7c36a1bb9f06c9d907058ba8dc3d98853a9bedf3f7"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/private-tree-postmortem.json",
+      "sha256": "fd8f1918a5178f2a2b36c49a6875fd7dc87ab0873e4cec713c2ec0b13c3a9c97"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/home-checks/quiescence.json",
+      "sha256": "33034e8204d57cef2ed41eba04c7b5c688d85e30a756b894788baf635e96de1d"
+    },
+    {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/home/run/cutoff-result.json",
+      "sha256": "da85dce9e26f587f86e4b21722393f34bef4cea485301caa878fac496c1e53e9"
+    }
+  ],
+  "notes": [
+    "No rescue, no replay, and no replacement of the failed Session.",
+    "Artifact posthoc success does not mean Supervisor control completed or official reward passed.",
+    "132 HTTP requests matched the route; one generation lacked reported usage, so complete token cost is unknown.",
+    "The initial failed runtime invocation has no completed check record; completed-check counters do not include that lost record.",
+    "Process requirements need separately bound evidence; Node substitution does not prove the exact main runtime invocation."
+  ]
+}

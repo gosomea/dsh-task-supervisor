@@ -1,0 +1,38 @@
+# Process evidence for independent reviews
+
+## Status and rationale
+
+This is a pending plugin contract. The [real calibration](../eval/deepswe/control-independent-calibration-20260929-1.json) on 2026-09-29 exercised independent file reads, checks and observation before comparison, but did not complete node or final review. Its check directory excludes `.git` and the main executor's `/eval/node24`. Passing tests under another Node does not prove the exact main invocation; correct working files do not prove they were committed.
+
+A missing program or invalid directory permits corrected calls. Modified check copies, lost container identity or uncertain native cleanup still block acceptance. Error classification does not fabricate missing process evidence. Formal tasks retain their Git submission requirements and admission stays closed.
+
+## Three evidence types
+
+| Type | What it proves | Source |
+| --- | --- | --- |
+| Artifact | Current implementation, behavior and constraints | Immutable snapshot, complete file reads, independent checks and outputs. |
+| Git process | Commit identity, parents, clean state and correspondence between committed content and current artifacts | Administrator capture and receipts calculated independently with trusted Git. |
+| Execution process | Actual executable, arguments, directory, outcome and artifact version | Receipts from the trusted native process execution boundary. |
+
+Main-Agent summaries and shell input are investigative leads, not proof of commits or execution. Matching version strings do not prove matching binaries. Independent runs should report artifact and process coverage separately; absent evidence remains `unverified`.
+
+## Plugin contract
+
+Reuse the administrator gateway and private storage without modifying DSH's native sandbox. Models read receipts for the bound task; they cannot select main containers, host paths, Git HEADs or administrator commands. Receipts bind task version, node attempt, snapshot ID and artifact digest, exact main-container identity, evidence cutoff and capture time.
+
+Capture Git only after managed writers settle, checking HEAD and working-tree digest before and after capture. An administrator private copy independently calculates committed content, parent relationships and tracked/untracked status. Repository hooks, aliases, external diff, filters and configuration must not execute: arbitrary repository Git configuration cannot be trusted in the administrator environment. Keep `.git` outside ordinary model-writable check directories; do not export credentials, authenticated remotes or full history. Tasks without Git receive an explicit unavailable status.
+
+Execution receipts originate at the boundary that actually starts programs, recording the resolved binary digest, structured argv, cwd, start/end times, exit outcome and output digest. A `sh -lc` string does not prove each nested program ran. Unobservable nested execution must remain a coverage limitation; when needed, provide a plugin-owned structured verification tool rather than manufacturing successful receipts from shell text.
+
+Independent re-execution uses the same administrator-selected frozen runtime. Read-only executable mounts and their dependency closure belong in the release. Past main execution and successful independent re-execution have separate receipts and cannot substitute for each other. Models do not choose runtime configuration.
+
+A proposed `inspect_task_provenance` tool pages bound receipts and returns stable evidence IDs. Acceptance checks evidence domain, version, complete reads and current artifact binding: Git criteria cannot cite README files, and execution-process criteria cannot cite only a version string. The existing artifact-observation-before-main-report gate remains. Administrator process receipts can be independently inspected but must not contain the main Agent's success summary.
+
+## Implementation and validation order
+
+1. Define receipt schemas and applicable criteria, separating artifact behavior, Git submission and actual main execution.
+2. Implement administrator capture, consistency checks and private persistence. Keyless tests cover dirty/untracked files, post-commit changes, external Git configuration and incorrect container identities.
+3. Add the read-only tool and deterministic acceptance validation, rejecting foreign, stale, partially read or differently bound receipts.
+4. Validate effective node and completion decisions in a new calibration Session, then freeze the formal release. Retain the failed Session without rescue prompts or deadline changes.
+
+Real negative cases include correct but uncommitted files, commits that differ from current files, different binaries with equal version strings, shell claims without execution and writes during Git/artifact capture. Formal delivery of the 16 positions follows validated evidence, not merely working artifact checks.

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "kind": "netctl-keyless-namespace",
+  "passed": true,
+  "modelRequests": 0,
+  "formalPositions": 0,
+  "helperImage": "sha256:f3ae45d07f2017e760cb113720ab7a18461675bdaea3ab978d8e67fe98d69355",
+  "checks": {
+    "loopbackAllowed": true,
+    "gateway15721Allowed": true,
+    "newExternalTcpBlocked": true,
+    "ipv6NotEnabledOnTaskBridge": true,
+    "configuredTargetResources": true
+  },
+  "cleanupAcknowledged": true,
+  "finishedAtUnix": 1790615355.277705,
+  "baseImage": "alpine@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375",
+  "directPackage": "iptables=1.8.11-r1",
+  "buildResourceBounds": {
+    "memoryMiB": 256,
+    "cpuQuotaMicros": 25000,
+    "cpuPeriodMicros": 100000
+  },
+  "evidence": [
+    {
+      "relativePath": "netctl-keyless-20260929-1/started.json",
+      "sha256": "85feb1a966a5828eee42711d5f86969e92665a14ba1cbc3e6c1fe48cbfe1138f"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/Dockerfile",
+      "sha256": "f5750b4be6e29f4cfafe9fdc033f91ac9ab460792e8cedcd363d739470e4a3d9"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/build.log",
+      "sha256": "d6bc234d73ab20760f8b554c4d96a60299936b4ae97e549d97d300628263482f"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/image.id",
+      "sha256": "d89934d0bfedd2867ed7becba456ea5fc4454b55ea514820b0a67588b65670ca"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/package-materials.json",
+      "sha256": "f13188339b38841d83c6e59bc02ed39bc8cf9c43e91260dbd68f853aa55da9c9"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/probe_namespace.py",
+      "sha256": "b5792a6945587bd68d8fafd2d021454553c1d2319d8c6b6ebaacfd85c99fcda5"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/namespace-started.json",
+      "sha256": "84029111548076397bddfae25533d4a7f005cf097bbec81156fec9a46cbaa337"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/namespace-container.json",
+      "sha256": "087ba6de832c038e2064b7111ef66e665846b91ad6a7e14a98a48c92ebd9d5ad"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/namespace-before.json",
+      "sha256": "c306caff6c52b6d5a51fd35721342cef6695b895bddbb5e21ad762d20e8d5c2f"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/namespace-after.json",
+      "sha256": "0f672d3996dcb1b5cb5bfee2e4922f2d5327964d389b9b257162841684eb4c9e"
+    },
+    {
+      "relativePath": "netctl-keyless-20260929-1/namespace-result.json",
+      "sha256": "06ebaa91b209f0efe77f2391cd962f1845ee3ec7ccaffba8da6fd6186567f7f9"
+    }
+  ],
+  "parentVerifiedEvidenceCount": 11,
+  "limitations": [
+    "This is a keyless TCP namespace check, not a model task or official reward.",
+    "The task bridge has no enabled IPv6; this is not an IPv6-enabled deployment test.",
+    "CPU limits are caps, not host capacity reservations."
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-admission-status",
+  "sampleFile": "sample-20260928.json",
+  "sampleSha256": "5800c1897cf1a29c9b84e5674cf2d056acf1f62e6f42a82217f4dd9714e0d131",
+  "modelAdmitted": false,
+  "release": null,
+  "plannedFormalPositions": 16,
+  "deliveredFormalPositions": 0,
+  "gates": {
+    "modelRoute": {
+      "file": "model-route-gate-20260928-2.json",
+      "sha256": "70d66c9fbabda950008dbdb69cdc35d3e5690641e447afa689cdb6032a96dd72",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 5
+    },
+    "controlFlow": {
+      "file": "control-flow-gate-20260928.json",
+      "sha256": "8f28ac1c8d820e214984f5f9eb650bcb1a74c17c8a4e3f2912c3041d9f976e28",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 7
+    },
+    "grading": {
+      "file": "grading-gate-20260928.json",
+      "sha256": "181fbc916bb586e62c43eab137ede89651aad37642a34ff383fe751a188b09eb",
+      "passed": true,
+      "parentVerifiedEvidenceCount": 8
+    }
+  },
+  "realModelCalibration": {
+    "positions": 5,
+    "actualHttpRequests": 223,
+    "normallyCompletedGenerations": 210,
+    "initialApprovals": 4,
+    "rescueActions": 0,
+    "routeMismatchCount": 0,
+    "latestReviewChainComplete": false,
+    "latestAllSessionTokens": null,
+    "latestTokenCoverageComplete": false,
+    "previousUnreportedAttempts": 13,
+    "combinedFullTokenCost": null,
+    "latestMetricsEvidence": {
+      "relativePath": "gates/control-supervisor-independent-20260929-1/metrics.json",
+      "sha256": "3a3a17610b32d64030160476019219ff10457e11e1566d63406a767aab8f5cc6"
+    }
+  },
+  "remainingAdmission": [
+    "Correctable check input and failed-program recovery regression; genuine infrastructure faults remain blocking.",
+    "Bound evidence for Git submission and exact main runtime invocation; do not equate artifact re-execution with past process evidence.",
+    "Supervisor-independent: valid stage and completion decisions, then complete frozen route/control gates.",
+    "Final actual runtime dependency closure, immutable controller inputs and release admission."
+  ],
+  "notes": [
+    "Upstream failures are runtime faults, not route deviations.",
+    "Keyless controls and non-candidate calibration are excluded from the formal 16 positions.",
+    "Incomplete token coverage is unknown cost, not zero.",
+    "Two Plan preparation failures were sealed before prompt delivery, with zero actual model requests and zero approvals.",
+    "Goal and Plan fixture validation does not prove official task success.",
+    "Independent calibration completed at deadline with no rescue; posthoc artifact checks pass but native task completion is false.",
+    "Network helper keyless namespace test passed with a pinned image digest."
+  ],
+  "previousStatusFile": "admission-status-20260929-2.json",
+  "latestControlCalibration": {
+    "file": "control-calibration-20260928-2.json",
+    "sha256": "78371a521dc0af79f0356f3e835cde87317bab19373f01317f4ead764ea9b86c",
+    "representativeChainPassed": true,
+    "fullControlGatePassed": false
+  },
+  "latestHealth": {
+    "file": "upstream-health-20260928-1.json",
+    "sha256": "76ab5d890ae0e59ed420b4eb57b16d77b1070c7348f9051e7be3e5f3e4feeced",
+    "successful": true
+  },
+  "latestGoalPlanCalibration": {
+    "file": "control-calibration-20260929-1.json",
+    "sha256": "30141be79005be046975f1fd237884435521e11d5c69719e77ed335723608aab",
+    "goalRepresentativeChainPassed": true,
+    "planRepresentativeChainPassed": true,
+    "fullControlGatePassed": false
+  },
+  "latestIndependentDeadline": {
+    "file": "independent-deadline-20260929.json",
+    "sha256": "660cd18983b4e12601d408c3c655b2d772612df4abd23129fcc7959d3303d000",
+    "representativePassed": true,
+    "fullControlGatePassed": false
+  },
+  "latestIndependentCalibration": {
+    "file": "control-independent-calibration-20260929-1.json",
+    "sha256": "7694703af11b2fa35d67dfbf5513062934c490da651c420275b5b8ca49913684",
+    "passed": false
+  },
+  "latestNetworkHelper": {
+    "file": "network-helper-20260929.json",
+    "sha256": "691195a20f4f5812f2244f82ce3d8e9c1ac9eb08eda8658355308aca6bb510d2",
+    "passed": true
+  }
+}
