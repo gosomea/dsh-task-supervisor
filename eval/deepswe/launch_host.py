@@ -16,6 +16,7 @@ import time
 import uuid
 
 from control_flow import controller_overlay, exclusive_json
+from check_gateway_adapter import prepare as prepare_gateway, arm as arm_gateway, clean_checks
 
 LABEL = 'dsh.deepswe.attempt'
 
@@ -25,7 +26,12 @@ def docker(context, *args, timeout=30, input=None):
         capture_output=True, text=True, check=True, timeout=timeout).stdout.strip()
 
 
-def owned(context, container, lease):
+def owned(context, container, lease, container_id=None):
+    if container_id is not None:
+        row = json.loads(docker(context, 'inspect', container))[0]
+        if row['Id'] != container_id or row['Name'] != '/' + container or row.get('Config', {}).get('Labels', {}).get(LABEL) != lease:
+            raise RuntimeError('container identity differs from this attempt')
+        return
     label = docker(context, 'inspect', '--format', '{{index .Config.Labels "' + LABEL + '"}}', container)
     if label != lease:
         raise RuntimeError('container does not belong to this attempt')
@@ -59,6 +65,7 @@ def launch(spec):
     shutil.copytree(template / 'profiles' / profile, home / 'profiles' / profile, symlinks=True)
     shutil.copy2(template / '.credentials.yaml', home / '.credentials.yaml')
     os.chmod(home / '.credentials.yaml', 0o600)
+    gateway_receipt, gateway_patch, gateway_mounts = prepare_gateway(spec, lease, docker)
     overlay = home / 'run/controller.patch.yml'
     overlay.write_text(controller_overlay(condition, runtime / 'dsh-source/packages/bundle/web-app/presets/standard.patch.yml') + spec.get('extraOverlay', ''))
     # The native Host gets its own group; the watchdog also tracks detached
@@ -80,8 +87,10 @@ set -eu
 export DSH_HOME=/evalhome
 export DSH_TELEMETRY_DISABLED=1
 mkdir -p /evalhome/run
+patch_args=(--patch /evalhome/run/controller.patch.yml)
+if [[ -n "$4" ]]; then patch_args+=(--patch "$4"); fi
 /eval/node24 /runner/tcp_proxy.mjs "$2" "$3" >> /evalhome/run/proxy.log 2>&1 &
-setsid /eval/node24 /dsh/apps/cli/lib/bin.js --profile "$1" --patch /evalhome/run/controller.patch.yml --no-open --host 127.0.0.1 --trusted-host "127.0.0.1:$2" --port "$3" >> /evalhome/run/host.log 2>&1 &
+setsid /eval/node24 /dsh/apps/cli/lib/bin.js --profile "$1" "${patch_args[@]}" --no-open --host 127.0.0.1 --trusted-host "127.0.0.1:$2" --port "$3" >> /evalhome/run/host.log 2>&1 &
 host=$!
 printf '%s\\n' "$host" > /evalhome/run/host.pid
 wait "$host" || true
@@ -99,42 +108,65 @@ while true; do sleep 3600; done
         args[-2:-2] = ['-v', str(runtime / 'plugin-source') + ':/plugin:ro']
     for mount in spec.get('mounts', []):
         args[-2:-2] = ['-v', mount]
-    args += [image, '/evalhome/run/host.sh', profile, str(spec['port']), str(spec.get('internalPort', spec['port'] + 1))]
+    for mount in gateway_mounts:
+        args[-2:-2] = ['--mount', mount]
+    args += [image, '/evalhome/run/host.sh', profile, str(spec['port']), str(spec.get('internalPort', spec['port'] + 1)), gateway_patch]
     container_id = docker(context, *args)
-    owned(context, container, lease)
-    # Formal admission requires a pinned privileged helper that seals only this
-    # task namespace before any Session prompt is delivered.
-    if spec.get('netctlImage'):
-        gateway = docker(context, 'exec', container, 'getent', 'ahostsv4', 'host.docker.internal').split()[0]
-        import ipaddress
-        gateway = str(ipaddress.IPv4Address(gateway))
-        docker(context, 'exec', '-i', container, 'tee', '-a', '/etc/hosts',
-               input=f'{gateway} host.docker.internal\n')
-        rules = ('iptables -A OUTPUT -o lo -j ACCEPT; '
-                 'iptables -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; '
-                 f'iptables -A OUTPUT -d {gateway}/32 -p tcp --dport 15721 -j ACCEPT; '
-                 'iptables -P OUTPUT DROP')
-        docker(context, 'run', '--rm', '--platform', 'linux/amd64',
-               '--label', LABEL + '=' + lease, '--network', 'container:' + container,
-               '--cap-add', 'NET_ADMIN', spec['netctlImage'], '/bin/sh', '-ec', rules)
-    elif spec.get('formal', False):
-        raise RuntimeError('formal task network is not sealed')
-    deadline = time.monotonic() + 120
-    while time.monotonic() < deadline:
-        if '?token=' in (home / 'run/host.log').read_text():
-            break
-        if (home / 'run/host.exited').exists():
-            raise RuntimeError('native Host exited; retain private startup evidence')
-        time.sleep(1)
-    else:
-        raise TimeoutError('native Host readiness timeout')
-    receipt = {'schemaVersion': 1, 'lease': lease, 'container': container,
-               'containerId': container_id, 'dockerContext': context, 'home': str(home),
-               'port': spec['port'], 'internalPort': spec.get('internalPort', spec['port'] + 1), 'profile': profile, 'condition': condition,
-               'imageDigest': image, 'storageMiB': spec.get('storageMiB'), 'storageEnforcement': spec.get('storageEnforcement'),
-               'runnerFiles': {str(path.relative_to(runner)): __import__('hashlib').sha256(path.read_bytes()).hexdigest() for path in runner.rglob('*') if path.is_file()}, 'controllerOverlaySha256': __import__('hashlib').sha256(overlay.read_bytes()).hexdigest(), 'networkSealed': bool(spec.get('netctlImage'))}
-    exclusive_json(home / 'run/launch-receipt.json', receipt)
-    return receipt
+    try:
+        exclusive_json(home / 'run/container-created.json', {'container': container, 'containerId': container_id,
+            'lease': lease, 'dockerContext': context, 'imageDigest': image})
+        owned(context, container, lease, container_id)
+        # Formal admission requires a pinned privileged helper that seals only this
+        # task namespace before any Session prompt is delivered.
+        if spec.get('netctlImage'):
+            addresses = docker(context, 'exec', container_id, 'getent', 'ahostsv4', 'host.docker.internal').split()
+            if not addresses:
+                raise RuntimeError('Model gateway DNS returned no address')
+            gateway = addresses[0]
+            import ipaddress
+            gateway = str(ipaddress.IPv4Address(gateway))
+            docker(context, 'exec', '-i', container, 'tee', '-a', '/etc/hosts',
+                   input=f'{gateway} host.docker.internal\n')
+            rules = ('iptables -A OUTPUT -o lo -j ACCEPT; '
+                     'iptables -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; '
+                     f'iptables -A OUTPUT -d {gateway}/32 -p tcp --dport 15721 -j ACCEPT; '
+                     'iptables -P OUTPUT DROP')
+            docker(context, 'run', '--rm', '--platform', 'linux/amd64',
+                   '--label', LABEL + '=' + lease, '--network', 'container:' + container,
+                   '--cap-add', 'NET_ADMIN', spec['netctlImage'], '/bin/sh', '-ec', rules)
+        elif spec.get('formal', False):
+            raise RuntimeError('formal task network is not sealed')
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            if '?token=' in (home / 'run/host.log').read_text():
+                break
+            if (home / 'run/host.exited').exists():
+                raise RuntimeError('native Host exited; retain private startup evidence')
+            time.sleep(1)
+        else:
+            raise TimeoutError('native Host readiness timeout')
+        receipt = {'schemaVersion': 1, 'lease': lease, 'container': container,
+                   'containerId': container_id, 'dockerContext': context, 'home': str(home),
+                   'port': spec['port'], 'internalPort': spec.get('internalPort', spec['port'] + 1), 'profile': profile, 'condition': condition,
+                   'imageDigest': image, 'storageMiB': spec.get('storageMiB'), 'storageEnforcement': spec.get('storageEnforcement'),
+                   'runnerFiles': {str(path.relative_to(runner)): __import__('hashlib').sha256(path.read_bytes()).hexdigest() for path in runner.rglob('*') if path.is_file()}, 'controllerOverlaySha256': __import__('hashlib').sha256(overlay.read_bytes()).hexdigest(), 'networkSealed': bool(spec.get('netctlImage'))}
+        if gateway_receipt:
+            receipt['independentGateway'] = gateway_receipt
+        exclusive_json(home / 'run/launch-receipt.json', receipt)
+        return receipt
+    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+        partial = {'home': str(home), 'dockerContext': context, 'container': container,
+                   'containerId': container_id, 'lease': lease}
+        if gateway_receipt:
+            partial['independentGateway'] = gateway_receipt
+        try:
+            cleanup = abort_before_delivery(partial)
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as cleanup_error:
+            cleanup = {'cleanupAcknowledged': False, 'errorType': type(cleanup_error).__name__}
+        exclusive_json(home / 'run/launch-fault.json', {'errorType': type(error).__name__,
+            'containerId': container_id, 'lease': lease, 'retryAllowed': False, 'cleanup': cleanup})
+        raise
+
 
 
 def arm_watchdog(receipt, started):
@@ -142,20 +174,40 @@ def arm_watchdog(receipt, started):
     root = Path(receipt['home']) / 'run'
     config = {'deadlineAtUnix': started['deadlineAtUnix'], 'sessionId': started['sessionId'], 'cwd': started['cwd']}
     exclusive_json(root / 'watchdog-config.json', config)
-    owned(receipt['dockerContext'], receipt['container'], receipt['lease'])
-    docker(receipt['dockerContext'], 'exec', '-d', receipt['container'], 'python3',
+    owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
+    docker(receipt['dockerContext'], 'exec', '-d', receipt['containerId'], 'python3',
            '/runner/cutoff_watchdog.py', '/evalhome/run/watchdog-config.json')
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
-        if (root / 'watchdog-ready.json').exists(): return
+        if (root / 'watchdog-ready.json').exists():
+            if receipt.get('independentGateway'):
+                arm_gateway(receipt['independentGateway'], started, docker)
+            return
         time.sleep(0.1)
     raise TimeoutError('native deadline enforcer not ready')
+
+
+def abort_before_delivery(receipt, started=None):
+    """Close started actors on arm failure; no uncertain prompt is redelivered."""
+    result = {'taskStopped': False, 'cleanupAcknowledged': False}
+    try:
+        owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
+        docker(receipt['dockerContext'], 'stop', '-t', '5', receipt['containerId'])
+        result['taskStopped'] = docker(receipt['dockerContext'], 'inspect', '--format', '{{.State.Running}}', receipt['containerId']) == 'false'
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        result['taskStopFaultType'] = type(error).__name__
+    finally:
+        if receipt.get('independentGateway'):
+            result['independentGateway'] = clean_checks(receipt['independentGateway'], started or {'sessionId': None, 'deadlineAtUnix': None}, docker)
+    result['cleanupAcknowledged'] = result['taskStopped'] and (not receipt.get('independentGateway') or result['independentGateway']['acknowledged'])
+    return result
 
 
 def quiesce(receipt, started, submission_dir):
     """Stop native task actors, export cutoff commits, and stop the owned container."""
     context, container, lease = (receipt[key] for key in ('dockerContext', 'container', 'lease'))
-    owned(context, container, lease)
+    owned(context, container, lease, receipt['containerId'])
+    outcome = None
     try:
         root = Path(receipt['home']) / 'run'
         trigger = root / 'cutoff-now.json'
@@ -172,24 +224,33 @@ def quiesce(receipt, started, submission_dir):
         if not cutoff['acknowledged'] or cutoff['sessionId'] != started['sessionId'] or cutoff.get('headCaptureError') or not cutoff.get('cutoffHeadCommit'):
             raise RuntimeError('native mutators are not quiescent')
         output = '/evalhome/run/submission'
-        docker(context, 'exec', container, 'python3', '/runner/committed_patch.py',
+        docker(context, 'exec', receipt['containerId'], 'python3', '/runner/committed_patch.py',
                started['cwd'], started['baseCommit'], output, '--head', cutoff['cutoffHeadCommit'], timeout=60)
         # submission_dir belongs to private evidence; the exporter created the source
         # exclusively and docker cp must not replace an existing host directory.
         destination = Path(submission_dir)
         if destination.exists():
             raise FileExistsError('submission already exists')
-        docker(context, 'cp', container + ':' + output, str(destination), timeout=60)
+        docker(context, 'cp', receipt['containerId'] + ':' + output, str(destination), timeout=60)
         extracted = json.loads((destination / 'receipt.json').read_text())
         if extracted['headCommit'] != (cutoff['cutoffHeadCommit']):
             raise RuntimeError('HEAD changed after cutoff quiescence')
-        return {'acknowledged': True, 'submissionDir': str(destination), 'cutoff': cutoff}
+        outcome = {'acknowledged': True, 'submissionDir': str(destination), 'cutoff': cutoff}
+        return outcome
     finally:
         # Stop even if HEAD capture, acknowledgement, export or copy failed.
-        owned(context, container, lease)
-        docker(context, 'stop', '-t', '5', container, timeout=30)
-        if docker(context, 'inspect', '--format', '{{.State.Running}}', container) != 'false':
-            raise RuntimeError('owned task container remains running')
+        try:
+            owned(context, container, lease, receipt['containerId'])
+            docker(context, 'stop', '-t', '5', receipt['containerId'], timeout=30)
+            if docker(context, 'inspect', '--format', '{{.State.Running}}', receipt['containerId']) != 'false':
+                raise RuntimeError('owned task container remains running')
+        finally:
+            if receipt.get('independentGateway'):
+                gateway = clean_checks(receipt['independentGateway'], started, docker)
+                if outcome is not None:
+                    outcome['independentGateway'] = gateway
+                if not gateway['acknowledged']:
+                    raise RuntimeError('independent checks did not acknowledge quiescence')
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

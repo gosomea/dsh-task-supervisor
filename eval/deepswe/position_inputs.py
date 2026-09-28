@@ -53,6 +53,13 @@ def assert_position_inputs(spec, protocol, executing_file):
             raise ValueError('Playwright core dependency is outside the frozen runtime')
         if Path(plan['chromePath']).resolve(strict=True) != roots['chrome']:
             raise ValueError('Actual Plan client launches another Chrome binary')
+    if spec['condition'] == 'supervisor-independent':
+        if (Path(spec['runtime']) / 'docker-static-amd64').resolve(strict=True) != roots['docker']:
+            raise ValueError('Administrator gateway launches an unfrozen Linux Docker CLI')
+        if not isinstance(spec.get('independentChecks'), dict):
+            raise ValueError('Independent gateway settings must be frozen before launch')
+        if not isinstance(spec.get('supervisorConfig'), dict):
+            raise ValueError('Gateway patch must restate the full frozen Supervisor configuration')
     if not re.fullmatch(r'(?:[^\s]+@)?sha256:[a-f0-9]{64}', spec.get('netctlImage', '')):
         raise ValueError('The network control helper needs an immutable image digest')
     task = next((task for task in protocol['tasks'] if task['id'] == spec['taskId']), None)

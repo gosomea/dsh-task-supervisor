@@ -8,7 +8,7 @@ import time
 
 from control_flow import Journal, begin, exclusive_json, supervise
 from control_rpc import WebRpc
-from launch_host import arm_watchdog, launch, owned, quiesce
+from launch_host import abort_before_delivery, arm_watchdog, launch, owned, quiesce
 
 
 def validate_position(spec, instruction, protocol):
@@ -54,6 +54,8 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
         validate_position(spec, instruction, protocol)
     if journal.read('terminal.json') is not None:
         return journal.read('terminal.json')
+    if journal.read('pre-delivery-fault.json') is not None:
+        raise RuntimeError('Original pre-delivery failure requires reconciliation; no redelivery')
     receipt = journal.read('launch-receipt.json')
     if receipt is None:
         if journal.read('launch-intent.json') is not None:
@@ -61,11 +63,21 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
         journal.write('launch-intent.json', spec)
         receipt = launch(spec)
         journal.write('launch-receipt.json', receipt)
-    owned(receipt['dockerContext'], receipt['container'], receipt['lease'])
     home = Path(receipt['home'])
-    rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'))
+    try:
+        owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
+        rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'))
+    except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+        try:
+            cleanup = abort_before_delivery(receipt, journal.read('started.json'))
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as cleanup_error:
+            cleanup = {'cleanupAcknowledged': False, 'errorType': type(cleanup_error).__name__}
+        journal.write('pre-delivery-fault.json', {'schemaVersion': 1, 'stage': 'rpc-initialization',
+            'errorType': type(error).__name__, 'retryAllowed': False,
+            'deliveryUncertain': journal.read('start-intent.json') is not None, 'cleanup': cleanup})
+        raise
     plan_process = None
-    def before_delivery(started):
+    def prepare_delivery(started):
         nonlocal plan_process
         arm_watchdog(receipt, started)
         if spec['condition'] != 'plan':
@@ -88,12 +100,39 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
                 raise RuntimeError('native Plan question transport exited before model delivery')
             time.sleep(0.5)
         raise TimeoutError('native Plan question transport was not ready')
+    def before_delivery(started):
+        try:
+            prepare_delivery(started)
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+            try:
+                cleanup = abort_before_delivery(receipt, started)
+            except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as cleanup_error:
+                cleanup = {'cleanupAcknowledged': False, 'errorType': type(cleanup_error).__name__}
+            journal.write('pre-delivery-fault.json', {'schemaVersion': 1, 'sessionId': started['sessionId'],
+                'deadlineAtUnix': started['deadlineAtUnix'], 'errorType': type(error).__name__,
+                'delivered': False, 'retryAllowed': False, 'cleanup': cleanup})
+            raise
     try:
         started = journal.read('started.json')
         if started is None:
             with journal.controller():
-                started = begin(rpc, journal, spec['condition'], instruction, spec['baseCommit'], spec['id'],
-                                deadline_sec=spec.get('deadlineSec', 10800), cwd=spec.get('cwd', '/app'), before_delivery=before_delivery)
+                try:
+                    started = begin(rpc, journal, spec['condition'], instruction, spec['baseCommit'], spec['id'],
+                                    deadline_sec=spec.get('deadlineSec', 10800), cwd=spec.get('cwd', '/app'), before_delivery=before_delivery)
+                except (OSError, ValueError, KeyError, StopIteration, RuntimeError, subprocess.SubprocessError) as error:
+                    # Session construction RPCs precede before_delivery. A
+                    # failure here still owns a running Host with no armed
+                    # cutoff. Retain an existing callback fault unchanged.
+                    if journal.read('pre-delivery-fault.json') is None and journal.read('terminal.json') is None:
+                        try:
+                            cleanup = abort_before_delivery(receipt, journal.read('started.json'))
+                        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as cleanup_error:
+                            cleanup = {'cleanupAcknowledged': False, 'errorType': type(cleanup_error).__name__}
+                        uncertain = journal.read('start-intent.json') is not None
+                        journal.write('pre-delivery-fault.json', {'schemaVersion': 1, 'stage': 'session-admission',
+                            'errorType': type(error).__name__, 'retryAllowed': False,
+                            'delivered': None if uncertain else False, 'deliveryUncertain': uncertain, 'cleanup': cleanup})
+                    raise
         elif spec['condition'] == 'plan' and not journal.read('approval-receipt.json'):
             # Browser state/remote event may be uncertain. Never synthesize a
             # second approval or restart a lost native question transport.

@@ -21,9 +21,25 @@ if (!urls.length) throw new Error('Missing private Host authentication URL')
 const browser = await chromium.launch({ headless: true, executablePath: config.chromePath })
 try {
   const page = await browser.newPage()
+  // Restore the native client's saved Session selection before hydration. A
+  // fresh browser can otherwise collapse the Workspace containing this Session.
+  // This changes only browser navigation; approval still uses the native panel.
+  await page.addInitScript(({ origin, sessionId }) => {
+    if (location.origin === origin) {
+      localStorage.setItem('dsh.sessions.current', JSON.stringify({ sessionId }))
+    }
+  }, { origin: `http://127.0.0.1:${config.port}`, sessionId: config.sessionId })
   await page.goto(`http://127.0.0.1:${config.port}/?token=${urls.at(-1)[1]}`, { waitUntil: 'domcontentloaded' })
-  await page.getByText(config.sessionTitle, { exact: true }).first().click({ timeout: 30_000 })
-  writeExclusive('plan-client-ready.json', { schemaVersion: 1, sessionId: config.sessionId, atUnix: now() })
+  // An empty Session renders the native welcome screen, not its renamed title.
+  // Check the browser title and selected ID instead of a sidebar label.
+  await page.waitForFunction(title => document.title.startsWith(`${title} — `), config.sessionTitle,
+    { timeout: 30_000 })
+  await page.locator('[data-composer-input][contenteditable="true"]').first()
+    .waitFor({ state: 'visible', timeout: 30_000 })
+  const selected = await page.evaluate(() => JSON.parse(localStorage.getItem('dsh.sessions.current') ?? '{}').sessionId)
+  if (selected !== config.sessionId) throw new Error('Native browser selected a different Session')
+  writeExclusive('plan-client-ready.json', { schemaVersion: 1, sessionId: config.sessionId,
+    documentTitle: await page.title(), composerReady: true, atUnix: now() })
   const review = page.locator('[data-plan-review-key]')
   const remainingMs = () => Math.max(1, Math.min(2_147_483_647, (config.deadlineAtUnix - now()) * 1000))
   await review.waitFor({ state: 'visible', timeout: remainingMs() })
