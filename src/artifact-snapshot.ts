@@ -63,6 +63,13 @@ async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, d
   return { entries, digest: hash(JSON.stringify(entries)) }
 }
 
+async function scanDirectories(root: string): Promise<string[]> {
+  const paths: string[] = []
+  for (const name of await readdir(root)) { const path = join(root, name); if ((await lstat(path)).isDirectory()) paths.push(...await scanDirectories(path)) }
+  paths.push(root)
+  return paths
+}
+
 /** Make a private baseline and a separate writable check tree; at most two capture retries. */
 export async function captureSnapshot(workspace: string, storage: string, limits: SnapshotLimits, signal: AbortSignal): Promise<ArtifactSnapshot> {
   for (const value of [limits.files, limits.bytes]) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('snapshot bounds must be positive integers')
@@ -89,6 +96,8 @@ export async function captureSnapshot(workspace: string, storage: string, limits
       await writeFile(join(root, 'manifest.json'), JSON.stringify(snapshot), { flag: 'wx', mode: 0o600 })
       return snapshot
     } catch (error) {
+      // Baseline directories may already be read-only when manifest persistence fails.
+      for (const entry of (await scanDirectories(root)).reverse()) await chmod(entry, 0o700)
       await rm(root, { recursive: true, force: true })
       if (signal.aborted || !(error instanceof Error) || !error.message.startsWith('SNAPSHOT_CHANGED') || attempt === 2) throw error
     }
@@ -108,12 +117,21 @@ export async function changedArtifacts(snapshot: ArtifactSnapshot): Promise<stri
     const path = join(snapshot.check, 'tree', entry.path)
     try {
       const stat = await lstat(path)
-      if (entry.kind === 'file' ? !stat.isFile() || hash(await readFile(path)) !== entry.hash || (stat.mode & 0o777) !== (entry.mode & 0o700)
+      if (entry.kind === 'file' ? !stat.isFile() || stat.size !== entry.bytes || !within(join(snapshot.check, 'tree'), await realpath(path)) || hash(await readFile(path)) !== entry.hash || (stat.mode & 0o777) !== (entry.mode & 0o700)
         : entry.kind === 'directory' ? !stat.isDirectory()
         : !stat.isSymbolicLink() || await readlink(path) !== entry.target) changed.push(entry.path)
     } catch (error) { if (error instanceof Error && 'code' in error && error.code === 'ENOENT') changed.push(entry.path); else throw error }
   }
-  return changed
+  const captured = new Set(snapshot.entries.map(entry => entry.path))
+  async function visit(directory: string, prefix = ''): Promise<void> {
+    for (const name of await readdir(directory)) {
+      const relative = prefix ? `${prefix}/${name}` : name
+      if (!captured.has(relative)) { changed.push(relative); continue }
+      if ((await lstat(join(directory, name))).isDirectory()) await visit(join(directory, name), relative)
+    }
+  }
+  await visit(join(snapshot.check, 'tree'))
+  return [...new Set(changed)]
 }
 
 /** Resolve model-supplied paths without allowing links or traversal out of a private subtree. */
