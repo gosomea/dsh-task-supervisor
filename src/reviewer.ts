@@ -14,6 +14,7 @@ import { installImageEvidence } from './image-evidence.ts'
 import { runsOf } from './graph.ts'
 import { evidenceRecord, eventText, textPage } from './evidence.ts'
 import { languagePolicy } from './task-context.ts'
+import { recordReview, ReviewFailure, type ReviewJob } from './review-records.ts'
 import { NAMESPACE, taskSchema, type TaskSnapshot } from './state.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -29,6 +30,7 @@ export interface ReviewerModel {
 }
 
 export interface ReviewDecision {
+  jobId: string
   verdict: 'pass' | 'revise' | 'needs-user'
   finding: string
   evidenceSeqs: number[]
@@ -76,27 +78,58 @@ function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
   return [...failures.values()].slice(-8)
 }
 
+/** Every attempt has an identity before creating the read-only reviewer. */
+export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
+  evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
+  kind: ReviewJob['kind'] = 'stage'): Promise<ReviewDecision> {
+  const job: ReviewJob = { id: randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
+    taskRevision: task.revision, planVersion: task.planVersion, stageId,
+    nodeAttempt: runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
+    kind, cutoff: main.session.seq - 1, reviewerSessionId: `task-review-${randomUUID()}`,
+    model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: 0,
+    startedAt: new Date().toISOString(), finishedAt: null, trigger: kind,
+    input: task, evidence, fault: null, decision: null }
+  await recordReview(ctx, main, job)
+  try {
+    job.model = reviewerOptions(ctx, main, fixedModel).model
+    await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    const decision = await runReviewStage(ctx, main, task, stageId, evidence, signal, fixedModel, kind, job)
+    return { ...decision, jobId: job.id }
+  } catch (error) {
+    const fault = error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
+      reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? 'cancelled' as const : 'internal' as const,
+      message: String(error), retryable: !signal.aborted, attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+    await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
+    throw new ReviewFailure(fault, { cause: error })
+  }
+}
+
 /** Run one reviewer, with no workspace mutation capability and a fixed log prefix. */
-export async function reviewStage(
+async function runReviewStage(
   ctx: Context,
   main: Agent,
   task: TaskSnapshot,
   stageId: string,
   reportedEvidence: string,
   signal: AbortSignal,
-  fixedModel?: ReviewerModel,
-  reviewKind: 'plan' | 'stage' | 'progress' | 'completion' = 'stage',
+  fixedModel: ReviewerModel | undefined,
+  reviewKind: 'plan' | 'stage' | 'progress' | 'completion',
+  job: ReviewJob,
 ): Promise<ReviewDecision> {
   signal.throwIfAborted()
   if (!await ctx.sessions.flush(main.session)) throw new Error('main Session is not durable')
-  const cutoff = main.session.seq - 1
+  const cutoff = job.cutoff
   const failedReviews = priorFailedReviews(main, task)
   const contextParts = {
     objective: task.objective, criteria: JSON.stringify(task.criteria), stages: JSON.stringify({ stages: task.stages, nodeRuns: runsOf(task) }),
     report: reportedEvidence, failedReviews: JSON.stringify(failedReviews),
   }
-  const { options, model } = reviewerOptions(ctx, main, fixedModel)
-  const reviewerSessionId = SessionId(`task-review-${randomUUID()}`)
+  const boundModel: ReviewerModel | undefined = job.model === null ? fixedModel : {
+    provider: job.model.provider, model: job.model.model,
+    ...job.model.reasoningEffort === undefined ? {} : { reasoningEffort: job.model.reasoningEffort },
+  }
+  const { options, model } = reviewerOptions(ctx, main, boundModel)
+  const reviewerSessionId = SessionId(job.reviewerSessionId!)
   let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs'> | undefined
   const observedSeqs = new Set<number>()
   const workerEvents = new Set<string>()
@@ -280,8 +313,27 @@ export async function reviewStage(
     }))
     await handle.agent.whenIdle()
     signal.throwIfAborted()
-    if (submitted === undefined) throw new Error('reviewer ended without a valid structured decision')
-    return { ...submitted, imageSeqs: [...imageSeqs], cutoff, model, reviewerSessionId }
+    if (submitted === undefined) {
+      const events = handle.agent.session.snapshotEvents()
+      const last = events.findLast(event => event.type === 'turn/end')
+      const invalid = events.findLast(event => event.type === 'tool/result' && event.data.message.isError === true)
+      const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
+      const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
+        : call?.type === 'tool/call' ? call.data.name === 'task_review_decision' ? 'decision-invalid' : 'evidence-read' : 'protocol-missing'
+      throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
+        message: code === 'protocol-missing' ? 'reviewer ended without a valid structured decision'
+          : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message : `review failed: ${code}`,
+        retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })
+    }
+    const events = handle.agent.session.snapshotEvents()
+    const call = events.findLast(event => event.type === 'tool/call' && event.data.name === 'task_review_decision')
+    const result = call?.type === 'tool/call' ? events.findLast(event => event.type === 'tool/result' && event.data.message.source.callId === call.data.callId && event.data.message.isError !== true) : undefined
+    if (!result || !await ctx.sessions.flush(handle.agent.session)) throw new Error('review decision is not durable')
+    job.decision = { ...submitted, imageSeqs: [...imageSeqs], decisionSeq: result.seq }
+    job.status = 'submitted'
+    job.finishedAt = new Date().toISOString()
+    await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    return { jobId: job.id, ...submitted, imageSeqs: [...imageSeqs], cutoff, model, reviewerSessionId }
   } finally {
     signal.removeEventListener('abort', abort)
     await handle.dispose()

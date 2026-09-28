@@ -23,6 +23,7 @@ const nodeRunSchema = z.object({
 }).strict()
 export type NodeRun = z.infer<typeof nodeRunSchema>
 export const reviewSchema = z.object({
+  jobId: z.string().uuid().optional(),
   stageId: z.string().min(1),
   cutoff: z.number().int().nonnegative(),
   verdict: z.enum(['pass', 'revise', 'needs-user']),
@@ -37,6 +38,14 @@ const pendingReviewSchema = z.object({
   kind: z.enum(['stage', 'progress', 'completion']),
   stageId: z.string().min(1),
   evidence: z.string().min(1),
+}).strict()
+
+export const reviewFaultSchema = z.object({
+  jobId: z.string().uuid(), stageId: z.string(), cutoff: z.number().int().min(-1),
+  reviewerSessionId: z.string().nullable(),
+  code: z.enum(['protocol-missing', 'decision-invalid', 'provider', 'evidence-read', 'timeout', 'cancelled', 'stale', 'internal']),
+  message: z.string(), retryable: z.boolean(), attempt: z.number().int().positive(),
+  errorSeq: z.number().int().nonnegative().nullable(), outcomeKnown: z.boolean(),
 }).strict()
 
 export const taskSchema = z.object({
@@ -60,6 +69,8 @@ export const taskSchema = z.object({
   phase: z.enum(['planning', 'awaiting-approval', 'active', 'reviewing', 'paused', 'complete', 'cleared']),
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
+  reviewFault: reviewFaultSchema.nullable().optional(),
+  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart']).nullable().optional(),
 }).strict()
 
 export type TaskSnapshot = z.infer<typeof taskSchema>

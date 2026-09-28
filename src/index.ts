@@ -12,10 +12,11 @@ import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
-import { languagePolicy, resolveLanguage, continuationContext, interruptedReviewFinding } from './task-context.ts'
+import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
+import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
 import { reviewStage, type ReviewerModel } from './reviewer.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
@@ -227,6 +228,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   ctx.agents.registerSessionControlReader(NAMESPACE, READABLE_RECORD_VERSIONS)
+  ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, [1])
   ctx.sessionProjections.register(taskProjection)
   ctx.systemPrompt.section({ name: 'task-supervisor:language', order: 2450, interpolate: false,
     text: ({ agent }) => {
@@ -259,6 +261,24 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
   })
 
+  async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === jobId)
+    if (job && job.status === 'submitted') await recordReview(ctx, agent, { ...job, revision: job.revision + 1, status })
+  }
+
+  async function pauseForReviewFailure(agent: Agent, expected: TaskSnapshot, error: unknown): Promise<TaskSnapshot | null> {
+    const latest = current(agent)
+    if (latest?.id !== expected.id || latest.revision !== expected.revision) return null
+    const fault = faultFrom(error)
+    if (!fault) throw error
+    const paused: TaskSnapshot = { ...latest, revision: latest.revision + 1,
+      phase: 'paused', pauseReason: 'review-fault', reviewFault: fault }
+    appendTask(ctx, agent, paused)
+    runtime(agent).armed = false
+    await flush(agent)
+    return paused
+  }
+
   async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal): Promise<TaskSnapshot | null> {
     const life = runtime(agent)
     if (config.observeLongTurns === false || !life.armed || !task.enabled || task.phase !== 'active'
@@ -281,12 +301,14 @@ export function apply(ctx: Context, config: Config = {}): void {
         reviewSignal, config.reviewerModel, 'progress')
       reviewSignal.throwIfAborted()
       const latest = current(agent)
-      if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) return null
+      if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
         phase: decision.verdict === 'needs-user' ? 'paused' : 'active', roundsSinceReview: 0,
-        lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
+        reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
+        lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
           imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
       appendTask(ctx, agent, next)
+      await finishReviewRecord(agent, decision.jobId, 'applied')
       await flush(agent)
       life.armed = next.phase === 'active'
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
@@ -294,12 +316,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     } catch (error: unknown) {
       const latest = current(agent)
       if (!signal.aborted && !abort.signal.aborted && latest?.id === task.id && latest.revision === task.revision) {
-        const paused: TaskSnapshot = { ...latest, revision: latest.revision + 1, phase: 'paused',
-          lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1), verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } }
-        appendTask(ctx, agent, paused)
-        life.armed = false
-        await flush(agent)
-        return paused
+        return pauseForReviewFailure(agent, task, error)
       }
       throw error
     } finally {
@@ -348,14 +365,16 @@ export function apply(ctx: Context, config: Config = {}): void {
         signal.throwIfAborted()
         const latest = current(agent)
         if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision
-          || latest.phase !== 'reviewing') return
+          || latest.phase !== 'reviewing') { await finishReviewRecord(agent, decision.jobId, 'stale'); return }
         const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
           phase: decision.verdict === 'needs-user' ? 'paused' : 'active',
           pendingReview: null, roundsSinceReview: 0,
-          lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict,
+          reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
+        lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict,
             finding: decision.finding, evidenceSeqs: decision.evidenceSeqs,
             reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
         appendTask(ctx, agent, next)
+        await finishReviewRecord(agent, decision.jobId, 'applied')
         await flush(agent)
         runtime(agent).armed = next.phase === 'active'
         if (next.phase === 'active') {
@@ -368,10 +387,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         const latest = current(agent)
         if (latest?.id === reviewing.id && latest.revision === reviewing.revision
           && latest.phase === 'reviewing') {
-          appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused',
-            lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1),
-              verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } })
-          await flush(agent)
+          await pauseForReviewFailure(agent, reviewing, error)
         }
         throw error
       } finally {
@@ -494,7 +510,8 @@ export function apply(ctx: Context, config: Config = {}): void {
           withdrawOwned(agent)
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             enabled: input === 'off' ? false : task.enabled,
-            phase: input === 'clear' ? 'cleared' : input === 'pause' ? 'paused' : task.phase }
+            phase: input === 'clear' ? 'cleared' : input === 'pause' ? 'paused' : task.phase,
+            pauseReason: input === 'clear' ? null : 'user' }
           appendTask(ctx, agent, next)
           await flush(agent)
           return reply(`Supervisor ${input}`, next, false)
@@ -517,9 +534,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,
-            lastReview: interruptedReview === null ? task.lastReview : {
-              stageId: interruptedReview.stageId, cutoff: Math.max(0, agent.session.seq - 1),
-              verdict: 'needs-user', finding: interruptedReviewFinding(task) } }
+            reviewFault: null, pauseReason: null }
           await commitAndWake(agent, task, next,
             interruptedReview !== null
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
@@ -539,7 +554,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
             approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
-            phase: 'planning', pendingReview: null, lastReview: null }
+            phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
             await flush(agent)
@@ -648,14 +663,28 @@ export function apply(ctx: Context, config: Config = {}): void {
             { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
             'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
             config.reviewerModel, 'plan')
+        } catch (error) {
+          await pauseForReviewFailure(agent, task, error)
+          exec.concludeTurn()
+          throw error
         } finally {
           reviewAbort.delete(agent)
         }
         const latest = current(agent)
         if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled) {
+          await finishReviewRecord(agent, planDecision.jobId, 'stale')
           throw new Error('plan review became stale after a task change')
         }
         if (planDecision.verdict !== 'pass') {
+          appendTask(ctx, agent, { ...task, revision: task.revision + 1,
+            phase: planDecision.verdict === 'needs-user' ? 'paused' : 'planning',
+            pauseReason: planDecision.verdict === 'needs-user' ? 'decision' : null, reviewFault: null,
+            lastReview: { jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff,
+              verdict: planDecision.verdict, finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
+              reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } })
+          await finishReviewRecord(agent, planDecision.jobId, 'applied')
+          await flush(agent)
+          if (planDecision.verdict === 'needs-user') { runtime(agent).armed = false; exec.concludeTurn() }
           return { verdict: planDecision.verdict, finding: planDecision.finding,
             reviewerSessionId: planDecision.reviewerSessionId,
             message: 'Revise the acceptance criteria and ordered stages, then resubmit the plan.' }
@@ -669,10 +698,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         phase: task.everApproved ? 'active' : 'awaiting-approval',
         approvedPlanVersion: task.everApproved ? task.planVersion + 1 : null,
         lastReview: planDecision === undefined ? task.lastReview : {
-          stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
+          jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
           finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
           reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
       appendTask(ctx, agent, withRuns(next, runsOf(next)))
+      if (planDecision) await finishReviewRecord(agent, planDecision.jobId, 'applied')
       await flush(agent)
       if (next.phase === 'active') runtime(agent).armed = true
       closeWithResponse(agent, next.revision)
@@ -698,6 +728,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       signal.throwIfAborted()
       const latest = current(agent)
       if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision || latest.phase !== 'reviewing') {
+        await finishReviewRecord(agent, decision.jobId, 'stale')
         throw new Error('review is stale after a task change')
       }
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
@@ -706,10 +737,12 @@ export function apply(ctx: Context, config: Config = {}): void {
         pendingReview: null,
         stageIndex: latest.stageIndex,
         roundsSinceReview: 0,
-        lastReview: { stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
+        reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
+        lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
           imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
       const settled = kind === 'stage' ? finishNode(next, stageId, decision.verdict, agent.session.seq) : next
       appendTask(ctx, agent, settled)
+      await finishReviewRecord(agent, decision.jobId, 'applied')
       await flush(agent)
       runtime(agent).armed = settled.phase === 'active'
       const awaitsCompletion = kind === 'stage' && settled.phase === 'active'
@@ -725,10 +758,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     } catch (error: unknown) {
       const latest = current(agent)
       if (latest?.id === reviewing.id && latest.revision === reviewing.revision && latest.phase === 'reviewing') {
-        appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused',
-          lastReview: { stageId, cutoff: Math.max(0, agent.session.seq - 1),
-            verdict: 'needs-user', finding: interruptedReviewFinding(latest, error) } })
-        await flush(agent)
+        await pauseForReviewFailure(agent, reviewing, error)
       }
       exec.concludeTurn()
       throw error

@@ -78,12 +78,13 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           }
           if (agent !== undefined) {
             return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
-              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [] })
+              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [],
+              reviewJobs: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? [] })
           }
           const projected = await coldState(ctx, sessionId, request.signal)
           if (projected === null) return response({ error: 'Session not found' }, 404)
           if (projected.failure !== null) return response({ error: projected.failure }, 409)
-          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], reviews: projected.reviews })
+          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], reviews: projected.reviews, reviewJobs: projected.reviewJobs })
         }
         if (agent === undefined) return response({ error: 'Open the Session before using controls' }, 409)
         let body: unknown
@@ -105,7 +106,8 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           if (command === undefined) return response({ error: 'Supervisor command unavailable' }, 503)
           if (command.result.kind === 'error') return response({ error: command.result.text }, 409)
           return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
-            reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [], message: command.result.text })
+            reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [],
+              reviewJobs: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? [], message: command.result.text })
         }
         if (typeof action !== 'string' || !ACTIONS.has(action)) {
           return response({ error: 'Unknown Supervisor action' }, 400)
@@ -124,7 +126,8 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
         if (command === undefined) return response({ error: 'Supervisor command unavailable' }, 503)
         if (command.result.kind === 'error') return response({ error: command.result.text }, 409)
         return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
-              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [], message: command.result.text })
+              reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [],
+              reviewJobs: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? [], message: command.result.text })
       },
     }), 'task-supervisor.panel-api')
   })

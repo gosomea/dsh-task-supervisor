@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "id": "conversation-review-recovery",
+  "title": "逐一开发督导对话与审查恢复",
+  "objectives": {
+    "delivery": "完成方案 A–F，保持任务门禁、原生交互及可验证恢复"
+  },
+  "constraints": [
+    "各步单独验证、提交和推送；日常环境不修改",
+    "步骤源码归档为不可变验收产物，后续改动不覆盖先前证据",
+    "最终真实模型及 UI 验收另存证据，源码门禁不代表部署成功"
+  ],
+  "documents": [
+    "docs/10-plans/conversation-and-review-recovery/plans.md",
+    "docs/10-plans/conversation-and-review-recovery/plans.zh.md"
+  ],
+  "final": "f",
+  "nodes": [
+    {
+      "id": "a",
+      "title": "审查记录与故障分类",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [],
+      "requires_gates": [],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/a.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/a.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    },
+    {
+      "id": "b",
+      "title": "有限补交与恢复控制",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [
+        "a"
+      ],
+      "requires_gates": [
+        "a"
+      ],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/b.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/b.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    },
+    {
+      "id": "c",
+      "title": "持久督导对话与草案",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [
+        "b"
+      ],
+      "requires_gates": [
+        "b"
+      ],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/c.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/c.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    },
+    {
+      "id": "d",
+      "title": "统一入口与故障 UI",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [
+        "c"
+      ],
+      "requires_gates": [
+        "c"
+      ],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/d.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/d.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    },
+    {
+      "id": "e",
+      "title": "观察策略记录与实验",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [
+        "d"
+      ],
+      "requires_gates": [
+        "d"
+      ],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/e.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/e.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    },
+    {
+      "id": "f",
+      "title": "联合隔离验收",
+      "kind": "gate",
+      "objectives": [
+        "delivery"
+      ],
+      "depends_on": [
+        "e"
+      ],
+      "requires_gates": [
+        "e"
+      ],
+      "inputs": [
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py"
+      ],
+      "outputs": [
+        "docs/10-plans/conversation-and-review-recovery/evidence/f.tar.gz"
+      ],
+      "writes": [
+        "src",
+        "spikes",
+        "docs",
+        "README.md",
+        "README.zh.md",
+        "eval"
+      ],
+      "resources": [
+        "supervisor-development"
+      ],
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "{python}",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/f.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "expected_exit": 0
+        }
+      ],
+      "review": false
+    }
+  ]
+}

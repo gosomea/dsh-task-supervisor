@@ -1,0 +1,12 @@
+flowchart TD
+  a{{"a: passed"}}
+  b{{"b: ready"}}
+  a --> b
+  c{{"c: blocked"}}
+  b --> c
+  d{{"d: blocked"}}
+  c --> d
+  e{{"e: blocked"}}
+  d --> e
+  f{{"f: blocked"}}
+  e --> f

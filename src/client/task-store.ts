@@ -1,4 +1,5 @@
 /** One live task snapshot and action stream per displayed Session. */
+import type { ReviewJob } from '../review-records.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
 
 export interface PanelState {
@@ -7,6 +8,7 @@ export interface PanelState {
   armed: boolean
   reviewing: boolean
   actions: string[]
+  reviewJobs?: ReviewJob[]
   reviews?: NonNullable<TaskSnapshot['lastReview']>[]
 }
 export interface TaskView { state: PanelState | null; busy: boolean; error: string }

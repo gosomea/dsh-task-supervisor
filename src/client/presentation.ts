@@ -12,6 +12,8 @@ export function taskStatus(state: PanelState): string {
   const task = state.task
   if (!task) return '暂无任务'
   if (!task.enabled) return '督导已关闭'
+  if (task.phase === 'paused' && task.pauseReason === 'review-fault') return '审查故障 · 等待恢复'
+  if (task.phase === 'paused' && task.pauseReason === 'decision') return '等待用户决策'
   if (state.reviewing) return '独立审查中'
   if (!state.armed && ['active', 'planning', 'reviewing'].includes(task.phase)) return '等待手动恢复'
   return PHASE[task.phase]

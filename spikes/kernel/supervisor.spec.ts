@@ -425,7 +425,7 @@ it('requires manual recovery of an interrupted review and retains its evidence',
   await resumed.agent.whenIdle()
   expect(taskOf(second, resumed.agent)?.phase).toBe('active')
   expect(taskOf(second, resumed.agent)?.pendingReview).toBeNull()
-  expect(taskOf(second, resumed.agent)?.lastReview?.verdict).toBe('needs-user')
+  expect(taskOf(second, resumed.agent)?.lastReview?.verdict).not.toBe('needs-user')
   expect(adapter.requests).toBe(1)
 })
 
@@ -1107,4 +1107,50 @@ it('offers native completion tools immediately after the final stage review', as
   expect(agent.session.snapshotEvents().filter(event => event.type === 'assistant/message')
     .flatMap(event => event.data.message.content)
     .some(block => block.type === 'text' && block.text.includes(rawCall))).toBe(false)
+})
+
+it.each(['plan', 'stage', 'progress', 'completion'] as const)('retains the immutable %s review identity on missing protocol', async kind => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-fault-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter(), true, { provider: 'scripted', model: 'reviewer' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`fault-${kind}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const cutoff = agent.session.seq - 1
+  const task = newTask('只读核对，不修改文件')
+  await expect(reviewStage(ctx, agent, task, kind === 'plan' ? 'plan' : 's1', 'report', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, kind)).rejects.toMatchObject({ fault: { code: 'protocol-missing', cutoff, attempt: 1, outcomeKnown: true } })
+  const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
+  expect(projection.failure).toBeNull()
+  expect(projection.reviews).toEqual([])
+  expect(projection.reviewJobs).toHaveLength(1)
+  const job = projection.reviewJobs[0]!
+  expect(job).toMatchObject({ status: 'failed', cutoff, taskId: task.id, taskRevision: 1,
+    kind, model: { provider: 'scripted', model: 'reviewer' }, fault: { reviewerSessionId: job.reviewerSessionId } })
+  expect(await ctx.sessionPersistence.stat(SessionId(job.reviewerSessionId!))).toBeDefined()
+  // Replay uses the same reader as cold UI state, independently of live projection memory.
+  const { taskProjection } = await import('../../src/state.ts')
+  const replayed = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  expect(replayed.reviewJobs).toEqual(projection.reviewJobs)
+})
+
+it.each([false, true])('pauses a failed review without inventing a user decision (plan=%s)', async plan => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-classification-'))
+  roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter(), true, { provider: 'scripted', model: 'reviewer' }, false, 3, plan)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`classification-${plan}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal)
+  await agent.whenIdle()
+  const result = await ctx.tools.execute({ callId: ToolCallId('fault-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c', text: 'Inspect the fixture', provenance: { kind: 'user', reference: 'objective' } }],
+      stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
+  if (!plan) {
+    expect(result.isError).toBe(false)
+    await ctx.commands.execute(agent, '/task approve', [], signal)
+    await agent.whenIdle()
+    const report = await ctx.tools.execute({ callId: ToolCallId('fault-report'), name: 'task_report_stage', agent, signal,
+      arguments: { stage_id: 's', evidence: 'The fixture was inspected' } })
+    expect(report.isError).toBe(true)
+  } else expect(result.isError).toBe(true)
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'review-fault', lastReview: null,
+    reviewFault: { code: 'protocol-missing', reviewerSessionId: expect.stringMatching(/^task-review-/u) } })
 })

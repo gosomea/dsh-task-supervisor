@@ -2,6 +2,12 @@
 
 This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.
 
+## Review fault records (A)
+
+Step A on 2026-09-28 adds independent durable review job records for plan, progress, node, and completion reviews, preserving task version, evidence cutoff, model, Session, and result event references. Task schema 8 still reads versions 1–7. Typed pause reasons and `reviewFault` represent internal failures without manufacturing `needs-user`; legacy unclassified records remain unchanged. The Web state API also returns bounded review jobs.
+
+This step implements records and classification only; bounded repair, dedicated recovery controls, and draft conversations remain pending. Deterministic regressions using the registered isolated source and immutable source acceptance are in [step evidence](10-plans/conversation-and-review-recovery/evidence/a.md). These checks do not claim deployment to the user Web instance.
+
 ## V2 integrated acceptance
 
 Core implementation of batches two and three is complete. All 52 kernel checks, both strict typechecks, isolated builds, and real-model integration regressions passed. Evidence covers DAG joins, persistent consultation and native compaction, interrupted-review recovery, default in-turn observation, native image reads, and two workers writing owned files before main-Agent integration. The [joint validation report](v2-integrated-validation.md) records first failures, repair commits, Session identities, and limits. A full shrine rerun and formal long-horizon evaluation remain pending, as does generic child-Agent catalog browsing.

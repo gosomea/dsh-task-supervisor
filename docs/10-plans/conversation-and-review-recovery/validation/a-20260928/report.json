@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "status": {
+    "plan": "conversation-review-recovery",
+    "revision": "229d1ac6b07e44089fa767ee46aadf311825776587ca7f78fefafadadafd3068",
+    "nodes": {
+      "a": {
+        "status": "passed",
+        "reason": null,
+        "owner": "codex-root",
+        "attempt": "fe20c0c2a296405b91b7f57716c26310",
+        "subject": "bd7e8eb5305f9cf0047e352b095a827d0ba255d8c7d6edbf900214192a5b648b",
+        "root": "/Users/yuqixian/forever-skills/projects/agent-research/deepseek-harness-plugins/dsh-task-supervisor"
+      },
+      "b": {
+        "status": "ready",
+        "reason": null
+      },
+      "c": {
+        "status": "blocked",
+        "reason": "dependencies not passed or stale: b"
+      },
+      "d": {
+        "status": "blocked",
+        "reason": "dependencies not passed or stale: c"
+      },
+      "e": {
+        "status": "blocked",
+        "reason": "dependencies not passed or stale: d"
+      },
+      "f": {
+        "status": "blocked",
+        "reason": "dependencies not passed or stale: e"
+      }
+    },
+    "complete": false
+  },
+  "events": [
+    {
+      "time": 1790565917.626701,
+      "action": "claim",
+      "node": "a",
+      "token": "8efb3954d7dd40249a20a1838c11128b",
+      "owner": "codex-root",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790565928.51136,
+      "action": "start",
+      "node": "a",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566302.5234199,
+      "action": "verify",
+      "node": "a",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566312.485806,
+      "action": "failed",
+      "node": "a",
+      "error": "check failed: snapshot",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566360.107403,
+      "action": "retry",
+      "node": "a",
+      "reason": "Snapshot tests settled; strict optional model typing repaired; no Host mutation",
+      "previous_attempts": [
+        "8efb3954d7dd40249a20a1838c11128b"
+      ]
+    },
+    {
+      "time": 1790566360.211977,
+      "action": "claim",
+      "node": "a",
+      "token": "fe20c0c2a296405b91b7f57716c26310",
+      "owner": "codex-root",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566373.507524,
+      "action": "start",
+      "node": "a",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566373.642708,
+      "action": "verify",
+      "node": "a",
+      "previous_attempts": []
+    },
+    {
+      "time": 1790566384.2899652,
+      "action": "passed",
+      "node": "a",
+      "receipt_hash": "bcad3ab636ad50295a10e16f5cfdb9c13bed7b8945fab11dad2b44a033891cf8",
+      "previous_attempts": []
+    }
+  ],
+  "receipts": {
+    "a": {
+      "node": "a",
+      "attempt": "fe20c0c2a296405b91b7f57716c26310",
+      "revision": "229d1ac6b07e44089fa767ee46aadf311825776587ca7f78fefafadadafd3068",
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/a.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "started": 1790566373.6436281,
+          "passed": true,
+          "expected_exit": 0,
+          "exit_code": 0,
+          "finished": 1790566384.218924,
+          "stdout_sha256": "17d966760aa680be037d366a358662363896eedaa7e9f0c487b002ca0f3587de",
+          "stderr_sha256": "7bade1636208e6ef35d2d226e76bd124180cd3634d5268733e965da504f7bdbd"
+        }
+      ],
+      "inputs": {
+        "docs/10-plans/conversation-and-review-recovery/check-snapshot.py": {
+          "sha256": "74a53cf2bd99049d5a45e2c0f8d7c44a652c9a08bbade0d45199de82f2572e39",
+          "executable": false,
+          "symlink": null
+        }
+      },
+      "outputs": {
+        "docs/10-plans/conversation-and-review-recovery/evidence/a.tar.gz": {
+          "sha256": "185c34f3b6e15dc24f21f5e237b265d128dc4067d02265495d2b8aebe2977f1c",
+          "executable": false,
+          "symlink": null
+        }
+      },
+      "error": null,
+      "subject": "bd7e8eb5305f9cf0047e352b095a827d0ba255d8c7d6edbf900214192a5b648b"
+    }
+  },
+  "history": [
+    {
+      "node": "a",
+      "attempt": "8efb3954d7dd40249a20a1838c11128b",
+      "revision": "229d1ac6b07e44089fa767ee46aadf311825776587ca7f78fefafadadafd3068",
+      "checks": [
+        {
+          "id": "snapshot",
+          "argv": [
+            "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+            "docs/10-plans/conversation-and-review-recovery/check-snapshot.py",
+            "docs/10-plans/conversation-and-review-recovery/evidence/a.tar.gz"
+          ],
+          "cwd": ".",
+          "timeout": 240,
+          "started": 1790566302.524309,
+          "passed": false,
+          "expected_exit": 0,
+          "exit_code": 1,
+          "finished": 1790566312.4812858,
+          "stdout_sha256": "b03d3fd9e7930fe1450312428e462ae5c57d6a2b77178aceb95374b19f0e84e7",
+          "stderr_sha256": "fb3a454f2fbdc38e7126a022ecc6ada80991d566fa185911285cbe7c564efafc"
+        }
+      ],
+      "inputs": {},
+      "outputs": {},
+      "error": "check failed: snapshot",
+      "subject": "9ae23c52c59d88221a6b6549187b3895d6431f74ae74a8539e8bfa17b5705314"
+    }
+  ]
+}
