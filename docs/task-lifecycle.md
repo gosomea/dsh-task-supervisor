@@ -61,4 +61,6 @@ The next-round instruction includes the current objective and constraints, curre
 
 ## Dev Note
 
+For defects within a completed objective, propose returning to the original task and DAG while preserving prior completion; each reopening shows impact and requires a confirmation click. The [independent verification and repair plan](10-plans/independent-verification/plans.md) owns proposals, acceptance cycles, historical task admission, and tool constraints. This flow is not implemented; cancelled tasks cannot be revived through it.
+
 Verify storage APIs, event registration, active-session steering, cancellation boundaries, and fork-prefix references in DSH before fixing schemas. Initial task capacity is five; calibrate it from actual use. UI wording and queue-start authorization need prototype feedback. The initial version starts its own tasks; importing native Goal or Plan state is optional future work, not an activation requirement.

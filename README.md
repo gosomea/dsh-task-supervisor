@@ -43,6 +43,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Conversation and review recovery plan](docs/10-plans/conversation-and-review-recovery/plans.md) | Proposed: forming tasks through discussion, bounded protocol repair, fault tracing, and review frequency experiments. |
 | [V2 integrated validation](docs/v2-integrated-validation.md) | Real-model checks of batches two and three, DAGs, persistent consultation, workers, and failure repairs. |
 | [Rework and execution validation](docs/rework-progress-validation.md) | Explicit main-node starts, prior acceptance, affected descendants, and older-log recovery. |
+| [Independent verification and repair after completion](docs/10-plans/independent-verification/plans.md) | Proposed: independent inspection, execution, and real interaction; show impact and confirm reopening into the original DAG. |
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |

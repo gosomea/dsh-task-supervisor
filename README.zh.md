@@ -45,6 +45,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [督导对话与审查恢复方案](docs/10-plans/conversation-and-review-recovery/plans.zh.md) | 待实现：从讨论形成任务、有限协议补交、故障追踪和审查频率实验。 |
 | [V2 联合验收](docs/v2-integrated-validation.zh.md) | 第二、三批的真实模型、DAG、持续侧问、原生并行与失败修复记录。 |
 | [返工与执行状态验收](docs/rework-progress-validation.zh.md) | 主节点显式开始、此前通过、下游影响与旧日志恢复。 |
+| [独立验收与完成后返工方案](docs/10-plans/independent-verification/plans.zh.md) | 待开发：独立读取、运行与真实交互；完成后展示影响并点击确认回原 DAG。 |
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
