@@ -41,7 +41,7 @@
 | 顺序 | 数据集 | 用途与接入边界 |
 | --- | --- | --- |
 | 已冻结批次 | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | 真实仓库任务；官方提供 Harbor 任务目录、验收器、参考解和容器，以及独立环境补丁重验。保留现有协议与结果。 |
-| 下一批建议 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) → [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | 先用已有 DSH 运行证据的终端任务验证接入，再做长程工程任务；正式题单与协议尚未冻结。 |
+| 下一批建议 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) → [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | 先用已有 DSH 运行证据的终端任务验证接入，再做长程工程任务；[两题四组小样本](../eval/deepswe/README.zh.md)已固定候选题与顺序；正式运行版本及模型准入待验证。 |
 | 连续任务候选 | [SlopCodeBench](https://github.com/SprocketLab/slop-code-bench) | 同项目需求逐步扩展；官方保留工作目录但重置 Session，同 Session 模式需单立协议。 |
 | 扩展候选 | [LongCLI-Bench](https://github.com/finyorko/longcli-bench)、[LHTB](https://github.com/zli12321/LHTB)、[SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 先核对评分、外部续行与环境门禁；不直接采用公开排行榜分数作本项目对照。 |
 

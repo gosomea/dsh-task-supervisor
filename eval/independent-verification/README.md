@@ -16,7 +16,7 @@ This directory records keyless integration calibration for enhanced review. New 
 - Node 24: 12 snapshot and 4 two-stage review regressions pass; strict Host/Client checks and build pass.
 - Real Docker: 6 execution, isolation, timeout and cleanup checks pass using a separate `colima` context and VM-visible cache storage. Initial macOS TMP mounts failed; this remains a configuration fault.
 - Navidrome image `/app/tests/fixtures`: 40 entries, 326507 bytes and 3 links preserved in both baseline and check trees.
-- The full `/app` tree contains 130383 entries and 389089403 bytes in `ui` alone; the default 10000 entries is insufficient. Full-tree admission remains pending; dependencies are not omitted to manufacture completeness.
+- Full `/app`: explicit limits of 200000 entries, 512 MiB and 300 seconds captured 131003 entries, 433449713 bytes and 83 links, all preserved. Plugin defaults remain unchanged; complete capture does not admit the check runner.
 - The native check inside this container still fails without a Docker CLI/control path; `modelAdmitted=false`. Plugin defaults and the native DSH sandbox are unchanged.
 
 ## Reuse the probe

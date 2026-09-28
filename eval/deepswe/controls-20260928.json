@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "kind": "keyless-terminalbench-controls",
+  "datasetCommit": "d49e28f1e4ddd13d289e85a5f312a66750951932",
+  "harborVersion": "0.23.0",
+  "context": "colima-dsh-eval-rosetta",
+  "modelRequests": 0,
+  "plannedModelAttempts": 16,
+  "startedModelAttempts": 0,
+  "images": {
+    "kv-store-grpc": {
+      "id": "sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791",
+      "repoDigests": [
+        "alexgshaw/kv-store-grpc@sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791"
+      ],
+      "architecture": "amd64"
+    },
+    "db-wal-recovery": {
+      "id": "sha256:0e33ea5ec823975d1bd6c3778395c9f94251dd88f571146057bff6adb7e4594e",
+      "repoDigests": [
+        "alexgshaw/db-wal-recovery@sha256:0e33ea5ec823975d1bd6c3778395c9f94251dd88f571146057bff6adb7e4594e"
+      ],
+      "architecture": "amd64"
+    }
+  },
+  "calibrationAttempts": [
+    {
+      "jobName": "kv-store-grpc-oracle-1",
+      "reward": null,
+      "rawReward": null,
+      "scored": false,
+      "fault": "harbor-exception",
+      "tests": null,
+      "evidenceSha256": {
+        "trialResult": "fddd3a3c5fdbc5140c3c5bda2aa686c20ef96593ce0f2656f967ffc4dd837e93"
+      },
+      "exceptionType": "RuntimeError",
+      "taskId": "kv-store-grpc",
+      "agent": "oracle"
+    },
+    {
+      "jobName": "kv-store-grpc-oracle-rosetta-1",
+      "reward": 1.0,
+      "rawReward": 1.0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 7,
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "0f1a567f847aa57399f41d87167e927845364332e4aa931b65113a0a5adc5acf",
+        "testReport": "211402af0f1aee4f4537b5e005a0c6b7ba56782208c426ebecef1538e2e441d7"
+      },
+      "taskId": "kv-store-grpc",
+      "agent": "oracle"
+    },
+    {
+      "jobName": "kv-store-grpc-nop-rosetta-1",
+      "reward": 0.0,
+      "rawReward": 0.0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 7,
+        "passed": 0,
+        "failed": 7,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "6bb3de53d960eb78f256dcb7fa3bc57474cacd1898e47fda9330c86e95c3b53e",
+        "testReport": "71b90615414e227311e70ba48334a9a363bcebfe9f6bb6d6b2546fbc0ebd1bdc"
+      },
+      "taskId": "kv-store-grpc",
+      "agent": "nop"
+    },
+    {
+      "jobName": "db-wal-recovery-oracle-rosetta-1",
+      "reward": null,
+      "rawReward": 0.0,
+      "scored": false,
+      "fault": "verifier-test-report-missing",
+      "tests": null,
+      "evidenceSha256": {
+        "trialResult": "bd3f4924024633ec1e828c9cbd4131dffb1d171721097b72279c10cf1a2ec77b"
+      },
+      "taskId": "db-wal-recovery",
+      "agent": "oracle"
+    },
+    {
+      "jobName": "db-wal-recovery-nop-rosetta-1",
+      "reward": 0.0,
+      "rawReward": 0.0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 7,
+        "passed": 0,
+        "failed": 7,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "050e360aa27557815826232e9cf72f6df3b12ab270845d945baeb737e5942571",
+        "testReport": "837e9a3699fb493918c8f97561427f48782ceb7eaf0e3cc776d77864466f4ac7"
+      },
+      "taskId": "db-wal-recovery",
+      "agent": "nop"
+    },
+    {
+      "jobName": "db-wal-recovery-oracle-rosetta-2",
+      "reward": 1.0,
+      "rawReward": 1.0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 7,
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "0a337b262ef763f71ddfa011962e288baa7cb9104fa3fef3da1eda07491b7a6b",
+        "testReport": "c4d9d68d6ca0dc6dac789db61817c5c8e4d9bba993302baf3e7f62b55c37bc23"
+      },
+      "taskId": "db-wal-recovery",
+      "agent": "oracle"
+    }
+  ],
+  "limitations": [
+    "Official oracle/nop controls do not establish DSH tool or background-service parity.",
+    "Primary native-check topology and DeepSWE candidate grading remain unadmitted.",
+    "Prior raw reward zero without a test report is retained as an infrastructure fault, not scored failure."
+  ],
+  "taskGates": {
+    "kv-store-grpc": {
+      "officialOracleNopPassed": true,
+      "dshControlPassed": false
+    },
+    "db-wal-recovery": {
+      "officialOracleNopPassed": true,
+      "dshControlPassed": false
+    }
+  }
+}

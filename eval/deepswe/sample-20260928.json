@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "dsh-independent-deepswe-pilot-v1",
+  "kind": "integration-pilot-sample",
+  "status": "sample-fixed-before-model-delivery; runtime-not-admitted",
+  "dataset": "DeepSWE v1.1",
+  "datasetCommit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
+  "selection": "Minimum SHA-256(seed/task/id) per Go/TypeScript stratum using metadata only",
+  "excludedTaskIds": [
+    "anko-typed-variable-bindings",
+    "arktype-json-schema-refs-dependencies",
+    "expr-try-catch-errors",
+    "fastapi-deprecation-response-headers",
+    "httpx-multipart-response-parsing",
+    "katex-multicolumn-array-spans",
+    "meriyah-explicit-resource-declarations",
+    "python-statemachine-state-data-scoping",
+    "scc-bounded-memory-spilling"
+  ],
+  "tasks": [
+    {
+      "id": "helm-array-merge-strategies",
+      "language": "go",
+      "repository": "https://github.com/helm/helm",
+      "baseCommit": "42f78ba60edf531d5161e00d9819a7c34d976343",
+      "instructionSha256": "4d39c1963676acb1c1cdab6ac09d91fd5c321a77939b2db0cbbb666c911e47f6",
+      "taskMetadataSha256": "ce111f2acc7237a7c1e767fcb871a91ccdeea767bfb87f6f21c058efbb530626",
+      "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh72a3qcr0kjpdr153havavn8s83bx8t-v1.1",
+      "imageDigest": null,
+      "agentTimeoutSec": 10800.0,
+      "verifierTimeoutSec": 1800.0,
+      "mainCpus": 2,
+      "mainMemoryMiB": 8192,
+      "storageMiB": 20480
+    },
+    {
+      "id": "kea-atomic-signal-selectors",
+      "language": "typescript",
+      "repository": "https://github.com/keajs/kea.git",
+      "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "instructionSha256": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+      "taskMetadataSha256": "e348f26d469643cf8bfd535e9d9f86c8c20f7e7169aeda515223874a9dea271c",
+      "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7anwezzyc0zgk160c9peh13n82r12z-v1.1",
+      "imageDigest": null,
+      "agentTimeoutSec": 10800.0,
+      "verifierTimeoutSec": 1800.0,
+      "mainCpus": 2,
+      "mainMemoryMiB": 8192,
+      "storageMiB": 20480
+    }
+  ],
+  "conditions": [
+    "goal",
+    "plan",
+    "supervisor-log",
+    "supervisor-independent"
+  ],
+  "repeats": 2,
+  "plannedAttempts": 16,
+  "orderSeed": "dsh-independent-deepswe-pilot-v1",
+  "order": [
+    {
+      "id": "helm-array-merge-strategies-r1-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "goal"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "plan"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "goal"
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-independent"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "plan"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-independent"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "plan"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-independent"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-independent"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-log"
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "plan"
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-log"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "goal"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-log"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "goal"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-log"
+    }
+  ],
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "initialApprovalCount": 1,
+  "additionalRescueCount": 0,
+  "automaticAgentReruns": 0,
+  "automaticInfrastructureReplacements": 0,
+  "deadline": "Official per-task agent timeout x1, including approvals, reviews and continuation",
+  "submission": "Official committed binary patch from baseCommit to HEAD; uncommitted work is diagnosed separately, not silently committed by the evaluator",
+  "reviewResources": "Task-compatible immutable image, same configured CPU/memory per check; extra checker compute reported separately",
+  "reviewFrequency": {
+    "rounds": 6,
+    "toolCalls": 48,
+    "elapsedMs": 600000,
+    "consecutiveErrors": 3
+  },
+  "primarySuccess": "Native controller finished before deadline AND official independent reward=1 AND no grading/infrastructure error",
+  "metrics": [
+    "completeDenominator",
+    "officialReward",
+    "nativeFinished",
+    "primarySuccess",
+    "falseCompletion",
+    "taskDeadline",
+    "internalReviewFault",
+    "infrastructureFault",
+    "allSessionTokens",
+    "reviewAndCommandWait",
+    "protocolRepair",
+    "humanInterventions",
+    "independentEvidenceCoverage",
+    "pairedTaskRepeatOutcomes"
+  ],
+  "unlabelledMetrics": {
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "release": null,
+  "modelAdmitted": false,
+  "modelRequests": 0,
+  "admissionRequirements": [
+    "Control-task oracle=1/nop=0 using official grading, including a live background-service control",
+    "Candidate-specific official empty/reference controls in separate verifier environments",
+    "Full candidate artifact capture and native check execution in the actual deployment topology",
+    "Native background/timeout/cancellation/resource cleanup and unchanged primary tool surface",
+    "Daily effective model parity for main/reviewer; one initial approval and no rescue",
+    "Pinned runner/runtime/plugin/profile/image digests and sufficient isolated resources"
+  ],
+  "claims": "Engineering integration pilot; 16 attempts are not evidence of superiority over Goal/Plan/Team"
+}

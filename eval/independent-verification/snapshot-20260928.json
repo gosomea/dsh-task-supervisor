@@ -187,11 +187,61 @@
         "Runtime/config freezing, model parity and task-specific controls remain required.",
         "No model, approval, benchmark solution or hidden tests were used."
       ]
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "representative-official-image-topology-preflight",
+      "probeSha256": "04ffce03eedb5dd196f7a95bad486d2fae81089cf0e737009569bc84f6a004a5",
+      "modelRequests": 0,
+      "rows": [
+        {
+          "imageId": "sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818",
+          "scope": "representative-topology-only",
+          "modelRequests": 0,
+          "containerExitCode": 0,
+          "nativeProbe": {
+            "modelRequests": 0,
+            "dockerSocketMounted": false,
+            "limits": {
+              "files": 200000,
+              "bytes": 536870912,
+              "excluded": [
+                ".git"
+              ]
+            },
+            "workspace": "/app",
+            "dockerExecutable": null,
+            "dockerError": "subprocess-local: command \"docker\" was not found on PATH",
+            "snapshot": {
+              "captured": true,
+              "entries": 131003,
+              "bytes": 433449713,
+              "digest": "c83f09c8501bb93adb75107b59d7331971bf7c1166c7a7597392a23c97587c1e",
+              "links": 83,
+              "linksPreserved": true
+            },
+            "check": {
+              "executed": false,
+              "error": "subprocess-local: command \"docker\" was not found on PATH"
+            },
+            "mountInfoReadable": true
+          },
+          "ownedContainerRemoved": true,
+          "runtimeTopologyCompatible": false
+        }
+      ],
+      "runtimeTopologyCompatible": false,
+      "modelAdmitted": false,
+      "limitations": [
+        "Representative images are not the two new selected tasks or their official controls.",
+        "Runtime/config freezing, model parity and task-specific controls remain required.",
+        "No model, approval, benchmark solution or hidden tests were used."
+      ]
     }
   ],
   "modelAdmitted": false,
   "limitations": [
-    "Fixture capture is not full-task capture.",
+    "Full representative tree capture passed with explicit larger limits; new candidate capture and native checks remain pending.",
     "The protected task container still lacks the Docker check control path.",
     "Initial Docker tests failed on VM-invisible TMP storage; rerun used explicit shared cache storage.",
     "An initial strict check used the wrong native source without extension/record; corrected checks selected the existing seam."
