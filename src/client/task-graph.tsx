@@ -3,12 +3,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { dependencies, runsOf } from '../graph.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
+import type { ReworkRecord } from '../rework-records.ts'
+import { headline, nodeRework } from './presentation.ts'
 
 const WIDTH = 154
 const GAP_X = 40
 
-export function TaskGraph({ task, selected, select, label, executor, compact = false }: {
+export function TaskGraph({ task, selected, select, label, executor, reworks = [], compact = false }: {
   task: TaskSnapshot; selected?: string | undefined; select: (id: string) => void; label: (id: string) => string; executor: (id: string) => string; compact?: boolean
+  reworks?: readonly ReworkRecord[] | undefined
 }) {
   const height = compact ? 64 : 84
   const gapY = compact ? 16 : 24
@@ -40,6 +43,7 @@ export function TaskGraph({ task, selected, select, label, executor, compact = f
     return () => { window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update) }
   }, [hover?.id])
   const hovered = task.stages.find(stage => stage.id === hover?.id)
+  const rework = hovered ? nodeRework(task, hovered.id, reworks) : undefined
   const graph = useMemo(() => {
     const levels = new Map<string, number>()
     const positions = new Map<string, { x: number; y: number }>()
@@ -85,14 +89,14 @@ export function TaskGraph({ task, selected, select, label, executor, compact = f
       {task.stages.map(stage => {
         const position = graph.positions.get(stage.id)!
         const run = runsOf(task).find(run => run.id === stage.id)
-        return <button ref={element => { if (element) anchors.current.set(stage.id, element); else anchors.current.delete(stage.id) }} type="button" key={stage.id} className="dsh-task-node" data-status={run?.status}
+        return <button ref={element => { if (element) anchors.current.set(stage.id, element); else anchors.current.delete(stage.id) }} type="button" key={stage.id} className="dsh-task-node" data-status={run?.status} data-rework={nodeRework(task, stage.id, reworks) ? true : undefined}
           aria-pressed={selected === stage.id} onClick={() => { setHover(null); select(stage.id) }}
           onMouseEnter={event => show(stage.id, event.currentTarget)} onMouseLeave={hide}
           onFocus={event => show(stage.id, event.currentTarget)} onBlur={hide}
           onKeyDown={event => { if (event.key === 'Escape') setHover(null) }}
           aria-label={`${stage.title} · ${label(stage.id)}`}
           style={{ left: position.x, top: position.y, width: WIDTH, height: height }}>
-          <span><i aria-hidden="true" />{label(stage.id)}</span><strong>{stage.title}</strong><small>{executor(stage.id)}</small>
+          <span><i aria-hidden="true" />{label(stage.id)}</span><strong>{stage.title}</strong><small>{executor(stage.id)}{run && run.attempt > 1 ? ` · 第 ${run.attempt} 次` : ''}</small>
         </button>
       })}
     </div>
@@ -100,6 +104,7 @@ export function TaskGraph({ task, selected, select, label, executor, compact = f
     {hover && hovered && createPortal(<aside role="tooltip" className="dsh-task-node-tooltip" style={{ left: hover.left, top: hover.top }}
       onMouseEnter={() => clearTimeout(hideTimer.current)} onMouseLeave={hide}>
       <strong>{hovered.title}</strong><small>{executor(hovered.id)} · {label(hovered.id)} · 尝试 {runsOf(task).find(run => run.id === hovered.id)?.attempt ?? 1}</small>
+      {rework && <p><b>{rework.stageId === hovered.id ? '返工原因' : '上游返工影响'}</b>：{headline(rework.reason, 140)}</p>}
       <p>{hovered.description ?? '点击节点查看验收与执行详情。'}</p>
       <ul>{task.criteria.filter(item => hovered.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}</li>)}</ul>
     </aside>, document.body)}
@@ -113,5 +118,6 @@ export const GRAPH_CSS = `
 .dsh-task-node span{display:flex;align-items:center;gap:6px;font:11px/1.2 system-ui;color:var(--dsw-alias-label-secondary)}.dsh-task-node i{width:6px;height:6px;flex:none;border-radius:50%;background:var(--dsw-alias-state-idle-primary)}.dsh-task-node strong{font:500 12px/1.4 system-ui;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
 .dsh-task-node small{font-size:11px;line-height:1.3;color:var(--dsw-alias-label-tertiary)}.dsh-task-node[aria-pressed=true]{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-hover)}.dsh-task-node:hover{background:var(--dsw-alias-interactive-bg-hover)}.dsh-task-node:focus-visible{outline:2px solid var(--dsw-alias-label-tertiary);outline-offset:2px}
 .dsh-task-node[data-status=passed] i{background:var(--dsw-alias-state-success-primary)}.dsh-task-node[data-status=running] i,.dsh-task-node[data-status=reviewing] i{background:var(--dsw-alias-brand-primary)}.dsh-task-node[data-status=awaiting-user] i,.dsh-task-node[data-status=needs-revision] i{background:var(--dsw-alias-state-warn-primary)}
+.dsh-task-node[data-status=pending][data-rework] i{background:var(--dsw-alias-state-warn-primary)}
 .dsh-task-node-tooltip{position:fixed;z-index:30;width:min(320px,calc(100vw - 24px));max-height:260px;overflow:auto;box-sizing:border-box;padding:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;box-shadow:var(--dsw-elevation-panel);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:12px/1.6 system-ui;overflow-wrap:anywhere}.dsh-task-node-tooltip strong{display:block;font-weight:600}.dsh-task-node-tooltip small{display:block;color:var(--dsw-alias-label-secondary);margin-top:4px}.dsh-task-node-tooltip p{white-space:pre-wrap;margin:8px 0}.dsh-task-node-tooltip ul{padding-left:16px;margin:8px 0 0}.dsh-task-node-tooltip li+li{margin-top:6px}
 `

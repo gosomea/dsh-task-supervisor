@@ -14,7 +14,8 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
-import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
+import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
+import { changedAttempts } from './rework-records.ts'
 import { validateProvenance } from './provenance.ts'
 import { DRAFT_NAMESPACE } from './drafts.ts'
 import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
@@ -843,6 +844,31 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   ctx.tools.register(defineTool({
+    name: 'task_start_node',
+    description: 'Record the main Agent starting a ready DAG node before implementation. Read task_status for the node and current attempt. Resuming the same running attempt is idempotent.',
+    parameters: {
+      stage_id: { type: 'string', required: true },
+      attempt: { type: 'integer', required: true, description: 'Exact current node attempt from task_status.' },
+    },
+    output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec)
+      const task = current(agent)
+      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw new Error('task is not executing')
+      const run = runsOf(task).find(item => item.id === args.stage_id)
+      if (!run || run.attempt !== args.attempt) throw new Error('node attempt is stale; read task_status')
+      if (run.status === 'running' && run.sessionId === agent.id) return { nodeId: run.id, attempt: run.attempt, status: 'running', sessionId: agent.id }
+      if (runsOf(task).some(item => item.status === 'running' && item.sessionId === agent.id)) {
+        throw new Error('report or rework the main Agent running node before starting another')
+      }
+      const next = { ...beginNode(task, run.id, agent.id), revision: task.revision + 1 }
+      appendTask(ctx, agent, next)
+      await flush(agent)
+      return { nodeId: run.id, attempt: run.attempt, status: 'running', sessionId: agent.id }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
     name: 'task_report_stage',
     description: 'Submit evidence for the current plan stage; an independent reviewer checks it.',
     parameters: {
@@ -876,7 +902,8 @@ export function apply(ctx: Context, config: Config = {}): void {
       appendTask(ctx, agent, next)
       await flush(agent)
       exec.concludeTurn()
-      return { task: taskJson(next), readyNodeIds: readyNodes(next), reason: args.reason }
+      return { task: taskJson(next), readyNodeIds: readyNodes(next), reason: args.reason,
+        rework: { nodes: changedAttempts(task, next) } }
     },
   }))
 

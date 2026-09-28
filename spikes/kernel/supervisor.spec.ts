@@ -1395,3 +1395,37 @@ it('cancels during the repair turn and disposes its single reviewer', async () =
   expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toEqual([])
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]?.decision).toBeNull()
 })
+
+it('records explicit main-node starts, rejecting stale attempts and blocked dependencies', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-start-node-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('main-node-start'),
+    agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new 实现两项独立模块并集成', [], signal)
+  await agent.whenIdle()
+  await ctx.tools.execute({ callId: ToolCallId('start-plan'), name: 'task_submit_plan', agent, signal,
+    arguments: { criteria: [{ id: 'c', text: '模块可集成', provenance: { kind: 'user', reference: 'objective' } }],
+      stages: [{ id: 'a', title: '模块 A', criterionIds: ['c'], dependsOn: [] },
+        { id: 'b', title: '模块 B', criterionIds: ['c'], dependsOn: [] },
+        { id: 'join', title: '集成', criterionIds: ['c'], dependsOn: ['a', 'b'] }] } })
+  await ctx.commands.execute(agent, '/task approve', [], signal)
+  await agent.whenIdle()
+  const start = (id: string, attempt = 1) => ctx.tools.execute({ callId: ToolCallId(`start-${id}-${attempt}`),
+    name: 'task_start_node', agent, signal, arguments: { stage_id: id, attempt } })
+  expect((await start('join')).isError).toBe(true)
+  expect((await start('a', 2)).isError).toBe(true)
+  expect((await start('a')).isError).toBe(false)
+  const started = taskOf(ctx, agent)!
+  expect(started.nodeRuns?.find(run => run.id === 'a')).toMatchObject({ status: 'running', sessionId: agent.id, attempt: 1 })
+  expect((await start('a')).isError).toBe(false)
+  expect(taskOf(ctx, agent)?.revision).toBe(started.revision)
+  expect((await start('b')).isError).toBe(true)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '当前进度如何？' }] }))
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.revision).toBe(started.revision)
+  await ctx.tools.execute({ callId: ToolCallId('reopen-a'), name: 'task_rework_node', agent, signal,
+    arguments: { stage_id: 'a', reason: '修正边界条件' } })
+  expect((await start('a')).isError).toBe(true)
+  expect((await start('a', 2)).isError).toBe(false)
+})

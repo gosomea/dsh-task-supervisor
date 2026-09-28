@@ -2,6 +2,7 @@
 import { acceptedNodes, readyNodes, runsOf } from '../graph.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
 import type { PanelState } from './task-store.ts'
+import type { ReworkRecord } from '../rework-records.ts'
 
 export const VERDICT = { pass: '通过', revise: '需要修订', 'needs-user': '等待用户决策' }
 const PHASE: Record<TaskSnapshot['phase'], string> = {
@@ -26,6 +27,13 @@ export function headline(text: string, limit = 60): string {
   return first.length > limit ? `${first.slice(0, limit).trimEnd()}…` : first
 }
 
+/** Attempts created by restart alone do not acquire a rework explanation. */
+export function nodeRework(task: TaskSnapshot, id: string, records: readonly ReworkRecord[] = []) {
+  const run = runsOf(task).find(item => item.id === id)
+  return records.findLast(record => record.planVersion === task.planVersion
+    && record.nodes.some(node => node.id === id && node.nextAttempt === run?.attempt))
+}
+
 /** Worker labels come from recorded execution Sessions, never title text or planned delegation. */
 export function executionActors(task: TaskSnapshot, mainSessionId: string) {
   const ids = [...new Set(runsOf(task).flatMap(run => run.sessionId && run.sessionId !== mainSessionId ? [run.sessionId] : []))]
@@ -37,13 +45,14 @@ export function executorLabel(task: TaskSnapshot, mainSessionId: string, nodeId:
 }
 export function nodeLabel(task: TaskSnapshot, id: string, state: PanelState): string {
   const run = runsOf(task).find(item => item.id === id)
+  const rework = nodeRework(task, id, state.reworks)
   if (run?.status === 'passed') return '已通过'
   if (run?.status === 'awaiting-user') return '等待决定'
   if (run?.status === 'reviewing') return state.reviewing ? '审查中' : '审查待恢复'
   if (task.phase === 'awaiting-approval') return '等待批准'
   if (task.phase === 'paused' || !state.armed) return '等待继续'
   if (run?.status === 'awaiting-integration') return '等待集成'
-  if (run?.status === 'running') return '执行中'
+  if (run?.status === 'running') return rework ? rework.stageId === id ? '返工中' : '重新执行中' : '执行中'
   if (run?.status === 'needs-revision') return '需要修订'
-  return readyNodes(task).includes(id) ? '可执行' : '等待依赖'
+  return readyNodes(task).includes(id) ? rework ? rework.stageId === id ? '待返工' : '待重新执行' : '可执行' : '等待依赖'
 }

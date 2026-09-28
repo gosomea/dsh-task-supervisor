@@ -12,6 +12,7 @@ import { executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } fro
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
 import { TaskOverview, type TaskNavigation } from './inline-task.tsx'
+import { AttemptDetails } from './attempt-details.tsx'
 import { CSS } from './styles.ts'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
@@ -74,16 +75,17 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
   const [selected, setSelected] = useState<string | null>(null)
   const task = entry.task
   const stage = task.stages.find(item => item.id === selected) ?? task.stages[task.stageIndex] ?? task.stages[0]
-  const historicalState: PanelState = { task, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews }
+  const historicalState: PanelState = { task, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews, reworks: entry.reworks }
   return <>
     <section className="dsh-task-section"><h3>任务目标</h3><p className="dsh-task-objective">{task.objective}</p>
       <p className="dsh-task-muted">{task.phase === 'complete' ? '已完成' : '已清除'} · 记录 seq {entry.lastSeq}</p></section>
     {task.stages.length > 0 && <section className="dsh-task-section"><h3>执行计划 · {task.stages.length} 个节点</h3>
-      <TaskGraph task={task} selected={stage?.id} select={setSelected}
+      <TaskGraph task={task} reworks={entry.reworks} selected={stage?.id} select={setSelected}
         label={id => nodeLabel(task, id, historicalState)} executor={id => executorLabel(task, sessionId, id)} />
     </section>}
     {stage && <section className="dsh-task-section dsh-task-card"><h3>节点详情 · {nodeLabel(task, stage.id, historicalState)}</h3>
       <h4>{stage.title}</h4><p className="dsh-task-muted">执行者：{executorLabel(task, sessionId, stage.id)}</p>
+      <AttemptDetails task={task} nodeId={stage.id} state={historicalState} />
       <p className="dsh-task-review">{stage.description ?? '暂无补充说明。'}</p>
       <Disclosure title={`验收标准 · ${stage.criterionIds.length} 项`}><ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id))
         .map(item => <li key={item.id}>{item.text}</li>)}</ul></Disclosure>
@@ -207,9 +209,10 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       {!task ? <p>使用 <code>/task new &lt;目标&gt;</code> 创建受督导任务。</p> : <>
         <section className="dsh-task-section"><h3>任务目标</h3><Disclosure title={headline(task.objective, 72)}><p className="dsh-task-objective">{task.objective}</p></Disclosure></section>
         <section className="dsh-task-section"><h3>执行计划 · {task.stages.length} 个节点</h3>
-          <TaskGraph task={task} selected={stage?.id} select={setSelected} label={id => nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />
+          <TaskGraph task={task} reworks={state.reworks} selected={stage?.id} select={setSelected} label={id => nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />
         </section>
         {stage && <section className="dsh-task-section dsh-task-card"><h3>节点详情 · {nodeLabel(task, stage.id, state)}</h3><h4>{stage.title}</h4><p className="dsh-task-muted">执行者：{executorLabel(task, sessionId, stage.id)}</p>
+          <AttemptDetails task={task} nodeId={stage.id} state={state} />
           <p className="dsh-task-review">{stage.description ?? '暂无补充说明。'}</p>
           <Disclosure title={`验收标准 · ${stage.criterionIds.length} 项`}><ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
             ? `${SOURCE_LABEL[item.provenance.kind]} · ${item.provenance.reference === 'objective' ? '任务目标' : item.provenance.reference}` : '历史计划 · 来源未标注'}</small></li>)}</ul></Disclosure>
@@ -234,13 +237,13 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
     </footer>}
   </div>
 }
-/** Only Supervisor findings are projected; native main-Agent messages stay untouched. */
+/** Review findings and applied reworks are notices; native main-Agent answers stay untouched. */
 function ReviewNotes({ turn, open }: TailProps & { open: (params?: TaskNavigation) => void }): ReactNode {
   const milestones = turn.data.get('task-supervisor-milestones')
-  return <>{milestones?.filter(item => item.reviewerSessionId).map(item => <section key={item.seq} className="dsh-task-review-note" aria-label="Supervisor 审查摘要">
-    <span className="dsh-task-dot" data-verdict={item.verdict} aria-hidden="true" />
-    <div className="dsh-task-review-copy"><strong>Supervisor · {item.title}</strong><p>{headline(item.summary, 90)}</p></div>
-    <Button size="sm" onClick={() => open({ reviewerSessionId: item.reviewerSessionId! })}>查看审查</Button>
+  return <>{milestones?.filter(item => item.reviewerSessionId || item.kind === 'rework').map(item => <section key={item.seq} className="dsh-task-review-note" aria-label={item.kind === 'rework' ? '任务返工记录' : 'Supervisor 审查摘要'}>
+    <span className="dsh-task-dot" data-verdict={item.kind === 'rework' ? 'revise' : item.verdict} aria-hidden="true" />
+    <div className="dsh-task-review-copy"><strong>{item.kind === 'rework' ? '任务督导' : 'Supervisor'} · {item.title}</strong><p>{headline(item.summary, 90)}</p></div>
+    <Button size="sm" onClick={() => open(item.kind === 'rework' ? { nodeId: item.nodeId! } : { reviewerSessionId: item.reviewerSessionId! })}>{item.kind === 'rework' ? '查看返工' : '查看审查'}</Button>
   </section>)}</>
 }
 export function apply(ctx: ClientContext): void {

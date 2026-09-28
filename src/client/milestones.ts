@@ -3,7 +3,7 @@
 export interface Milestone {
   readonly seq: number
   readonly mainSeq: number
-  readonly kind: 'plan' | 'stage' | 'completion'
+  readonly kind: 'plan' | 'stage' | 'completion' | 'rework'
   readonly title: string
   readonly summary: string
   readonly detail: string
@@ -11,10 +11,11 @@ export interface Milestone {
   readonly reportDetail?: string
   readonly verdict?: 'pass' | 'revise' | 'needs-user'
   readonly reviewerSessionId?: string
+  readonly nodeId?: string
 }
 
 interface Call {
-  readonly name: 'task_submit_plan' | 'task_report_stage' | 'task_request_completion'
+  readonly name: 'task_submit_plan' | 'task_report_stage' | 'task_request_completion' | 'task_rework_node'
   readonly seq: number
   readonly stageId?: string
   readonly evidence?: string
@@ -61,7 +62,7 @@ function parsedObject(raw: string): Record<string, unknown> | null {
 }
 
 function call(name: string, argsRaw: string, seq: number): Call | null {
-  if (name !== 'task_submit_plan' && name !== 'task_report_stage' && name !== 'task_request_completion') return null
+  if (name !== 'task_submit_plan' && name !== 'task_report_stage' && name !== 'task_request_completion' && name !== 'task_rework_node') return null
   const args = parsedObject(argsRaw)
   if (name === 'task_submit_plan') {
     const stages = Array.isArray(args?.stages) ? args.stages : []
@@ -69,10 +70,11 @@ function call(name: string, argsRaw: string, seq: number): Call | null {
     return { name, seq, stageTitles: stages.map(stage => object(stage)?.title).filter((title): title is string => typeof title === 'string'),
       criteriaCount: criteria.length }
   }
-  if (name === 'task_report_stage') return {
+  if (name === 'task_report_stage' || name === 'task_rework_node') return {
     name, seq,
     ...typeof args?.stage_id === 'string' ? { stageId: args.stage_id } : {},
-    ...typeof args?.evidence === 'string' ? { evidence: args.evidence } : {},
+    ...typeof (name === 'task_rework_node' ? args?.reason : args?.evidence) === 'string'
+      ? { evidence: String(name === 'task_rework_node' ? args?.reason : args?.evidence) } : {},
   }
   return { name, seq, ...typeof args?.evidence === 'string' ? { evidence: args.evidence } : {} }
 }
@@ -92,6 +94,18 @@ function excerpt(value: string): { summary: string; remainder: string } {
 function milestone(source: Call, raw: string, seq: number): Milestone | null {
   const result = parsedObject(raw)
   if (result === null) return null
+  if (source.name === 'task_rework_node') {
+    const task = object(result.task)
+    const stages = Array.isArray(task?.stages) ? task.stages.map(object) : []
+    const runs = Array.isArray(task?.nodeRuns) ? task.nodeRuns.map(object) : []
+    const run = runs.find(item => item?.id === source.stageId)
+    if (!run || typeof run.attempt !== 'number') return null
+    const stage = stages.find(item => item?.id === source.stageId)
+    const reason = excerpt(source.evidence ?? '')
+    return { seq, mainSeq: source.seq, kind: 'rework', title: '主 Agent 发起返工',
+      summary: `${String(stage?.title ?? source.stageId)} · 第 ${run.attempt} 次 · ${reason.summary}`,
+      detail: reason.remainder, ...source.stageId ? { nodeId: source.stageId } : {} }
+  }
   if (source.name === 'task_submit_plan') {
     if (result.phase !== 'awaiting-approval' && result.phase !== 'active') return null
     const stages = source.stageTitles ?? []
