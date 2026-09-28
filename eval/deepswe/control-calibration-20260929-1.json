@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "kind": "goal-plan-control-calibration",
+  "fullControlGatePassed": false,
+  "goalRepresentativeChainPassed": true,
+  "planRepresentativeChainPassed": true,
+  "cases": [
+    {
+      "id": "control-goal-20260929-1",
+      "condition": "goal",
+      "mainSessionId": "session-73e49f36-3568-4537-8413-e19227b49a67",
+      "status": "native-complete",
+      "nativeFinished": true,
+      "finishedBeforeDeadline": true,
+      "elapsedSec": 30.612549304962158,
+      "deadlineSec": 900,
+      "cleanupAcknowledged": true,
+      "initialApprovalCount": 1,
+      "rescueCount": 0,
+      "containerStopped": true,
+      "caseActualHttpRequests": 11,
+      "routesMatched": true,
+      "routePassed": true,
+      "protocolDeviation": false,
+      "officialReward": null,
+      "formalPositionsDelivered": 0,
+      "allSessionTokens": {
+        "uncachedInputTokens": 10149,
+        "outputTokens": 1696,
+        "cacheReadTokens": 93824,
+        "cacheWriteTokens": 0
+      },
+      "tokenCoverageComplete": true,
+      "unreportedAttempts": 0,
+      "submittedHeadMatchedCutoff": true,
+      "committedHeadChangedFromBase": true,
+      "originalVerifyUnmodified": true,
+      "independentPosthocFixtureTestExitCode": 0,
+      "patchSha256": "f455af670e91bd12107a915987fc61d97c6349193b84b653805f1057db1631c8",
+      "evidence": [
+        {
+          "relativePath": "gates/control-goal-20260929-1/terminal.json",
+          "sha256": "bc496d738960705a2bdcd8d76c03df943f630712d0df86a3d389713612683f63"
+        },
+        {
+          "relativePath": "gates/control-goal-20260929-1/validation.json",
+          "sha256": "d77239cb6f414f244778ef1c38a51e34d7774614f7ddf401384d6ac708480956"
+        },
+        {
+          "relativePath": "gates/control-goal-20260929-1/route-result.json",
+          "sha256": "5f5c1b75f9c5041042b734c05d92ca1afa83d992298488c516dc04a3e3b97e7f"
+        },
+        {
+          "relativePath": "gates/control-goal-20260929-1/metrics.json",
+          "sha256": "3bed559cfd3891a341f7296724c5eba5d7732f931fc8ac9572db2ef5d2a4ee6a"
+        }
+      ]
+    },
+    {
+      "id": "control-plan-20260929-1",
+      "nativeFinished": false,
+      "cleanupAcknowledged": true,
+      "initialApprovalCount": 0,
+      "rescueCount": 0,
+      "containerStopped": true,
+      "caseActualHttpRequests": 0,
+      "routesMatched": false,
+      "routePassed": false,
+      "protocolDeviation": false,
+      "officialReward": null,
+      "formalPositionsDelivered": 0,
+      "evidence": [
+        {
+          "relativePath": "gates/control-plan-20260929-1/terminal.json",
+          "sha256": "3d0005660068b8c0e4be7d4656f87c72e7db2e7a9071f32b04ab17c904943cfd"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-1/validation.json",
+          "sha256": "113ff1cf90bd4b0267ea930a6aace477366d3a47996d06ad254893668b7b6cb9"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-1/route-result.json",
+          "sha256": "69b69d5dd1475371249e59e6562ff6accc6c095defc0c95911bd04ed472e11f9"
+        }
+      ],
+      "failureExplanation": "Before delivery, the browser could not locate the visible Session title."
+    },
+    {
+      "id": "control-plan-20260929-2",
+      "nativeFinished": false,
+      "cleanupAcknowledged": true,
+      "initialApprovalCount": 0,
+      "rescueCount": 0,
+      "containerStopped": true,
+      "caseActualHttpRequests": 0,
+      "routesMatched": false,
+      "routePassed": false,
+      "protocolDeviation": false,
+      "officialReward": null,
+      "formalPositionsDelivered": 0,
+      "evidence": [
+        {
+          "relativePath": "gates/control-plan-20260929-2/terminal.json",
+          "sha256": "4f2d5e57ce6beacb75d4c61011231f3aca695c546c5c2c1641926ca43d69b255"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-2/validation.json",
+          "sha256": "33c478b7db10fdfbbc78b2e1f0f5b6e592e4603b75df178e94e2e364b9acaa3a"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-2/route-result.json",
+          "sha256": "0c9f8f4fd95a882ce00e7007964c65e6e23e7b8386a2ee951d909857d85f275a"
+        }
+      ],
+      "failureExplanation": "Selected Session ID and document title matched; the empty Session welcome screen did not render its renamed title. No prompt or approval was delivered."
+    },
+    {
+      "id": "control-plan-20260929-3",
+      "condition": "plan",
+      "mainSessionId": "session-1cb1765a-fcf5-47f0-82de-4c8f9292a6b3",
+      "status": "native-complete",
+      "nativeFinished": true,
+      "finishedBeforeDeadline": true,
+      "elapsedSec": 46.83237099647522,
+      "deadlineSec": 900,
+      "cleanupAcknowledged": true,
+      "initialApprovalCount": 1,
+      "rescueCount": 0,
+      "containerStopped": true,
+      "caseActualHttpRequests": 11,
+      "routesMatched": true,
+      "routePassed": true,
+      "protocolDeviation": false,
+      "officialReward": null,
+      "formalPositionsDelivered": 0,
+      "submittedHeadMatchedCutoff": true,
+      "committedHeadChangedFromBase": true,
+      "originalVerifyUnmodified": true,
+      "independentPosthocFixtureTestExitCode": 0,
+      "patchSha256": "f455af670e91bd12107a915987fc61d97c6349193b84b653805f1057db1631c8",
+      "evidence": [
+        {
+          "relativePath": "gates/control-plan-20260929-3/terminal.json",
+          "sha256": "0a55d7f2919e974889a41be385c3a4c253bf7dbd065cc58b8705977acac61c41"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-3/validation.json",
+          "sha256": "1d5cfabeef125fb4f2f1b2984805e3f571bc492e394f47c755aff1e38a64f24a"
+        },
+        {
+          "relativePath": "gates/control-plan-20260929-3/route-result.json",
+          "sha256": "4aabc8b61a11c214674445ce723411ffe98c6e563a76872ff603de3fb931e32d"
+        }
+      ]
+    }
+  ],
+  "remaining": [
+    "Supervisor-independent real main/reviewer route, independent checks and comparison",
+    "Whole-task deadline and native independent check removal acknowledgement",
+    "Final release freeze and admission"
+  ],
+  "notes": [
+    "Failed preparation cases remain sealed; no model Session was replayed.",
+    "Fixture posthoc checks are not official candidate reward or reviewer-executed checks.",
+    "Formal candidate delivery remains 0/16."
+  ]
+}
