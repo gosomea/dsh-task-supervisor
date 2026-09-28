@@ -1023,6 +1023,24 @@ it('reconciles a committed task after promotion is interrupted without creating 
   expect(main.inbox.nextTurn).toHaveLength(0)
 })
 
+it('binds direct creation to the mode selected before the direct user message', async () => {
+  const { ctx, main, chat, signal, say, call } = await proposalFixture()
+  let seq = await say('只读报告 Node 版本')
+  chat.session.append('extension/record', { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
+    kind: 'input-mode', recordId: 'direct-choice', payload: { mode: 'direct' } })
+  await ctx.sessions.flush(chat.session)
+  expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
+    directive: 'new 只读报告 Node 版本' })).isError).toBe(true)
+  seq = await say('只读报告 Node 版本')
+  expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
+    directive: 'new 只读报告 Node 版本' })).isError).toBe(false)
+  await main.whenIdle()
+  expect(taskOf(ctx, main)?.phase).toBe('planning')
+  expect(taskOf(ctx, main)?.objective).toBe('只读报告 Node 版本')
+  expect(draftOf(ctx, main)).toBeNull()
+  expect((await ctx.commands.execute(main, '/task', [], signal))?.result.kind).toBe('success')
+})
+
 it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)
   const bothEntered = Promise.withResolvers<void>(); const release = Promise.withResolvers<void>()

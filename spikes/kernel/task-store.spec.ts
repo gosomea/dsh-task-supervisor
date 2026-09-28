@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { createTaskStore, type PanelState } from '../../src/client/task-store.ts'
+import { randomUUID } from 'node:crypto'
 import { newTask } from '../../src/state.ts'
 
 const cleanups: Array<() => void> = []
@@ -78,4 +79,25 @@ it('creates a following task against the completed task revision', async () => {
   expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toEqual({ action: 'new', objective: 'Second task',
     taskId: done.id, revision: 4 })
   expect(store.getSnapshot().state?.task?.objective).toBe('Second task')
+})
+
+it('promotes the displayed draft version once and keeps a rejected draft available', async () => {
+  const draft = { id: randomUUID(), version: 3, mainSessionId: 'main', title: '草案', requirements: '只读报告',
+    questions: [], language: 'zh-CN', sourceSessionId: 'chat', sourceUserSeq: 1, status: 'draft' as const,
+    creationId: null, taskId: null, updatedAt: new Date().toISOString() }
+  const initial: PanelState = { task: null, draft, live: true, armed: false, reviewing: false, actions: [] }
+  const pending = Promise.withResolvers<Response>()
+  const request = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json(initial)).mockReturnValueOnce(pending.promise)
+  const store = createTaskStore('main', request); cleanups.push(store.subscribe(() => {}))
+  await vi.waitFor(() => expect(store.getSnapshot().state?.draft?.version).toBe(3))
+  expect(await store.promote(draft.id, 2)).toBe(false)
+  const action = store.promote(draft.id, 3)
+  expect(await store.promote(draft.id, 3)).toBe(false)
+  expect(request).toHaveBeenCalledTimes(2)
+  expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toEqual({ action: 'create-draft', draftId: draft.id,
+    draftVersion: 3, taskId: null, revision: null })
+  pending.resolve(Response.json({ error: '任务状态已变化' }, { status: 409 }))
+  expect(await action).toBe(false)
+  expect(store.getSnapshot().state?.draft).toEqual(draft)
+  expect(store.getSnapshot().error).toContain('任务状态已变化')
 })

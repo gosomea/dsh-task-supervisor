@@ -1,5 +1,7 @@
 # Implementation status
 
+The unified client entry is implemented: history opens the persistent consultation, drafts and explicit creation live beside the native composer, and input mode is visible. Review faults expose diagnostics and a read-only native transcript. Integrated browser acceptance remains pending in F.
+
 Persistent main-Session consultation and versioned drafts are implemented. Discussion works without a task; explicit subsequent confirmation promotes an exact draft. Restart requires fresh authorization. Unified client entry and integrated deployment checks remain in progress.
 
 This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.

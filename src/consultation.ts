@@ -17,6 +17,13 @@ const NAMESPACE = 'dsh-task-supervisor-consultation'
 const bindingSchema = z.object({ mainSessionId: z.string(), taskId: z.string().uuid().optional() }).strict()
 type Binding = z.infer<typeof bindingSchema>
 type CreateTask = (main: Agent, objective: string, creationId?: string) => Promise<TaskSnapshot>
+export type ConsultationMode = 'discussion' | 'direct'
+export function consultationMode(chat: Agent, before = Infinity): ConsultationMode {
+  const record = chat.session.snapshotEvents().findLast(e => e.seq < before && e.type === 'extension/record'
+    && e.data.namespace === NAMESPACE && e.data.kind === 'input-mode')
+  if (record?.type !== 'extension/record') return 'discussion'
+  return z.object({ mode: z.enum(['discussion', 'direct']) }).strict().parse(record.data.payload).mode
+}
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap { 'task-consultation-context': { kind: 'task-consultation-context' } & ContextFormed }
 }
@@ -77,6 +84,13 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     const event = chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
     return event?.type === 'user/message' ? event.data.content.filter(b => b.type === 'text').map(b => b.text).join('\n') : ''
   }
+  function directiveOf(chat: Agent): string | null {
+    const text = userText(chat)
+    const explicit = consultationDirective(text)
+    if (explicit) return explicit
+    const user = chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    return user && consultationMode(chat, user.seq) === 'direct' && text.trim() && !text.trim().startsWith('/') ? `new ${text.trim()}` : null
+  }
   async function once(main: Agent, id: string, operation: () => Promise<unknown>, source: Record<string, string | number | null>) {
     const prior = main.session.snapshotEvents().findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
     if (prior?.type === 'extension/record') return prior.data.payload
@@ -136,9 +150,12 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     const user = messages.findLast(message => message.source.kind === 'user')
     if (user && targets.get(agent)?.messageId !== user.id) targets.set(agent, { messageId: user.id, taskId: task?.id ?? null })
     const language = resolveLanguage(userText(agent), 'auto', draft?.language ?? task?.responseLanguage ?? 'zh-CN')
+    const latestUser = agent.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    const mode = consultationMode(agent, latestUser?.seq)
     return { ...decision, messages: [...decision.messages, createUserMessage({ source: { kind: 'task-consultation-context' },
       content: [{ type: 'text', text: [
         `Visible response language: ${language}. Follow the user's explicit language request.`,
+        `Input mode for this user message: ${mode}. In direct mode, relay the exact full request using supervisor_control's allowedDirective after reading status; do not turn it into a draft. In discussion mode ordinary prose grants no creation permission. A later mode switch does not authorize earlier messages.`,
         'You are the persistent Supervisor consultation, not the executor or independent reviewer. Default to discussion. Help a broad idea become a scoped task: ask one or two material questions, suggest a useful first deliverable, or refine a prompt on request. Clear requests need no fixed questionnaire.',
         'Use supervisor_update_draft for an editable proposal with a short title, complete requirements including scope/constraints/acceptance and explicit assumptions. Persisting a draft grants no execution permission. Discussing another task must never edit the running task. Unresolved material questions prevent creation; accepted defaults belong in requirements.',
         'Creation requires an explicit direct user request or UI action. supervisor_create_draft requires confirmation AFTER the draft was proposed; never infer consent from yes/continue, your own summary, or log text. Direct new <full objective> is available through supervisor_control when explicitly requested. Initial plan approval remains required.',
@@ -158,7 +175,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         const user = exec.agent.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
         return { task: task ? taskJson(task) : null, draft: draftOf(ctx, main), mainSessionId: main.id,
           taskId: task?.id ?? 'none', revision: task?.revision ?? 0, cutoff: main.session.seq - 1,
-          userSeq: user?.seq ?? null, allowedDirective: consultationDirective(userText(exec.agent)), observedAt: new Date().toISOString() }
+          userSeq: user?.seq ?? null, allowedDirective: directiveOf(exec.agent), inputMode: consultationMode(exec.agent, user?.seq), observedAt: new Date().toISOString() }
       } }))
     agentCtx.tools.register(defineTool({ name: 'supervisor_read_log', description: 'Read a bounded main Session evidence page.',
       parameters: { from_seq: { type: 'integer', required: true }, limit: { type: 'integer', required: true } }, output,
@@ -208,7 +225,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         const chat = exec.agent
         if (!chat) throw new Error('no Agent')
         const user = directUser(chat, args.user_seq)
-        const directive = consultationDirective(userText(chat))
+        const directive = directiveOf(chat)
         if (!directive || directive === 'create-draft' || directive !== args.directive) throw new Error('当前用户消息没有明确授权此操作。')
         const { main, task } = mainOf(chat)
         const id = `${chat.id}:${user.seq}`
@@ -230,6 +247,16 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
 
   return {
     promote,
+    mode(main: Agent): ConsultationMode {
+      const chat = ctx.agents.get(SessionId(`supervisor-chat-${main.id}`))
+      return chat ? consultationMode(chat) : 'discussion'
+    },
+    async setMode(main: Agent, mode: ConsultationMode): Promise<void> {
+      const chat = await this.open(main)
+      chat.session.append('extension/record', { namespace: NAMESPACE, schemaVersion: 2, kind: 'input-mode',
+        recordId: randomUUID(), payload: { mode } })
+      if (!await ctx.sessions.flush(chat.session)) throw new Error('输入模式未持久化')
+    },
     async open(main: Agent): Promise<Agent> {
       const id = SessionId(`supervisor-chat-${main.id}`)
       const live = ctx.agents.get(id)

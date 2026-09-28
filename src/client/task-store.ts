@@ -1,6 +1,7 @@
 /** One live task snapshot and action stream per displayed Session. */
 import type { ReviewJob } from '../review-records.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
+import type { TaskDraft } from '../drafts.ts'
 
 export interface PanelState {
   task: TaskSnapshot | null
@@ -8,6 +9,8 @@ export interface PanelState {
   armed: boolean
   reviewing: boolean
   actions: string[]
+  draft?: TaskDraft | null
+  consultationMode?: 'discussion' | 'direct'
   reviewJobs?: ReviewJob[]
   reviews?: NonNullable<TaskSnapshot['lastReview']>[]
 }
@@ -95,6 +98,25 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       } finally {
         if (view.busy) publish({ ...view, busy: false })
       }
+    },
+    async promote(draftId: string, draftVersion: number): Promise<boolean> {
+      const state = view.state
+      if (view.busy || !state?.live || state.draft?.id !== draftId || state.draft.version !== draftVersion) return false
+      const current = ++sequence
+      poll?.abort()
+      publish({ ...view, busy: true, error: '' })
+      try {
+        const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'create-draft', draftId, draftVersion,
+            taskId: state.task?.id ?? null, revision: state.task?.revision ?? null }) })
+        const body = await result.json() as PanelState & { error?: string }
+        if (!result.ok) throw new Error(body.error ?? '无法创建草案任务')
+        if (current === sequence) publish({ state: body, busy: false, error: '' })
+        return true
+      } catch (error) {
+        if (current === sequence) publish({ ...view, busy: false, error: String(error) })
+        return false
+      } finally { if (view.busy) publish({ ...view, busy: false }) }
     },
   }
 }

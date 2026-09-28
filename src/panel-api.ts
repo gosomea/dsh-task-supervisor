@@ -5,10 +5,11 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { draftOf } from './drafts.ts'
+import type { ConsultationMode } from './consultation.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
 
 const PATH = '/api/task-supervisor'
-const ACTIONS = new Set(['create-draft', 'consult', 'approve', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
+const ACTIONS = new Set(['consult-mode', 'create-draft', 'consult', 'approve', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
 
 function response(value: unknown, status = 200): Response {
   return Response.json(value, { status, headers: { 'cache-control': 'no-store' } })
@@ -57,7 +58,7 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 }
 
 /** Register the panel route only when a Web Connection exists. */
-export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown> }): void {
+export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }): void {
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
       path: PATH,
@@ -78,7 +79,7 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
             } catch (error) { return response({ error: String(error) }, 409) }
           }
           if (agent !== undefined) {
-            return response({ task: taskOf(ctx, agent), live: true, ...controls(agent),
+            return response({ task: taskOf(ctx, agent), live: true, ...controls(agent), consultationMode: consultation.mode(agent),
               draft: draftOf(ctx, agent), reviews: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviews ?? [],
               reviewJobs: ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? [] })
           }
@@ -113,6 +114,13 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
         if (typeof action !== 'string' || !ACTIONS.has(action)) {
           return response({ error: 'Unknown Supervisor action' }, 400)
         }
+        if (action === 'consult-mode') {
+          if (typeof body !== 'object' || body === null || !('mode' in body) || (body.mode !== 'discussion' && body.mode !== 'direct')) return response({ error: 'Unknown input mode' }, 400)
+          try {
+            await consultation.setMode(agent, body.mode)
+            return response({ consultationMode: consultation.mode(agent) })
+          } catch (error) { return response({ error: String(error) }, 409) }
+        }
         if (action === 'create-draft') {
           const current = taskOf(ctx, agent)
           if (typeof body !== 'object' || body === null || !('taskId' in body) || !('revision' in body)
@@ -133,7 +141,7 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           } catch (error) { return response({ error: String(error) }, 409) }
         }
         if (action === 'consult') {
-          try { return response({ consultationSessionId: (await consultation.open(agent)).id }) }
+          try { return response({ consultationSessionId: (await consultation.open(agent)).id, consultationMode: consultation.mode(agent) }) }
           catch (error) { return response({ error: String(error) }, 409) }
         }
         const task = taskOf(ctx, agent)
