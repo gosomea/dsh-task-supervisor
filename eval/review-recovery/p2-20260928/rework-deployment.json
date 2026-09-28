@@ -1,0 +1,73 @@
+{
+  "sessionId": "session-8119cd90-08dd-41ef-bdb2-c2540c3d4d17",
+  "phase": "complete",
+  "armed": false,
+  "reviewing": false,
+  "reworks": [
+    {
+      "stageId": "n1",
+      "planVersion": 1,
+      "reason": "n1 的 src/world/raycast.js 存在真实 DDA 缺陷（在 n3 收尾排查「抬高后向下放置返回 false」时，用独立参考实现审计发现）：\n\n根因：firstBoundary(origin,i,step) 返回的是「网格坐标距离」|next - o|，但 Amanatides-Woo 的 tMax 必须使用「光线参数 t」，应为该网格距离乘以对应的 tDelta（即 1/|d| 分量）。代码未做这一步乘法。\n\n受影响行为（独立参考实现对照，全部可复现）：\n- dir 取 pitch=-89°（即 {x:0, y:-0.99985, z:0.01745}），origin=(5.5,20.5,5.5)：实测命中 (5,10,6) 且 t=9.501；正确应为 (5,11,5) t≈8.5。tMaxZ 被算成 0.5（正确值 ≈28.65），导致射线过早沿 z 跳格、错过正下方方块。\n- dir 取 pitch=-89.999°：实测未命中；正确应为 (5,11,5)。\n- dir 取斜向 {x:1,y:-1,z:1}，origin=(0.5,14.5,0.5)：实测命中 (5,10,4)，参考实现为 (5,9,5)（角点退化，见下）。\n- 轴对齐方向（|d| 分量为 0 或 1）不受影响，因此 n1 原测试 8 全绿也无法暴露该缺陷。\n\n影响范围：这是游戏核心玩法「左键破坏 / 右键放置」的拾取基础。俯视（pitch 接近 -89°）是放置方块到地面的常见操作，缺陷会导致命中错误方块或完全打空——这正是 n3 中「玩家抬高后向正下方放置返回 false」的真因，属正常玩法路径上的缺陷，不是测试构造问题。\n\n修法（已在临时副本验证）：把 tMax 计算改为\n  tMaxX = firstBoundary(origin.x, x, stepX) * tDeltaX（Y/Z 同理）。\n\n验证结果（临时副本，与细步长参考实现对照 8 组用例）：pitch-89、pitch-89.999 均由错误/漏检变为正确命中 (5,11,5)；纯 +X、纯 -Y、朝天空、俯视 -18°、yaw45 俯视 30° 均一致；仅剩 1 例为射线精确穿过格点角点的退化情形（数值已核实：t·|d| 精确落在 (5,10,5)，两个实现各自命中共享该角点的相邻体素），属浮点歧义而非缺陷。\n\n需在 n1 内补回归测试：覆盖非轴对齐（斜向与近轴俯视）射线的命中体素与法线，避免该缺陷再次被轴对齐用例掩盖。",
+      "callSeq": 987,
+      "seq": 989,
+      "time": 1790565699804,
+      "nodes": [
+        {
+          "id": "n1",
+          "attempt": 1,
+          "status": "passed",
+          "reviewSeq": 288,
+          "nextAttempt": 2
+        },
+        {
+          "id": "n3",
+          "attempt": 1,
+          "status": "pending",
+          "nextAttempt": 2
+        },
+        {
+          "id": "n4",
+          "attempt": 1,
+          "status": "pending",
+          "nextAttempt": 2
+        }
+      ]
+    }
+  ],
+  "nodeRuns": [
+    {
+      "id": "n1",
+      "attempt": 2,
+      "status": "passed",
+      "finishedAt": "2026-09-28T03:29:53.251Z",
+      "evidenceAfterSeq": 988,
+      "reviewSeq": 1067
+    },
+    {
+      "id": "n2",
+      "attempt": 1,
+      "status": "passed",
+      "finishedAt": "2026-09-28T02:52:39.166Z",
+      "evidenceAfterSeq": 60,
+      "reviewSeq": 382
+    },
+    {
+      "id": "n3",
+      "attempt": 2,
+      "status": "passed",
+      "finishedAt": "2026-09-28T03:57:30.240Z",
+      "evidenceAfterSeq": 988,
+      "reviewSeq": 1287
+    },
+    {
+      "id": "n4",
+      "attempt": 2,
+      "status": "passed",
+      "finishedAt": "2026-09-28T04:13:45.527Z",
+      "evidenceAfterSeq": 988,
+      "reviewSeq": 1500
+    }
+  ],
+  "taskId": "593cc786-b1bb-4850-a553-f0849c548479",
+  "servedBuild": "/var/folders/kg/klnm7xcn56lbsvcwp5tqnxh00000gn/T/dsh-supervisor-p2-build-n2xd211b"
+}

@@ -1,6 +1,6 @@
 # P2 公开题配对比较：执行记录
 
-按[冻结协议](../frequency-p2-protocol.zh.md)运行四题、五条件、三次重复，计划 60 次。返工优化已合入 `main`：`b4e34689fbaeb8919e552c8b9926a66160da6e16`，合入后的 88 项内核测试、宿主与客户端严格检查及独立构建通过。61454 验证实例通过原生 `plugin add link:` 更新，旧返工记录仍可读取，`armed=false`；59909 长任务未重启。
+按[冻结协议](../frequency-p2-protocol.zh.md)运行四题、五条件、三次重复，计划 60 次。返工优化已合入 `main`：`b4e34689fbaeb8919e552c8b9926a66160da6e16`，合入后的 88 项内核测试、宿主与客户端严格检查及独立构建通过。61454 验证实例通过原生 `plugin add link:` 更新，旧返工记录仍可读取，`armed=false`；随后核对 59909：原游戏任务已完成，97 个 Session 无运行者、armed=false；通过原生路径更新此实例，并保留原会话日志。
 
 本机缓存根目录为 `~/.cache/dsh-public-eval/frequency-p2-20260928`。每个尝试使用官方镜像的独立容器和 Home；登记到隔离测试 skill 的库存。运行时源码、依赖、构建、Node 和 runner 使用独立副本；首个模型调用前由 `freeze_frequency.py` 固定指纹。原协议文件与此前 NodeBB/Navidrome 成绩不改写。
 
@@ -34,3 +34,9 @@ python3 eval/review-recovery/freeze_frequency.py \
 使用冻结副本运行 `runner/eval/review-recovery/run_frequency.py attempts`，传相同 root/dataset 及隔离 skill 的 `--registry` 脚本。Plan 组需本机 `PLAYWRIGHT_ENTRY` 与 `CHROME_PATH`；它们只执行真实原生批准动作。用 `test_frequency.py` 验证排序、异常评分、未准入及重复启动保护。
 
 执行进度与最终分母以 `controls.json`、`order.json`、`results.json` 和逐次 `attempts/*/result.json` 为准。此文不预先填写模型成绩。
+
+## 已启动
+
+四题的 P0 控制均为 nop=0、oracle=1，异常=0，见 [controls.json](controls.json)。冻结队列首项是 Open Library 第一次重复的 Supervisor 稀疏审查；[启动证据](started.json)包含原生 Session、实际请求模型和独立控制器。当前完整模型成绩尚未封口，不能用启动或门禁替代任务成功。控制器独立于交互 turn 持续串行运行；每小时的当前任务 heartbeat 核对异常与最终收尾。
+
+[59909 实例恢复证据](rework-deployment.json)保留原游戏任务的第 1 次通过与第 2 次返工；更新后仍 complete、armed=false。原生路径安装不会即时刷新原进程，此处确认所有 Session 停止后重启了该测试 LaunchAgent，并从更新后的 API 验证历史。

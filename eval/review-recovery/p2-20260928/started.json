@@ -1,0 +1,49 @@
+{
+  "kind": "p2-started-evidence",
+  "planned": 60,
+  "completedAttemptsAtCapture": 0,
+  "firstCase": "p2-t1-r1-supervisor-sparse",
+  "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+  "baseCommit": "d8518f64d954113c9363335eb25201befa2de6f2",
+  "startedAtUnix": 1790574947,
+  "modelSelection": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "actualRequestSelections": [
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 23,
+      "provider": "deepseek-codebuddy",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 71,
+      "provider": "deepseek-codebuddy",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 83,
+      "provider": "deepseek-codebuddy",
+      "model": "deepseek-v4.1-flash"
+    },
+    {
+      "sessionId": "task-review-1adf6288-9b00-4ad5-9c40-daf2cf8fea80",
+      "seq": 10,
+      "provider": "deepseek-codebuddy",
+      "model": "deepseek-v4.1-flash"
+    }
+  ],
+  "controller": {
+    "pid": 53077,
+    "startedAt": 1790574737,
+    "command": [
+      "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+      "/Users/yuqixian/.cache/dsh-public-eval/frequency-p2-20260928/driver.py"
+    ],
+    "root": "/Users/yuqixian/.cache/dsh-public-eval/frequency-p2-20260928"
+  },
+  "followupAutomationId": "supervisor-p2"
+}
