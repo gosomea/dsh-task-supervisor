@@ -9,6 +9,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import { changedArtifacts, reviewPath, type ArtifactSnapshot } from './artifact-snapshot.ts'
 import { checkResultSchema, type CheckResult } from './verification-schema.ts'
 import { checkRequest } from './check-channel.ts'
+import { CheckInputError } from './check-errors.ts'
 export type { CheckResult } from './verification-schema.ts'
 
 export interface ContainerPolicy { context: string; image: string; cpus: number; memoryMiB: number; pids: number }
@@ -113,7 +114,8 @@ export async function recoverCheckContainers(ctx: Context, snapshot: ArtifactSna
 export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, sessionId: SessionId, argv: string[], cwd: string,
   policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult> {
   signal.throwIfAborted()
-  if (!argv.length || argv.some(arg => arg.includes('\0')) || argv[0]!.startsWith('-')) throw new TypeError('check argv must contain a program and valid arguments')
+  if (!argv.length || argv.length > 256 || !argv[0] || argv.some(arg => arg.includes('\0') || arg.length > 16384) || argv[0]!.startsWith('-')) throw new CheckInputError('argv must contain a program and bounded valid arguments')
+  if (cwd.length > 4096 || isAbsolute(cwd) || cwd.includes('\0') || cwd.split(/[\\/]/).includes('..')) throw new CheckInputError('cwd must be relative and inside the check directory')
   if (policy.gatewaySocket) {
     const result = (await checkRequest(snapshot, sessionId, 'run', argv, cwd, policy, signal))!
     await writeFile(join(snapshot.root, `check-${result.id}.json`), JSON.stringify(result), { flag: 'wx', mode: 0o600 })
@@ -122,8 +124,17 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
   await controlDirectories(snapshot)
   const subprocess = ctx.get('subprocess')
   if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
-  const workingDirectory = await reviewPath(snapshot.check, cwd)
-  if (!(await lstat(workingDirectory)).isDirectory()) throw new Error('CHECK_CWD: directory required')
+  if (!(await lstat(snapshot.check)).isDirectory() || await realpath(snapshot.check) !== snapshot.check) throw new Error('CHECK_INFRASTRUCTURE: check root is missing or redirected')
+  let workingDirectory: string
+  try {
+    workingDirectory = await reviewPath(snapshot.check, cwd)
+    if (!(await lstat(workingDirectory)).isDirectory()) throw new CheckInputError('cwd must select a directory; use tree or probes')
+  } catch (error) {
+    if (error instanceof Error && ('code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code)) || error.message.startsWith('REVIEW_PATH:'))) {
+      throw new CheckInputError('cwd does not select an accessible check directory; use tree or probes', { cause: error })
+    }
+    throw error
+  }
   const env = checkEnvironment(snapshot, policy), docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
   const timer = AbortSignal.timeout(policy.commandMs), combined = AbortSignal.any([signal, timer])
   const context = await managed(ctx, [docker, 'context', 'inspect', policy.container.context], snapshot.check, env, policy, combined)
@@ -151,7 +162,9 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
     const inspection = await managed(ctx, [...prefix, 'inspect', '--format', '{{json .State}}', name], snapshot.check, env, policy, combined)
     if (inspection.exitCode !== 0 || inspection.stdout.lossy) throw new Error('CHECK_INFRASTRUCTURE: command outcome unavailable')
     state = JSON.parse(inspection.stdout.text) as typeof state
-    if (!state || state.Error || state.OOMKilled || [125, 126, 127].includes(state.ExitCode)) throw new Error(`CHECK_INFRASTRUCTURE: runtime failed: ${state?.Error || (state?.OOMKilled ? 'out of memory' : state?.ExitCode)}`)
+    // timeout is the fixed entrypoint. Its 125/126/127 are command outcomes
+    // (including a missing program), after successful daemon admission.
+    if (!state || state.Error || state.OOMKilled) throw new Error(`CHECK_INFRASTRUCTURE: runtime failed: ${state?.Error || 'out of memory'}`)
   } catch (error) {
     if (!combined.aborted) throw error
   } finally {

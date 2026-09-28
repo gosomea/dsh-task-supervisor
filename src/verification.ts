@@ -11,6 +11,7 @@ import { captureSnapshot, snapshotFresh, reviewPath, within, type SnapshotLimits
 import { runCheck, readCheck, recoverCheckContainers, checkPolicy, type CheckPolicy, type ContainerPolicy } from './review-check.ts'
 import { findingSchema, type CriterionFinding, type VerificationState } from './verification-schema.ts'
 import { recordReview, ReviewFailure, type ReviewJob } from './review-records.ts'
+import { CheckInputError } from './check-errors.ts'
 
 export interface VerificationConfig {
   storageRoot: string
@@ -135,7 +136,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { snapshotId: state.snapshot.id, path: `probes/${args.name}` }
     },
   }))
-  ctx.tools.register(defineTool({ name: 'run_review_check', description: 'Run structured argv with cwd tree or probes in the bound isolated check copy. No network or source-workspace access. Inspect both streams using read_review_evidence before citing this check.',
+  ctx.tools.register(defineTool({ name: 'run_review_check', description: 'Run structured argv with cwd tree or probes in the bound isolated check copy. No network or source-workspace access. CHECK_INPUT means correct argv/cwd and retry; a nonzero exit is failed command evidence, not acceptance. Read both streams to diagnose it. Keep captured tree intact; never delete or repair source to make a check pass.',
     parameters: { argv: { type: 'array', required: true, items: { type: 'string' } }, cwd: { type: 'string', required: true }, timeout_ms: { type: 'integer' } }, output,
     async execute(args, exec) {
       const remaining = Date.parse(job.deadlineAt!) - Date.now()
@@ -144,6 +145,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       let result
       try { result = await runCheck(owner, state.snapshot, sessionId, args.argv, args.cwd, { ...policy.checks, commandMs }, signal) }
       catch (error) {
+        if (error instanceof CheckInputError && !signal.aborted) throw error
         job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId,
           code: signal.aborted ? 'cancelled' : 'check-infrastructure', message: String(error), retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false }
         await recordReview(owner, main, { ...job, revision: ++job.revision })

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { ArtifactSnapshot } from './artifact-snapshot.ts'
 import type { CheckPolicy } from './review-check.ts'
 import { checkResultSchema, type CheckResult } from './verification-schema.ts'
+import { CheckInputError } from './check-errors.ts'
 
 export const requestSchema = z.object({
   version: z.literal(1), id: z.string().uuid(), operation: z.enum(['run', 'recover']),
@@ -23,7 +24,7 @@ export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string
   const request = requestSchema.parse({ version: 1, id: randomUUID(), operation,
     snapshotRoot: snapshot.root, snapshotId: snapshot.id, sessionId, argv, cwd, commandMs: policy.commandMs })
   const frame = JSON.stringify(request) + '\n'
-  if (Buffer.byteLength(frame) > REQUEST_BYTES) throw new Error('CHECK_CHANNEL: request exceeds framing limit')
+  if (Buffer.byteLength(frame) > REQUEST_BYTES) throw new CheckInputError('request exceeds framing limit; shorten argv')
   const reply = await new Promise<unknown>((resolve, reject) => {
     const socket = createConnection(policy.gatewaySocket!)
     let bytes = 0, chunks: Buffer[] = [], settled = false, connected = false
@@ -49,8 +50,12 @@ export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string
     })
   })
   const response = z.object({ version: z.literal(1), id: z.literal(request.id),
-    result: checkResultSchema.nullable().optional(), error: z.string().optional() }).strict().parse(reply)
-  if (response.error) throw new Error(`CHECK_INFRASTRUCTURE: gateway: ${response.error}`)
+    result: checkResultSchema.nullable().optional(), error: z.string().optional(),
+    errorCode: z.enum(['invalid-request', 'infrastructure']).optional() }).strict().parse(reply)
+  if (response.error) {
+    if (response.errorCode === 'invalid-request') throw new CheckInputError(response.error)
+    throw new Error(`CHECK_INFRASTRUCTURE: gateway: ${response.error}`)
+  }
   if (operation === 'recover') {
     if (response.result !== null) throw new Error('CHECK_CHANNEL: missing recovery acknowledgement')
     return null

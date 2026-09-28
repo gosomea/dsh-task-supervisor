@@ -1,5 +1,6 @@
 /** Private check-channel tests keep privileged mounts outside client-owned trees. */
 import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:net'
 import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -10,7 +11,8 @@ import { afterEach, expect, it } from 'vitest'
 import { captureSnapshot } from '../../src/artifact-snapshot.ts'
 import { boundSnapshot, openGateway } from '../../src/check-gateway.ts'
 import { checkPolicy, runCheck, recoverCheckContainers } from '../../src/review-check.ts'
-import type { CheckRequest } from '../../src/check-channel.ts'
+import { checkRequest, type CheckRequest } from '../../src/check-channel.ts'
+import { CheckInputError } from '../../src/check-errors.ts'
 
 const contexts: Context[] = [], dirs: string[] = [], closers: (() => Promise<void>)[] = [], recoverers: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -119,4 +121,37 @@ it.skipIf(!native || process.platform === 'win32')('refuses replaced probe direc
     "const fs=require('fs');fs.rmdirSync('../probes');fs.symlinkSync('/outside','../probes')"], 'tree', f.policy, new AbortController().signal)
   await writeFile(join(f.snapshot.check, 'probes/assert.mjs'), 'console.log(7)')
   await expect(runCheck(f.ctx, f.snapshot, SessionId('gateway-probe-path'), ['node', '../probes/assert.mjs'], 'tree', f.policy, new AbortController().signal)).rejects.toThrow('private probe directory')
+})
+
+/** A real Unix frame round trip must preserve typed input errors across the process boundary. */
+it.skipIf(process.platform === 'win32')('propagates typed input errors and keeps old untyped errors fail closed', async () => {
+  const f = await fixture()
+  let errorCode: 'invalid-request' | 'infrastructure' | undefined = 'invalid-request'
+  const server = createServer(socket => {
+    let buffer = ''
+    socket.on('data', chunk => {
+      buffer += chunk.toString()
+      if (!buffer.endsWith('\n')) return
+      const request = JSON.parse(buffer) as CheckRequest
+      socket.end(JSON.stringify({ version: 1, id: request.id, error: 'cwd not found',
+        ...errorCode === undefined ? {} : { errorCode } }) + '\n')
+    })
+  })
+  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(f.socketPath, resolve) })
+  closers.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())))
+  const invoke = () => checkRequest(f.snapshot, 'gateway-typed-error', 'run', ['node'], 'missing', f.policy, new AbortController().signal)
+  await expect(invoke()).rejects.toBeInstanceOf(CheckInputError)
+  errorCode = 'infrastructure'
+  await expect(invoke()).rejects.toThrow('CHECK_INFRASTRUCTURE')
+  errorCode = undefined
+  await expect(invoke()).rejects.toThrow('CHECK_INFRASTRUCTURE')
+})
+
+it.skipIf(!native || process.platform === 'win32')('corrects a missing cwd through the real gateway without replacing its snapshot', async () => {
+  const f = await fixture(), close = await openGateway(f.ctx, f.config); closers.push(close)
+  await expect(runCheck(f.ctx, f.snapshot, SessionId('gateway-cwd-recovery'), ['node', '-e', '0'], 'missing', f.policy, new AbortController().signal)).rejects.toBeInstanceOf(CheckInputError)
+  const result = await runCheck(f.ctx, f.snapshot, SessionId('gateway-cwd-recovery'), ['node', '-e', 'console.log(7)'], 'tree', f.policy, new AbortController().signal)
+  expect(result.exitCode).toBe(0)
+  expect(result.stdout).toContain('7')
+  expect(result.snapshotId).toBe(f.snapshot.id)
 })

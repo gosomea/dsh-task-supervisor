@@ -9,6 +9,7 @@ import { captureSnapshot, changedArtifacts, within, type ArtifactSnapshot } from
 import { snapshotSchema } from './verification-schema.ts'
 import { requestSchema, REQUEST_BYTES, type CheckRequest } from './check-channel.ts'
 import { checkPolicy, runCheck, recoverCheckContainers, type CheckPolicy, type ContainerPolicy } from './review-check.ts'
+import { CheckInputError } from './check-errors.ts'
 
 export const name = 'task-review-check-gateway'
 export const inject = ['subprocess']
@@ -167,7 +168,8 @@ export async function openGateway(ctx: Context, config: Config) {
           } catch (error) {
             // Export a bounded diagnostic; no daemon stdout, credentials or signed URLs.
             const message = String(error).replace(/https?:\/\/\S+/g, '[redacted URL]').slice(0, 2048)
-            socket.end(JSON.stringify({ version: 1, id: current.id, error: message }) + '\n')
+            socket.end(JSON.stringify({ version: 1, id: current.id, error: message,
+              errorCode: error instanceof CheckInputError ? 'invalid-request' : 'infrastructure' }) + '\n')
           } finally { controllers.delete(cancellation); busy = false }
         })()
         jobs.add(job); void job.finally(() => jobs.delete(job)).catch(() => {})
