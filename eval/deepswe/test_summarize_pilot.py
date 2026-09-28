@@ -1,0 +1,43 @@
+import json
+from pathlib import Path
+import tempfile
+import unittest
+
+from summarize_pilot import primary, summarize
+
+
+class SummaryTests(unittest.TestCase):
+    def test_native_failure_and_unknown_grade_are_distinct(self):
+        self.assertFalse(primary({'terminal': {'nativeFinished': False}, 'grade': {'reward': 1}}))
+        self.assertIsNone(primary({'terminal': {'nativeFinished': True, 'finishedBeforeDeadline': True,
+                                             'cleanupAcknowledged': True}, 'grade': {'reward': None, 'fault': 'timeout'}}))
+        self.assertIsNone(primary({'terminal': {'nativeFinished': True, 'finishedBeforeDeadline': True},
+                                  'grade': {'reward': 1}}))
+
+    def test_full_denominator_and_missing_usage_survive_partial_batch(self):
+        protocol = json.loads(Path(__file__).with_name('sample-20260928.json').read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = protocol['order'][0]
+            attempt = root / 'attempts' / first['id']
+            attempt.mkdir(parents=True)
+            (attempt / 'started.json').write_text('{}')
+            (attempt / 'result.json').write_text(json.dumps({**first, 'terminal': {
+                'status': 'native-complete', 'nativeFinished': True, 'finishedBeforeDeadline': True,
+                'cleanupAcknowledged': True}, 'grade': {'reward': 1, 'fault': None}}))
+            result = summarize(root, protocol)
+            self.assertEqual((result['planned'], result['started'], result['sealed']), (16, 1, 1))
+            goal = result['conditions']['goal']
+            self.assertEqual((goal['primarySuccesses'], goal['unknownPrimary']), (1, 3))
+            self.assertEqual(goal['successRateBounds'], [0.25, 1])
+            self.assertIsNone(goal['successRate'])
+            self.assertIsNone(goal['allSessionTokenSumMeasured'])
+            self.assertEqual(goal['tokenUnknownPositions'], 4)
+            self.assertTrue(all(row['unknown'] == 4 for row in result['paired']))
+            (attempt / 'result.json').write_text(json.dumps({**first, 'repeat': 9}))
+            with self.assertRaises(ValueError):
+                summarize(root, protocol)
+
+
+if __name__ == '__main__':
+    unittest.main()
