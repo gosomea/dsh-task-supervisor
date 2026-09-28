@@ -19,6 +19,7 @@ for (const side of ['host', 'client']) {
     paths: { ...parsed.options.paths, vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')] } }
   const program = ts.createProgram({ rootNames: side === 'host' ? [
     resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
+    resolve(project, 'spikes/kernel/artifact-snapshot.spec.ts'), resolve(project, 'spikes/kernel/review-check.spec.ts'),
   ] : [resolve(project, 'src/client/index.tsx'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
     options, projectReferences: parsed.projectReferences })
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]

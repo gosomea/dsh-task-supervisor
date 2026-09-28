@@ -1,6 +1,6 @@
 # Independent verification and repair after completion
 
-**Status: step 1 implemented and validated in isolation; steps 2–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
+**Status: step 1 validated in isolation; step 2 snapshot and native-runner foundations implemented; steps 3–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
 
 ## Summary
 
