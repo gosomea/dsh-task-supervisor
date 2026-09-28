@@ -136,6 +136,9 @@ export async function snapshotFresh(snapshot: ArtifactSnapshot, limits: Snapshot
 
 /** Changed or missing captured source entries invalidate checks even when the command exits zero. */
 export async function changedArtifacts(snapshot: ArtifactSnapshot): Promise<string[]> {
+  const tree = join(snapshot.check, 'tree')
+  try { if (!(await lstat(tree)).isDirectory() || await realpath(tree) !== tree) return ['.'] }
+  catch (error) { if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return ['.']; throw error }
   const changed: string[] = []
   for (const entry of snapshot.entries) {
     const path = join(snapshot.check, 'tree', entry.path)

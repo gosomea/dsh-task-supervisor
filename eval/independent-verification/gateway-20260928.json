@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-28",
+  "modelRequests": 0,
+  "modelAdmitted": false,
+  "scope": "plugin-owned private native check channel",
+  "sourceFiles": [
+    "src/check-channel.ts",
+    "src/check-gateway.ts",
+    "src/review-check.ts",
+    "src/artifact-snapshot.ts",
+    "src/verification.ts"
+  ],
+  "regressions": {
+    "passed": 28,
+    "files": {
+      "check-gateway": 6,
+      "review-check": 6,
+      "artifact-snapshot": 12,
+      "verification": 4
+    },
+    "realDockerEnabled": true
+  },
+  "checks": {
+    "hostStrict": true,
+    "clientStrict": true,
+    "build": true,
+    "packedDeclaredEntries": true
+  },
+  "supportedProfile": {
+    "platform": "darwin",
+    "installation": "dsh plugin --profile check-gateway add link:<plugin>",
+    "composed": true,
+    "loaded": true,
+    "actualCheck": true,
+    "exitCode": 0,
+    "changed": [],
+    "timedOut": false,
+    "cancelled": false,
+    "outputIncomplete": false,
+    "cleanupAcknowledged": true,
+    "modelRequests": 0
+  },
+  "history": [
+    {
+      "kind": "control-output-truncated",
+      "ownedContainers": 3,
+      "removedAfterIdentityCheck": true
+    },
+    {
+      "kind": "probe-directory-replacement",
+      "negativeRegressionPassed": true,
+      "childFinalSignoff": false
+    },
+    {
+      "kind": "manual-profile-fixture-mode-mismatch",
+      "firstRejected": true,
+      "correctedResultSavedSeparately": true
+    }
+  ],
+  "pending": [
+    "separate Linux administrator and official task containers",
+    "benchmark native controls",
+    "real-model route parity",
+    "frozen 16-position runner admission"
+  ]
+}

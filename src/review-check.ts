@@ -1,21 +1,23 @@
 /** Plugin-owned Docker confinement with native DSH subprocess ownership. */
 import { randomUUID } from 'node:crypto'
-import { lstat, readFile, realpath, writeFile, readdir } from 'node:fs/promises'
-import { join, relative, sep } from 'node:path'
+import { lstat, readFile, realpath, writeFile, readdir, mkdir } from 'node:fs/promises'
+import { isAbsolute, join, relative, sep } from 'node:path'
 import { homedir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { changedArtifacts, reviewPath, type ArtifactSnapshot } from './artifact-snapshot.ts'
 import { checkResultSchema, type CheckResult } from './verification-schema.ts'
+import { checkRequest } from './check-channel.ts'
 export type { CheckResult } from './verification-schema.ts'
 
 export interface ContainerPolicy { context: string; image: string; cpus: number; memoryMiB: number; pids: number }
-export interface CheckPolicy { commandMs: number; outputBytes: number; graceMs: number; container: ContainerPolicy; path: string }
+export interface CheckPolicy { commandMs: number; outputBytes: number; graceMs: number; container: ContainerPolicy; path: string; gatewaySocket?: string }
 
 /** Require an administrator-selected local context and immutable image, with bounded resources. */
 export function checkPolicy(input: Partial<CheckPolicy> & { container: ContainerPolicy }): CheckPolicy {
   const result = { commandMs: 300000, outputBytes: 1024 * 1024, graceMs: 2000, path: process.env.PATH ?? '', ...input }
+  if (result.gatewaySocket !== undefined && (!isAbsolute(result.gatewaySocket) || result.gatewaySocket.includes('\0'))) throw new TypeError('check gateway requires an absolute private Unix socket path')
   for (const [name, value] of Object.entries({ commandMs: result.commandMs, outputBytes: result.outputBytes, graceMs: result.graceMs })) {
     if (!Number.isSafeInteger(value) || value < 1 || value > (name === 'outputBytes' ? 16 * 1024 * 1024 : 3600000)) throw new TypeError(`invalid check ${name}`)
   }
@@ -29,8 +31,17 @@ export function checkPolicy(input: Partial<CheckPolicy> & { container: Container
 export function checkEnvironment(snapshot: ArtifactSnapshot, policy: CheckPolicy): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = Object.fromEntries(Object.keys(process.env).map(key => [key, undefined]))
   for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'all_proxy', 'no_proxy', 'NODE_USE_ENV_PROXY', 'NODE_OPTIONS', 'PYTHONPATH']) env[key] = undefined
-  return { ...env, PATH: policy.path, HOME: join(snapshot.check, 'home'), TMPDIR: join(snapshot.check, 'tmp'), TMP: join(snapshot.check, 'tmp'), TEMP: join(snapshot.check, 'tmp'),
+  return { ...env, PATH: policy.path, HOME: join(snapshot.root, 'native-home'), TMPDIR: join(snapshot.root, 'native-tmp'), TMP: join(snapshot.root, 'native-tmp'), TEMP: join(snapshot.root, 'native-tmp'),
     DOCKER_CONFIG: process.env.DOCKER_CONFIG ?? join(homedir(), '.docker'), LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8', NO_COLOR: '1' }
+}
+
+/** Docker control processes never use directories writable by a prior check command. */
+async function controlDirectories(snapshot: ArtifactSnapshot): Promise<void> {
+  for (const name of ['native-home', 'native-tmp']) {
+    const path = join(snapshot.root, name)
+    await mkdir(path, { recursive: true, mode: 0o700 })
+    if (!(await lstat(path)).isDirectory() || await realpath(path) !== path) throw new Error('CHECK_INFRASTRUCTURE: native control directory was redirected')
+  }
 }
 
 /** Observe the exact native managed range even when cancellation arrives before done. */
@@ -68,10 +79,10 @@ async function removeOwned(ctx: Context, prefix: string[], name: string, snapsho
   const id = found.stdout.text.trim()
   if (!id) return
   if (!/^[a-f0-9]{64}$/.test(id)) throw new Error('CHECK_INFRASTRUCTURE: ambiguous container identity')
-  const inspected = await managed(ctx, [...prefix, 'inspect', id], snapshot.check, env, policy, signal)
+  const inspected = await managed(ctx, [...prefix, 'inspect', '--type', 'container', '--format', '{"Name":{{json .Name}},"Labels":{{json .Config.Labels}}}', id], snapshot.check, env, policy, signal)
   if (inspected.exitCode !== 0 || inspected.stdout.lossy) throw new Error('CHECK_INFRASTRUCTURE: container ownership cannot be verified')
-  const rows = JSON.parse(inspected.stdout.text) as { Name: string; Config: { Labels: Record<string, string> } }[]
-  if (rows.length !== 1 || rows[0]!.Name !== `/${name}` || rows[0]!.Config.Labels['dsh.supervisor.snapshot'] !== snapshot.id) throw new Error('CHECK_INFRASTRUCTURE: container ownership mismatch; refusing removal')
+  const row = JSON.parse(inspected.stdout.text) as { Name: string; Labels: Record<string, string> | null }
+  if (row.Name !== `/${name}` || row.Labels?.['dsh.supervisor.snapshot'] !== snapshot.id) throw new Error('CHECK_INFRASTRUCTURE: container ownership mismatch; refusing removal')
   const removed = await managed(ctx, [...prefix, 'rm', '-f', id], snapshot.check, env, policy, signal)
   if (removed.exitCode !== 0) throw new Error('CHECK_INFRASTRUCTURE: owned container did not reach quiescence')
   const remaining = await managed(ctx, [...prefix, 'container', 'ls', '-aq', '--filter', `id=${id}`], snapshot.check, env, policy, signal)
@@ -80,6 +91,8 @@ async function removeOwned(ctx: Context, prefix: string[], name: string, snapsho
 
 /** Recover interrupted daemon resources before reusing a review snapshot; never remove by a guessed task name. */
 export async function recoverCheckContainers(ctx: Context, snapshot: ArtifactSnapshot, policy: CheckPolicy, signal: AbortSignal): Promise<void> {
+  if (policy.gatewaySocket) { await checkRequest(snapshot, 'check-recovery', 'recover', [], 'tree', policy, signal); return }
+  await controlDirectories(snapshot)
   const pending = (await readdir(snapshot.root)).filter(name => /^container-[a-f0-9-]{36}\.json$/.test(name))
   const env = checkEnvironment(snapshot, policy)
   for (const file of pending) {
@@ -101,6 +114,12 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
   policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult> {
   signal.throwIfAborted()
   if (!argv.length || argv.some(arg => arg.includes('\0')) || argv[0]!.startsWith('-')) throw new TypeError('check argv must contain a program and valid arguments')
+  if (policy.gatewaySocket) {
+    const result = (await checkRequest(snapshot, sessionId, 'run', argv, cwd, policy, signal))!
+    await writeFile(join(snapshot.root, `check-${result.id}.json`), JSON.stringify(result), { flag: 'wx', mode: 0o600 })
+    return result
+  }
+  await controlDirectories(snapshot)
   const subprocess = ctx.get('subprocess')
   if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
   const workingDirectory = await reviewPath(snapshot.check, cwd)

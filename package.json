@@ -8,11 +8,12 @@
   "exports": {
     ".": "./lib/index.mjs",
     "./client": "./lib/client.js",
+    "./check-gateway": "./lib/check-gateway.mjs",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
-    "lib/index.mjs",
+    "lib/*.mjs",
     "lib/client.js",
     "cordis.patch.yml",
     "README.md",

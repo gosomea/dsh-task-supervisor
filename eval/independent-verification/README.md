@@ -23,6 +23,16 @@ This directory records keyless integration calibration for enhanced review. New 
 
 `topology-probe.ts` invokes the actual plugin capture and native subprocess check path; `probe_topology.py` creates, verifies and removes only uniquely labelled owned containers. It mounts no credentials, grading materials or Docker socket and sends no model requests. Administrators provide a cached image digest, frozen Linux runtime, Linux Node and built probe. Result creation is exclusive; previous records are not overwritten. Capacity, deadline and workspace are explicit options; subtree success does not establish full-task success.
 
+## Administrator check channel
+
+[Channel evidence](gateway-20260928.json) records 28 focused regressions, including six gateway checks. Real Docker cases cover leases, private copies, cancellation acknowledgement, recovery and artifact-rewrite rejection. Strict Host/Client checks, build and package-entry inspection pass. After supported DSH `plugin add link:` installation, an administrator profile loaded the new entry and executed a check: exit 0, complete output, unchanged source artifacts and container cleanup acknowledgement, with no model requests.
+
+Administrator configuration includes `socketPath`, client `storageRoot`, separate `privateStorageRoot`, absolute `deadlineAt` and fixed `container`; command deadlines, output and snapshot capacity are configurable. Clients set only `checkGatewaySocket`. Both sides use the same image and context, and responses must match requests. The socket stays outside artifact storage. Only the administrator holds local Docker access; tasks send bounded check requests. Check containers mount neither the management socket, original workspace nor main home.
+
+The first regression truncated full Docker inspect under a small output budget, leaving three owned containers. Their labels and mounts were verified before removal; cleanup now reads only necessary fields. Native-control HOME/TMP live outside writable check mounts, and later probe writes revalidate directories and files. A child reviewer identified directory replacement; its reproduction turn was interrupted. The fix passed a real negative case here, without a final child signoff. The first profile fixture had mismatched file permissions and was rejected; a corrected second result was saved separately.
+
+macOS profile and same-process socket regressions do not establish deployment in separate Linux benchmark containers. Unix sockets cannot communicate directly across macOS and Linux VM kernels. The administrator profile and task client must share the Linux VM while separating management storage and Docker access. Actual deployment admission remains pending.
+
 ## Next integration item
 
 Independent checks require Host-owned bounded execution while official Agent containers cannot obtain global Docker administration. The next adapter must validate actual artifact capture, runner invocation, native process lifetime, background services, task deadlines and independent grading together. Changing datasets or reference adapters alone establishes none of these contracts. Runtime/profile/image/order freezing and four-arm real-model admission follow that validation.

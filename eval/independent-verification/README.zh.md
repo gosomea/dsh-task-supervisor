@@ -23,6 +23,16 @@ kind: "scratch"
 
 `topology-probe.ts` 调用实际插件快照和原生 subprocess 检查路径；`probe_topology.py` 仅创建、核对并移除自己带唯一标签的容器。不挂载凭据、评分文件或 Docker socket，不发送模型请求。管理员显式传入已有镜像 digest、冻结 Linux runtime、Linux Node 与已构建 probe；结果独占创建，不覆盖旧记录。参数可指定容量、截止和工作区，子树成功不能视为完整任务成功。
 
+## 管理员检查通道
+
+[通道证据](gateway-20260928.json)记录 28 项定向回归，其中网关 6 项；真实 Docker 检查覆盖租约、私有副本、取消确认、恢复和产物改写拒绝。Host/Client 严格检查、构建、打包入口检查通过。通过 DSH 的 `plugin add link:` 安装后，管理员 profile 实际加载新入口并执行检查，收到退出码 0、完整输出、原产物未改和容器清理确认；没有模型请求。
+
+管理员入口的配置包括 `socketPath`、客户端 `storageRoot`、分离的 `privateStorageRoot`、绝对 `deadlineAt` 和固定 `container`，可显式调整命令时限、输出与快照容量。客户端仅配置 `checkGatewaySocket`；双方使用相同镜像和 context，响应必须匹配请求。socket 位于产物租约之外。管理员持有本地 Docker 管理能力，主任务只能发送受限检查请求；检查容器不挂管理 socket、主目录或原任务工作区。
+
+首次回归中，小输出预算截断完整 Docker inspect，使三个自有容器未清理。已按标签和挂载核对身份后移除，仅查询清理所需字段。原生控制 HOME/TMP 位于检查容器不可写目录；后续探针写入会重新核对目录和文件。子代理提出目录替换问题，其复现轮次中断；该问题的修复由本轮真实负例验证，不记为最终子代理签字。首次 profile 手工夹具权限不匹配被拒绝，修正夹具后另存第二次结果。
+
+macOS profile 与同进程 socket 回归不能证明 Linux 官方任务的分离容器已部署。Unix socket 不能跨 macOS 与 Linux VM 内核直接共享；公开题的管理 profile 和任务客户端必须处于同一 Linux VM，并隔离管理目录与 Docker socket。该准入仍待实际部署验证。
+
 ## 下一项接入
 
 独立检查需要宿主拥有受限的检查执行能力，而官方 Agent 容器不能取得全局 Docker 管理权限。下一项适配必须同时验证实际产物捕获、运行器调用、原生进程生命周期、后台服务、任务截止与独立评分。题库或参考 adapter 更换本身不能证明这些条件成立。通过后再冻结 runtime/profile/image/order 并准入四组真实模型运行。

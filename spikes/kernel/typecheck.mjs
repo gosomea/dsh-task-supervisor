@@ -20,6 +20,7 @@ for (const side of ['host', 'client']) {
   const program = ts.createProgram({ rootNames: side === 'host' ? [
     resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
     resolve(project, 'spikes/kernel/artifact-snapshot.spec.ts'), resolve(project, 'spikes/kernel/review-check.spec.ts'), resolve(project, 'spikes/kernel/verification.spec.ts'),
+    resolve(project, 'src/check-gateway.ts'), resolve(project, 'spikes/kernel/check-gateway.spec.ts'),
   ] : [resolve(project, 'src/client/index.tsx'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
     options, projectReferences: parsed.projectReferences })
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]

@@ -36,9 +36,12 @@ F 修复浏览器才暴露的重复插槽加载错误，失败审查原始记录
 | `container.cpus`、`container.memoryMiB`、`container.pids` | 必填资源上限；模型不能改，部署选择由配置校验。 |
 | `excludedPaths`、`maxFiles`、`maxBytes` | 默认仅排除 .git，10000 个条目、256 MiB；超限或越界链接失败，排除项进入快照。 |
 | `commandDeadlineMs`、`commandOutputBytes` | 默认每条检查 300000 ms、每流 1 MiB；超时、取消或不完整输出不能验收。 |
+| `checkGatewaySocket` | 可选私有 Unix socket；由独立管理员 profile 固定检查镜像、资源、产物租约和截止，任务容器不取得 Docker 管理权限。 |
 | `deadlineMs` | 本增强审查总期限默认 1800000 ms，覆盖快照、检查和协议补交，不使用普通日志审查的 10 分钟默认值。 |
 
 插件只消费现有 Host 文件系统和 subprocess 服务，启用时显式查询；不把它们增加为所有部署的必需依赖，也不依赖新增 sandbox 字段。当前后端要求本地 Host 文件映射、本地 Docker 和匹配任务环境的镜像；跨平台生产覆盖尚未验证。检查副本只挂载 /check、网络关闭、根文件系统只读，不包含主目录、凭据或 Docker socket。缺少能力及清理故障明确记录为内部故障；不回退到宿主无约束执行。
+
+可选管理员入口 `dsh-task-supervisor/check-gateway` 注册私有检查通道，不注册模型工具。网关将租约目录中的固定快照重新捕获到管理员私有目录，再挂载这个副本；任务传入的路径不直接成为 Docker 挂载源。取消请求等待原生进程和容器清理确认，重启按私有记录恢复，失去确认仍记为内部故障。macOS 的正式插件安装、原生 profile 加载与实际检查已通过；公开题的 Linux 分离容器部署另行准入，详见[接入记录](../eval/independent-verification/README.zh.md)。
 
 `text` 用于静态标准，`runtime` 用于实际运行行为；视觉标准在独立浏览器能力完成前不能通过。本版不声称已独立验收游戏的出生、存档或水中行动。任务记录 11 可读 1–11，审查记录 2 可读 1–2，投影缓存 12 重建；旧日志证据级别不升级。读写分页、作业身份、原产物变化和检查源码改写由控制器准入，模型判断仍需外部 oracle 检验。
 

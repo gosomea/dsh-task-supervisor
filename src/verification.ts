@@ -20,6 +20,7 @@ export interface VerificationConfig {
   maxBytes?: number
   commandDeadlineMs?: number
   commandOutputBytes?: number
+  checkGatewaySocket?: string
   deadlineMs?: number
 }
 export interface VerificationPolicy { storage: string; limits: SnapshotLimits; checks: CheckPolicy; deadlineMs: number }
@@ -33,6 +34,7 @@ export function verificationPolicy(config: VerificationConfig): VerificationPoli
   const deadlineMs = config.deadlineMs ?? 1800000
   if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('verification deadlineMs must be 1–3600000')
   const checks = checkPolicy({ container: config.container,
+    ...config.checkGatewaySocket === undefined ? {} : { gatewaySocket: config.checkGatewaySocket },
     ...config.commandDeadlineMs === undefined ? {} : { commandMs: config.commandDeadlineMs },
     ...config.commandOutputBytes === undefined ? {} : { outputBytes: config.commandOutputBytes } })
   return { storage: config.storageRoot, limits, checks, deadlineMs }
