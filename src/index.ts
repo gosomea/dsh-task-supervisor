@@ -45,6 +45,7 @@ export interface Config {
   maxParallelNodes?: number
   integrationTools?: string[]
   observeLongTurns?: boolean
+  progressReviewMode?: 'current' | 'configured' | 'required-only'
   observationToolCalls?: number
   observationIntervalMs?: number
   observationConsecutiveErrors?: number
@@ -119,6 +120,10 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (!Number.isSafeInteger(maxAutomaticRoundsWithoutReport) || maxAutomaticRoundsWithoutReport < 1) {
     throw new TypeError('maxAutomaticRoundsWithoutReport must be a positive integer')
   }
+  const progressReviewMode = config.progressReviewMode ?? 'current'
+  if (!['current', 'configured', 'required-only'].includes(progressReviewMode)) throw new TypeError('invalid progressReviewMode')
+  const selectedReviewPolicy = { ...reviewerPolicy, observationSettings: { ...observationPolicy,
+    mode: progressReviewMode, rounds: maxAutomaticRoundsWithoutReport, inTurn: config.observeLongTurns !== false } }
   if (config.reviewerModel !== undefined
     && (!config.reviewerModel.provider.trim() || !config.reviewerModel.model.trim())) {
     throw new TypeError('reviewerModel requires a provider and model from the active DSH profile')
@@ -305,7 +310,7 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal): Promise<TaskSnapshot | null> {
     const life = runtime(agent)
-    if (config.observeLongTurns === false || !life.armed || !task.enabled || task.phase !== 'active'
+    if (progressReviewMode === 'required-only' || config.observeLongTurns === false || !life.armed || !task.enabled || task.phase !== 'active'
       || reviewAbort.has(agent)) return null
     const node = task.stages[task.stageIndex]
     const key = `${task.id}:${task.planVersion}:${node?.id}:${runsOf(task).find(run => run.id === node?.id)?.attempt}`
@@ -322,7 +327,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const reviewSignal = AbortSignal.any([signal, abort.signal])
       const decision = await reviewStage(ctx, agent, task, stageId,
         `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
-        reviewSignal, config.reviewerModel, 'progress', reviewerPolicy)
+        reviewSignal, config.reviewerModel, 'progress', selectedReviewPolicy)
       reviewSignal.throwIfAborted()
       const latest = current(agent)
       if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
@@ -385,7 +390,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const signal = AbortSignal.any([maintenanceSignal, abort.signal])
       try {
         const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence,
-          signal, config.reviewerModel, 'progress', reviewerPolicy)
+          signal, config.reviewerModel, 'progress', selectedReviewPolicy)
         signal.throwIfAborted()
         const latest = current(agent)
         if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision
@@ -436,7 +441,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         const latest = current(agent)
         if (disposed || latest === null || latest.id !== task.id || latest.revision !== task.revision
           || latest.phase !== 'active' || !runtime(agent).armed || hasPending(agent)) return
-        if (latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
+        if (progressReviewMode !== 'required-only' && latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
           await reviewProgress(agent, latest)
           return
         }
@@ -686,7 +691,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           planDecision = await reviewStage(ctx, agent,
             { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
             'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
-            config.reviewerModel, 'plan', reviewerPolicy)
+            config.reviewerModel, 'plan', selectedReviewPolicy)
         } catch (error) {
           await pauseForReviewFailure(agent, task, error)
           exec.concludeTurn()
@@ -755,7 +760,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const signal = AbortSignal.any([commandSignal, maintenanceSignal, abort.signal])
       try {
         const decision = await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
-          config.reviewerModel, job.kind, reviewerPolicy, job)
+          config.reviewerModel, job.kind, selectedReviewPolicy, job)
         const actual = current(agent)
         if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled) {
           await finishReviewRecord(agent, decision.jobId, 'stale')
@@ -799,7 +804,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     reviewAbort.set(agent, abort)
     const signal = AbortSignal.any([exec.signal, abort.signal])
     try {
-      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, reviewerPolicy)
+      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, selectedReviewPolicy)
       signal.throwIfAborted()
       const latest = current(agent)
       if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision || latest.phase !== 'reviewing') {

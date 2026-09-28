@@ -7,6 +7,9 @@ import { z } from 'zod'
 import { reviewFaultSchema, taskSchema } from './state-schema.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
+export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
+  toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
+  rounds: z.number().int().positive(), inTurn: z.boolean() }).strict()
 export const reviewJobSchema = z.object({
   id: z.string().uuid(), revision: z.number().int().positive(),
   mainSessionId: z.string().min(1), taskId: z.string().uuid(), taskRevision: z.number().int().positive(),
@@ -16,6 +19,7 @@ export const reviewJobSchema = z.object({
   runtimeId: z.string().uuid(), status: z.enum(['repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
   attempt: z.number().int().positive(), repairLimit: z.number().int().nonnegative(),
   deadlineAt: z.string().optional(),
+  attemptStartedAt: z.string().optional(), observationSettings: observationSettingsSchema.optional(),
   startedAt: z.string(), finishedAt: z.string().nullable(), trigger: z.string(),
   input: taskSchema, evidence: z.string(), fault: reviewFaultSchema.nullable(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
@@ -46,6 +50,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || job.mainSessionId !== previous.mainSessionId || job.planVersion !== previous.planVersion
     || job.stageId !== previous.stageId || job.kind !== previous.kind || job.nodeAttempt !== previous.nodeAttempt
     || job.evidence !== previous.evidence || JSON.stringify(job.input) !== JSON.stringify(previous.input)
+    || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
   return [...jobs.filter(item => item.id !== job.id), job].slice(-50)
 }

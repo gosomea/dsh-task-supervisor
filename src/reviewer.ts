@@ -29,7 +29,7 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number }
+export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']> }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -96,12 +96,14 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
   const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
     status: 'started', fault: null, decision: null, finishedAt: null, trigger: 'manual-retry',
     attempt: previous.attempt + 1, repairLimit: limits.repairAttempts, runtimeId: randomUUID(),
+    attemptStartedAt: new Date().toISOString(),
     deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString() } : { id: randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
     kind, cutoff: main.session.seq - 1, reviewerSessionId: `task-review-${randomUUID()}`,
     model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
-    startedAt: new Date().toISOString(), finishedAt: null, trigger: kind,
+    startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
+    ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null }
   await recordReview(ctx, main, job)
   try {
@@ -337,6 +339,9 @@ async function runReviewStage(
       const repairable = last?.type === 'turn/end' && last.data.reason.kind === 'completed'
         && (!errorCall || errorCall.type === 'tool/call' && errorCall.data.name === 'task_review_decision')
       if (!repairable || job.attempt - firstAttempt >= job.repairLimit) break
+      job.fault = { jobId: job.id, stageId, cutoff, reviewerSessionId,
+        code: errorCall ? 'decision-invalid' : 'protocol-missing', message: '前一审查轮未成功提交有效决定，正在有限补交。',
+        retryable: true, attempt: job.attempt, errorSeq: errorResult?.seq ?? last?.seq ?? null, outcomeKnown: true }
       job.attempt++
       job.status = 'repairing'
       await recordReview(ctx, main, { ...job, revision: ++job.revision })
@@ -362,6 +367,7 @@ async function runReviewStage(
     const result = call?.type === 'tool/call' ? events.findLast(event => event.type === 'tool/result' && event.data.message.source.callId === call.data.callId && event.data.message.isError !== true) : undefined
     if (!result || !await ctx.sessions.flush(handle.agent.session)) throw new Error('review decision is not durable')
     job.decision = { ...submitted, imageSeqs: [...imageSeqs], decisionSeq: result.seq }
+    job.fault = null
     job.status = 'submitted'
     job.finishedAt = new Date().toISOString()
     await recordReview(ctx, main, { ...job, revision: ++job.revision })

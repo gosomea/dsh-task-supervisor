@@ -1041,6 +1041,34 @@ it('binds direct creation to the mode selected before the direct user message', 
   expect((await ctx.commands.execute(main, '/task', [], signal))?.result.kind).toBe('success')
 })
 
+it.each(['current', 'required-only'] as const)('records progress policy and preserves required reviews: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'supervisor-policy-')); roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = { main: [textResponse('planning'), toolResponse('work', {}, 'work'), textResponse('working')],
+    reviewer: [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'read'),
+      toolResponse('task_review_decision', { verdict: mode === 'current' ? 'needs-user' : 'pass', finding: '检查已有证据', evidence_seqs: [0] }, 'verdict')] }
+  const ctx = await host(root, new ScriptedAdapter(scripts), true, { provider: 'scripted', model: 'reviewer' }, false, 1, false,
+    [], { progressReviewMode: mode, observationToolCalls: 1 })
+  ctx.tools.register(defineContentToolFixture({ name: 'work', description: 'work', parameters: {}, execute: async () => [{ type: 'text', text: 'done' }] }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`policy-${mode}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new 检查模块', [], signal); await agent.whenIdle()
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('plan'), name: 'task_submit_plan', arguments: {
+    criteria: [{ id: 'c', text: '检查模块', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 's', title: '检查模块', criterionIds: ['c'] }] } })
+  await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
+  if (mode === 'current') {
+    expect(taskOf(ctx, agent)?.pauseReason).toBe('decision')
+  } else {
+    expect(taskOf(ctx, agent)?.phase).toBe('active')
+    await ctx.tools.execute({ agent, signal, callId: ToolCallId('report'), name: 'task_report_stage', arguments: { stage_id: 's', evidence: '模块已检查' } })
+    expect(taskOf(ctx, agent)?.lastReview?.verdict).toBe('pass')
+  }
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1)
+  expect(jobs[0]?.kind).toBe(mode === 'current' ? 'progress' : 'stage')
+  expect(jobs[0]?.observationSettings?.mode).toBe(mode)
+  expect(jobs[0]?.observationSettings?.toolCalls).toBe(1)
+})
+
 it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)
   const bothEntered = Promise.withResolvers<void>(); const release = Promise.withResolvers<void>()

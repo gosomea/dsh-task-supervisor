@@ -8,5 +8,5 @@
 | b | passed |  |
 | c | passed |  |
 | d | passed |  |
-| e | ready |  |
-| f | blocked | dependencies not passed or stale: e |
+| e | passed |  |
+| f | ready |  |
