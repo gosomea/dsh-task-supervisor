@@ -59,6 +59,11 @@ class FrequencyTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "reconciliation"):
                 frequency.attempt(SimpleNamespace(root=root), {"tasks": [{"id": "test"}]}, row, {"eligible": True}, {})
 
+    def test_unscoreable_completed_run_is_unknown_but_timeout_remains_failure(self):
+        grade = {"reward": None, "infrastructureError": "verifier exception"}
+        self.assertIsNone(frequency.primary_success(True, grade))
+        self.assertIs(frequency.primary_success(False, grade), False)
+
 
 if __name__ == "__main__":
     unittest.main()

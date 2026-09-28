@@ -119,6 +119,14 @@ def parse_monitor(path):
     return rows[-1] if rows else {"status": "monitor-error"}
 
 
+def primary_success(completed, grade):
+    if not completed:
+        return False
+    if grade["infrastructureError"] is not None:
+        return None
+    return grade["reward"] == 1
+
+
 def native_evidence(home, state, output):
     """All per-attempt Sessions are isolated; retain raw logs privately, export safe metrics."""
     sessions, tokens, model_requests = [], {}, []
@@ -248,7 +256,7 @@ def attempt(args, protocol, row, gate, env):
         result = {**row, "name": name, "status": "scored" if graded["infrastructureError"] is None else "grading-infrastructure-error",
                   "admitted": True, "terminal": terminal, "nativePhase": native_phase, "home": str(home),
                   "sessionId": state["sessionId"], "approval": json.loads(receipt.read_text()) if receipt.exists() else None,
-                  "grade": graded, "primarySuccess": completed and graded["reward"] == 1 and graded["infrastructureError"] is None,
+                  "grade": graded, "primarySuccess": primary_success(completed, graded),
                   "patchSha256": hashlib.sha256(patch.read_bytes()).hexdigest(), "patchBytes": patch.stat().st_size,
                   "mainSessionStats": rows.get("sessionStats", {}).get("val"),
                   "responseLanguage": "en", "falsePauseRate": None, "correctionBenefit": None}
@@ -303,6 +311,8 @@ def main():
         return
     release = json.loads((args.root / "release.json").read_text())
     assert release["protocolSha256"] == hashlib.sha256(args.protocol.read_bytes()).hexdigest()
+    if not env.get("PLAYWRIGHT_ENTRY") or not env.get("CHROME_PATH"):
+        raise RuntimeError("Plan approval requires PLAYWRIGHT_ENTRY and CHROME_PATH before any model attempt")
     gates = {row["taskId"]: row for row in json.loads((args.root / "controls.json").read_text())}
     order = paired_order(protocol)
     assert len(order) == protocol["plannedAttempts"]
