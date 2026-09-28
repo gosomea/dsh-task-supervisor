@@ -1,0 +1,73 @@
+{
+  "mainSessionId": "session-7e2da4aa-43f4-4ff0-8b5d-407d17519ff5",
+  "taskId": "e6272b0b-7e51-4fb2-af3e-c8b6ec46948e",
+  "provider": "deepseek-codebuddy",
+  "model": "deepseek-v4.1-flash",
+  "completions": [
+    {
+      "seq": 103,
+      "revision": 9,
+      "cycle": 1,
+      "attempt": 1,
+      "reviewerSessionId": "task-review-8f81f456-0b6b-4778-ad61-3a9bc4976687"
+    },
+    {
+      "seq": 262,
+      "revision": 16,
+      "cycle": 2,
+      "attempt": 2,
+      "reviewerSessionId": "task-review-5c4e7029-2134-4b11-834f-1c6935c7219e"
+    },
+    {
+      "seq": 364,
+      "revision": 23,
+      "cycle": 3,
+      "attempt": 3,
+      "reviewerSessionId": "task-review-d2b3b93a-55a8-4640-bef0-e418216c3b51"
+    }
+  ],
+  "repairEvents": [
+    {
+      "seq": 198,
+      "kind": "proposal",
+      "proposalId": "907602b5-0dcd-4342-b871-4c5d39667fde",
+      "revision": 9,
+      "source": null
+    },
+    {
+      "seq": 203,
+      "kind": "confirm",
+      "proposalId": "907602b5-0dcd-4342-b871-4c5d39667fde",
+      "revision": 9,
+      "source": "web-confirmation"
+    },
+    {
+      "seq": 298,
+      "kind": "proposal",
+      "proposalId": "b9d8110c-42a5-4bb2-979c-21a02778b0d3",
+      "revision": 16,
+      "source": "main-agent"
+    },
+    {
+      "seq": 305,
+      "kind": "confirm",
+      "proposalId": "b9d8110c-42a5-4bb2-979c-21a02778b0d3",
+      "revision": 16,
+      "source": "web-confirmation"
+    }
+  ],
+  "writeCalls": [
+    {
+      "seq": 58,
+      "name": "write"
+    },
+    {
+      "seq": 224,
+      "name": "edit"
+    },
+    {
+      "seq": 326,
+      "name": "edit"
+    }
+  ]
+}

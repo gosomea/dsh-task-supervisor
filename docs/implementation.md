@@ -1,6 +1,6 @@
 # Implementation status
 
-**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 9 reads versions 1–8 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
+**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 10 reads versions 1–10 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
 
 | Step | Capability | Acceptance |
 | --- | --- | --- |
@@ -15,7 +15,15 @@
 
 Browser acceptance exposed a duplicate slot declaration. F replaces reviewer transcript embedding with a read-only Host endpoint that never opens a writable reviewer Agent. It also aligns the short creation phrase, unresolved-question semantics and initial-approval notices, and fixes metrics that confused later manual success with automatic repair or stale decisions with applied pauses.
 
-The E-frozen NodeBB development regression completed in 1342 seconds and earned independent Harbor reward=1.0 with zero verifier errors; four reviews recorded valid decisions without protocol failures. An initial sidecar platform failure remains an infrastructure record; grading retried the same patch. This is one new attempt, not evidence of repair probability or long-horizon superiority. The [60-attempt follow-up frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) is frozen but has not run. Browser deployment includes F integration fixes; the public run remained fixed at E.
+The E-frozen NodeBB development regression completed in 1342 seconds and earned independent Harbor reward=1.0 with zero verifier errors; four reviews recorded valid decisions without protocol failures. An initial sidecar platform failure remains an infrastructure record; grading retried the same patch. This is one new attempt, not evidence of repair probability or long-horizon superiority. The [60-attempt follow-up frequency protocol](../eval/review-recovery/frequency-p2-protocol.md) is frozen; current execution progress is recorded in P2. Browser deployment includes F integration fixes; the public run remained fixed at E.
+
+## Completed-task repair in the original DAG
+
+Step 1 of the independent-verification enhancement is implemented and validated on the registered isolated 61454 deployment. The main Agent, persistent consultation and task details can propose repair impact; no model tool can confirm it. Every reopening requires a user click. Native maintenance checks task, proposal and complete workspace identity, durably records the confirmation, then starts another acceptance cycle of the same task. Affected roots and descendants receive new attempts; unrelated branches retain passes. Prior completion and node reviews remain historical. A historical task can return to its DAG only while the execution slot is free.
+
+All 101 kernel tests, both strict typechecks and the isolated build pass. Real CodeBuddy DeepSeek runs completed two reopenings and three acceptance cycles of one task. Files stayed unchanged before confirmation; a pending proposal survived restart; an external Node command verified every completed cycle. See the [repair protocol](completed-task-repair.md) and [validation evidence](completed-task-repair-validation.md).
+
+The workspace digest binds a proposal to confirmation; this step adds no independent acceptance snapshot or runner. Existing review still examines main-Session evidence. Enhancement steps 2–5 remain pending. Neither the user instance at 59909 nor the frozen public evaluation was replaced. The [P2 run record](../eval/review-recovery/p2-20260928/README.zh.md) owns current evaluation progress and denominators.
 
 ## Bounded protocol repair and manual recovery (B)
 

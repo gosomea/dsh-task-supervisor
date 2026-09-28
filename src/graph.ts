@@ -85,10 +85,10 @@ export function finishNode(task: TaskSnapshot, id: string, verdict: 'pass' | 're
   }))
 }
 
-/** Rework invalidates accepted descendants and advances all affected attempt IDs. */
-export function reworkNode(task: TaskSnapshot, id: string, evidenceAfterSeq = 0): TaskSnapshot {
-  if (!task.stages.some(stage => stage.id === id)) throw new Error(`unknown node ${id}`)
-  const affected = new Set([id])
+/** Union dependency impact without counting a shared descendant twice. */
+export function affectedNodes(task: TaskSnapshot, roots: readonly string[]): string[] {
+  for (const id of roots) if (!task.stages.some(stage => stage.id === id)) throw new Error(`unknown node ${id}`)
+  const affected = new Set(roots)
   for (let changed = true; changed;) {
     changed = false
     task.stages.forEach((stage, index) => {
@@ -97,6 +97,12 @@ export function reworkNode(task: TaskSnapshot, id: string, evidenceAfterSeq = 0)
       }
     })
   }
+  return task.stages.filter(stage => affected.has(stage.id)).map(stage => stage.id)
+}
+
+/** Rework invalidates accepted descendants and advances all affected attempt IDs. */
+export function reworkNode(task: TaskSnapshot, id: string, evidenceAfterSeq = 0): TaskSnapshot {
+  const affected = new Set(affectedNodes(task, [id]))
   return withRuns(task, runsOf(task).map(run => affected.has(run.id)
     ? { id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq } : run))
 }

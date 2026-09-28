@@ -17,7 +17,7 @@ export function taskStatus(state: PanelState): string {
   if (task.phase === 'paused' && task.pauseReason === 'decision') return '等待用户决策'
   if (state.reviewing) return '独立审查中'
   if (!state.armed && ['active', 'planning', 'reviewing'].includes(task.phase)) return '等待手动恢复'
-  return PHASE[task.phase]
+  return task.acceptanceCycle && task.acceptanceCycle > 1 ? `${PHASE[task.phase]} · 第 ${task.acceptanceCycle} 轮验收` : PHASE[task.phase]
 }
 export function progress(task: TaskSnapshot): string {
   return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过` : '正在准备计划'
@@ -30,8 +30,12 @@ export function headline(text: string, limit = 60): string {
 /** Attempts created by restart alone do not acquire a rework explanation. */
 export function nodeRework(task: TaskSnapshot, id: string, records: readonly ReworkRecord[] = []) {
   const run = runsOf(task).find(item => item.id === id)
-  return records.findLast(record => record.planVersion === task.planVersion
+  const recorded = records.findLast(record => record.planVersion === task.planVersion
     && record.nodes.some(node => node.id === id && node.nextAttempt === run?.attempt))
+  if (recorded) return recorded
+  const repair = task.repairHistory?.findLast(cycle => cycle.affectedNodeIds.includes(id)
+    && cycle.previousRuns.some(prior => prior.id === id && prior.attempt + 1 === run?.attempt))
+  return repair ? { stageId: repair.rootNodeIds.includes(id) ? id : repair.rootNodeIds[0]!, reason: repair.reason } : undefined
 }
 
 /** Worker labels come from recorded execution Sessions, never title text or planned delegation. */

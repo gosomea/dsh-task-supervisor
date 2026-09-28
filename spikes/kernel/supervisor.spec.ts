@@ -11,7 +11,7 @@ import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { mkdtemp, rm, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -19,7 +19,9 @@ import * as Supervisor from '../../src/index.ts'
 import { draftOf, recordDraft } from '../../src/drafts.ts'
 import { reviewStage } from '../../src/reviewer.ts'
 import { validateProvenance } from '../../src/provenance.ts'
-import { appendTask, taskOf, newTask } from '../../src/state.ts'
+import { installRepairs } from '../../src/repair-runtime.ts'
+import { artifactIdentity } from '../../src/artifact-identity.ts'
+import { appendTask, taskOf, newTask, taskProjection, NAMESPACE } from '../../src/state.ts'
 
 class ScriptedAdapter extends LlmAdapter {
   requests = 0
@@ -1475,4 +1477,160 @@ it('records explicit main-node starts, rejecting stale attempts and blocked depe
     arguments: { stage_id: 'a', reason: '修正边界条件' } })
   expect((await start('a')).isError).toBe(true)
   expect((await start('a', 2)).isError).toBe(false)
+})
+
+
+it('records a model repair proposal without execution authority and prevents writes while waiting for the click', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-host-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-case-')); roots.push(workspace)
+  await writeFile(join(workspace, 'value.txt'), 'original')
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-proposer'), meta: { cwd: workspace },
+    agentOptions: { provider: 'scripted', model: 'main' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+  const task = { ...newTask('修复原目标'), phase: 'complete' as const, criteria: [{ id: 'c', text: '值正确' }],
+    stages: [{ id: 'n', title: '值实现', criterionIds: ['c'], dependsOn: [] }],
+    nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
+  appendTask(ctx, agent, task)
+  const signal = new AbortController().signal
+  const propose = await ctx.tools.execute({ agent, signal, callId: ToolCallId('proposal'), name: 'task_propose_repair',
+    arguments: { task_id: task.id, task_revision: task.revision, title: '值不正确', reason: '用户报告值不正确', root_node_ids: ['n'], evidence_seqs: [] } })
+  expect(propose.isError, JSON.stringify(propose)).toBe(false)
+  expect(taskOf(ctx, agent)?.phase).toBe('complete')
+  expect(adapter.requests).toBe(0)
+  expect(ctx.tools.get('task_reopen', agent)).toBeUndefined()
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.repairs).toHaveLength(1)
+  const write = await ctx.tools.execute({ agent, signal, callId: ToolCallId('premature-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'changed' } })
+  expect(write.isError).toBe(true)
+  expect(JSON.stringify(write)).toContain('REPAIR_CONFIRMATION_REQUIRED')
+  expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('original')
+  const status = await ctx.tools.execute({ agent, signal, callId: ToolCallId('status'), name: 'task_status', arguments: {} })
+  expect(status.isError).toBe(false)
+  expect(JSON.stringify(status)).toContain('TASK_COMPLETED')
+})
+
+it('confirms the exact workspace, rejects changed artifacts and other active tasks, and retains native receipts after restart', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-runtime-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-artifact-')); roots.push(workspace)
+  await writeFile(join(workspace, 'value.txt'), 'original')
+  const ctx = await host(root, new ScriptedAdapter(), false)
+  await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  ctx.sessionProjections.register(taskProjection)
+  ctx.agents.registerSessionControlReader(NAMESPACE, [10])
+  let wakes = 0
+  const repairs = installRepairs(ctx, async (agent, expected, next, _instruction, beforeCommit) => {
+    await agent.runMaintenance(async () => {
+      if (taskOf(ctx, agent)?.id !== expected.id || taskOf(ctx, agent)?.revision !== expected.revision) throw new Error('stale expected task')
+      await beforeCommit()
+      appendTask(ctx, agent, next()); expect(await ctx.sessions.flush(agent.session)).toBe(true); wakes++
+    })
+  })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-native'), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = { ...newTask('原目标'), phase: 'complete' as const, criteria: [{ id: 'c', text: '正确' }],
+    stages: [{ id: 'n', title: '实现', criterionIds: ['c'], dependsOn: [] }], nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
+  appendTask(ctx, agent, task)
+  const signal = new AbortController().signal
+  const input = { taskId: task.id, taskRevision: task.revision, title: '缺陷', reason: '有缺陷', rootNodeIds: ['n'], evidenceSeqs: [] }
+  const first = await repairs.propose(agent, input, signal)
+  expect((await repairs.propose(agent, input, signal)).id).toBe(first.id)
+  expect(wakes).toBe(0)
+  await writeFile(join(workspace, 'value.txt'), 'modified')
+  await expect(repairs.confirm(agent, first.id, task.id, task.revision, signal)).rejects.toThrow('ARTIFACT_CHANGED')
+  expect(wakes).toBe(0)
+  expect(taskOf(ctx, agent)?.phase).toBe('complete')
+  const fresh = await repairs.propose(agent, input, signal)
+  const other = newTask('另一个任务'); appendTask(ctx, agent, other)
+  await expect(repairs.confirm(agent, fresh.id, task.id, task.revision, signal)).rejects.toThrow('ACTIVE_TASK_CONFLICT')
+  expect(taskOf(ctx, agent)?.id).toBe(other.id)
+  appendTask(ctx, agent, { ...other, revision: 2, phase: 'complete' })
+  await repairs.confirm(agent, fresh.id, task.id, task.revision, signal)
+  expect(wakes).toBe(1)
+  expect(taskOf(ctx, agent)).toMatchObject({ id: task.id, phase: 'active', acceptanceCycle: 2, nodeRuns: [{ id: 'n', attempt: 2, status: 'pending' }] })
+  await repairs.confirm(agent, fresh.id, task.id, task.revision, signal)
+  expect(wakes).toBe(1)
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.archivedTasks.map(e => e.task.id)).toEqual([other.id])
+  await ctx.fiber.dispose(); contexts.splice(contexts.indexOf(ctx), 1)
+  const restored = await host(root, new ScriptedAdapter())
+  const reopened = await restored.agents.resume({ resumeSessionId: agent.id })
+  expect(taskOf(restored, reopened.agent)?.acceptanceCycle).toBe(2)
+  expect(restored.sessionProjections.stateOf(reopened.agent.session, 'taskSupervisor')?.repairs.at(-1)?.status).toBe('applied')
+  const status = await restored.tools.execute({ agent: reopened.agent, signal, callId: ToolCallId('restart-status'), name: 'task_status', arguments: {} })
+  expect(JSON.stringify(status)).toContain('AWAITING_MANUAL_RESUME')
+})
+
+it('does not silently omit untracked files while binding a repair proposal', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-fs-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-boundary-')); roots.push(workspace)
+  const ctx = await host(root, new ScriptedAdapter(), false); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const signal = new AbortController().signal
+  await writeFile(join(workspace, 'untracked.txt'), 'abc')
+  const first = await artifactIdentity(ctx.fs, workspace, signal)
+  await writeFile(join(workspace, 'untracked.txt'), 'def')
+  expect((await artifactIdentity(ctx.fs, workspace, signal)).digest).not.toBe(first.digest)
+  await expect(artifactIdentity(ctx.fs, workspace, signal, { files: 1, bytes: 2 })).rejects.toThrow('ARTIFACT_LIMIT')
+
+})
+
+it('uses the authenticated panel transport for proposal and exact click confirmation without exposing a model approval tool', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-panel-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-panel-case-')); roots.push(workspace); await writeFile(join(workspace, 'value.txt'), 'original')
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  let route: ((request: Request) => Promise<Response>) | undefined
+  ctx.provide('connection', { fetch: { register(definition: { fetch: typeof route }) { route = definition.fetch; return () => { route = undefined } } } } as unknown as Context['connection'])
+  await vi.waitFor(() => expect(route).toBeDefined())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-http'), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = { ...newTask('原目标'), phase: 'complete' as const, criteria: [{ id: 'c', text: '正确' }],
+    stages: [{ id: 'n', title: '实现', criterionIds: ['c'], dependsOn: [] }], nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
+  appendTask(ctx, agent, task)
+  const send = (body: Record<string, unknown>) => route!(new Request(`http://localhost/api/task-supervisor?sessionId=${agent.id}`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }))
+  const initial = await send({ action: 'propose-repair', taskId: task.id, revision: task.revision, title: '缺陷', reason: '用户反馈', rootNodeIds: ['n'], evidenceSeqs: [] })
+  expect(initial.status).toBe(200)
+  const proposed = await initial.json()
+  expect(proposed.repairs[0].source).toBe('user')
+  expect(proposed.task.phase).toBe('complete'); expect(adapter.requests).toBe(0)
+  const id = proposed.repairs[0].id
+  const wrong = await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision + 1 })
+  expect(wrong.status).toBe(409); expect((await wrong.json()).code).toBe('REPAIR_STALE')
+  const clicked = await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision })
+  expect(clicked.status).toBe(200); await agent.whenIdle()
+  expect(taskOf(ctx, agent)).toMatchObject({ id: task.id, phase: 'active', acceptanceCycle: 2 })
+  expect(adapter.requests).toBe(1)
+  expect((await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision })).status).toBe(200)
+  await agent.whenIdle(); expect(adapter.requests).toBe(1)
+  expect(agent.session.snapshotEvents().filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toHaveLength(1)
+})
+
+
+it.skipIf(process.platform === 'win32')('rejects an external directory symlink (Windows requires separate symlink privileges)', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-link-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-link-case-')); roots.push(workspace)
+  const ctx = await host(root, new ScriptedAdapter(), false); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  await symlink(root, join(workspace, 'external'))
+  await expect(artifactIdentity(ctx.fs, workspace, new AbortController().signal)).rejects.toThrow('ARTIFACT_UNSUPPORTED')
+})
+
+it('lets the persistent consultation propose repair without turning the proposal into a main-Agent instruction', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-repair-chat-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-chat-case-')); roots.push(workspace); await writeFile(join(workspace, 'value.txt'), 'original')
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-chat-main'), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = { ...newTask('原目标'), phase: 'complete' as const, criteria: [{ id: 'c', text: '正确' }],
+    stages: [{ id: 'n', title: '实现', criterionIds: ['c'], dependsOn: [] }], nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
+  appendTask(ctx, agent, task)
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task consult', [], signal))?.result.kind).toBe('success')
+  const chat = ctx.agents.get(SessionId(`supervisor-chat-${agent.id}`))!
+  expect(chat).toBeDefined()
+  const before = adapter.requests
+  const proposed = await ctx.tools.execute({ agent: chat, signal, callId: ToolCallId('chat-proposal'), name: 'supervisor_propose_repair', arguments: {
+    task_id: task.id, revision: task.revision, title: '用户报告缺陷', reason: '请核实原目标中的错误', root_node_ids: ['n'], evidence_seqs: [],
+  } })
+  expect(proposed.isError, JSON.stringify(proposed)).toBe(false)
+  expect(taskOf(ctx, agent)?.phase).toBe('complete')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.repairs.at(-1)).toMatchObject({ source: 'consultation', proposerSessionId: chat.id, status: 'pending' })
+  expect(adapter.requests).toBe(before)
+  expect(ctx.tools.get('task_reopen', chat)).toBeUndefined()
+  expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('original')
 })

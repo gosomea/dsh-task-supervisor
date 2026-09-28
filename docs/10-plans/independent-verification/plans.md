@@ -1,6 +1,6 @@
 # Independent verification and repair after completion
 
-**Status: implementation proposal, not implemented. Updated: 2026-09-28.** This document owns independent artifact verification and repair through the original DAG after completion. [Implementation status](../../implementation.md) and runtime code describe working behavior. This pass establishes a documentation baseline without changing deployments, the game Session, or the frozen 60-attempt public benchmark comparison.
+**Status: step 1 implemented and validated in isolation; steps 2–5 pending. Updated 2026-09-28.** This plan covers independent artifact verification and completed-task repair in the original DAG. Current capabilities are documented in [implementation status](../../implementation.md), the [repair protocol](../../completed-task-repair.md) and [validation evidence](../../completed-task-repair-validation.md). Step 1 runs on registered instance 61454; user instance 59909 and the frozen 60-position public comparison were not replaced.
 
 ## Summary
 
@@ -20,7 +20,7 @@ A defect within the original objective is repaired through the original task and
 
 ## Current state and problems
 
-Existing review can read main Session text, tool inputs and outputs, and image evidence; review recovery, node rework, and explicit starts already exist. Reading logs and the main Agent test report does not replace independent checks of the current artifact. New tools, snapshots, and reopening after completion remain work proposed here.
+Existing review can read main Session text, tool inputs and outputs, and image evidence; review recovery, node rework, and explicit starts already exist. Reading logs and the main Agent test report does not replace independent checks of the current artifact. Completed-task reopening is implemented in step 1; independent inspection tools and snapshots remain planned for steps 2–4.
 
 In the game case, the task was complete when the main Agent diagnosed spawn and water movement issues and called rework, receiving `task is not executing`. The screenshot supplies defect leads to verify; this proposal does not claim every diagnosis in that screenshot has been independently reproduced.
 
@@ -44,7 +44,7 @@ Confirmation binds to the proposal version, task revision, and artifact identity
 
 ### Returning to the original DAG
 
-The proposed flow is `complete → repair-proposed → user confirmation → active (new acceptance cycle) → independent checks of required nodes → independent final acceptance → complete`. `repair-proposed` denotes a pending proposal and need not become a task phase; the task remains complete while the proposal waits. Fix enums and fields during the execution-contract stage.
+The proposed flow is `complete → repair-proposed → user confirmation → active (new acceptance cycle) → independent checks of required nodes → independent final acceptance → complete`. `repair-proposed` denotes a pending proposal and need not become a task phase; the task remains complete while the proposal waits. Step 1 retains the `complete` phase and records proposals and acceptance cycles separately; see the repair protocol.
 
 Keep the stable task ID and original objective. Repair within that objective does not masquerade as a new requirements version. Add a monotonic acceptance-cycle identity and increment task revision; keep plan version when unchanged. Prior completion remains a historical milestone bound to its artifact snapshot, reviews, and time. Append a reopening event to stop the old conclusion representing the current artifact without changing or deleting old logs.
 
@@ -56,7 +56,7 @@ After all required node rechecks pass, repeat final acceptance on the current ar
 
 ### Task tools, authorization, and history
 
-Add a proposal entry and controller reopening action, provisionally `task_propose_repair` and `task_reopen`. The former records scope and evidence without execution permission; the latter validates task identity, expected revision, proposal version, artifact identity, native click-confirmation receipt, and idempotency key. A model cannot substitute an arbitrary user-message number for the button receipt. UI and tools share state transitions, but model tools cannot bypass confirmation.
+Step 1 adds `task_propose_repair`, `supervisor_propose_repair` and an authenticated panel reopening action, without a model-callable `task_reopen`. Proposal tools record scope and evidence without execution permission; the controller validates task identity, expected revision, proposal version, artifact identity, native click-confirmation receipt, and idempotency key. A model cannot substitute an arbitrary user-message number for the button receipt. UI and tools share state transitions, but model tools cannot bypass confirmation.
 
 Keep `task_rework_node` for node rework during execution, with explicit preconditions. Extend `task_status` with the current task, selected historical target, available actions, and blocking reasons. Completed-state context instructs proposal and confirmation instead of direct rework. Prefer filtering unavailable execution tools where supported while retaining deterministic checks; static registration requires accurate descriptions, state context, and structured rejection.
 
@@ -131,12 +131,12 @@ Preserve evidence levels of historical reviews without inventing independent exe
 
 ## Development stages and acceptance
 
-Commit and push each step independently, recording plugin and host commits, checks, and isolated deployment identities separately. This document is the planning baseline. Create this topic execution contract, state, and evidence when implementation starts; do not rewrite completed plans from other topics.
+Commit and push each step independently, recording plugin and host commits, checks, and isolated deployment identities separately. Follow the DSH project conventions and record implementation status and acceptance evidence in this document and its companion validation record. Do not introduce another execution framework or rewrite completed topics.
 
 | Step | Deliverable and rationale | Acceptance gate |
 | --- | --- | --- |
 | 0: plan baseline | Define independent verification, original-DAG repair, and click confirmation with shared documentation entries | Separate proposal from reality; check bilingual pairing and links. |
-| 1: reopening after completion | Proposals, impact, confirmation receipts, acceptance history, available actions, and structured errors; establish the repair workflow first | Return completed tasks to the original DAG; block unconfirmed execution; prove idempotency, stale callback rejection, and correct historical targeting. |
+| 1: reopening after completion (validated) | Proposals, impact, confirmation receipts, acceptance history, available actions, and structured errors; establish the repair workflow first | Return completed tasks to the original DAG; block unconfirmed execution; prove idempotency, stale callback rejection, and correct historical targeting. |
 | 2: snapshot and native runner | Current-artifact capture, probe directories, host isolation policy, and managed resources establish actual verification | Verify uncommitted content, detect capture races, reject escaped writes, and leave main tasks and other instances unaffected. |
 | 3: independent model review | Two-phase visibility, per-criterion decisions, and log recovery reduce dependence on main Agent reports | Reject real defects despite green self-tests, prevent completion with unverified criteria, and classify infrastructure faults accurately. |
 | 4: browser and UI | Independent interaction, compact DAG, review progress, repair history, and detailed evidence | Reproduce spawn, save, and water issues through ordinary paths, distinguish diagnostic injection, and match native buttons and layout. |

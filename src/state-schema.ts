@@ -51,6 +51,15 @@ export const reviewFaultSchema = z.object({
 export const taskSchema = z.object({
   id: z.string().uuid(),
   revision: z.number().int().positive(),
+  acceptanceCycle: z.number().int().positive().optional(),
+  completedAt: z.string().optional(),
+  reopenedFromProposalId: z.string().uuid().optional(),
+  repairHistory: z.array(z.object({
+    proposalId: z.string().uuid(), previousCycle: z.number().int().positive(),
+    previousReview: reviewSchema.nullable(), previousRuns: z.array(nodeRunSchema), completedAt: z.string().nullable(),
+    rootNodeIds: z.array(z.string()), affectedNodeIds: z.array(z.string()), reason: z.string(),
+    confirmedAt: z.string(), confirmationSeq: z.number().int().nonnegative(),
+  }).strict()).optional(),
   objective: z.string().min(1),
   creationRequestId: z.string().min(1).optional(),
   responseLanguage: z.string().min(1).optional(),

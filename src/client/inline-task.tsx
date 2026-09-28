@@ -50,6 +50,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       {rework && <small>{rework.stageId === stage?.id ? '返工原因' : '上游返工影响'}：{headline(rework.reason, 80)}</small>}
       {task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
+    {state.repairs?.some(item => item.taskId === task.id && ['pending', 'confirmed'].includes(item.status)) && <div className="dsh-task-inline-summary"><span>修复提案待确认 · 任务仍为已完成</span><Button size="sm" variant="toolbar" onClick={() => open()}>查看影响范围</Button></div>}
     {actions && <div className="dsh-task-inline-controls">{actions}</div>}
     {error && <p role="alert" className="dsh-task-error">{error}</p>}
   </section>

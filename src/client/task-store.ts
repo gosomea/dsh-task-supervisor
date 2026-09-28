@@ -1,4 +1,5 @@
 /** One live task snapshot and action stream per displayed Session. */
+import type { RepairProposal } from '../repairs.ts'
 import type { ReviewJob } from '../review-records.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
 import type { TaskDraft } from '../drafts.ts'
@@ -14,6 +15,7 @@ export interface PanelState {
   consultationMode?: 'discussion' | 'direct'
   reviewJobs?: ReviewJob[]
   reviews?: NonNullable<TaskSnapshot['lastReview']>[]
+  repairs?: RepairProposal[]
   reworks?: ReworkRecord[]
 }
 export interface TaskView { state: PanelState | null; busy: boolean; error: string }
@@ -79,6 +81,24 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       } finally {
         if (view.busy) publish({ ...view, busy: false })
       }
+    },
+    async repair(action: 'propose-repair' | 'confirm-repair' | 'decline-repair', task: TaskSnapshot,
+      input: { proposalId: string } | { title: string; reason: string; rootNodeIds: string[]; evidenceSeqs: number[] }): Promise<boolean> {
+      if (view.busy || !view.state?.live) return false
+      const current = ++sequence
+      poll?.abort()
+      publish({ ...view, busy: true, error: '' })
+      try {
+        const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...input, action, taskId: task.id, revision: task.revision }) })
+        const body = await result.json() as PanelState & { error?: string }
+        if (!result.ok) throw new Error(body.error ?? '修复提案操作失败')
+        if (current === sequence) publish({ state: body, busy: false, error: '' })
+        return true
+      } catch (error) {
+        if (current === sequence) publish({ ...view, busy: false, error: String(error) })
+        return false
+      } finally { if (view.busy) publish({ ...view, busy: false }) }
     },
     async create(objective: string): Promise<boolean> {
       const state = view.state

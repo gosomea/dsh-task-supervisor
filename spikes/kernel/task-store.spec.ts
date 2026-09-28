@@ -101,3 +101,20 @@ it('promotes the displayed draft version once and keeps a rejected draft availab
   expect(store.getSnapshot().state?.draft).toEqual(draft)
   expect(store.getSnapshot().error).toContain('任务状态已变化')
 })
+
+it('binds repair confirmation to the displayed historical task rather than the current task', async () => {
+  const current = { ...newTask('当前已结束任务'), phase: 'complete' as const }
+  const historical = { ...newTask('历史任务'), revision: 7, phase: 'complete' as const }
+  const initial: PanelState = { task: current, live: true, armed: false, reviewing: false, actions: [] }
+  const pending = Promise.withResolvers<Response>()
+  const request = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json(initial)).mockReturnValueOnce(pending.promise)
+  const store = createTaskStore('main', request); cleanups.push(store.subscribe(() => {}))
+  await vi.waitFor(() => expect(store.getSnapshot().state?.task?.id).toBe(current.id))
+  const id = randomUUID(), clicked = store.repair('confirm-repair', historical, { proposalId: id })
+  expect(await store.repair('confirm-repair', historical, { proposalId: id })).toBe(false)
+  expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toEqual({ action: 'confirm-repair', proposalId: id, taskId: historical.id, revision: 7 })
+  pending.resolve(Response.json({ error: 'ARTIFACT_CHANGED' }, { status: 409 }))
+  expect(await clicked).toBe(false)
+  expect(store.getSnapshot().state?.task?.id).toBe(current.id)
+  expect(store.getSnapshot().error).toContain('ARTIFACT_CHANGED')
+})

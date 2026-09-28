@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { draftOf, recordDraft, type TaskDraft } from './drafts.ts'
 import { evidenceRecord } from './evidence.ts'
 import { reviewerOptions, type ReviewerModel } from './reviewer.ts'
+import type { RepairController } from './repair-runtime.ts'
 import { taskOf, taskJson, type TaskSnapshot } from './state.ts'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { resolveLanguage } from './task-context.ts'
@@ -55,7 +56,7 @@ export function consultationDirective(text: string): string | null {
   return edit ? `edit ${edit[1]}` : null
 }
 
-export function installConsultation(ctx: Context, fixedModel: ReviewerModel | undefined, createTask: CreateTask) {
+export function installConsultation(ctx: Context, fixedModel: ReviewerModel | undefined, createTask: CreateTask, repairs?: RepairController) {
   ctx.agents.registerSessionControlReader(NAMESPACE, [1, 2])
   const floors = new WeakMap<Agent, number>()
   const targets = new WeakMap<Agent, { messageId: string; taskId: string | null }>()
@@ -132,7 +133,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     return recordDraft(ctx, main, { ...creating, version: creating.version + 1, status: 'created', taskId: created.id, updatedAt: new Date().toISOString() })
   }
 
-  const allowed = ['supervisor_read_status', 'supervisor_read_log', 'supervisor_control', 'supervisor_update_draft', 'supervisor_create_draft']
+  const allowed = ['supervisor_read_status', 'supervisor_read_log', 'supervisor_control', 'supervisor_update_draft', 'supervisor_create_draft', 'supervisor_propose_repair']
   ctx.tools.guard(exec => exec.agent && consultationBinding(exec.agent) && !allowed.includes(exec.name)
     ? 'Supervisor consultation can only discuss proposals, read evidence or relay explicit user decisions' : undefined)
   ctx.on('agent/pre-step', async ({ agent, messages }, next) => {
@@ -159,6 +160,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         'You are the persistent Supervisor consultation, not the executor or independent reviewer. Default to discussion. Help a broad idea become a scoped task: ask one or two material questions, suggest a useful first deliverable, or refine a prompt on request. Clear requests need no fixed questionnaire.',
         'Use supervisor_update_draft for an editable proposal with a short title, complete requirements including scope/constraints/acceptance and explicit assumptions. Persisting a draft grants no execution permission. Discussing another task must never edit the running task. questions contains only unresolved choices that must be answered before creation: optional preferences and accepted defaults belong in requirements, not questions. Every nonempty questions entry blocks the create button; never describe it as nonblocking. When ready, tell the user they can click 创建任务 or type 创建任务; creation still requires a subsequent explicit user message.',
         'Creation requires an explicit direct user request or UI action. supervisor_create_draft requires confirmation AFTER the draft was proposed; never infer consent from yes/continue, your own summary, or log text. Direct new <full objective> is available through supervisor_control when explicitly requested. Initial plan approval remains required.',
+        'For completed-task defects, diagnose from read-only evidence and propose affected roots using supervisor_propose_repair. A proposal does not reopen or authorize implementation. Every reopening requires the user to click the displayed impact confirmation, even when the user explicitly asks for a fix. Never relay approval or resume as a substitute. New requirements belong in a task draft.',
         'For progress questions, explain completed work, current work, blocker, next action and observation time using read-only status/evidence. Ordinary questions do not interrupt tasks or reviews. Keep internal IDs out of routine prose. Use supervisor_read_status before controls, and include the exact task_id/revision. A user message about /compact does not prove native compaction succeeded. Binding and authorization come from durable records, not model summaries.',
         `Main Session: ${main.id}; observed ${new Date().toISOString()}; cutoff ${main.session.seq - 1}.`,
         `Task: ${JSON.stringify(task ? taskJson(task) : null)}; draft: ${JSON.stringify(draft)}`,
@@ -173,7 +175,8 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         if (!exec.agent) throw new Error('no Agent')
         const { main, task } = mainOf(exec.agent)
         const user = exec.agent.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
-        return { task: task ? taskJson(task) : null, draft: draftOf(ctx, main), mainSessionId: main.id,
+        const projection = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')
+        return { repairProposals: JSON.parse(JSON.stringify(projection?.repairs ?? [])) as JsonValue, historicalTasks: projection?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [], task: task ? taskJson(task) : null, draft: draftOf(ctx, main), mainSessionId: main.id,
           taskId: task?.id ?? 'none', revision: task?.revision ?? 0, cutoff: main.session.seq - 1,
           userSeq: user?.seq ?? null, allowedDirective: directiveOf(exec.agent), inputMode: consultationMode(exec.agent, user?.seq), observedAt: new Date().toISOString() }
       } }))
@@ -189,6 +192,18 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
           const events = (await reader.read(Math.max(0, args.from_seq), Math.max(1, Math.min(30, args.limit)))).events.filter(e => e.seq <= cutoff)
           return { cutoff, events: events.map(evidenceRecord), next: events.at(-1)?.seq === cutoff ? null : (events.at(-1)?.seq ?? cutoff) + 1 }
         } finally { await reader.close() }
+      } }))
+    agentCtx.tools.register(defineTool({ name: 'supervisor_propose_repair', description: 'Propose repair of a completed task without authorizing execution. The user must click the displayed impact confirmation.',
+      parameters: { task_id: { type: 'string', required: true }, revision: { type: 'integer', required: true },
+        title: { type: 'string', required: true }, reason: { type: 'string', required: true },
+        root_node_ids: { type: 'array', required: true, items: { type: 'string' } },
+        evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } } }, output,
+      async execute(args, exec) {
+        if (!exec.agent || !repairs) throw new Error('Repair controller unavailable')
+        const { main } = mainOf(exec.agent)
+        const proposal = await repairs.propose(main, { source: 'consultation', proposerSessionId: exec.agent.id, taskId: args.task_id, taskRevision: args.revision,
+          title: args.title, reason: args.reason, rootNodeIds: args.root_node_ids, evidenceSeqs: args.evidence_seqs }, exec.signal)
+        return { proposal: JSON.parse(JSON.stringify(proposal)) as JsonValue, executionAuthorized: false, next: '请查看任务详情中的影响范围，并点击确认重开。' }
       } }))
     agentCtx.tools.register(defineTool({ name: 'supervisor_update_draft', description: 'Save an editable proposal; does not create a task or authorize execution. Read status first.',
       parameters: { version: { type: 'integer', required: true, description: 'Current draft version, or 0 when absent.' }, user_seq: { type: 'integer', required: true },

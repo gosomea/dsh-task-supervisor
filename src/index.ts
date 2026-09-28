@@ -16,6 +16,8 @@ import { languagePolicy, resolveLanguage, continuationContext } from './task-con
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { changedAttempts } from './rework-records.ts'
+import { installRepairs } from './repair-runtime.ts'
+import { taskExecutionError } from './repairs.ts'
 import { validateProvenance } from './provenance.ts'
 import { DRAFT_NAMESPACE } from './drafts.ts'
 import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
@@ -43,6 +45,8 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Read tools available before the first plan approval. */
 export interface Config {
+  repairMaxFiles?: number
+  repairMaxBytes?: number
   maxParallelNodes?: number
   integrationTools?: string[]
   observeLongTurns?: boolean
@@ -103,6 +107,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   const reviewerPolicy = reviewPolicy({ ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
+  const repairLimits = { files: config.repairMaxFiles ?? 10000, bytes: config.repairMaxBytes ?? 256 * 1024 * 1024 }
+  for (const [key, value] of Object.entries(repairLimits)) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`repair ${key} limit must be a positive integer`)
   const closeWithResponse = installClosingResponse(ctx)
   const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
     elapsedMs: config.observationIntervalMs ?? 300000, consecutiveErrors: config.observationConsecutiveErrors ?? 3 }
@@ -202,7 +208,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   /** The idle maintenance lock holds a queued followup until both records are durable. */
-  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot, instruction: string): Promise<void> {
+  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>): Promise<void> {
     await agent.runMaintenance(async signal => {
       signal.throwIfAborted()
       if (disposed) throw new Error('Supervisor is unloaded')
@@ -210,7 +216,10 @@ export function apply(ctx: Context, config: Config = {}): void {
       if (actual?.id !== expected?.id || actual?.revision !== expected?.revision) {
         throw new Error('task changed before the action could be admitted')
       }
-      const committed = appendTask(ctx, agent, next)
+      await beforeCommit?.()
+      signal.throwIfAborted()
+      if (current(agent)?.id !== expected?.id || current(agent)?.revision !== expected?.revision) throw new Error('task changed during admission')
+      const committed = appendTask(ctx, agent, typeof next === 'function' ? next() : next)
       await flush(agent)
       signal.throwIfAborted()
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
@@ -246,7 +255,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     text: ({ agent }) => {
       if (agent === undefined) return ''
       const task = taskOf(ctx, agent)
-      return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task)
+      return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task) + (task.phase === 'complete' ? '\nThe task is complete. Ordinary diagnosis is read-only. For defects in the original objective, call task_propose_repair with affected roots and evidence, then stop and wait for the user to click the impact confirmation. Never repair files or call task_rework_node before confirmation. New scope belongs in a new task draft. Prior completion remains historical acceptance, not repair authorization.' : '')
     },
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
@@ -268,9 +277,10 @@ export function apply(ctx: Context, config: Config = {}): void {
     return next
   }
 
-  const consultation = installConsultation(ctx, config.reviewerModel, createTask)
+  const repairs = installRepairs(ctx, commitAndWake, repairLimits)
+  const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
   installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
-    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation)
+    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent)
@@ -471,7 +481,13 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.tools.guard(exec => {
     if (exec.agent === undefined) return undefined
     const task = taskOf(ctx, exec.agent)
-    if (task === null || task.phase === 'complete' || task.phase === 'cleared') return undefined
+    if (task === null || task.phase === 'cleared') return undefined
+    if (exec.name === 'task_status') return undefined
+    if (task.phase === 'complete') {
+      const pending = ctx.sessionProjections.stateOf(exec.agent.session, 'taskSupervisor')?.repairs.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status))
+      if (pending && !['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return 'REPAIR_CONFIRMATION_REQUIRED: Wait for the impact confirmation before modifying deliverables.'
+      return undefined
+    }
     if (exec.name === 'todo_write') return 'This supervised task tracks progress in its DAG. Use task_status and task_report_stage rather than a second todo checklist.'
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
       return 'Supervisor is stopped or awaiting review'
@@ -608,12 +624,34 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   ctx.tools.register(defineTool({
     name: 'task_status', description: 'Read the current supervised objective, plan, and review state.',
-    parameters: {}, output: textOutput,
-    async execute(_args, exec) {
-      const task = current(toolAgent(exec))
+    parameters: { task_id: { type: 'string', description: 'Optional completed historical task ID; selection does not change the executing task.' } }, output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec)
+      const live = current(agent)
+      const state = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
+      const task = !args.task_id || args.task_id === live?.id ? live : state?.archivedTasks.find(entry => entry.task.id === args.task_id)?.task ?? null
       return task === null ? null : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+        currentTaskId: live?.id ?? null,
+        availableActions: task.phase === 'complete' ? ['task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
+        executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
+        executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
+        repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),
+        historicalTasks: state?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [],
         readyNodeIds: readyNodes(task),
         approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents(), task) }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'task_propose_repair', description: 'Propose repair of a completed task through its original DAG. Record defect evidence, root nodes and a short user-facing title. This only shows impact; the user must click confirmation before implementation. Read task_status first, then summarize the impact and wait without modifying files. Never call task_rework_node on a completed task.',
+    parameters: { task_id: { type: 'string', required: true }, task_revision: { type: 'integer', required: true },
+      title: { type: 'string', required: true }, reason: { type: 'string', required: true },
+      root_node_ids: { type: 'array', required: true, items: { type: 'string' } },
+      evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } } }, output: textOutput,
+    async execute(args, exec) {
+      const proposal = await repairs.propose(toolAgent(exec), { source: 'main-agent', proposerSessionId: toolAgent(exec).id, taskId: args.task_id, taskRevision: args.task_revision,
+        title: args.title, reason: args.reason, rootNodeIds: args.root_node_ids, evidenceSeqs: args.evidence_seqs }, exec.signal)
+      return { proposal: JSON.parse(JSON.stringify(proposal)), executionAuthorized: false, nextAction: 'User clicks Confirm reopening in the impact panel.' }
     },
   }))
 
@@ -772,6 +810,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         let next: TaskSnapshot = { ...actual, revision: actual.revision + 1, pendingReview: null, reviewFault: null,
           pauseReason: decision.verdict === 'needs-user' ? 'decision' : null, roundsSinceReview: 0,
           phase: decision.verdict === 'needs-user' ? 'paused' : job.kind === 'completion' && decision.verdict === 'pass' ? 'complete' : 'active',
+          ...job.kind === 'completion' && decision.verdict === 'pass' ? { completedAt: new Date().toISOString() } : {},
           lastReview: { jobId: decision.jobId, stageId: job.stageId, cutoff: decision.cutoff,
             verdict: decision.verdict, finding: decision.finding, evidenceSeqs: decision.evidenceSeqs,
             imageSeqs: decision.imageSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
@@ -817,6 +856,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
         phase: decision.verdict === 'needs-user' ? 'paused'
           : kind === 'completion' && decision.verdict === 'pass' ? 'complete' : 'active',
+        ...kind === 'completion' && decision.verdict === 'pass' ? { completedAt: new Date().toISOString() } : {},
         pendingReview: null,
         stageIndex: latest.stageIndex,
         roundsSinceReview: 0,
@@ -861,7 +901,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     async execute(args, exec) {
       const agent = toolAgent(exec)
       const task = current(agent)
-      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw new Error('task is not executing')
+      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
       const run = runsOf(task).find(item => item.id === args.stage_id)
       if (!run || run.attempt !== args.attempt) throw new Error('node attempt is stale; read task_status')
       if (run.status === 'running' && run.sessionId === agent.id) return { nodeId: run.id, attempt: run.attempt, status: 'running', sessionId: agent.id }
@@ -887,7 +927,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     async execute(args, exec) {
       const agent = toolAgent(exec)
       const task = current(agent)
-      if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
+      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
       const stage = task.stages.find(stage => stage.id === args.stage_id)
       if (stage === undefined || !args.evidence.trim()) {
         throw new Error('report the current stage with concrete evidence')
@@ -898,12 +938,12 @@ export function apply(ctx: Context, config: Config = {}): void {
   }))
 
   ctx.tools.register(defineTool({
-    name: 'task_rework_node', description: 'Reopen a node and invalidate all dependent acceptance. Inspect task_status for the new attempt IDs before executing.',
+    name: 'task_rework_node', description: 'Rework a node only in an active, armed task and invalidate dependent acceptance. Completed tasks require task_propose_repair and user click confirmation. Inspect task_status for the new attempt IDs before executing.',
     parameters: { stage_id: { type: 'string', required: true }, reason: { type: 'string', required: true } }, output: textOutput,
     async execute(args, exec) {
       const agent = toolAgent(exec)
       const task = current(agent)
-      if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
+      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
       if (!args.reason.trim()) throw new Error('rework needs a reason')
       const next = { ...reworkNode(task, args.stage_id, agent.session.seq), revision: task.revision + 1, pendingReview: null, lastReview: null }
       appendTask(ctx, agent, next)
@@ -925,7 +965,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     async execute(args, exec) {
       const agent = toolAgent(exec)
       const task = current(agent)
-      if (task === null || task.phase !== 'active' || !runtime(agent).armed) throw new Error('task is not executing')
+      if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
       if (task.stages.length === 0 || acceptedNodes(task).length !== task.stages.length || !args.evidence.trim()) {
         throw new Error('every stage must pass before requesting final completion')
       }

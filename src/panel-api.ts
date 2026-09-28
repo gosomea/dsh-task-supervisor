@@ -1,11 +1,13 @@
 /** Web panel transport on DSH Connection's authenticated Fetch surface. */
 
+import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { draftOf } from './drafts.ts'
 import { evidenceRecord } from './evidence.ts'
+import type { RepairController } from './repair-runtime.ts'
 import type { ConsultationMode } from './consultation.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
 
@@ -59,10 +61,10 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 }
 
 /** Register the panel route only when a Web Connection exists. */
-export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }): void {
+export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[] }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
   const details = (agent: Agent) => {
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
-    return { draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [] }
+    return { draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [] }
   }
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
@@ -112,12 +114,29 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           const projected = await coldState(ctx, sessionId, request.signal)
           if (projected === null) return response({ error: 'Session not found' }, 404)
           if (projected.failure !== null) return response({ error: projected.failure }, 409)
-          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks })
+          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks, repairs: projected.repairs })
         }
         if (agent === undefined) return response({ error: 'Open the Session before using controls' }, 409)
         let body: unknown
         try { body = await request.json() } catch { return response({ error: 'Invalid JSON' }, 400) }
         const action = typeof body === 'object' && body !== null && 'action' in body ? body.action : null
+        if (action === 'confirm-repair' || action === 'decline-repair' || action === 'propose-repair') {
+          if (!repairs) return response({ error: 'Repair controller unavailable' }, 503)
+          try {
+            const target = z.object({ taskId: z.string().uuid(), revision: z.number().int().positive() }).passthrough().parse(body)
+            if (action === 'propose-repair') {
+              const input = z.object({ title: z.string(), reason: z.string(), rootNodeIds: z.array(z.string()).min(1), evidenceSeqs: z.array(z.number().int().nonnegative()).default([]) }).passthrough().parse(body)
+              await repairs.propose(agent, { source: 'user', proposerSessionId: agent.id, title: input.title, reason: input.reason, rootNodeIds: input.rootNodeIds, evidenceSeqs: input.evidenceSeqs, taskId: target.taskId, taskRevision: target.revision }, request.signal)
+            } else {
+              const input = z.object({ proposalId: z.string().uuid() }).passthrough().parse(body)
+              if (action === 'confirm-repair') await repairs.confirm(agent, input.proposalId, target.taskId, target.revision, request.signal)
+              else await repairs.decline(agent, input.proposalId, target.taskId, target.revision)
+            }
+            return response({ task: taskOf(ctx, agent), live: true, ...controls(agent), ...details(agent) })
+          } catch (error) {
+            return response({ error: String(error), code: error && typeof error === 'object' && 'code' in error ? error.code : 'REPAIR_INVALID' }, 409)
+          }
+        }
         if (action === 'new') {
           const objective = typeof body === 'object' && body !== null && 'objective' in body && typeof body.objective === 'string'
             ? body.objective.trim() : ''

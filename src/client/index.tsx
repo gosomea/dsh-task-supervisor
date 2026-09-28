@@ -12,6 +12,7 @@ import { executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } fro
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
 import { TaskOverview, type TaskNavigation } from './inline-task.tsx'
+import { RepairPanel } from './repair-panel.tsx'
 import { AttemptDetails } from './attempt-details.tsx'
 import { CSS } from './styles.ts'
 
@@ -73,6 +74,7 @@ function InlineTask({ sessionId, open }: PanelProps & { open: (params?: TaskNavi
 
 function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sessionId: string }): ReactNode {
   const [selected, setSelected] = useState<string | null>(null)
+  const { state, busy, store } = useTask(sessionId)
   const task = entry.task
   const stage = task.stages.find(item => item.id === selected) ?? task.stages[task.stageIndex] ?? task.stages[0]
   const historicalState: PanelState = { task, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews, reworks: entry.reworks }
@@ -90,6 +92,7 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
       <Disclosure title={`验收标准 · ${stage.criterionIds.length} 项`}><ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id))
         .map(item => <li key={item.id}>{item.text}</li>)}</ul></Disclosure>
     </section>}
+    {state && <RepairPanel key={task.id} task={task} state={state} busy={busy} store={store} />}
     {entry.reviews.length > 0 && <section className="dsh-task-section dsh-task-card"><h3>审查记录 · {entry.reviews.length} 项</h3>
       {entry.reviews.slice().reverse().map(review => <Disclosure key={`${review.stageId}:${review.cutoff}`}
         title={`${review.stageId} · ${VERDICT[review.verdict]} · ${headline(review.finding, 36)}`}>
@@ -154,8 +157,13 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
   const stage = task?.stages[selected === null ? task.stageIndex : index]
   const review = reviewId ? state?.reviews?.find(item => item.reviewerSessionId === reviewId) : task?.lastReview
   const historicalTask = historyEntries?.find(entry => entry.task.id === historySelection)
+  useEffect(() => {
+    if (showHistory && historySelection === task?.id && task && !['complete', 'cleared'].includes(task.phase)) {
+      setShowHistory(false); setHistorySelection(null); setTab('details'); setSelected(null)
+    }
+  }, [showHistory, historySelection, task?.id, task?.phase])
   const canCreate = state?.live && (!task || task.phase === 'complete' || task.phase === 'cleared')
-  const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情"><h3>Supervisor · {review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
+  const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情"><h3>Supervisor · {review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
           <p className="dsh-task-review">{review.finding}</p><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
   function openConsultation() {
     setTab('consultation')
@@ -242,6 +250,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
           <Disclosure title="执行与证据标识"><p className="dsh-task-meta">{stage.id}<br />执行 Session：{runsOf(task).find(run => run.id === stage.id)?.sessionId ?? sessionId}<br />尝试 {runsOf(task).find(run => run.id === stage.id)?.attempt ?? 1}</p>
             <p>依赖：{stage.dependsOn?.join('、') || '无显式依赖'}</p><p>写入范围：{stage.writePaths?.join('、') || '主 Agent 执行'}</p></Disclosure>
         </section>}
+        <RepairPanel key={task.id} task={task} state={state} busy={busy} store={store} />
         {!reviewId && reviewSection}
         {(state.reviews?.length ?? 0) > 1 && <section className="dsh-task-section"><Disclosure title={`审查历史 · 最近 ${state.reviews?.length} 项`}>
           {state.reviews?.slice().reverse().map(item => <Disclosure key={`${item.stageId}:${item.cutoff}`} title={`${item.stageId} · ${VERDICT[item.verdict]} · ${headline(item.finding, 34)}`}><p className="dsh-task-review">{item.finding}</p></Disclosure>)}
