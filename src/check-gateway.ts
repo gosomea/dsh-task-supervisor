@@ -22,6 +22,7 @@ export interface Config {
   commandOutputBytes?: number
   maxFiles?: number
   maxBytes?: number
+  runtimeLinkTargets?: string[]
 }
 
 /** Derive privileged paths from the leased directory, rejecting client-controlled mount paths. */
@@ -57,7 +58,8 @@ export async function openGateway(ctx: Context, config: Config) {
   const storage = await realpath(config.storageRoot)
   const privateStorage = await realpath(config.privateStorageRoot)
   if (within(storage, privateStorage) || within(privateStorage, storage)) throw new TypeError('privileged copies must be separate from client storage')
-  const limits = { files: config.maxFiles ?? 10000, bytes: config.maxBytes ?? 256 * 1024 * 1024, excluded: [] }
+  const limits = { files: config.maxFiles ?? 10000, bytes: config.maxBytes ?? 256 * 1024 * 1024, excluded: [], runtimeLinkTargets: [...config.runtimeLinkTargets ?? []] }
+  if (limits.runtimeLinkTargets.some(path => !isAbsolute(path) || path.includes('\0'))) throw new TypeError('runtime link targets must be absolute paths')
   for (const limit of [limits.files, limits.bytes]) if (!Number.isSafeInteger(limit) || limit < 1) throw new TypeError('gateway snapshot limits must be positive integers')
   const parent = await realpath(dirname(config.socketPath))
   if (within(storage, config.socketPath) || parent !== dirname(config.socketPath)) throw new TypeError('gateway socket must be separate from leased artifact storage')

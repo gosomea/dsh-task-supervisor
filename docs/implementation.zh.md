@@ -35,6 +35,7 @@ F 修复浏览器才暴露的重复插槽加载错误，失败审查原始记录
 | `container.context`、`container.image` | 必填本地 Unix Docker context 与已缓存不可变镜像 ID/digest；镜像含 timeout 和所需工具链，不自动拉取。 |
 | `container.cpus`、`container.memoryMiB`、`container.pids` | 必填资源上限；模型不能改，部署选择由配置校验。 |
 | `excludedPaths`、`maxFiles`、`maxBytes` | 默认仅排除 .git，10000 个条目、256 MiB；超限或越界链接失败，排除项进入快照。 |
+| `runtimeLinkTargets` | 默认空。管理员可声明精确的绝对运行时链接目标；只捕获链接字符串，不读取宿主目标。原生文件读取仍拒绝越界，检查容器按自己的根目录解析。 |
 | `commandDeadlineMs`、`commandOutputBytes` | 默认每条检查 300000 ms、每流 1 MiB；超时、取消或不完整输出不能验收。 |
 | `checkGatewaySocket` | 可选私有 Unix socket；由独立管理员 profile 固定检查镜像、资源、产物租约和截止，任务容器不取得 Docker 管理权限。 |
 | `deadlineMs` | 本增强审查总期限默认 1800000 ms，覆盖快照、检查和协议补交，不使用普通日志审查的 10 分钟默认值。 |

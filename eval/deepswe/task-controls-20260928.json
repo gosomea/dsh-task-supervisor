@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-official-controls",
+  "modelRequests": 0,
+  "modelAdmitted": false,
+  "datasetCommit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
+  "pierCommit": "0c802fc067a425345b24d1c69411aa98acf61a1d",
+  "pierVersion": "0.3.1",
+  "context": "colima-dsh-independent-eval",
+  "positions": [
+    {
+      "jobName": "helm-oracle-1",
+      "reward": 1,
+      "rawReward": 1,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 59,
+        "passed": 59,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "111521366d1b09c28618f1bd6846ca42eb52c3b0672290a8d8c8118cdba16417",
+        "testReport": "8460ba4ff010cabb36b5f3d3cf0845e3acf201aa11aa24a2aeeb7ffd083d294e"
+      },
+      "taskId": "helm-array-merge-strategies",
+      "condition": "oracle",
+      "execution": {
+        "reportedPositions": 59,
+        "missingResultPositions": 0,
+        "positionsWithResult": 59,
+        "allPositionsHaveResult": true
+      }
+    },
+    {
+      "jobName": "helm-nop-1",
+      "reward": 0,
+      "rawReward": 0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 59,
+        "passed": 12,
+        "failed": 47,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "d5200d7ac298d3e76a0ef3f928e5ad988e7ace2d563ca3e56bab9f47991eb9f4",
+        "testReport": "edbfb57d25fb8836619bcc1b9742f831a2c15638f75d5f26c7e3128177e53730"
+      },
+      "taskId": "helm-array-merge-strategies",
+      "condition": "nop",
+      "execution": {
+        "reportedPositions": 59,
+        "missingResultPositions": 36,
+        "positionsWithResult": 23,
+        "allPositionsHaveResult": false
+      }
+    },
+    {
+      "jobName": "kea-oracle-1",
+      "reward": 1,
+      "rawReward": 1,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 151,
+        "passed": 151,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "24b92cc8152515490ffa52e574b9ef074c08736aef02917676a8ecfd644b8c94",
+        "testReport": "0a6417764432b946754111cd546c66e6456ca02a6ac1d3dbbea91cb50970c598"
+      },
+      "taskId": "kea-atomic-signal-selectors",
+      "condition": "oracle",
+      "execution": {
+        "reportedPositions": 151,
+        "missingResultPositions": 0,
+        "positionsWithResult": 151,
+        "allPositionsHaveResult": true
+      }
+    },
+    {
+      "jobName": "kea-nop-1",
+      "reward": 0,
+      "rawReward": 0,
+      "scored": true,
+      "fault": null,
+      "tests": {
+        "tests": 151,
+        "passed": 139,
+        "failed": 12,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "evidenceSha256": {
+        "trialResult": "475bce3e6c15d7a1ae2ac53529b78527485a6cc64e5ea0fd5ff28f9c319deefd",
+        "testReport": "1987b6b52284b5c9c44284789225b32f15a3359a6f73ca4dd10c1a7b7937c258"
+      },
+      "taskId": "kea-atomic-signal-selectors",
+      "condition": "nop",
+      "execution": {
+        "reportedPositions": 151,
+        "missingResultPositions": 0,
+        "positionsWithResult": 151,
+        "allPositionsHaveResult": true
+      }
+    }
+  ],
+  "officialControlsGate": true,
+  "nativeDshGate": false
+}

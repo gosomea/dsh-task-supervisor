@@ -20,7 +20,9 @@ class ControlTests(unittest.TestCase):
         if passed is not None:
             (self.trial / 'verifier/ctrf.json').write_text(json.dumps({'results': {'summary': {
                 'tests': passed + failed, 'passed': passed, 'failed': failed,
-                'skipped': 0, 'pending': 0, 'other': 0}}}))
+                'skipped': 0, 'pending': 0, 'other': 0}, 'tests': [
+                    {'name': f'pass-{i}', 'status': 'passed'} for i in range(passed)] + [
+                    {'name': f'fail-{i}', 'status': 'failed'} for i in range(failed)]}}))
 
     def test_script_zero_without_running_tests_is_unscored(self):
         self.fixture(0)
@@ -36,6 +38,29 @@ class ControlTests(unittest.TestCase):
             self.assertEqual(result['reward'], reward)
             self.assertTrue(result['scored'])
             self.assertIsNone(result['fault'])
+
+    def test_missing_or_mismatched_test_details_are_unscored(self):
+        for rows, fault in [([], 'invalid-test-details'),
+                            ([{'name': 'a', 'status': 'failed'}] * 7, 'test-details-summary-mismatch')]:
+            self.fixture(1, 7, 0)
+            path = self.trial / 'verifier/ctrf.json'
+            report = json.loads(path.read_text())
+            report['results']['tests'] = rows
+            path.write_text(json.dumps(report))
+            result = read_control(self.root)
+            self.assertFalse(result['scored'])
+            self.assertEqual(result['fault'], fault)
+
+    def test_official_missing_result_failure_keeps_score_and_reports_execution_gap(self):
+        self.fixture(0, 1, 1)
+        path = self.trial / 'verifier/ctrf.json'
+        report = json.loads(path.read_text())
+        report['results']['tests'][1]['message'] = 'missing from report (test did not run or produced no result …)'
+        path.write_text(json.dumps(report))
+        result = read_control(self.root)
+        self.assertEqual(result['reward'], 0)
+        self.assertEqual(result['execution'], {'reportedPositions': 2, 'missingResultPositions': 1,
+            'positionsWithResult': 1, 'allPositionsHaveResult': False})
 
     def test_exception_redacts_private_details(self):
         self.fixture(0, exception_info={'exception_type': 'RuntimeError',

@@ -35,6 +35,7 @@ Enhancement steps 2 and 3 are validated in isolation. Checks are disabled by def
 | `container.context`, `container.image` | Required local Unix Docker context and cached immutable image ID/digest. Image provides timeout and the required toolchain; no automatic pull. |
 | `container.cpus`, `container.memoryMiB`, `container.pids` | Required deployment resource limits, validated and unavailable for model changes. |
 | `excludedPaths`, `maxFiles`, `maxBytes` | Default .git-only exclusion, 10000 entries and 256 MiB. Internal dangling links are preserved; absolute, escaping, excluded-target and cyclic links fail, as do incomplete captures beyond bounds. |
+| `runtimeLinkTargets` | Empty by default. Administrators can declare exact absolute runtime link targets. Capture retains link strings without reading host targets; native artifact reads still reject escapes, while check containers resolve against their own root. |
 | `commandDeadlineMs`, `commandOutputBytes` | Default 300000 ms per command and 1 MiB per stream. Timeout, cancellation and incomplete output cannot establish acceptance. |
 | `checkGatewaySocket` | Optional private Unix socket. A separate administrator profile fixes the check image, resources, artifact lease and deadline; the task container receives no Docker administration access. |
 | `deadlineMs` | Default 1800000 ms total for snapshot, checks and protocol repair; independent checks do not inherit the ordinary ten-minute log-review default. |

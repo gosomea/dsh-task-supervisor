@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "kind": "keyless-linux-gateway-calibration",
+  "modelRequests": 0,
+  "modelAdmitted": false,
+  "plannedModelAttempts": 16,
+  "modelAttemptsStarted": 0,
+  "context": "colima-dsh-independent-eval",
+  "vm": {
+    "cpus": 4,
+    "memoryGiB": 20,
+    "diskGiB": 64
+  },
+  "resources": {
+    "task": {
+      "cpus": 2,
+      "memoryMiB": 8192
+    },
+    "administrator": {
+      "cpus": 1,
+      "memoryMiB": 1024
+    },
+    "check": {
+      "cpus": 2,
+      "memoryMiB": 8192
+    }
+  },
+  "positions": [
+    {
+      "id": "topology-helm-1",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": "RuntimeError",
+      "resultSha256": "d2100f1a5b49883448b26fb596f817d759fe278f21879f5a58aafef966515b58",
+      "startedSha256": "d524f0b4ddead7702a3ada6f1ee84d69369a3c0c23c8a2beda11792b1d3f4eb3",
+      "finishedAt": "2026-09-28T13:28:29.623893+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0
+    },
+    {
+      "id": "topology-helm-2",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": "RuntimeError",
+      "resultSha256": "4caf08c89602d73b7cac8152cdae5d578b3159187be323d61c9d2bf8f4092787",
+      "startedSha256": "394db0843c37c065fff44b80b2ef485e158e5b37b85c3cc166f6766c654c7c51",
+      "finishedAt": "2026-09-28T13:29:40.564731+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0
+    },
+    {
+      "id": "topology-helm-3",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "1d9c0fe2da85f6880edc735713c1645571e6a4169c9d81f67e6d5cea0a1bcded",
+      "startedSha256": "2077b1de05b19c74a261e346d30ff8e540061c55506ea96edba2a1c8e836bfab",
+      "finishedAt": "2026-09-28T13:30:41.618381+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0,
+      "probeErrorClass": "snapshot-link-policy"
+    },
+    {
+      "id": "topology-helm-4",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "263970360df102f6d42e5a9ae6c0aecc2a198bd92d836924f18a33bd871cd115",
+      "startedSha256": "39ec1984a9e44bc61a2c9663d403e55d4dd34467141048734b9aebc36d3bf89b",
+      "finishedAt": "2026-09-28T13:34:26.594902+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0,
+      "probeErrorClass": "snapshot-link-policy"
+    },
+    {
+      "id": "topology-helm-5",
+      "passed": true,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "3411459508848a952b108393fa59d0be79ddcc7b46afbf4c4dd595b0742bc9e5",
+      "startedSha256": "9f03f8b01a04a26cb7e1c293661c03cb3668b64331facd2cd5a6723544bd39e5",
+      "finishedAt": "2026-09-28T13:39:37.654745+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0,
+      "snapshot": {
+        "entries": 2691,
+        "bytes": 3922972,
+        "digest": "97eab48ff9a3e9a700069cc9e0bac5ba227648b5b7be7f067cc603c361ab5444",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "changed": [],
+        "startedAt": "2026-09-28T13:36:06.622Z",
+        "finishedAt": "2026-09-28T13:39:35.911Z",
+        "commandSha256": "b06e5ddd32f0274daf6b8b84644e75a348c317a55e41c04ce761045f67bfa908",
+        "stdoutSha256": "11900a2d6c5b3f5d9efa922e8709c2b5fb7279fce92a3f202ba1c3924ed2e72c",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "recoveryAcknowledged": true,
+      "originalUntrackedUnchanged": true,
+      "taskDockerSocketMounted": false,
+      "publicTestResults": {
+        "passed": 4,
+        "kind": "Go public Coalesce tests"
+      }
+    },
+    {
+      "id": "topology-helm-background",
+      "passed": true,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "4c00acd791641219ce28b11d36da929d35b52ded0e4a7335670c977dd813c103",
+      "startedSha256": "a14e37fa2cf9f7d61d08fa9c2ee0d04974e5c78a86e672a20115c50b5bdce781",
+      "finishedAt": "2026-09-28T13:41:12.216692+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0,
+      "snapshot": {
+        "entries": 2691,
+        "bytes": 3922972,
+        "digest": "97eab48ff9a3e9a700069cc9e0bac5ba227648b5b7be7f067cc603c361ab5444",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "changed": [],
+        "startedAt": "2026-09-28T13:41:09.004Z",
+        "finishedAt": "2026-09-28T13:41:10.407Z",
+        "commandSha256": "f31eba716495cf6f52569c83aaca14aa198a867a181078158db1146305fbab6e",
+        "stdoutSha256": "6692e3547bc053a0941adc98b71fe6277e2a9a497a556bb4765a3aee58e085da",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "recoveryAcknowledged": true,
+      "originalUntrackedUnchanged": true,
+      "taskDockerSocketMounted": false
+    },
+    {
+      "id": "topology-helm-cancel",
+      "passed": true,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "96c7b04918781f857de84959ac6f6f8c2a272777ef6834780c21bf702816da88",
+      "startedSha256": "1ef0d11e1888bc114984f7919be9f9a2ccb9fecd8fb11855997f0a6e25a9dc92",
+      "finishedAt": "2026-09-28T13:42:05.612692+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0,
+      "snapshot": {
+        "entries": 2691,
+        "bytes": 3922972,
+        "digest": "97eab48ff9a3e9a700069cc9e0bac5ba227648b5b7be7f067cc603c361ab5444",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "exitCode": null,
+        "timedOut": false,
+        "cancelled": true,
+        "outputIncomplete": false,
+        "changed": [],
+        "startedAt": "2026-09-28T13:42:02.677Z",
+        "finishedAt": "2026-09-28T13:42:03.859Z",
+        "commandSha256": "06f67926a0958b608f09377282d5905ef20cf9fc234a565a52c63877f8763e32",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "recoveryAcknowledged": true,
+      "originalUntrackedUnchanged": true,
+      "taskDockerSocketMounted": false
+    },
+    {
+      "id": "topology-kea-1",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": "infrastructure-vm-error",
+      "resultSha256": "0a4d1f3fd6c10245806de3b604c18e49019cc4060e487bf8fe6e4f35ab08e600",
+      "startedSha256": "9894d945cb5bb359dc97fca2c663aa9a23028c01e49e41f073608fa4019b4918",
+      "finishedAt": "2026-09-28T13:57:40.049685+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 0
+    },
+    {
+      "id": "topology-kea-linux-storage-1",
+      "passed": false,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "add6c169cfd9bcefc20a4092dfe19fce203dea8824618da7251b9f31d788a695",
+      "startedSha256": "b2a2150afd91229e351d524f0c915d4e4e1f76b09949065eafbf3f58e81302fb",
+      "finishedAt": "2026-09-28T14:00:35.390501+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 2,
+      "snapshot": {
+        "entries": 25574,
+        "bytes": 234315900,
+        "digest": "2cc7a374536096d63749fdb54b1e629c666fee19e4efc2c9d3c490d0e9a5dc11",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "exitCode": 1,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "changed": [],
+        "startedAt": "2026-09-28T14:00:12.548Z",
+        "finishedAt": "2026-09-28T14:00:25.131Z",
+        "commandSha256": "c6dd2a676d36a247a42e41799557bfe4ad2546bb42b63eaeef383320aee98230",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "98e172795e2482af6695ef4a6ba1f4a24f814da78d8d51728517966fe68bff14"
+      },
+      "recoveryAcknowledged": true,
+      "originalUntrackedUnchanged": true,
+      "taskDockerSocketMounted": false,
+      "publicTestResults": {
+        "failed": 45,
+        "passed": 111,
+        "total": 156,
+        "kind": "public Jest tests only, not hidden official grader"
+      }
+    },
+    {
+      "id": "topology-kea-linux-storage-2",
+      "passed": true,
+      "modelRequests": 0,
+      "faultType": null,
+      "resultSha256": "86740ad28c2e2967d01a95c14ff2479453507686565c18da819b4566f485fb0a",
+      "startedSha256": "114ee4453ccad08ecd1e35a614cb4802c047088c74aec8d9fc0fc48519f67ea8",
+      "finishedAt": "2026-09-28T14:03:45.124654+00:00",
+      "cleanupConfirmed": true,
+      "retainedVolumeCount": 2,
+      "snapshot": {
+        "entries": 25574,
+        "bytes": 234315900,
+        "digest": "2cc7a374536096d63749fdb54b1e629c666fee19e4efc2c9d3c490d0e9a5dc11",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "changed": [],
+        "startedAt": "2026-09-28T14:03:20.022Z",
+        "finishedAt": "2026-09-28T14:03:31.704Z",
+        "commandSha256": "984c1b35a516fbe64f9a4d661d326af08c331241479be3c2e853d5707ead642c",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "87f71a4f2b6e8b002ca791f344b6e6cfc72437c6b87ad3326731cb56fed2265a"
+      },
+      "recoveryAcknowledged": true,
+      "originalUntrackedUnchanged": true,
+      "taskDockerSocketMounted": false,
+      "publicTestResults": {
+        "failed": 0,
+        "passed": 156,
+        "total": 156,
+        "kind": "public Jest tests only, not hidden official grader"
+      }
+    }
+  ],
+  "fullCandidateArtifactAndNativeCheckGate": true,
+  "formalRunnerAndModelParityGate": false,
+  "notes": [
+    "All attempts retained, including two profile setup faults, two runtime-link policy rejections, one VM interruption and one production React test-environment failure.",
+    "Kea VM cause unknown. Original lease reconciled without replay. Linux volumes retained as private evidence.",
+    "Helm permits only explicitly declared image targets /dev/null and /non/existing/file. Kea uses no runtime link exceptions.",
+    "Independent check compute is additional to task compute. 156 public Jest tests are not the 151 official scoring positions.",
+    "Background and cancellation checks are Helm keyless integration fixtures; not model task successes.",
+    "30 focused native/kernel regressions, strict Host/Client checks and build passed; 12 DeepSWE helper tests and 4 management helper tests passed."
+  ]
+}

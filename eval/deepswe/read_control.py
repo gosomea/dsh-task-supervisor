@@ -33,7 +33,8 @@ def read_control(job):
         result['fault'] = 'verifier-test-report-missing'
         return result
     result['evidenceSha256']['testReport'] = sha(report)
-    summary = json.loads(report.read_text()).get('results', {}).get('summary', {})
+    report_results = json.loads(report.read_text()).get('results', {})
+    summary = report_results.get('summary', {})
     keys = ('tests', 'passed', 'failed', 'skipped', 'pending', 'other')
     if any(type(summary.get(key)) is not int or summary[key] < 0 for key in keys):
         result['fault'] = 'invalid-test-summary'
@@ -43,6 +44,22 @@ def read_control(job):
             or any(summary[key] for key in ('skipped', 'pending', 'other')):
         result['fault'] = 'verifier-tests-incomplete'
         return result
+    rows = report_results.get('tests')
+    if not isinstance(rows, list) or len(rows) != summary['tests'] or any(
+            not isinstance(row, dict) or not isinstance(row.get('name'), str) or not row['name']
+            or row.get('status') not in ('passed', 'failed') for row in rows):
+        result['fault'] = 'invalid-test-details'
+        return result
+    if any(sum(row['status'] == key for row in rows) != summary[key] for key in ('passed', 'failed')):
+        result['fault'] = 'test-details-summary-mismatch'
+        return result
+    # Official merged CTRF can fill missing tests with failed entries. Preserve that
+    # score, but do not count a synthetic entry as an actually executed test.
+    missing = sum('missing from report (test did not run or produced no result' in
+                  str(row.get('message', '')) for row in rows)
+    result['execution'] = {'reportedPositions': len(rows), 'missingResultPositions': missing,
+                           'positionsWithResult': len(rows) - missing,
+                           'allPositionsHaveResult': missing == 0}
     expected = 1 if summary['failed'] == 0 else 0
     if type(reward) not in (int, float) or reward != expected:
         result['fault'] = 'reward-test-summary-mismatch'

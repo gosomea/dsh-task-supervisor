@@ -95,6 +95,26 @@ it('rejects a cycle spanning two captured links', async () => {
   await symlink('first', join(workspace, 'second'))
   await expect(captureSnapshot(workspace, storage, limits, signal)).rejects.toThrow('cyclic')
 })
+it.skipIf(process.platform === 'win32')('preserves explicitly declared runtime links without reading host targets', async () => {
+  const { root, workspace, storage } = await fixture()
+  const target = join(root, 'host-only')
+  await writeFile(target, 'must not enter the snapshot')
+  await symlink(target, join(workspace, 'runtime-link'))
+  await symlink('runtime-link', join(workspace, 'alias'))
+  const declared = { ...limits, runtimeLinkTargets: [target] }
+  const snapshot = await captureSnapshot(workspace, storage, declared, signal)
+  expect(await readlink(join(snapshot.baseline, 'runtime-link'))).toBe(target)
+  expect(snapshot.entries.find(entry => entry.path === 'runtime-link')?.bytes).toBe(0)
+  expect(snapshot.entries.some(entry => entry.path === 'host-only')).toBe(false)
+  await expect(reviewPath(snapshot.check, 'tree/runtime-link')).rejects.toThrow('leaves')
+  await expect(reviewPath(snapshot.check, 'tree/alias')).rejects.toThrow('leaves')
+  expect(await snapshotFresh(snapshot, declared, signal)).toBe(true)
+  await expect(captureSnapshot(workspace, storage, limits, signal)).rejects.toThrow('absolute')
+})
+it('rejects relative runtime declarations instead of broadening capture scope', async () => {
+  const { workspace, storage } = await fixture()
+  await expect(captureSnapshot(workspace, storage, { ...limits, runtimeLinkTargets: ['../outside'] }, signal)).rejects.toThrow('absolute paths')
+})
 it('rejects model traversal and link escapes in the private check tree', async () => {
   const { root, workspace, storage } = await fixture()
   const snapshot = await captureSnapshot(workspace, storage, limits, signal)

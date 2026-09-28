@@ -16,6 +16,7 @@ export interface VerificationConfig {
   storageRoot: string
   container: ContainerPolicy
   excludedPaths?: string[]
+  runtimeLinkTargets?: string[]
   maxFiles?: number
   maxBytes?: number
   commandDeadlineMs?: number
@@ -29,7 +30,8 @@ export interface VerificationPolicy { storage: string; limits: SnapshotLimits; c
 export function verificationPolicy(config: VerificationConfig): VerificationPolicy {
   if (!config.container) throw new TypeError('verification requires a configured container runtime')
   if (!isAbsolute(config.storageRoot) || config.storageRoot === '/') throw new TypeError('verification storageRoot must be a private absolute directory')
-  const limits = { files: config.maxFiles ?? 10000, bytes: config.maxBytes ?? 256 * 1024 * 1024, excluded: [...new Set(['.git', ...config.excludedPaths ?? []])] }
+  const limits = { files: config.maxFiles ?? 10000, bytes: config.maxBytes ?? 256 * 1024 * 1024, excluded: [...new Set(['.git', ...config.excludedPaths ?? []])], runtimeLinkTargets: [...config.runtimeLinkTargets ?? []] }
+  if (limits.runtimeLinkTargets.some(path => !isAbsolute(path) || path.includes('\0'))) throw new TypeError('runtime link targets must be absolute paths')
   for (const value of [limits.files, limits.bytes]) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('verification limits must be positive integers')
   const deadlineMs = config.deadlineMs ?? 1800000
   if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('verification deadlineMs must be 1–3600000')

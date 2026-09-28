@@ -31,7 +31,21 @@ Administrator configuration includes `socketPath`, client `storageRoot`, separat
 
 The first regression truncated full Docker inspect under a small output budget, leaving three owned containers. Their labels and mounts were verified before removal; cleanup now reads only necessary fields. Native-control HOME/TMP live outside writable check mounts, and later probe writes revalidate directories and files. A child reviewer identified directory replacement; its reproduction turn was interrupted. The fix passed a real negative case here, without a final child signoff. The first profile fixture had mismatched file permissions and was rejected; a corrected second result was saved separately.
 
-macOS profile and same-process socket regressions do not establish deployment in separate Linux benchmark containers. Unix sockets cannot communicate directly across macOS and Linux VM kernels. The administrator profile and task client must share the Linux VM while separating management storage and Docker access. Actual deployment admission remains pending.
+macOS profile and same-process socket regressions do not establish deployment in separate Linux benchmark containers. Unix sockets cannot communicate directly across macOS and Linux VM kernels. The administrator profile and task client must share the Linux VM while separating management storage and Docker access. The subsequent Linux deployment checks are recorded below; the previous macOS evidence remains unchanged.
+
+## Linux official artifacts and lifecycle calibration
+
+`gateway-probe.ts` is a keyless DSH profile. `probe_gateway.py` starts separate administrator and task containers through the supported CLI. Only the administrator receives the Docker socket; task and check containers do not. Both profiles use a Unix socket within the same Linux VM, and the administrator recaptures the client snapshot into separate private storage before execution. Full workspaces include uncommitted and untracked files; only `.git` is excluded.
+
+Helm contains absolute test links. After two default-policy rejections, calibration explicitly declared `/dev/null` and `/non/existing/file` instead of deleting their test directories. Full capture produced 2691 entries and 3922972 bytes. Four actual public Go tests exited zero, the background HTTP service check passed, and cancellation occurred only after command readiness was observed, followed by cleanup acknowledgement. Plugin defaults and the native DSH sandbox were unchanged.
+
+The first Kea probe used macOS shared storage when the dedicated VZ VM entered error state and Docker/SSH stopped responding. Both original lease containers exited 255 with `OOMKilled=false`; no command result was produced. Start, host-error and recovery evidence was retained, and the original lease was reconciled and sealed as an infrastructure interruption. The exact cause is unknown. Later keyless calibration stores large snapshots on dedicated, lease-labelled Linux volumes retained as private evidence. This is not a formal model-attempt replay.
+
+Docker management calls have a 30-second bound and reap their owned CLI process group on timeout; that alone does not prove daemon cleanup. Final cleanup independently checks the lease, continues stop/rm after log failure, and denies a pass if identity or cleanup cannot be confirmed. Four management-helper regressions pass; a child Agent reviewed both cleanup fixes without container or model execution. Exclusive root, started and result records prohibit implicit same-name restarts.
+
+Kea subsequently captured 25574 entries and 234315900 bytes. The production React environment first yielded 45 failed and 111 passed tests. With explicit `NODE_ENV=test` and `BABEL_ENV=test`, all 33 public Jest suites and 156 tests passed, with unchanged artifacts and confirmed cleanup. No business code or tests were modified. These public tests differ from the 151 official separate-verifier scoring positions.
+
+See [Linux calibration evidence](linux-gateway-20260928.json) for outcomes, failed positions and evidence hashes. These are engineering integration checks, not official task rewards, model admission or evidence of superiority over Goal/Plan.
 
 ## Next integration item
 

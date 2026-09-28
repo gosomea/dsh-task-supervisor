@@ -6,7 +6,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 export { snapshotSchema } from './verification-schema.ts'
 import type { ArtifactSnapshot } from './verification-schema.ts'
 export type { ArtifactSnapshot } from './verification-schema.ts'
-export interface SnapshotLimits { files: number; bytes: number; excluded: string[] }
+export interface SnapshotLimits { files: number; bytes: number; excluded: string[]; runtimeLinkTargets?: string[] }
 
 /** Whether a resolved host path lies inside the given directory. */
 export function within(root: string, path: string): boolean {
@@ -17,10 +17,14 @@ const hash = (value: string | Uint8Array) => createHash('sha256').update(value).
 const pathParts = (path: string) => path.split(sep === '\\' ? /[\\/]/ : '/')
 
 /** Resolve captured links without dereferencing absent targets or importing excluded content. */
-function validateLinks(entries: ArtifactSnapshot['entries'], excluded: string[]) {
+function validateLinks(entries: ArtifactSnapshot['entries'], excluded: string[], runtimeTargets: string[]) {
   const paths = new Map(entries.map(entry => [entry.path, entry]))
   for (const link of entries) {
     if (link.kind !== 'link') continue
+    if (isAbsolute(link.target!)) {
+      if (!runtimeTargets.includes(link.target!)) throw new Error(`SNAPSHOT_LINK: absolute link ${link.path}`)
+      continue
+    }
     const resolved = link.path.split('/').slice(0, -1)
     const pending = pathParts(link.target!)
     let followed = 0
@@ -36,6 +40,10 @@ function validateLinks(entries: ArtifactSnapshot['entries'], excluded: string[])
       if (excluded.some(path => target === path || target.startsWith(`${path}/`))) throw new Error(`SNAPSHOT_LINK: link ${link.path} targets an excluded entry`)
       const entry = paths.get(target)
       if (entry?.kind !== 'link') continue
+      if (isAbsolute(entry.target!)) {
+        if (!runtimeTargets.includes(entry.target!)) throw new Error(`SNAPSHOT_LINK: absolute link ${entry.path}`)
+        break
+      }
       if (++followed > 40) throw new Error(`SNAPSHOT_LINK: cyclic or excessive link chain ${link.path}`)
       resolved.pop()
       pending.unshift(...pathParts(entry.target!))
@@ -56,7 +64,6 @@ async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, d
       const source = join(directory, name), stat = await lstat(source), mode = stat.mode & 0o777
       if (stat.isSymbolicLink()) {
         const target = await readlink(source)
-        if (isAbsolute(target)) throw new Error(`SNAPSHOT_LINK: absolute link ${path}`)
         entries.push({ path, kind: 'link', hash: hash(target), bytes: 0, mode, target })
         if (destination) { await mkdir(join(destination, prefix), { recursive: true }); await symlink(target, join(destination, path)) }
       } else if (stat.isDirectory()) {
@@ -83,7 +90,7 @@ async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, d
     }
   }
   await visit(root, '')
-  validateLinks(entries, limits.excluded)
+  validateLinks(entries, limits.excluded, limits.runtimeLinkTargets ?? [])
   return { entries, digest: hash(JSON.stringify(entries)) }
 }
 
@@ -97,6 +104,7 @@ async function scanDirectories(root: string): Promise<string[]> {
 /** Make a private baseline and a separate writable check tree; at most two capture retries. */
 export async function captureSnapshot(workspace: string, storage: string, limits: SnapshotLimits, signal: AbortSignal): Promise<ArtifactSnapshot> {
   for (const value of [limits.files, limits.bytes]) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('snapshot bounds must be positive integers')
+  if (limits.runtimeLinkTargets?.some(path => !isAbsolute(path) || path.includes('\0'))) throw new TypeError('runtime link targets must be absolute paths')
   workspace = await realpath(workspace); storage = await realpath(storage)
   if (within(workspace, storage) || within(storage, workspace)) throw new Error('SNAPSHOT_LOCATION: storage and workspace must be separate')
   if (limits.excluded.some(path => !path || isAbsolute(path) || path.split('/').some(part => part === '..' || part === '.'))) throw new TypeError('snapshot exclusions must be relative entry paths')
