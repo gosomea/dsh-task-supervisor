@@ -129,15 +129,19 @@ def main():
     parser.add_argument('home', type=Path)
     parser.add_argument('main_session_id')
     parser.add_argument('output', type=Path)
+    parser.add_argument('--review-audit', type=Path,
+                        default=Path(__file__).parents[1] / 'review-recovery/summary.py',
+                        help='Use the frozen reviewAudit input when reading a released run')
     args = parser.parse_args()
     sessions, projections, hashes = read_home(args.home)
     metrics = collect(sessions, projections, args.main_session_id)
-    spec = importlib.util.spec_from_file_location('review_recovery_audit', Path(__file__).parents[1] / 'review-recovery/summary.py')
+    spec = importlib.util.spec_from_file_location('review_recovery_audit', args.review_audit)
     audit = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(audit)
     review = audit.summarize(sessions[args.main_session_id])
     metrics.update(reviewWaitMs=review['reviewWaitMs'], repairTurns=review['repairTurns'],
                    internalReviewFaults=review['faultsByCode'], reviewAudit=review,
+                   reviewAuditSha256=hashlib.sha256(args.review_audit.read_bytes()).hexdigest(),
                    schemaVersion=1, kind='deepswe-native-metrics', evidence=hashes)
     with args.output.open('x') as output:
         json.dump(metrics, output, ensure_ascii=False, indent=2)

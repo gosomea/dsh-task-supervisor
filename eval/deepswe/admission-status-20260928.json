@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-admission-status",
+  "sampleFile": "sample-20260928.json",
+  "sampleSha256": "5800c1897cf1a29c9b84e5674cf2d056acf1f62e6f42a82217f4dd9714e0d131",
+  "modelAdmitted": false,
+  "release": null,
+  "plannedFormalPositions": 16,
+  "deliveredFormalPositions": 0,
+  "gates": {
+    "modelRoute": {
+      "file": "model-route-gate-20260928-1.json",
+      "sha256": "9edcb675a9a78eff6b90c1dd39c3c04395c7897a438080ef8f3ac0b09f398ded",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 5
+    },
+    "controlFlow": {
+      "file": "control-flow-gate-20260928.json",
+      "sha256": "8f28ac1c8d820e214984f5f9eb650bcb1a74c17c8a4e3f2912c3041d9f976e28",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 7
+    },
+    "grading": {
+      "file": "grading-gate-20260928.json",
+      "sha256": "181fbc916bb586e62c43eab137ede89651aad37642a34ff383fe751a188b09eb",
+      "passed": true,
+      "parentVerifiedEvidenceCount": 8
+    }
+  },
+  "realModelCalibration": {
+    "positions": 1,
+    "actualHttpRequests": 19,
+    "normallyCompletedGenerations": 7,
+    "initialApprovals": 0,
+    "rescueActions": 0,
+    "routeMismatchCount": 0,
+    "completeReviewDecision": false,
+    "reportedTokensLowerBound": 55754,
+    "fullTokenCost": null,
+    "unreportedAttempts": 12,
+    "metricsEvidence": {
+      "relativePath": "gates/control-supervisor-log-4/metrics-with-audit.json",
+      "sha256": "1e90b7d361a88d85323db2f0b385d5ac5db4b2b8e709168a8f88556b54323b76"
+    }
+  },
+  "remainingAdmission": [
+    "Real initial authorization and completion in Goal/Plan",
+    "Both Supervisor modes: successful initial approval, stage and completion decisions",
+    "Independent reviewer executes checks and comparison with actual model requests",
+    "Independent check container deadline quiescence",
+    "Final frozen inputs and full evidence admission after the gates pass"
+  ],
+  "notes": [
+    "Upstream failures are runtime faults, not route deviations.",
+    "Keyless controls and non-candidate calibration are excluded from the formal 16 positions.",
+    "Incomplete token coverage is unknown cost, not zero."
+  ]
+}

@@ -9,13 +9,14 @@ import stat
 import subprocess
 
 from select_sample import require_admission, sample_sha256
+from position_inputs import POSITION_ROOTS
 
 GATE_CHECKS = {
     'model-route-gate': ('mainSuccessfulRequest', 'reviewerSuccessfulRequest', 'dailyEffectiveRouteMatched',
                          'supervisorBothModes', 'actualHttpEndpointMatched', 'durableLineageMatched',
                          'independentReviewerCheckExecuted'),
     'control-flow-gate': ('singleController', 'initialApprovalOnce', 'deadlineEnforced',
-                         'noRescueAfterPause', 'exclusiveSeal'),
+                         'noRescueAfterPause', 'exclusiveSeal', 'independentCheckQuiescence'),
     'grading-gate': ('committedPatchOnly', 'officialMaterialsUnchanged', 'separateVerifierObserved',
                      'dirtyExcluded', 'cleanupConfirmed'),
 }
@@ -180,6 +181,8 @@ def require_frozen_release(release):
     protocol = json.loads(Path(release['protocol']).read_text())
     frozen = json.loads(Path(release['candidate']).read_text())
     roots = release['roots']
+    if not POSITION_ROOTS.issubset(roots):
+        raise ValueError('Final release lacks executed grader, native Plan or review audit inputs')
     runner = Path(roots['runner']).resolve()
     module = Path(__file__).resolve()
     if runner != module.parent and runner not in module.parents:

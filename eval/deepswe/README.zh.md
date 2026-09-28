@@ -44,7 +44,7 @@ DeepSWE 两道候选题也完成了官方独立评分校准，见[题目控制�
 
 ## 准入与复现
 
-当前样本 `modelAdmitted=false`、`release=null`、模型尝试 0/16。开始模型运行前，必须完成候选题空操作／参考解的独立评分、完整产物捕获、实际部署中的原生检查、后台与取消清理、主工具能力一致性，以及主／审查模型选择核对。随后冻结 runner、runtime、插件、profile、镜像、资源和顺序，并保存各项门禁证据。
+当前样本 `modelAdmitted=false`、`release=null`、模型尝试 0/16。[准入汇总](admission-status-20260928.json)连接三个门禁及父代理逐项核对的原始证据哈希，区分真实非候选题校准与正式位置。开始模型运行前，必须完成候选题空操作／参考解的独立评分、完整产物捕获、实际部署中的原生检查、后台与取消清理、主工具能力一致性，以及主／审查模型选择核对。随后冻结 runner、runtime、插件、profile、镜像、资源和顺序，并保存各项门禁证据。
 
 `require_admission` 只校验释放记录的结构、配对矩阵及其与原始样本 SHA-256 的绑定；它不执行真实门禁，也不能用测试 fixture 的成功取代实际校准。`freeze_release.require_frozen_release` 进一步重算实际加载文件、门禁及私有证据哈希，拒绝缺项、修改与执行路径偏离。该代码已经接入，真实准入尚未完成。采样结果使用独占创建；已有开始记录却无结果时应核对原 Session、进程和截止，禁止重新投递 Agent。
 
@@ -56,7 +56,13 @@ DeepSWE 两道候选题也完成了官方独立评分校准，见[题目控制�
 
 该校准已回报 Token 合计 55,754，另 12 次失败请求没有可确认的上游用量。DSH 为这些失败生成的全零 usage 不是提供方计费确认；`metrics.py` 保留已回报下界，完整成本为 `null`。正式结果缺少路由证据或发生路由偏差时，仍保留在 16 个位置中，并单列无法判定项，不能计为有效成功。
 
-四组真实 profile 的无模型加载、工作区绑定、主模型选择和工具 schema 对照已通过，见[profile 证据](profile-preflight-20260928.json)。Goal/Plan 的工具定义一致，两种 Supervisor 的主工具定义一致；剔除 `task_*` 控制工具后与原生组一致。`profile-probe.ts` 只在 keyless 验收 overlay 中使用，正式 profile 不加载它。这不证明真实模型请求、审查者路由、单控制器运行、批准与截止；这些门禁仍待联调。
+较早四组 profile 的无模型加载、工作区绑定、主模型选择和工具对照见[首次 profile 证据](profile-preflight-20260928.json)。其后通过公开 profile 组合关闭其他续行控制器，并在真实 Session 中重验，见[控制流程记录](control-flow-gate-20260928.json)：Goal／Plan／两种 Supervisor 分别提供 25／23／31／31 个工具；剔除各自控制工具后基础 schema 一致。该步骤仅验收加载与控制器能力隔离，尚不证明真实任务完成。
+
+同一控制流程记录还保留三个新的真实 Linux 截止测试：截止后 TERM handler 的晚提交被排除、HEAD 捕获失败仍停止任务进程、脱离进程组的后台 writer 停止写入。新测试容器均已清理。旧真实模型案例的清理 ack 缺失与失败终态保持原样，后补 reconciliation 只证明其指定容器已停止。一次初始批准、真实 Goal／Plan 完成、两种 Supervisor 的完整审查链，以及独立检查容器的截止清理仍未通过，完整控制门禁为 `false`。
+
+`run_pilot.py` 连接原生投递、控制观察、截止产物、官方评分、路由后验与封口；`--batch` 依照冻结顺序串行处理 16 个位置。开始或批准的结果不确定时，不重发；评分已经开始但结果未落盘时，等待同一评分进程的证据，不能重新启动评分。`metrics.py --review-audit` 可显式读取被冻结的统计脚本；正式 runner 从 release 的 `reviewAudit` 输入导入它。
+
+官方资源约定同时绑定 CPU、内存与 `storageMiB=20480` 元数据。固定 Pier Docker 后端的 `resource_capabilities` 与 Compose writer 仅落实 CPU／内存，磁盘字段没有 Docker 硬配额实现；本评测明确记录 `storageEnforcement=official-docker-metadata-only`，与官方 Docker 行为一致。浏览器、Node、评分器安装树、审查统计脚本和网络辅助镜像也需按实际执行路径纳入冻结，不能只哈希声明路径。
 
 ```sh
 python3 -m unittest discover -s eval/deepswe -v

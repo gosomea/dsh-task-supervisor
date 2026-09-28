@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "kind": "control-flow-gate",
+  "passed": false,
+  "modelAdmitted": false,
+  "formalPositionsDelivered": 0,
+  "checks": {
+    "singleController": true,
+    "initialApprovalOnce": false,
+    "deadlineEnforced": true,
+    "noRescueAfterPause": true,
+    "exclusiveSeal": true,
+    "quiescence": false,
+    "nativeTaskNamespaceQuiescence": true,
+    "independentCheckQuiescence": false
+  },
+  "evidence": [
+    {
+      "relativePath": "gates/control-supervisor-log-4/started.json",
+      "sha256": "050866e4c7bc0604de261cfef8a9c788c21c3f092b689327e5b379bb6e1cd162"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-4/terminal.json",
+      "sha256": "834d5b5322a9bc185f7160ccc9ed4c257f30739605da9f32421f6ad8ccaf1279"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-4/reconciliation.json",
+      "sha256": "f0c876ad9c924f164ba7f95045abd6514def70c599e1589c6c09141c3fe4d7f0"
+    },
+    {
+      "relativePath": "gates/final-controller-profile-20260928-1/result.json",
+      "sha256": "716cc133b1365666c2973713073f5771f8cf938f4046fc40a3fca82886460715"
+    },
+    {
+      "relativePath": "gates/watchdog-20260928-3/late-commit/result.json",
+      "sha256": "baa23123e53e44f3e514d18b659fbbaf30f88abddfd76f931f127195c73c8ce9"
+    },
+    {
+      "relativePath": "gates/watchdog-20260928-3/invalid-head/result.json",
+      "sha256": "bf11b378bce4fc0c5656b07cdeeddeb319223d1a23d416cd80ee8169c0fe2cc0"
+    },
+    {
+      "relativePath": "gates/watchdog-20260928-3/setsid-actor/result.json",
+      "sha256": "84c1268491ea4e2162ae2d2c99d58944aa70e69d799062db2bffc7a0ec6e61eb"
+    }
+  ],
+  "validationScope": {
+    "actualFinalProfiles": [
+      {
+        "condition": "goal",
+        "toolCount": 25,
+        "primaryToolSchemasSha256": "d673670d37da6b4c35d15f3a53e87b088ee538b2b060fc249575a970df70a7bc",
+        "controllerOverlaySha256": "1b58fb6a715a0d052e8593fe9aece9562c49a9fc1d3a690254bc80aca29eae02",
+        "nativeControllerMatched": true,
+        "modelRequests": 0
+      },
+      {
+        "condition": "plan",
+        "toolCount": 23,
+        "primaryToolSchemasSha256": "d673670d37da6b4c35d15f3a53e87b088ee538b2b060fc249575a970df70a7bc",
+        "controllerOverlaySha256": "f3358f6e312316271ea387c2e60506821b320ebc6596b25da51a069a5e1d95a5",
+        "nativeControllerMatched": true,
+        "modelRequests": 0
+      },
+      {
+        "condition": "supervisor-log",
+        "toolCount": 31,
+        "primaryToolSchemasSha256": "d673670d37da6b4c35d15f3a53e87b088ee538b2b060fc249575a970df70a7bc",
+        "controllerOverlaySha256": "07ab11ca8c258935c54381b5d4637793582dfce63d15d246acef261c4ba395f2",
+        "nativeControllerMatched": true,
+        "modelRequests": 0
+      },
+      {
+        "condition": "supervisor-independent",
+        "toolCount": 31,
+        "primaryToolSchemasSha256": "d673670d37da6b4c35d15f3a53e87b088ee538b2b060fc249575a970df70a7bc",
+        "controllerOverlaySha256": "07ab11ca8c258935c54381b5d4637793582dfce63d15d246acef261c4ba395f2",
+        "nativeControllerMatched": true,
+        "modelRequests": 0
+      }
+    ],
+    "nativeKeylessDeadlineCases": [
+      "late-commit-cutoff-patch-excludes-later-commit",
+      "head-capture-failure-still-stops-all-actors",
+      "setsid-detached-actor-stops-writing-after-deadline"
+    ],
+    "cutoffEnforcementLagSec": {
+      "late-commit": 0.002610921859741211,
+      "invalid-head": 0.00045013427734375,
+      "setsid-actor": 0.0009226799011230469
+    },
+    "realModelCalibration": {
+      "id": "control-supervisor-log-4",
+      "mainSessionId": "session-40caf47e-ec9f-47cc-934d-3047617c8813",
+      "reviewerSessionId": "task-review-90ee4595-0573-4bd7-9251-887411c7ed33",
+      "initialApprovalCount": 0,
+      "rescueCount": 0,
+      "finalStatus": "infrastructure-fault",
+      "executionStatus": "deadline",
+      "pauseReason": "review-fault",
+      "reviewFaultCode": "provider",
+      "containerStoppedReconciled": true,
+      "officialReward": null
+    },
+    "preservedFailures": {
+      "modelFreeStartupFaults": 3,
+      "keylessWatchdogFailures": 2,
+      "realModelCalibrationsFailed": 1
+    }
+  },
+  "unverified": [
+    "Native Goal real-model completion",
+    "Native Plan real-model initial question approval and implementation completion",
+    "Supervisor initial plan approval, node review and completion review success",
+    "Supervisor-independent actual model-led independent check and comparison",
+    "Full release-admitted 16-position batch with scoring and sealing",
+    "Native independent check container quiescence at deadline"
+  ],
+  "nativeGoalApprovalSemantics": "The initial /goal objective command is its native user authorization; no invented extra plan approval."
+}

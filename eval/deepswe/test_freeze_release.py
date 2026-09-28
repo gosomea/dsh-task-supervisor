@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from freeze_release import GATE_CHECKS, candidate, fingerprint, require_frozen_release, validate_gate, validate_links, verify_candidate
 from select_sample import sample_sha256
+from position_inputs import POSITION_ROOTS
 
 
 class FreezeTests(unittest.TestCase):
@@ -91,7 +92,7 @@ class FreezeTests(unittest.TestCase):
 
     def test_final_admission_binds_actual_runtime_and_every_requirement_evidence(self):
         roots = {}
-        for name in ('runner', 'runtime', 'plugin', 'profile', 'node', 'docker', 'pier', 'dataset'):
+        for name in POSITION_ROOTS:
             path = self.root / name; path.mkdir(); (path / 'input').write_text(name)
             roots[name] = str(path)
         source = Path(__file__).parent / 'sample-20260928.json'
@@ -122,6 +123,9 @@ class FreezeTests(unittest.TestCase):
                 'evidenceRoot': str(self.root), 'expectedSampleSha256': sample_sha256(original)}
         with patch('freeze_release.__file__', str(module)):
             self.assertEqual(require_frozen_release(spec)['plannedAttempts'], 16)
+            incomplete = {**spec, 'roots': {name: path for name, path in roots.items() if name != 'pierRuntime'}}
+            with self.assertRaises(ValueError):
+                require_frozen_release(incomplete)
             missing = protocol['admissionRequirements'][0]
             protocol['release']['admissionEvidence'].pop(missing)
             protocol_path.write_text(json.dumps(protocol))
