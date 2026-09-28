@@ -1,0 +1,82 @@
+{
+  "sessions": [
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "logSha256": "d1ce0ec6b9b6b8438dda29f2fce8cd25a991f551d7e4573f1b8d9563a208e484",
+      "tokens": {
+        "uncachedInputTokens": 73820,
+        "outputTokens": 64321,
+        "cacheReadTokens": 2036480,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-1adf6288-9b00-4ad5-9c40-daf2cf8fea80",
+      "logSha256": "5671b05c0d542b496976aae61073d693cb1ee19c4b7f1710b37b325d4c05e317",
+      "tokens": {
+        "uncachedInputTokens": 14558,
+        "outputTokens": 2113,
+        "cacheReadTokens": 40064,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "task-review-9a9ded35-ce29-438c-864f-6cc45c3c9ef1",
+      "logSha256": "c8acb33aa493f8b59ed9361a1bca30eb2467fb21d2c25d194287725351e33709",
+      "tokens": {
+        "uncachedInputTokens": 66843,
+        "outputTokens": 114666,
+        "cacheReadTokens": 1003008,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "allSessionTokens": {
+    "uncachedInputTokens": 155221,
+    "cacheReadTokens": 3079552,
+    "outputTokens": 181100,
+    "cacheWriteTokens": 0
+  },
+  "modelRequests": [
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 23,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 71,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "session-c7368057-15a3-4990-9785-2b47050cf131",
+      "seq": 83,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-1adf6288-9b00-4ad5-9c40-daf2cf8fea80",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    {
+      "sessionId": "task-review-9a9ded35-ce29-438c-864f-6cc45c3c9ef1",
+      "seq": 10,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

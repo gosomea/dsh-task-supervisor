@@ -40,3 +40,7 @@ python3 eval/review-recovery/freeze_frequency.py \
 四题的 P0 控制均为 nop=0、oracle=1，异常=0，见 [controls.json](controls.json)。冻结队列首项是 Open Library 第一次重复的 Supervisor 稀疏审查；[启动证据](started.json)包含原生 Session、实际请求模型和独立控制器。当前完整模型成绩尚未封口，不能用启动或门禁替代任务成功。控制器独立于交互 turn 持续串行运行；每小时的当前任务 heartbeat 核对异常与最终收尾。
 
 [59909 实例恢复证据](rework-deployment.json)保留原游戏任务的第 1 次通过与第 2 次返工；更新后仍 complete、armed=false。原生路径安装不会即时刷新原进程，此处确认所有 Session 停止后重启了该测试 LaunchAgent，并从更新后的 API 验证历史。
+
+## 阶段结果
+
+[首个正式结果与运行核对](progress-20260928-1506.zh.md)记录 1/60 封口时的节点审查超时、独立评分及全部 Session 用量。它是阶段快照，不是五条件最终对照结论。
