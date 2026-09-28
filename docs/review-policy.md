@@ -63,8 +63,8 @@ Persist review inputs, output, cursor advancement, intervention, and delivered m
 
 ## Dev Note
 
-Proposed independent artifact snapshots, verification before report comparison, bounded execution, real browser journeys, and confirmed reopening into the original DAG are owned by the [independent verification and repair plan](10-plans/independent-verification/plans.md). These capabilities are not implemented; historical reviews are not retroactively labelled independent executions.
+Independent snapshots, verification before report comparison, bounded checks and confirmed reopening into the original DAG have isolated development validation; independent browser journeys remain pending. See [implementation status](implementation.md) and the [original plan](10-plans/independent-verification/plans.md). Historical reviews are not retroactively labelled independent executions.
 
-The next implementation steps for protocol repair, fault versus user-decision classification, failed review identity, and progress observation experiments are in the [conversation and review recovery plan](10-plans/conversation-and-review-recovery/plans.md). This proposal is not implemented and does not change frozen evaluation scores.
+Protocol repair, fault versus user-decision classification, failed-review identity and progress observations are implemented; see [implementation status](implementation.md). The [original plan](10-plans/conversation-and-review-recovery/plans.md) retains design scope. Observation benefits still require independent evaluation; frozen scores remain unchanged.
 
 Calibrate watchdog thresholds, severity rules, timeout duration, false-positive suppression, and transient review retries. Verify safe step-boundary scheduling, event pagination, redaction, workspace-copy fidelity, and host user-decision transport in an isolated DSH instance before fixing tool schemas.

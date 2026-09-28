@@ -14,6 +14,34 @@ export function within(root: string, path: string): boolean {
   return rel === '' || !isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`)
 }
 const hash = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex')
+const pathParts = (path: string) => path.split(sep === '\\' ? /[\\/]/ : '/')
+
+/** Resolve captured links without dereferencing absent targets or importing excluded content. */
+function validateLinks(entries: ArtifactSnapshot['entries'], excluded: string[]) {
+  const paths = new Map(entries.map(entry => [entry.path, entry]))
+  for (const link of entries) {
+    if (link.kind !== 'link') continue
+    const resolved = link.path.split('/').slice(0, -1)
+    const pending = pathParts(link.target!)
+    let followed = 0
+    while (pending.length) {
+      const part = pending.shift()!
+      if (!part || part === '.') continue
+      if (part === '..') {
+        if (!resolved.length) throw new Error(`SNAPSHOT_LINK: external link ${link.path}`)
+        resolved.pop(); continue
+      }
+      resolved.push(part)
+      const target = resolved.join('/')
+      if (excluded.some(path => target === path || target.startsWith(`${path}/`))) throw new Error(`SNAPSHOT_LINK: link ${link.path} targets an excluded entry`)
+      const entry = paths.get(target)
+      if (entry?.kind !== 'link') continue
+      if (++followed > 40) throw new Error(`SNAPSHOT_LINK: cyclic or excessive link chain ${link.path}`)
+      resolved.pop()
+      pending.unshift(...pathParts(entry.target!))
+    }
+  }
+}
 
 /** Capture every non-excluded entry, rejecting outside links and concurrent changes. */
 async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, destination?: string) {
@@ -28,7 +56,7 @@ async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, d
       const source = join(directory, name), stat = await lstat(source), mode = stat.mode & 0o777
       if (stat.isSymbolicLink()) {
         const target = await readlink(source)
-        if (isAbsolute(target) || !within(root, await realpath(source))) throw new Error(`SNAPSHOT_LINK: external or absolute link ${path}`)
+        if (isAbsolute(target)) throw new Error(`SNAPSHOT_LINK: absolute link ${path}`)
         entries.push({ path, kind: 'link', hash: hash(target), bytes: 0, mode, target })
         if (destination) { await mkdir(join(destination, prefix), { recursive: true }); await symlink(target, join(destination, path)) }
       } else if (stat.isDirectory()) {
@@ -55,11 +83,7 @@ async function scan(root: string, limits: SnapshotLimits, signal: AbortSignal, d
     }
   }
   await visit(root, '')
-  const paths = new Set(entries.map(entry => entry.path))
-  for (const entry of entries) if (entry.kind === 'link') {
-    const target = relative(root, await realpath(join(root, entry.path))).split(sep).join('/')
-    if (!paths.has(target)) throw new Error(`SNAPSHOT_LINK: link ${entry.path} targets an excluded entry`)
-  }
+  validateLinks(entries, limits.excluded)
   return { entries, digest: hash(JSON.stringify(entries)) }
 }
 
@@ -134,9 +158,9 @@ export async function changedArtifacts(snapshot: ArtifactSnapshot): Promise<stri
   return [...new Set(changed)]
 }
 
-/** Resolve model-supplied paths without allowing links or traversal out of a private subtree. */
+/** Resolve model paths without traversal or link escapes from a private subtree. */
 export async function reviewPath(root: string, path: string): Promise<string> {
-  if (isAbsolute(path) || path.split(/[\\/]/).includes('..')) throw new Error('REVIEW_PATH: use a relative path inside the check directory')
+  if (isAbsolute(path) || pathParts(path).includes('..')) throw new Error('REVIEW_PATH: use a relative path inside the check directory')
   const candidate = resolve(root, path)
   if (!within(root, await realpath(candidate))) throw new Error('REVIEW_PATH: link leaves the check directory')
   return candidate

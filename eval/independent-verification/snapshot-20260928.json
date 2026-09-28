@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "kind": "snapshot-link-regression",
+  "date": "2026-09-28",
+  "modelRequests": 0,
+  "nodeVersion": "24.19.0",
+  "unitTests": {
+    "snapshot": 12,
+    "verification": 4,
+    "passed": 16
+  },
+  "nativeContainerTests": {
+    "passed": 6,
+    "skipped": 0,
+    "context": "colima",
+    "imageId": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553"
+  },
+  "strictChecks": {
+    "host": true,
+    "client": true,
+    "source": "existing-supervisor-seam"
+  },
+  "buildPassed": true,
+  "probes": [
+    {
+      "schemaVersion": 1,
+      "kind": "representative-official-image-topology-preflight",
+      "probeSha256": "bf9981cc652d8b7ffe27a4ef499beb09a35198b3d9a4654af7f85f1866c96fad",
+      "modelRequests": 0,
+      "rows": [
+        {
+          "imageId": "sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818",
+          "scope": "representative-topology-only",
+          "modelRequests": 0,
+          "containerExitCode": 0,
+          "nativeProbe": {
+            "modelRequests": 0,
+            "dockerSocketMounted": false,
+            "dockerExecutable": null,
+            "dockerError": "subprocess-local: command \"docker\" was not found on PATH",
+            "snapshot": {
+              "captured": false,
+              "error": "SNAPSHOT_LIMIT: entry limit exceeded; capture is incomplete"
+            },
+            "mountInfoReadable": true
+          },
+          "ownedContainerRemoved": true,
+          "runtimeTopologyCompatible": false
+        }
+      ],
+      "runtimeTopologyCompatible": false,
+      "modelAdmitted": false,
+      "limitations": [
+        "Representative images are not the two new selected tasks or their official controls.",
+        "Runtime/config freezing, model parity and task-specific controls remain required.",
+        "No model, approval, benchmark solution or hidden tests were used."
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "representative-official-image-topology-preflight",
+      "probeSha256": "ffec1a81b62f667672885cd82558b48b2cb719f545aec7c315e9c9e2567e8dc7",
+      "modelRequests": 0,
+      "rows": [
+        {
+          "imageId": "sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818",
+          "scope": "representative-topology-only",
+          "modelRequests": 0,
+          "containerExitCode": 0,
+          "nativeProbe": {
+            "modelRequests": 0,
+            "dockerSocketMounted": false,
+            "limits": {
+              "files": 100000,
+              "bytes": 1073741824,
+              "excluded": [
+                ".git"
+              ]
+            },
+            "dockerExecutable": null,
+            "dockerError": "subprocess-local: command \"docker\" was not found on PATH",
+            "snapshot": {
+              "captured": false,
+              "error": "The operation was aborted due to timeout"
+            },
+            "mountInfoReadable": true
+          },
+          "ownedContainerRemoved": true,
+          "runtimeTopologyCompatible": false
+        }
+      ],
+      "runtimeTopologyCompatible": false,
+      "modelAdmitted": false,
+      "limitations": [
+        "Representative images are not the two new selected tasks or their official controls.",
+        "Runtime/config freezing, model parity and task-specific controls remain required.",
+        "No model, approval, benchmark solution or hidden tests were used."
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "representative-official-image-topology-preflight",
+      "probeSha256": "335187e42e68bb580b9acacee8bf392ab8b8c55943234a984b7f3b0527ba362e",
+      "modelRequests": 0,
+      "rows": [
+        {
+          "imageId": "sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818",
+          "scope": "representative-topology-only",
+          "modelRequests": 0,
+          "containerExitCode": 0,
+          "nativeProbe": {
+            "modelRequests": 0,
+            "dockerSocketMounted": false,
+            "limits": {
+              "files": 100000,
+              "bytes": 1073741824,
+              "excluded": [
+                ".git"
+              ]
+            },
+            "dockerExecutable": null,
+            "dockerError": "subprocess-local: command \"docker\" was not found on PATH",
+            "snapshot": {
+              "captured": false,
+              "error": "SNAPSHOT_LIMIT: entry limit exceeded; capture is incomplete"
+            },
+            "mountInfoReadable": true
+          },
+          "ownedContainerRemoved": true,
+          "runtimeTopologyCompatible": false
+        }
+      ],
+      "runtimeTopologyCompatible": false,
+      "modelAdmitted": false,
+      "limitations": [
+        "Representative images are not the two new selected tasks or their official controls.",
+        "Runtime/config freezing, model parity and task-specific controls remain required.",
+        "No model, approval, benchmark solution or hidden tests were used."
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "kind": "representative-official-image-topology-preflight",
+      "probeSha256": "04ffce03eedb5dd196f7a95bad486d2fae81089cf0e737009569bc84f6a004a5",
+      "modelRequests": 0,
+      "rows": [
+        {
+          "imageId": "sha256:a34b5a87a6feacf3eef6edd583c13af33bf99ce519bb4c5ade75d8b7dfb11818",
+          "scope": "representative-topology-only",
+          "modelRequests": 0,
+          "containerExitCode": 0,
+          "nativeProbe": {
+            "modelRequests": 0,
+            "dockerSocketMounted": false,
+            "limits": {
+              "files": 10000,
+              "bytes": 268435456,
+              "excluded": [
+                ".git"
+              ]
+            },
+            "workspace": "/app/tests/fixtures",
+            "dockerExecutable": null,
+            "dockerError": "subprocess-local: command \"docker\" was not found on PATH",
+            "snapshot": {
+              "captured": true,
+              "entries": 40,
+              "bytes": 326507,
+              "digest": "bf0edd085291083070f6aafd57386fe2b02027c8fc6d72c1ce8e26c12f893946",
+              "links": 3,
+              "linksPreserved": true
+            },
+            "check": {
+              "executed": false,
+              "error": "subprocess-local: command \"docker\" was not found on PATH"
+            },
+            "mountInfoReadable": true
+          },
+          "ownedContainerRemoved": true,
+          "runtimeTopologyCompatible": false
+        }
+      ],
+      "runtimeTopologyCompatible": false,
+      "modelAdmitted": false,
+      "limitations": [
+        "Representative images are not the two new selected tasks or their official controls.",
+        "Runtime/config freezing, model parity and task-specific controls remain required.",
+        "No model, approval, benchmark solution or hidden tests were used."
+      ]
+    }
+  ],
+  "modelAdmitted": false,
+  "limitations": [
+    "Fixture capture is not full-task capture.",
+    "The protected task container still lacks the Docker check control path.",
+    "Initial Docker tests failed on VM-invisible TMP storage; rerun used explicit shared cache storage.",
+    "An initial strict check used the wrong native source without extension/record; corrected checks selected the existing seam."
+  ],
+  "independentAcceptance": {
+    "accepted": true,
+    "scope": "snapshot and review-path link semantics; read-only child acceptance",
+    "focusedRegressionsPassed": 8,
+    "externalBaselineReadPassed": 1,
+    "windowsRuntimeTested": false
+  }
+}

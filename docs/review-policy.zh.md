@@ -63,8 +63,8 @@
 
 ## Dev Note
 
-独立产物快照、先验证再对照汇报、受限运行检查、真实浏览器路径，以及完成后点击确认回原 DAG 的后续开发见[独立验收与完成后返工方案](10-plans/independent-verification/plans.zh.md)。这些能力尚未实现；既有审查证据不补记为独立运行。
+独立产物快照、先验证再对照汇报、受限运行检查与点击确认回原 DAG 已完成隔离开发验收；真实浏览器路径仍待实现。能力范围见[实现状态](implementation.zh.md)，原设计见[独立验收与完成后返工方案](10-plans/independent-verification/plans.zh.md)。既有审查证据不补记为独立运行。
 
-协议补交、内部故障与用户决策分类、失败身份以及进展观察实验的下一轮实现安排见[督导对话与审查恢复方案](10-plans/conversation-and-review-recovery/plans.zh.md)。该方案尚未实现，不改变既有冻结评测成绩。
+协议补交、内部故障与用户决策分类、失败身份及进展观察记录已实现，见[实现状态](implementation.zh.md)。[原方案](10-plans/conversation-and-review-recovery/plans.zh.md)保留设计范围；进展观察收益需要独立评测，不改变既有冻结成绩。
 
 校准兜底阈值、严重度规则、超时时长、误报抑制和暂时性审查重试。固定工具 schema 前，在隔离 DSH 实例验证安全步骤边界调度、事件分页、脱敏、工作区副本完整性和宿主用户决策传输。
