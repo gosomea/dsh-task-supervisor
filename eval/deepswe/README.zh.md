@@ -48,6 +48,8 @@ DeepSWE 两道候选题也完成了官方独立评分校准，见[题目控制�
 
 `committed_patch.py` 已实现仅导出官方基线到 Agent HEAD 的二进制提交补丁；未提交、未跟踪工作只记为诊断，不由评测器补交。三项 Git fixture 回归覆盖未提交工作、已提交二进制与后续改动、非祖先提交拒绝。该导出器还未与正式 Pier 投递/评分 runner 联调。
 
+四组真实 profile 的无模型加载、工作区绑定、主模型选择和工具 schema 对照已通过，见[profile 证据](profile-preflight-20260928.json)。Goal/Plan 的工具定义一致，两种 Supervisor 的主工具定义一致；剔除 `task_*` 控制工具后与原生组一致。`profile-probe.ts` 只在 keyless 验收 overlay 中使用，正式 profile 不加载它。这不证明真实模型请求、审查者路由、单控制器运行、批准与截止；这些门禁仍待联调。
+
 ```sh
 python3 -m unittest discover -s eval/deepswe -v
 ```

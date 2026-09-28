@@ -22,6 +22,7 @@ for (const side of ['host', 'client']) {
     resolve(project, 'spikes/kernel/artifact-snapshot.spec.ts'), resolve(project, 'spikes/kernel/review-check.spec.ts'), resolve(project, 'spikes/kernel/verification.spec.ts'),
     resolve(project, 'src/check-gateway.ts'), resolve(project, 'spikes/kernel/check-gateway.spec.ts'),
     resolve(project, 'eval/independent-verification/gateway-probe.ts'),
+    resolve(project, 'eval/deepswe/profile-probe.ts'),
   ] : [resolve(project, 'src/client/index.tsx'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
     options, projectReferences: parsed.projectReferences })
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]

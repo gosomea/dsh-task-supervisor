@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "keyless-real-profile-capability-check",
+  "modelRequests": 0,
+  "modelAdmitted": false,
+  "pluginCommit": "61f18db9de87ec48b4efac9f3b1220ff12236f08",
+  "positions": [
+    {
+      "condition": "goal",
+      "sessionId": "session-df81d4e5-89d2-465a-96f9-b686421ddcc9",
+      "cwd": "/app",
+      "modelSelection": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "toolCount": 26,
+      "capabilitiesSha256": "59bbaef4134414120099bb427e27d444cf3ae17c15f7bd5fc3e5bebb13092ec5",
+      "loadResultSha256": "5231973818a8528570fb47030aa0719dc7ac4e01ce3d32021cb8923d91edc874",
+      "modelRequests": 0,
+      "containerCleanupConfirmed": true
+    },
+    {
+      "condition": "plan",
+      "sessionId": "session-7680d7c5-4e6c-4312-a2fd-e704c01dfaa0",
+      "cwd": "/app",
+      "modelSelection": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "toolCount": 26,
+      "capabilitiesSha256": "39ba1d8c51498b4930a86a5a0eac83d7db2d714fe22a6a87ae53dcc700d90c87",
+      "loadResultSha256": "286d7634ce08a1ebf85c172dd8fd47984e84a763e077eea35146accf03f587e1",
+      "modelRequests": 0,
+      "containerCleanupConfirmed": true
+    },
+    {
+      "condition": "supervisor-log",
+      "sessionId": "session-d439c2fb-6a42-4c70-8066-e222abeaf240",
+      "cwd": "/app",
+      "modelSelection": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "toolCount": 35,
+      "capabilitiesSha256": "1b3cdbdfe1c6a1caf7c4f3a759c09631ea3aa19fd8ccb87ac855829f1726cd6c",
+      "loadResultSha256": "04dff193555a16c5776e4d04cdb4075a0bbef1e3695fe13b220dcc65f7351670",
+      "modelRequests": 0,
+      "containerCleanupConfirmed": true
+    },
+    {
+      "condition": "supervisor-independent",
+      "sessionId": "session-e4355dad-b10a-4f9d-a550-1a0003325811",
+      "cwd": "/app",
+      "modelSelection": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "toolCount": 35,
+      "capabilitiesSha256": "2c8621e37d6fc6f66a6a6da061ece1932a43e4eb8ba1d25cbb3e32d1ea8a357b",
+      "loadResultSha256": "75238b304b1e53ca7a602cb89bcdeba587f813a85123526228f93d46af059d1b",
+      "modelRequests": 0,
+      "containerCleanupConfirmed": true
+    }
+  ],
+  "primaryToolSchemaParity": true,
+  "supervisorArmMainToolSchemaParity": true,
+  "actualMainModelSelectionMatched": true,
+  "actualModelRequestAndReviewerRouteGate": false,
+  "formalRunnerGate": false,
+  "notes": [
+    "Capability command is a test-only overlay excluded from formal profiles.",
+    "Actual supported DSH CLI loaded all four profiles and successfully created bound Sessions and resolved the configured main model. No prompt/task objective was delivered.",
+    "Native Goal/Plan controllers remain installed in this keyless fixture. Single-controller execution admission still needs checking before formal delivery.",
+    "Selection and successful profile load are not proof of a real model completion or reviewer routing."
+  ],
+  "testOverlaySourceSha256": "126561d5f8146f31a6e8c7a88e73b55715dd3df0ea6599d069563158be378e6e"
+}

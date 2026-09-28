@@ -48,6 +48,8 @@ The current sample has `modelAdmitted=false`, `release=null` and model attempts 
 
 `committed_patch.py` exports only the committed binary patch from the official base to the Agent HEAD. Uncommitted and untracked work remains diagnostic and is never submitted by the evaluator. Three Git fixture regressions cover dirty-only work, committed binaries with later changes, and rejection of unrelated commits. This exporter has not yet been integrated with the formal Pier delivery/grading runner.
 
+Keyless loading, workspace binding, main-model selection and tool-schema comparison passed in four actual profiles; see [profile evidence](profile-preflight-20260928.json). Goal/Plan schemas match, and the two Supervisor main surfaces match; removing `task_*` controls yields the same native surface. `profile-probe.ts` is a keyless acceptance overlay excluded from formal profiles. This does not prove real model completions, reviewer routing, single-controller execution, approval or deadlines; those gates remain pending.
+
 ```sh
 python3 -m unittest discover -s eval/deepswe -v
 ```
