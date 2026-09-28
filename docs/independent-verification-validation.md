@@ -1,5 +1,13 @@
 # Independent verification development and validation
 
+## Completed-task repair authorization regression
+
+On 2026-09-28 an independent sub-agent reproduced a native write before any repair proposal. Completed-task admission now grants no implementation before a proposal, while pending, after decline, with supervision disabled or after cold recovery. A user-confirmed reopening or explicitly approved new task restores normal implementation. Planning PTC investigation still uses native permissions.
+
+The independent TMP negative fixture passed with denial and unchanged-file assertions. New regressions exercise native write/edit, an unknown executor, diagnostic reads, ordinary questions, new tasks and writes after click confirmation. Cold recovery of a declined proposal still rejects writes. With colima configured, `pnpm test:kernel spikes/kernel/supervisor.spec.ts` passed 73 tests; Host/Client strict checks and build passed. The sub-agent independently checked six focused cases and the original negative fixture. No new real-model requests were sent.
+
+This is tool admission, not protection against external writers or isolation of old files after explicit clear or new-task creation. Ordinary browser journeys, autonomous long tasks and the enhanced repair integration remain unaccepted.
+
 ## Step 2: artifact snapshots and plugin-owned check runtime
 
 Status: the plugin runtime foundation is validated. DSH keeps its existing extension-record seam baseline without new sandbox fields. User deployments and the frozen public runner remain unchanged. Step 3 owns model integration status.

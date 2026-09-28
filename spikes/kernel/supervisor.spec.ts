@@ -1487,6 +1487,83 @@ it('records explicit main-node starts, rejecting stale attempts and blocked depe
 })
 
 
+it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects completed artifacts with a %s repair proposal while allowing diagnosis', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-completed-store-')); roots.push(root)
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-completed-case-')); roots.push(workspace)
+  await writeFile(join(workspace, 'value.txt'), 'accepted artifact')
+  const adapter = new ScriptedAdapter({ main: [
+    toolResponse('write', { file_path: 'value.txt', content: 'changed without confirmation' }, 'premature-repair'),
+    textResponse('等待确认，产物保持原样'),
+  ] })
+  const ctx = await host(root, adapter)
+  await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`completed-${mode}`), meta: { cwd: workspace },
+    agentOptions: { provider: 'scripted', model: 'main' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+  const task = { ...newTask('原目标'), phase: 'complete' as const, enabled: mode !== 'disabled', criteria: [{ id: 'c', text: '正确' }],
+    stages: [{ id: 'n', title: '实现', criterionIds: ['c'], dependsOn: [] }], nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
+  appendTask(ctx, agent, task)
+  const signal = new AbortController().signal
+  if (mode === 'pending' || mode === 'declined') {
+    const proposed = await ctx.tools.execute({ agent, signal, callId: ToolCallId('propose'), name: 'task_propose_repair',
+      arguments: { task_id: task.id, task_revision: task.revision, title: '缺陷', reason: '原目标中的错误', root_node_ids: ['n'], evidence_seqs: [] } })
+    expect(proposed.isError).toBe(false)
+    if (mode === 'declined') {
+      const proposal = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.repairs[0]!
+      agent.session.append('extension/record', { namespace: 'dsh-task-supervisor-repair', schemaVersion: 1, kind: 'decline', recordId: 'decline',
+        payload: { proposalId: proposal.id, taskId: task.id, taskRevision: task.revision, source: 'web-confirmation', confirmedAt: new Date().toISOString() } })
+    }
+  }
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '原目标中 value.txt 有缺陷，请修复 value.txt；不要扩大目标。' }] }))
+  await agent.whenIdle()
+  const result = agent.session.snapshotEvents().find(e => e.type === 'tool/result' && e.data.message.source.callId === 'premature-repair')!
+  expect(result.type === 'tool/result' && result.data.message.isError).toBe(true)
+  expect(JSON.stringify(result)).toContain('REPAIR_CONFIRMATION_REQUIRED')
+  const read = await ctx.tools.execute({ agent, signal, callId: ToolCallId('diagnose'), name: 'read', arguments: { file_path: 'value.txt' } })
+  expect(read.isError).toBe(false)
+  expect(JSON.stringify(read)).toContain('accepted artifact')
+  const edit = await ctx.tools.execute({ agent, signal, callId: ToolCallId('edit'), name: 'edit',
+    arguments: { file_path: 'value.txt', old_string: 'accepted artifact', new_string: 'changed' } })
+  expect(edit.isError).toBe(true)
+  let executed = false
+  agent.ctx.tools.register(defineContentToolFixture({ name: 'generic_executor', description: 'arbitrary execution fixture', parameters: {},
+    async execute() { executed = true; return [{ type: 'text', text: 'executed' }] } }))
+  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('execute'), name: 'generic_executor', arguments: {} })).isError).toBe(true)
+  expect(executed).toBe(false)
+  expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('accepted artifact')
+  expect(taskOf(ctx, agent)?.phase).toBe('complete')
+  expect(agent.session.snapshotEvents().some(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toBe(false)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '当前任务做了什么？' }] }))
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('complete')
+  if (mode === 'declined') {
+    expect(await ctx.sessions.flush(agent.session)).toBe(true)
+    await ctx.fiber.dispose()
+    const restored = await host(root, new ScriptedAdapter())
+    await restored.plugin(LocalFileSystem, { cwd: workspace })
+    const reopened = await restored.agents.resume({ resumeSessionId: agent.id })
+    await reopened.agent.ctx.plugin(FsTools, {})
+    expect(taskOf(restored, reopened.agent)?.phase).toBe('complete')
+    expect(restored.sessionProjections.stateOf(reopened.agent.session, 'taskSupervisor')!.repairs[0]?.status).toBe('declined')
+    const denied = await restored.tools.execute({ agent: reopened.agent, signal, callId: ToolCallId('restored-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'after restart' } })
+    expect(denied.isError).toBe(true)
+    expect(JSON.stringify(denied)).toContain('REPAIR_CONFIRMATION_REQUIRED')
+    expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('accepted artifact')
+  }
+  if (mode === 'absent') {
+    await ctx.commands.execute(agent, '/task new 明确的新目标', [], signal)
+    await agent.whenIdle()
+    const next = taskOf(ctx, agent)!
+    expect(next).toMatchObject({ phase: 'planning', objective: '明确的新目标' })
+    expect(next.id).not.toBe(task.id)
+    await ctx.tools.execute({ agent, signal, callId: ToolCallId('new-plan'), name: 'task_submit_plan', arguments: {
+      criteria: [{ id: 'new-c', text: '新值' }], stages: [{ id: 'new-n', title: '新实现', criterionIds: ['new-c'] }],
+    } })
+    await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
+    expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('new-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'new approved scope' } })).isError).toBe(false)
+    expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('new approved scope')
+  }
+})
+
 it('records a model repair proposal without execution authority and prevents writes while waiting for the click', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-repair-host-')); roots.push(root)
   const workspace = await mkdtemp(join(tmpdir(), 'dsh-repair-case-')); roots.push(workspace)
@@ -1586,7 +1663,7 @@ it('uses the authenticated panel transport for proposal and exact click confirma
   let route: ((request: Request) => Promise<Response>) | undefined
   ctx.provide('connection', { fetch: { register(definition: { fetch: typeof route }) { route = definition.fetch; return () => { route = undefined } } } } as unknown as Context['connection'])
   await vi.waitFor(() => expect(route).toBeDefined())
-  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-http'), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'main' } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-http'), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'main' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
   const task = { ...newTask('原目标'), phase: 'complete' as const, criteria: [{ id: 'c', text: '正确' }],
     stages: [{ id: 'n', title: '实现', criterionIds: ['c'], dependsOn: [] }], nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
   appendTask(ctx, agent, task)
@@ -1604,6 +1681,8 @@ it('uses the authenticated panel transport for proposal and exact click confirma
   expect(clicked.status).toBe(200); await agent.whenIdle()
   expect(taskOf(ctx, agent)).toMatchObject({ id: task.id, phase: 'active', acceptanceCycle: 2 })
   expect(adapter.requests).toBe(1)
+  expect((await ctx.tools.execute({ agent, signal: new AbortController().signal, callId: ToolCallId('confirmed-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'confirmed repair' } })).isError).toBe(false)
+  expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('confirmed repair')
   expect((await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision })).status).toBe(200)
   await agent.whenIdle(); expect(adapter.requests).toBe(1)
   expect(agent.session.snapshotEvents().filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toHaveLength(1)

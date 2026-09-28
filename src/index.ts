@@ -494,8 +494,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (task === null || task.phase === 'cleared') return undefined
     if (exec.name === 'task_status') return undefined
     if (task.phase === 'complete') {
-      const pending = ctx.sessionProjections.stateOf(exec.agent.session, 'taskSupervisor')?.repairs.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status))
-      if (pending && !['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return 'REPAIR_CONFIRMATION_REQUIRED: Wait for the impact confirmation before modifying deliverables.'
+      // A completed task has no execution grant, including before the model
+      // proposes repair or after the user declines it. Generic executors can write.
+      if (!['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return 'REPAIR_CONFIRMATION_REQUIRED: This task is complete. Inspect with read tools, propose repair and wait for the user to confirm the impact, or explicitly create and approve a new task before implementing. Generic execution tools cannot establish read-only diagnosis.'
       return undefined
     }
     if (exec.name === 'todo_write') return 'This supervised task tracks progress in its DAG. Use task_status and task_report_stage rather than a second todo checklist.'
