@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "unsealed-native-goal-observation",
+  "observedAt": "2026-09-28T08:10:18.442562+00:00",
+  "attempt": "p2-t1-r1-goal",
+  "sessionId": "session-524b8300-935a-4443-ae2a-0f1fc9e2ada7",
+  "startedAt": 1790581035,
+  "deadlineAt": "2026-09-28T08:27:15+00:00",
+  "resultSealed": false,
+  "goalPhase": "active",
+  "roundsStarted": 1,
+  "lastAssistantSeq": 138,
+  "lastResponseStopReason": "length",
+  "lastNativeEvent": {
+    "seq": 140,
+    "type": "turn/end",
+    "time": 1790581423075
+  },
+  "nativeLogSha256": "2d219294d469e00dd11c10ef1e3496e9e8514ceb08f3b38b0de1bb33e5253d78",
+  "mainSessionTokens": {
+    "uncachedInputTokens": 50734,
+    "outputTokens": 82751,
+    "cacheReadTokens": 599168,
+    "cacheWriteTokens": 0
+  },
+  "controllerPid": 53077,
+  "container": "p2-t1-r1-goal",
+  "dockerContext": "colima-dsh-eval-rosetta",
+  "cpuQuota": 1,
+  "memoryGiB": 4,
+  "containerRunning": true,
+  "oomKilled": false,
+  "primarySuccess": null,
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "intervention": "none",
+  "limitations": [
+    "This is an unsealed observation, not a result or independent reward.",
+    "The output-length stop and absence of continuation are observed; no causal attribution to Goal versus model is established."
+  ],
+  "lastTurnEndReason": {
+    "kind": "max-tokens"
+  }
+}
