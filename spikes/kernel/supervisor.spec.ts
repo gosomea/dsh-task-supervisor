@@ -2,6 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import * as FsTools from '@deepseek-ai/dsh-tool-fs'
 import { LocalAttachmentStore } from '@deepseek-ai/dsh-attachment-local'
+import { PtcRuntime, type PtcRunRequest, type PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
@@ -132,8 +133,9 @@ it('keeps one task in the native Session and resumes only after a human command'
   const denied = await first.tools.execute({
     callId: ToolCallId('blocked-write'), name: 'unsafe_write', arguments: {}, agent, signal,
   })
-  expect(denied.isError).toBe(true)
-  expect(unsafeCalls).toBe(0)
+  // Planning retains the native permission policy without a tool-name whitelist.
+  expect(denied.isError).toBe(false)
+  expect(unsafeCalls).toBe(1)
 
   const plan = await first.tools.execute({
     callId: ToolCallId('submit-plan'), name: 'task_submit_plan', agent, signal,
@@ -1633,4 +1635,28 @@ it('lets the persistent consultation propose repair without turning the proposal
   expect(adapter.requests).toBe(before)
   expect(ctx.tools.get('task_reopen', chat)).toBeUndefined()
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('original')
+})
+
+it('keeps run_code available for planning investigation and emits the exact task-new input as a native user message', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-input-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('run_code', { code: 'return await tools.inspect_workspace({})', description: '只读查看工作区' }, 'planning-inspect'), textResponse('已完成只读勘察，等待批准计划')] })
+  const ctx = await host(root, adapter)
+  let calls = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'inspect_workspace', description: 'read-only inspection fixture', parameters: {}, execute: async () => { calls++; return [{ type: 'text', text: 'workspace inspected without writes' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-input'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  class InspectionRuntime extends PtcRuntime {
+    readonly language = 'typescript'; readonly isolation = 'controlled fixture'
+    resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: request.cwd ?? root, timeoutMs: request.timeoutMs ?? 1000 } }
+    async run(request: PtcRunSpec) { return { logs: [], value: await request.bindings.find(item => item.global === 'tools')!.functions['inspect_workspace']!({}) } }
+  }
+  await ctx.plugin(InspectionRuntime)
+  agent.ctx.tools.presentAs('ptc')
+  const input = '/task new 开发一个我的世界，先看看工作区'
+  await ctx.commands.execute(agent, input, [], new AbortController().signal); await agent.whenIdle()
+  expect(calls).toBe(1); expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  const messages = agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.source.kind === 'user')
+  expect(messages).toHaveLength(1)
+  expect(JSON.stringify(messages[0])).toContain(input)
+  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.current?.objective).toBe('开发一个我的世界，先看看工作区')
 })

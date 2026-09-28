@@ -43,7 +43,7 @@ declare module '@deepseek-ai/dsh-llm' {
   }
 }
 
-/** Read tools available before the first plan approval. */
+/** Deployment policy for supervised tasks and review. */
 export interface Config {
   repairMaxFiles?: number
   repairMaxBytes?: number
@@ -121,7 +121,6 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
   }
-  const planningTools = new Set([...planningReadTools, 'task_status', 'task_submit_plan', 'task_approve'])
   const gateReadTools = new Set(planningReadTools.filter(tool => ['read', 'glob', 'grep'].includes(tool)))
   const maxAutomaticRoundsWithoutReport = config.maxAutomaticRoundsWithoutReport ?? 3
   if (!Number.isSafeInteger(maxAutomaticRoundsWithoutReport) || maxAutomaticRoundsWithoutReport < 1) {
@@ -208,7 +207,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   /** The idle maintenance lock holds a queued followup until both records are durable. */
-  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>): Promise<void> {
+  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string): Promise<void> {
     await agent.runMaintenance(async signal => {
       signal.throwIfAborted()
       if (disposed) throw new Error('Supervisor is unloaded')
@@ -223,7 +222,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       await flush(agent)
       signal.throwIfAborted()
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
-      agent.followup(inputFor(committed, instruction))
+      agent.followup(commandInput === undefined ? inputFor(committed, instruction) : createUserMessage({ content: [{ type: 'text', text: commandInput }], source: { kind: 'user' } }))
       await flush(agent)
     })
   }
@@ -251,6 +250,13 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, [1])
   ctx.agents.registerSessionControlReader(DRAFT_NAMESPACE, [1])
   ctx.sessionProjections.register(taskProjection)
+  ctx.systemPrompt.section({ name: 'task-supervisor:planning', order: 2451, interpolate: false,
+    text: context => {
+      const task = context.agent ? taskOf(ctx, context.agent) : null
+      if (!task?.enabled || !['planning', 'awaiting-approval'].includes(task.phase)) return ''
+      return 'The supervised task is being planned. Inspect the actual workspace with any available tools under the current native DSH permission policy. A universal tool such as run_code may be used for read-only investigation. Do not implement or modify deliverables before the user approves the plan. Submit criteria and DAG stages using task_submit_plan, then wait for approval. Task objective: ' + task.objective
+    },
+  })
   ctx.systemPrompt.section({ name: 'task-supervisor:language', order: 2450, interpolate: false,
     text: ({ agent }) => {
       if (agent === undefined) return ''
@@ -259,7 +265,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     },
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
-  async function createTask(agent: Agent, objective: string, creationId?: string): Promise<TaskSnapshot> {
+  async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string): Promise<TaskSnapshot> {
     if (creationId) {
       for (const event of agent.session.snapshotEvents()) {
         if (event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state') {
@@ -273,7 +279,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     const next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
     await commitAndWake(agent, task, next,
-      'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.')
+      'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.', undefined, commandInput)
     return next
   }
 
@@ -476,8 +482,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     knownAgents.delete(agent)
   })
 
-  // A monotonic guard enforces planning restrictions at the actual executor,
-  // including nested and direct tool calls that bypass prompt visibility.
+  // Task controls retain their lifecycle guards. Planning uses guidance and the
+  // native permission policy; a universal tool may inspect without implementing.
   ctx.tools.guard(exec => {
     if (exec.agent === undefined) return undefined
     const task = taskOf(ctx, exec.agent)
@@ -491,9 +497,6 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (exec.name === 'todo_write') return 'This supervised task tracks progress in its DAG. Use task_status and task_report_stage rather than a second todo checklist.'
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
       return 'Supervisor is stopped or awaiting review'
-    }
-    if ((task.phase === 'planning' || task.phase === 'awaiting-approval') && !planningTools.has(exec.name)) {
-      return `tool "${exec.name}" is unavailable before plan approval`
     }
     if (task.phase === 'active' && readOnlyGateRemaining(exec.agent, task) > 0
       && exec.name !== 'task_status' && exec.name !== 'task_approve' && !gateReadTools.has(exec.name)) {
@@ -515,7 +518,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (binding.taskId !== undefined && boundTask?.id !== binding.taskId) {
           return { kind: 'error', text: '这是历史任务的督导对话；请打开当前任务后再操作。' }
         }
-        const result = await ctx.commands.execute(main, `/task ${rawInput}`, [], signal)
+        const result = await ctx.commands.execute(main, `/task${rawInput}`, [], signal)
         return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
       }
       let input = rawInput.trim()
@@ -533,7 +536,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (input === 'consult') return { kind: 'success', text: `Supervisor Session: ${(await consultation.open(agent)).id}` }
         if (input === '') return reply('Supervisor', task, life.armed)
         if (input.startsWith('new ')) {
-          const next = await createTask(agent, input.slice(4))
+          const next = await createTask(agent, input.slice(4), undefined, `/task${rawInput}`)
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')
