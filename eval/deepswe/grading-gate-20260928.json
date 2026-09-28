@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "kind": "grading-gate",
+  "passed": true,
+  "modelRequests": 0,
+  "modelAdmitted": false,
+  "checks": {
+    "committedPatchOnly": true,
+    "officialMaterialsUnchanged": true,
+    "separateVerifierObserved": true,
+    "dirtyExcluded": true,
+    "cleanupConfirmed": true
+  },
+  "evidence": [
+    {
+      "relativePath": "grade-carrier-smoke-2/started.json",
+      "sha256": "f83ca8d5686757c71f7e6a3047226dec1bf6bb750590e32f60eee8a22ca73ea6"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/submission/export/receipt.json",
+      "sha256": "863ba591b275c6bc83776318ef25b9c0c6b5bc194e43cf576d17489653ac77d4"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/grading/started.json",
+      "sha256": "17df5e82f2babf84233e2d5278f98214cfbe24cc043db87a9df78fefd4068fd9"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/grading/grade-result.json",
+      "sha256": "7281412dae3ebdbf01ab065c54124b1520b926e23211c634f2bf6fcc11e50616"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/environment-confirmed.json",
+      "sha256": "5fe65231469c18ca31980b23bc3bbafc806dc6b98e9546bc39ce21a35c38a6e0"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/submission-boundary.json",
+      "sha256": "6932b938a996bfab1752cfa9703b659fb0cb52dc1f64efe58dfa2bc0d9bf23e8"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/grading/jobs/official/task__p6LKubn/artifacts/model.patch",
+      "sha256": "9d8173d445badb4592dbd32d23e554278c06ae6d48d050a9ba3e259023403843"
+    },
+    {
+      "relativePath": "grade-carrier-smoke-2/grading/task.manifest.json",
+      "sha256": "842a28479217c5dd5a966749688211b6e141b1e423a54f5922573fdfce21c72d"
+    }
+  ],
+  "positions": [
+    {
+      "id": "grade-carrier-smoke-1",
+      "passed": false,
+      "faultType": "script-bind-outside-vm-mount",
+      "modelRequests": 0,
+      "resultSha256": "0b43155f44f033bdc8aafde7a99e5a6005a236901602adfa4bcbbc1eda238591"
+    },
+    {
+      "id": "grade-carrier-smoke-2",
+      "passed": true,
+      "modelRequests": 0,
+      "officialReward": 0,
+      "tests": {
+        "tests": 151,
+        "passed": 139,
+        "failed": 12,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0
+      },
+      "execution": {
+        "reportedPositions": 151,
+        "missingResultPositions": 0,
+        "positionsWithResult": 151,
+        "allPositionsHaveResult": true
+      },
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "carrierContainerCount": 1,
+      "verifierContainerCount": 1
+    }
+  ],
+  "limitations": [
+    "Keyless committed carrier transport; no candidate instructions or reference solution sent to a model.",
+    "Original grade-result recorded two tagged image IDs as verifier containers; immutable environment-confirmed corrects Type=container counts to 1 carrier/1 verifier without rerunning.",
+    "Final admission and runtime fingerprint creation require the model-route and control-flow gates."
+  ]
+}
