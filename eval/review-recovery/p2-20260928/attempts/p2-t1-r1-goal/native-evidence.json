@@ -1,0 +1,30 @@
+{
+  "sessions": [
+    {
+      "sessionId": "session-524b8300-935a-4443-ae2a-0f1fc9e2ada7",
+      "logSha256": "2d219294d469e00dd11c10ef1e3496e9e8514ceb08f3b38b0de1bb33e5253d78",
+      "tokens": {
+        "uncachedInputTokens": 50734,
+        "outputTokens": 82751,
+        "cacheReadTokens": 599168,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "allSessionTokens": {
+    "uncachedInputTokens": 50734,
+    "cacheReadTokens": 599168,
+    "outputTokens": 82751,
+    "cacheWriteTokens": 0
+  },
+  "modelRequests": [
+    {
+      "sessionId": "session-524b8300-935a-4443-ae2a-0f1fc9e2ada7",
+      "seq": 23,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

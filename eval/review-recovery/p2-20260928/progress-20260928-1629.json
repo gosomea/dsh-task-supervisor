@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "kind": "p2-paired-summary",
+  "planned": 60,
+  "finishedRecords": 3,
+  "eligibleTasks": 4,
+  "conditions": {
+    "goal": {
+      "planned": 12,
+      "eligibleSlots": 12,
+      "finishedRecords": 1,
+      "admitted": 1,
+      "knownPrimary": 1,
+      "unknownPrimary": 0,
+      "successes": 0,
+      "knownFailures": 1,
+      "statusCounts": {
+        "scored": 1
+      },
+      "primarySuccessRate": 0.0,
+      "admittedSuccessRateBounds": [
+        0.0,
+        0.0
+      ],
+      "perTask": {
+        "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818": {
+          "known": 1,
+          "successes": 0
+        },
+        "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2": {
+          "known": 0,
+          "successes": 0
+        }
+      },
+      "exploratoryTaskClusterBootstrap95": null,
+      "medianElapsedAllMeasuredSec": 3000,
+      "elapsedMeasuredRuns": 1,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 50734,
+        "cacheReadTokens": 599168,
+        "outputTokens": 82751,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredRuns": 1,
+      "tokenMissingRuns": 0,
+      "reviewAuditMeasuredRuns": 0,
+      "reviewCounts": {
+        "jobs": 0,
+        "protocolMissingJobs": 0,
+        "repairTurns": 0,
+        "jobsRecoveredAfterRepair": 0,
+        "jobsExhaustedAfterRepair": 0,
+        "faultPauseJobs": 0,
+        "effectiveNeedsUserJobs": 0
+      },
+      "reviewWaitMsMeasured": null,
+      "unfinishedOrUnmeasuredReviewWindows": 0,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "plan": {
+      "planned": 12,
+      "eligibleSlots": 12,
+      "finishedRecords": 1,
+      "admitted": 1,
+      "knownPrimary": 1,
+      "unknownPrimary": 0,
+      "successes": 0,
+      "knownFailures": 1,
+      "statusCounts": {
+        "scored": 1
+      },
+      "primarySuccessRate": 0.0,
+      "admittedSuccessRateBounds": [
+        0.0,
+        0.0
+      ],
+      "perTask": {
+        "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818": {
+          "known": 1,
+          "successes": 0
+        },
+        "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2": {
+          "known": 0,
+          "successes": 0
+        }
+      },
+      "exploratoryTaskClusterBootstrap95": null,
+      "medianElapsedAllMeasuredSec": 3000,
+      "elapsedMeasuredRuns": 1,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 58085,
+        "cacheReadTokens": 954624,
+        "outputTokens": 70999,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredRuns": 1,
+      "tokenMissingRuns": 0,
+      "reviewAuditMeasuredRuns": 0,
+      "reviewCounts": {
+        "jobs": 0,
+        "protocolMissingJobs": 0,
+        "repairTurns": 0,
+        "jobsRecoveredAfterRepair": 0,
+        "jobsExhaustedAfterRepair": 0,
+        "faultPauseJobs": 0,
+        "effectiveNeedsUserJobs": 0
+      },
+      "reviewWaitMsMeasured": null,
+      "unfinishedOrUnmeasuredReviewWindows": 0,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-current": {
+      "planned": 12,
+      "eligibleSlots": 12,
+      "finishedRecords": 0,
+      "admitted": 0,
+      "knownPrimary": 0,
+      "unknownPrimary": 0,
+      "successes": 0,
+      "knownFailures": 0,
+      "statusCounts": {},
+      "primarySuccessRate": null,
+      "admittedSuccessRateBounds": null,
+      "perTask": {
+        "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2": {
+          "known": 0,
+          "successes": 0
+        }
+      },
+      "exploratoryTaskClusterBootstrap95": null,
+      "medianElapsedAllMeasuredSec": null,
+      "elapsedMeasuredRuns": 0,
+      "allSessionTokenSumMeasured": null,
+      "tokenMeasuredRuns": 0,
+      "tokenMissingRuns": 0,
+      "reviewAuditMeasuredRuns": 0,
+      "reviewCounts": {
+        "jobs": 0,
+        "protocolMissingJobs": 0,
+        "repairTurns": 0,
+        "jobsRecoveredAfterRepair": 0,
+        "jobsExhaustedAfterRepair": 0,
+        "faultPauseJobs": 0,
+        "effectiveNeedsUserJobs": 0
+      },
+      "reviewWaitMsMeasured": null,
+      "unfinishedOrUnmeasuredReviewWindows": 0,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-sparse": {
+      "planned": 12,
+      "eligibleSlots": 12,
+      "finishedRecords": 1,
+      "admitted": 1,
+      "knownPrimary": 1,
+      "unknownPrimary": 0,
+      "successes": 0,
+      "knownFailures": 1,
+      "statusCounts": {
+        "scored": 1
+      },
+      "primarySuccessRate": 0.0,
+      "admittedSuccessRateBounds": [
+        0.0,
+        0.0
+      ],
+      "perTask": {
+        "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818": {
+          "known": 1,
+          "successes": 0
+        },
+        "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2": {
+          "known": 0,
+          "successes": 0
+        }
+      },
+      "exploratoryTaskClusterBootstrap95": null,
+      "medianElapsedAllMeasuredSec": 3000,
+      "elapsedMeasuredRuns": 1,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 155221,
+        "cacheReadTokens": 3079552,
+        "outputTokens": 181100,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredRuns": 1,
+      "tokenMissingRuns": 0,
+      "reviewAuditMeasuredRuns": 1,
+      "reviewCounts": {
+        "jobs": 2,
+        "protocolMissingJobs": 0,
+        "repairTurns": 0,
+        "jobsRecoveredAfterRepair": 0,
+        "jobsExhaustedAfterRepair": 0,
+        "faultPauseJobs": 1,
+        "effectiveNeedsUserJobs": 0
+      },
+      "reviewWaitMsMeasured": 619422.0,
+      "unfinishedOrUnmeasuredReviewWindows": 0,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-required": {
+      "planned": 12,
+      "eligibleSlots": 12,
+      "finishedRecords": 0,
+      "admitted": 0,
+      "knownPrimary": 0,
+      "unknownPrimary": 0,
+      "successes": 0,
+      "knownFailures": 0,
+      "statusCounts": {},
+      "primarySuccessRate": null,
+      "admittedSuccessRateBounds": null,
+      "perTask": {
+        "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e": {
+          "known": 0,
+          "successes": 0
+        },
+        "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2": {
+          "known": 0,
+          "successes": 0
+        }
+      },
+      "exploratoryTaskClusterBootstrap95": null,
+      "medianElapsedAllMeasuredSec": null,
+      "elapsedMeasuredRuns": 0,
+      "allSessionTokenSumMeasured": null,
+      "tokenMeasuredRuns": 0,
+      "tokenMissingRuns": 0,
+      "reviewAuditMeasuredRuns": 0,
+      "reviewCounts": {
+        "jobs": 0,
+        "protocolMissingJobs": 0,
+        "repairTurns": 0,
+        "jobsRecoveredAfterRepair": 0,
+        "jobsExhaustedAfterRepair": 0,
+        "faultPauseJobs": 0,
+        "effectiveNeedsUserJobs": 0
+      },
+      "reviewWaitMsMeasured": null,
+      "unfinishedOrUnmeasuredReviewWindows": 0,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    }
+  },
+  "paired": [
+    {
+      "left": "goal",
+      "right": "plan",
+      "unavailable": 11,
+      "tie": 1,
+      "knownPairs": 1,
+      "meanSuccessDifferenceKnownPairs": 0
+    },
+    {
+      "left": "goal",
+      "right": "supervisor-current",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "goal",
+      "right": "supervisor-sparse",
+      "unavailable": 11,
+      "tie": 1,
+      "knownPairs": 1,
+      "meanSuccessDifferenceKnownPairs": 0
+    },
+    {
+      "left": "goal",
+      "right": "supervisor-required",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "plan",
+      "right": "supervisor-current",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "plan",
+      "right": "supervisor-sparse",
+      "unavailable": 11,
+      "tie": 1,
+      "knownPairs": 1,
+      "meanSuccessDifferenceKnownPairs": 0
+    },
+    {
+      "left": "plan",
+      "right": "supervisor-required",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "supervisor-current",
+      "right": "supervisor-sparse",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "supervisor-current",
+      "right": "supervisor-required",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    },
+    {
+      "left": "supervisor-sparse",
+      "right": "supervisor-required",
+      "unavailable": 12,
+      "knownPairs": 0,
+      "meanSuccessDifferenceKnownPairs": null
+    }
+  ],
+  "limitations": [
+    "Four repositories with three repeats are correlated; exploratory cluster bootstrap is not proof of superiority.",
+    "Missing blind annotations leave false pauses, missed drift and correction benefit unknown.",
+    "Report ineligible slots, infrastructure errors, admitted attempts and unscoreable completions separately."
+  ]
+}

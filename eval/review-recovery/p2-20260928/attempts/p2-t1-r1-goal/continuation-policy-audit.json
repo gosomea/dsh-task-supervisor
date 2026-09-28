@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "frozen-goal-continuation-policy-audit",
+  "source": "frozen P2 runtime, read-only",
+  "files": [
+    {
+      "path": "packages/goal/goal-round-driver/src/index.ts",
+      "sha256": "3aa362932c39ef300524051ce2d2998d049c765afeb548cb9a4941830fe61fac",
+      "ruleLine": 329
+    },
+    {
+      "path": "packages/goal/goal-round-driver/lib/index.js",
+      "sha256": "3bca01a2e87de1683fa8b55ad54688eefc4e366c971c20e9afd654db3b5ab450",
+      "ruleLine": 262
+    },
+    {
+      "path": "packages/goal/goal/src/index.ts",
+      "sha256": "333ebc31489619ee083235c5f5ceeb38ac3c6c844b2a0179458058401a6ebf9a",
+      "ruleLine": 289
+    }
+  ],
+  "compositionContainsDriver": true,
+  "nativeSessionId": "session-524b8300-935a-4443-ae2a-0f1fc9e2ada7",
+  "nativeTurnEndSeq": 140,
+  "nativeTurnEndReason": "max-tokens",
+  "policy": "On max-tokens, the driver calls disarm and returns. disarm removes process-local continuation authority without changing durable goal phase or revision.",
+  "interpretation": "The observed active goal with no new rounds matches an explicit frozen policy. This does not establish why the model exhausted output tokens or claim that every runtime fault path succeeded.",
+  "changesToExperiment": false,
+  "runnerFingerprintAudit": {
+    "frozen": {
+      "sha256": "be7a0e7e833c0e376660acda1e9187673ed55aa641d01a9ce6470eacc8d90888",
+      "entries": 60
+    },
+    "actualIncludingGeneratedFiles": {
+      "sha256": "12b991de135f07ab5274bc872d2337739295cb67422c246206329eb3f1e694a4",
+      "entries": 62
+    },
+    "excludingOnlyGeneratedPythonCaches": {
+      "sha256": "be7a0e7e833c0e376660acda1e9187673ed55aa641d01a9ce6470eacc8d90888",
+      "entries": 60
+    },
+    "sourceFingerprintMatches": true,
+    "generatedFiles": [
+      {
+        "path": "eval/review-recovery/__pycache__/summary.cpython-314.pyc",
+        "sha256": "feba222e4245b84addb3ec0d241eb7ac64f2ccb74cc40f83f2d8b420a05c04a2"
+      },
+      {
+        "path": "eval/swebench-pro-v2/__pycache__/sanity.cpython-314.pyc",
+        "sha256": "a51cab0a11a69ce4ebfab868c89c51edfb0af04089e0bd3a4aaf81c3a578e32e"
+      }
+    ],
+    "experimentCodeModified": false
+  },
+  "profileFingerprintMatches": {
+    "plan": true,
+    "supervisor-current": true,
+    "supervisor-sparse": true,
+    "supervisor-required": true,
+    "goal": true
+  },
+  "pairedNativeOutputLimitObservation": {
+    "plan": {
+      "lastAssistantSeq": 181,
+      "lastResponseOutputTokens": 32000,
+      "turnEndReason": "max-tokens"
+    },
+    "goal": {
+      "lastAssistantSeq": 138,
+      "lastResponseOutputTokens": 32000,
+      "turnEndReason": "max-tokens"
+    },
+    "scope": "Per-response API-reported output usage, not a total task token budget or a causal explanation of the model content."
+  },
+  "nativeStartedAtUnix": 1790581048,
+  "nativeDeadlineAt": "2026-09-28T08:27:28+00:00",
+  "timingClarification": "The earlier started.json-based 16:27:15 estimate precedes the native state deadline by 13 seconds. wait_arm.py uses the native startedAtUnix: actual deadline 16:27:28 Beijing time. Capture and grading add overhead, not execution time."
+}

@@ -48,3 +48,5 @@ python3 eval/review-recovery/freeze_frequency.py \
 [两项封口的阶段记录](progress-20260928-1606.zh.md)补充 Plan 在批准前发生输出长度截止、空补丁评分与全部 Session 用量；冻结版本继续运行。
 
 [16:10 运行核对](progress-20260928-1610.zh.md)记录未封口 Goal 第 1 轮因 `max-tokens` 停止、原 Goal 仍 active 的现象；等待原截止评分，没有追加继续指令。
+
+[三项封口与续行规则](progress-20260928-1629.zh.md)归档 Goal 的正式独立评分，解释冻结 driver 在 `max-tokens` 后撤销续行而保留 active 的规则，并校正原生执行截止计时。下一项 Supervisor-current 已由原控制器启动。

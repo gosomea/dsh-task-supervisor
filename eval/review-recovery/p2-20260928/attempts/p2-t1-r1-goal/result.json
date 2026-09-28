@@ -1,0 +1,45 @@
+{
+  "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+  "repeat": 1,
+  "condition": "goal",
+  "arm": "goal",
+  "rank": "674a615fa64cddee1434f552dc5b8faa8d17c51798b18b255ef9921775906445",
+  "name": "p2-t1-r1-goal",
+  "status": "scored",
+  "admitted": true,
+  "terminal": {
+    "status": "time-limit",
+    "limitSec": 3000,
+    "container": "p2-t1-r1-goal",
+    "patch": "/evalhome/run/state-timeout.patch",
+    "snapshotError": null
+  },
+  "nativePhase": "active",
+  "home": "/Users/yuqixian/.cache/dsh-public-eval/frequency-p2-20260928/homes/p2-t1-r1-goal",
+  "sessionId": "session-524b8300-935a-4443-ae2a-0f1fc9e2ada7",
+  "approval": null,
+  "grade": {
+    "job": "/Users/yuqixian/.cache/dsh-public-eval/frequency-p2-20260928/harbor-jobs/p2-t1-r1-goal-grade",
+    "reward": 0.0,
+    "infrastructureError": null
+  },
+  "primarySuccess": false,
+  "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "patchBytes": 0,
+  "mainSessionStats": {
+    "turns": 1,
+    "steps": 18,
+    "llmMs": 369708,
+    "toolMs": 4078,
+    "ttftMs": 37683,
+    "ttftSteps": 18,
+    "decodeMs": 332025,
+    "decodeTokens": 82751,
+    "lastTurn": 1,
+    "openStep": null,
+    "pendingCalls": {}
+  },
+  "responseLanguage": "en",
+  "falsePauseRate": null,
+  "correctionBenefit": null
+}
