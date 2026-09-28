@@ -49,6 +49,30 @@ class CommittedPatchTests(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             extract(self.root, self.base)
 
+    def test_late_commit_is_diagnostic_and_never_enters_cutoff_patch(self):
+        (self.root / 'file.txt').write_text('before deadline\n')
+        self.git('add', '.')
+        self.git('commit', '-qm', 'on time')
+        cutoff = self.git('rev-parse', 'HEAD').decode().strip()
+        (self.root / 'file.txt').write_text('late repair\n')
+        self.git('add', '.')
+        self.git('commit', '-qm', 'after cutoff')
+        observed = self.git('rev-parse', 'HEAD').decode().strip()
+        patch, receipt = extract(self.root, self.base, cutoff)
+        self.assertIn(b'+before deadline', patch)
+        self.assertNotIn(b'late repair', patch)
+        self.assertEqual(receipt['headCommit'], cutoff)
+        self.assertEqual(receipt['observedHeadCommit'], observed)
+        self.assertTrue(receipt['headChangedSinceCutoff'])
+
+    def test_explicit_unrelated_cutoff_commit_is_rejected(self):
+        self.git('checkout', '--orphan', 'other')
+        self.git('commit', '-qm', 'unrelated')
+        cutoff = self.git('rev-parse', 'HEAD').decode().strip()
+        self.git('checkout', '-q', self.base)
+        with self.assertRaises(subprocess.CalledProcessError):
+            extract(self.root, self.base, cutoff)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -8,7 +8,7 @@ from pathlib import Path
 import stat
 import subprocess
 
-from select_sample import sample_sha256
+from select_sample import require_admission, sample_sha256
 
 GATE_CHECKS = {
     'model-route-gate': ('mainSuccessfulRequest', 'reviewerSuccessfulRequest', 'dailyEffectiveRouteMatched',
@@ -158,6 +158,9 @@ def validate_official_materials(sample, dataset, pier):
 
 
 def verify_candidate(record, roots, evidence_root, guest_mapping=None):
+    required = {'runner', 'runtime', 'plugin', 'profile', 'node', 'docker', 'pier', 'dataset'}
+    if set(record['fingerprints']) != set(roots) or not required.issubset(roots):
+        raise ValueError('Frozen roots differ from the complete runtime inventory')
     for name, frozen in record['fingerprints'].items():
         current = fingerprint(roots[name], frozen['exclusions'][1:])
         if current != frozen:
@@ -170,6 +173,42 @@ def verify_candidate(record, roots, evidence_root, guest_mapping=None):
     if set(present) != set(GATE_CHECKS) or len(present) != len(GATE_CHECKS):
         raise ValueError('Release candidate still lacks real gate evidence')
     return True
+
+
+def require_frozen_release(release):
+    """Verify the parent's admitted protocol and every currently executed frozen input."""
+    protocol = json.loads(Path(release['protocol']).read_text())
+    frozen = json.loads(Path(release['candidate']).read_text())
+    roots = release['roots']
+    runner = Path(roots['runner']).resolve()
+    module = Path(__file__).resolve()
+    if runner != module.parent and runner not in module.parents:
+        raise ValueError('The executing runner is outside the frozen runner inventory')
+    reference = json.loads(module.with_name('sample-20260928.json').read_text())
+    expected = sample_sha256(reference)
+    if release['expectedSampleSha256'] != expected or frozen['sampleSha256'] != expected:
+        raise ValueError('Release differs from the runner original paired sample')
+    if frozen['orderSha256'] != hashlib.sha256(canonical(protocol['order'])).hexdigest():
+        raise ValueError('Release order changed')
+    require_admission(protocol, expected)
+    verify_candidate(frozen, roots, release['evidenceRoot'], release.get('guestMapping'))
+    for name in ('runner', 'runtime', 'plugin', 'profile'):
+        if protocol['release'][name + 'Sha256'] != frozen['fingerprints'][name]['sha256']:
+            raise ValueError('Admitted protocol does not bind the frozen ' + name)
+    evidence_root = Path(release['evidenceRoot']).resolve()
+    admissions = protocol['release'].get('admissionEvidence', {})
+    for requirement in protocol['admissionRequirements']:
+        evidence = admissions.get(requirement)
+        if not isinstance(evidence, list) or not evidence:
+            raise ValueError('Admission requirement lacks actual evidence bytes')
+        for row in evidence:
+            relative = Path(row['relativePath'])
+            if relative.is_absolute() or '..' in relative.parts:
+                raise ValueError('Admission evidence must stay inside its private root')
+            path = (evidence_root / relative).resolve(strict=True)
+            if evidence_root not in path.parents or hash_file(path) != row['sha256']:
+                raise ValueError('Admission evidence changed')
+    return protocol
 
 
 def main():
