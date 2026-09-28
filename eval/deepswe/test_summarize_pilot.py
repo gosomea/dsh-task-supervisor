@@ -33,6 +33,9 @@ class SummaryTests(unittest.TestCase):
             self.assertIsNone(goal['successRate'])
             self.assertIsNone(goal['allSessionTokenSumMeasured'])
             self.assertEqual(goal['tokenUnknownPositions'], 4)
+            self.assertEqual(goal['scalarMetrics']['extraCheckCpuNs'], {
+                'measuredSum': None, 'measuredPositions': 0, 'unknownPositions': 4})
+            self.assertEqual(len(result['positions']), 16)
             self.assertTrue(all(row['unknown'] == 4 for row in result['paired']))
             (attempt / 'result.json').write_text(json.dumps({**first, 'repeat': 9}))
             with self.assertRaises(ValueError):

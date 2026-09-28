@@ -32,6 +32,14 @@ class FreezeTests(unittest.TestCase):
         binary.write_bytes(b'\0\x02')
         self.assertNotEqual(first['sha256'], fingerprint(binary)['sha256'])
 
+    def test_binary_alias_root_is_rejected_until_resolved(self):
+        binary = self.root / 'real-node'; binary.write_bytes(b'\0node binary')
+        alias = self.root / 'node-alias'; alias.symlink_to(binary)
+        with self.assertRaises(ValueError):
+            fingerprint(alias)
+        resolved = fingerprint(alias.resolve(strict=True))
+        self.assertEqual(resolved['entries'][0]['sha256'], hashlib.sha256(binary.read_bytes()).hexdigest())
+
     def test_nonexcluded_credentials_are_rejected(self):
         (self.root / '.credentials.yaml').write_text('secret')
         with self.assertRaises(ValueError):

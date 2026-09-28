@@ -36,7 +36,9 @@ def hash_file(path):
 def fingerprint(root, exclusions=()):
     """Record loaded files and literal symlinks; credentials are explicit exclusions."""
     root = Path(root)
-    if not root.exists() and not root.is_symlink():
+    if root.is_symlink():
+        raise ValueError('Frozen root must use its resolved real path, not a symlink')
+    if not root.exists():
         raise ValueError('Frozen runtime input is missing')
     exclusions = tuple(exclusions)
     def excluded(rel):
@@ -46,8 +48,6 @@ def fingerprint(root, exclusions=()):
         info = root.stat()
         rows.append({'path': '.', 'type': 'file', 'bytes': info.st_size,
                      'mode': stat.S_IMODE(info.st_mode), 'sha256': hash_file(root)})
-    if root.is_symlink():
-        rows.append({'path': '.', 'type': 'symlink', 'target': os.readlink(root)})
     for directory, dirs, files in os.walk(root, followlinks=False):
         here = Path(directory)
         dirs[:] = sorted(d for d in dirs if not excluded((here / d).relative_to(root)))

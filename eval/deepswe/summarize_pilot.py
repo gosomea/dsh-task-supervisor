@@ -56,6 +56,12 @@ def summarize(root, protocol):
             raise ValueError('Invalid measured token buckets')
         totals = {key: sum(row[key] for row in measured) for key in fields} if measured else None
         terminal_counts = Counter((row.get('terminal') or {}).get('status', 'unknown') for row in rows)
+        scalar_metrics = {}
+        for field in ('reviewWaitMs', 'checkWaitMs', 'repairTurns', 'humanInterventions', 'extraCheckCpuNs'):
+            samples = [row.get('metrics', {}).get(field) for row in rows]
+            known = [value for value in samples if type(value) in (int, float) and value >= 0]
+            scalar_metrics[field] = {'measuredSum': sum(known) if known else None,
+                                     'measuredPositions': len(known), 'unknownPositions': len(slots) - len(known)}
         conditions[condition] = {
             'planned': len(slots), 'started': sum(row['id'] in started for row in slots),
             'sealed': len(rows), 'primarySuccesses': successes, 'knownFailures': failures,
@@ -71,6 +77,7 @@ def summarize(root, protocol):
                                     and (row.get('grade') or {}).get('fault') is None for row in rows),
             'allSessionTokenSumMeasured': totals, 'tokenMeasuredPositions': len(measured),
             'tokenUnknownPositions': len(slots) - len(measured),
+            'scalarMetrics': scalar_metrics,
             'falsePauseRate': None, 'correctionBenefit': None,
         }
     paired = []
@@ -86,8 +93,14 @@ def summarize(root, protocol):
                 else:
                     counts['leftWin' if av and not bv else 'rightWin' if bv and not av else 'tie'] += 1
         paired.append({'left': left, 'right': right, **dict(counts)})
+    positions = [{**row, 'sealed': row['id'] in results,
+                  'primarySuccess': primary(results[row['id']]) if row['id'] in results else None,
+                  'officialReward': (results.get(row['id'], {}).get('grade') or {}).get('reward'),
+                  'terminalStatus': (results.get(row['id'], {}).get('terminal') or {}).get('status')}
+                 for row in protocol['order']]
     return {'schemaVersion': 1, 'kind': 'deepswe-pilot-summary', 'planned': len(expected),
             'started': len(started), 'sealed': len(results), 'conditions': conditions, 'paired': paired,
+            'positions': positions,
             'limitations': ['Two tasks and two repeats are correlated engineering checks, not superiority evidence.',
                             'No blind labels: false-pause and correction-benefit metrics remain null.',
                             'Incomplete token coverage must not be described as complete model cost.']}
