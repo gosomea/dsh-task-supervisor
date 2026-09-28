@@ -1,0 +1,40 @@
+{
+  "sessions": [
+    {
+      "sessionId": "session-8a6421da-5592-45d1-8003-26f7b2076871",
+      "logSha256": "db86680d898a6a2631da2a86b8c1c9eaff34293bc7eaec12599ccf4ee59ac2f6",
+      "tokens": {
+        "uncachedInputTokens": 58085,
+        "outputTokens": 70999,
+        "cacheReadTokens": 954624,
+        "cacheWriteTokens": 0
+      }
+    },
+    {
+      "sessionId": "session-e38cd9cb-05cd-4188-b3a6-23fd916eddbd",
+      "logSha256": "6b47e5d8794cfc57feddffb3633a32e0db99f3f9dbaf4d7dd28b84979671b8d9",
+      "tokens": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      }
+    }
+  ],
+  "allSessionTokens": {
+    "uncachedInputTokens": 58085,
+    "cacheReadTokens": 954624,
+    "outputTokens": 70999,
+    "cacheWriteTokens": 0
+  },
+  "modelRequests": [
+    {
+      "sessionId": "session-8a6421da-5592-45d1-8003-26f7b2076871",
+      "seq": 23,
+      "model": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    }
+  ]
+}

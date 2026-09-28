@@ -44,3 +44,5 @@ python3 eval/review-recovery/freeze_frequency.py \
 ## 阶段结果
 
 [首个正式结果与运行核对](progress-20260928-1506.zh.md)记录 1/60 封口时的节点审查超时、独立评分及全部 Session 用量。它是阶段快照，不是五条件最终对照结论。
+
+[两项封口的阶段记录](progress-20260928-1606.zh.md)补充 Plan 在批准前发生输出长度截止、空补丁评分与全部 Session 用量；冻结版本继续运行。

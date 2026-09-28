@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-plan-execution-audit",
+  "sessionId": "session-8a6421da-5592-45d1-8003-26f7b2076871",
+  "lastAssistantSeq": 181,
+  "lastResponseStopReason": "length",
+  "lastTurnEndSeq": 183,
+  "planModes": [
+    {
+      "seq": 12,
+      "active": true
+    }
+  ],
+  "toolNames": [
+    "bash",
+    "read"
+  ],
+  "approvalReceiptPresent": false,
+  "patchBytes": 0,
+  "approvalWaitOutcome": "locator [data-plan-review-key] absent until 3000000 ms deadline",
+  "limitations": [
+    "Output-length stopping precedes approval, but does not establish the root cause of excessive reasoning.",
+    "No extra prompt, approval, retry or profile change was made."
+  ]
+}
