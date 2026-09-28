@@ -8,6 +8,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
+  type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
 export const RECORD_VERSION = 9
@@ -25,11 +27,14 @@ export interface TaskProjection {
   reviews: z.infer<typeof reviewSchema>[]
   draft: TaskDraft | null
   reviewJobs: ReviewJob[]
+  reworks: ReworkRecord[]
+  pendingReworks: PendingRework[]
 }
 
 export interface TaskHistoryEntry {
   task: TaskSnapshot
   reviews: z.infer<typeof reviewSchema>[]
+  reworks: ReworkRecord[]
   lastSeq: number
 }
 
@@ -42,12 +47,22 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 9,
-  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema), reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable() }),
-  init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [], draft: null }),
+  stateVersion: 10,
+  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
+    reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema) }),
+  init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
-    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE].includes(event.data.namespace)) return state
     if (state.failure !== null) return state
+    const captured = captureRework(event, state.current)
+    if (captured) return { ...state, pendingReworks: [...state.pendingReworks, captured].slice(-50) }
+    const pending = event.type === 'tool/result'
+      ? state.pendingReworks.find(item => item.callId === event.data.message.source.callId) : undefined
+    if (pending) {
+      const record = settleRework(event, pending)
+      return { ...state, pendingReworks: state.pendingReworks.filter(item => item.callId !== pending.callId),
+        reworks: record ? [...state.reworks, record].slice(-50) : state.reworks }
+    }
+    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE].includes(event.data.namespace)) return state
     try {
       if (event.data.namespace === DRAFT_NAMESPACE) return { ...state, draft: foldDraft(state.draft, event) }
       if (event.data.namespace === REVIEW_NAMESPACE) return { ...state, reviewJobs: foldReviewJobs(state.reviewJobs, event) }
@@ -75,7 +90,9 @@ export const taskProjection = {
       const review = next.lastReview
       const fresh = review !== null && !reviews.some(item => item.stageId === review.stageId
         && item.cutoff === review.cutoff && item.reviewerSessionId === review.reviewerSessionId)
-      return { current: next, failure: null, reviewJobs: state.reviewJobs, draft: state.draft, reviews: fresh ? [...reviews, review].slice(-50) : reviews }
+      return { current: next, failure: null, reviewJobs: state.reviewJobs, draft: state.draft, reviews: fresh ? [...reviews, review].slice(-50) : reviews,
+        reworks: previous?.id === next.id ? state.reworks : [],
+        pendingReworks: previous?.id === next.id ? state.pendingReworks : [] }
     } catch (error: unknown) {
       return { ...state, failure: `Supervisor record at seq ${event.seq}: ${String(error)}` }
     }
@@ -94,13 +111,13 @@ export function createTaskHistoryCollector() {
       projection = taskProjection.apply(projection, event)
       if (projection.failure !== null) throw new Error(projection.failure)
       if (previous.current && projection.current?.id !== previous.current.id && terminal(previous.current)) {
-        entries.push({ task: previous.current, reviews: previous.reviews, lastSeq })
+        entries.push({ task: previous.current, reviews: previous.reviews, reworks: previous.reworks, lastSeq })
       }
       if (event.type === 'extension/record' && event.data.namespace === NAMESPACE) lastSeq = event.seq
     },
     finish(): TaskHistoryEntry[] {
       const current = projection.current && terminal(projection.current)
-        ? [{ task: projection.current, reviews: projection.reviews, lastSeq }] : []
+        ? [{ task: projection.current, reviews: projection.reviews, reworks: projection.reworks, lastSeq }] : []
       return [...entries, ...current].reverse()
     },
   }

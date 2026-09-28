@@ -29,6 +29,7 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     languagePolicy(task),
     'Use short human-readable node titles (roughly 12 Chinese characters or 6 English words); put file ownership, implementation steps and acceptance details in description and criteria. Before submitting a plan, stage report or completion request, give a concise user-facing explanation in your normal assistant message with a short heading. Do not duplicate the full tool payload or claim independent acceptance before the reviewer decides.',
     'The supervised DAG is the task progress record. Do not create a second todo_write checklist or activate native Goal/Plan for this supervised task.',
+    'Before implementing a node yourself, call task_start_node with its exact stage_id and current attempt. Do not start nodes during ordinary progress questions. Report or rework the running node before switching to another. task_delegate_nodes records worker starts separately.',
     `Task ${task.id}; requirements v${task.requirementsVersion}; plan v${task.planVersion}; state v${task.revision}.`,
     `Objective (full): ${task.objective}`,
     `Accepted nodes: ${acceptedNodes(task).join(', ') || 'none'}.`,

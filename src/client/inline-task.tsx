@@ -5,7 +5,7 @@ import type { PanelState } from './task-store.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
 import { runsOf } from '../graph.ts'
 import { TaskGraph } from './task-graph.tsx'
-import { executionActors, executorLabel, headline, nodeLabel, progress, taskStatus } from './presentation.ts'
+import { executionActors, executorLabel, headline, nodeLabel, nodeRework, progress, taskStatus } from './presentation.ts'
 
 export interface TaskNavigation { view?: 'details' | 'consultation'; nodeId?: string; reviewerSessionId?: string }
 function preference(key: string): boolean | null {
@@ -19,6 +19,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
   const [choice, setChoice] = useState<boolean | null>(() => preference(key))
   const expanded = choice ?? task.phase !== 'complete'
   const stage = task.stages[task.stageIndex]
+  const rework = stage ? nodeRework(task, stage.id, state.reworks) : undefined
   const actors = executionActors(task, sessionId)
   const mainNode = runsOf(task).find(run => !run.sessionId || run.sessionId === sessionId)
   function toggle() {
@@ -33,7 +34,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       <Button size="sm" onClick={() => open()}>查看详情</Button>
     </div>
     {expanded && <div className="dsh-task-inline-map">
-      {task.stages.length ? <TaskGraph task={task} compact selected={stage?.id}
+      {task.stages.length ? <TaskGraph task={task} reworks={state.reworks} compact selected={stage?.id}
         select={nodeId => open({ nodeId })} label={id => nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />
         : <p className="dsh-task-muted">正在制定执行计划…</p>}
       <div className="dsh-task-participants" aria-label="参与 Agent"><span>参与</span>
@@ -46,6 +47,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
     </div>}
     <div className="dsh-task-inline-summary"><div className="dsh-task-inline-copy">
       <p title={stage?.title ?? task.objective}>{stage ? `${nodeLabel(task, stage.id, state)} · ${executorLabel(task, sessionId, stage.id)} · ${headline(stage.title)}` : headline(task.objective)}</p>
+      {rework && <small>{rework.stageId === stage?.id ? '返工原因' : '上游返工影响'}：{headline(rework.reason, 80)}</small>}
       {task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
     {actions && <div className="dsh-task-inline-controls">{actions}</div>}

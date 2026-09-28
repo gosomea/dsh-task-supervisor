@@ -18,6 +18,8 @@
 
 任务若要求批准后先完成只读模型轮次，计划可设置 `read_only_turns_before_write`（0–10）。控制层在足够数量的已完成只读轮次出现前阻止写入；中断轮次不计入。该门禁针对这类明确的动作顺序约束，不会自动把任意自然语言时序要求编译成规则。
 
+主 Agent 在实施节点前用 `task_start_node` 登记节点与尝试编号；普通问询不产生开始记录。返工以成功的 `task_rework_node` 调用为依据，主会话保留返工通知，DAG 展示“待返工／返工中”及尝试次数。节点详情保留原因、此前通过的审查及受影响的依赖节点；旧会话可从原生工具日志重建这些记录。已通过的旧尝试不代表新尝试通过。记录缺失时只展示已知状态，不推测主 Agent 正在执行哪个节点。
+
 审查模型默认跟随主 Agent 当前有效的 DSH 路由。也可通过 `reviewerModel` 指定当前 profile 可用的提供方、模型和推理等级。每次审查记录实际模型、审查 Session ID、证据 seq 和主 Session 截止点。
 
 ## 开发与隔离验证
@@ -42,6 +44,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [督导交互改进提案](docs/supervisor-experience-v2.zh.md) | 神社 Session 核对、响应语言、任务图、用户决策与持久侧问。 |
 | [督导对话与审查恢复方案](docs/10-plans/conversation-and-review-recovery/plans.zh.md) | 待实现：从讨论形成任务、有限协议补交、故障追踪和审查频率实验。 |
 | [V2 联合验收](docs/v2-integrated-validation.zh.md) | 第二、三批的真实模型、DAG、持续侧问、原生并行与失败修复记录。 |
+| [返工与执行状态验收](docs/rework-progress-validation.zh.md) | 主节点显式开始、此前通过、下游影响与旧日志恢复。 |
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |

@@ -16,6 +16,8 @@ After a task finishes, the same main Session can start another. The sidebar's **
 
 For objectives that require completed read-only model turns after approval, the plan can set `read_only_turns_before_write` (0–10). The controller blocks writes until that many read-only turns have completed; interrupted turns do not count. This gate covers this explicit action-order constraint; it does not compile arbitrary natural-language timing requirements into rules.
 
+Before implementing a node, the main Agent records its node and attempt with `task_start_node`; ordinary questions do not start execution. Successful `task_rework_node` results produce a main-Session notice and DAG rework labels with attempt numbers. Node details retain the reason, prior acceptance, and affected descendants. Older Sessions rebuild these records from native tool logs. A previous pass never accepts a new attempt; missing start records do not imply execution.
+
 Reviewer model selection follows the main Agent's effective DSH route by default. `reviewerModel` may select another provider, model, and reasoning effort available through the active profile. Each review records its model, reviewer Session ID, evidence seqs, and main Session cutoff.
 
 ## Development and isolated validation
@@ -40,6 +42,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Supervisor interaction proposal](docs/supervisor-experience-v2.md) | Shrine Session findings, response language, task graph, decisions, and persistent consultation. |
 | [Conversation and review recovery plan](docs/10-plans/conversation-and-review-recovery/plans.md) | Proposed: forming tasks through discussion, bounded protocol repair, fault tracing, and review frequency experiments. |
 | [V2 integrated validation](docs/v2-integrated-validation.md) | Real-model checks of batches two and three, DAGs, persistent consultation, workers, and failure repairs. |
+| [Rework and execution validation](docs/rework-progress-validation.md) | Explicit main-node starts, prior acceptance, affected descendants, and older-log recovery. |
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
