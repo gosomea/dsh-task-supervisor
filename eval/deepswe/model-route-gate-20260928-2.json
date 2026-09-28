@@ -1,0 +1,656 @@
+{
+  "schemaVersion": 1,
+  "kind": "model-route-gate",
+  "passed": false,
+  "checks": {
+    "mainSuccessfulRequest": false,
+    "reviewerSuccessfulRequest": false,
+    "dailyEffectiveRouteMatched": true,
+    "supervisorBothModes": false,
+    "actualHttpEndpointMatched": false,
+    "durableLineageMatched": false,
+    "independentReviewerCheckExecuted": false
+  },
+  "benchmarkModelAttempts": 0,
+  "smokeConditions": [
+    "supervisor-log"
+  ],
+  "evidence": [
+    {
+      "relativePath": "gates/control-supervisor-log-5/route-result.json",
+      "sha256": "de09f5d860cb83b720566e2aa4c6abfb6f89b3872576b884c4045dab77994df1"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/terminal.json",
+      "sha256": "763ae7b9e8bc16dfe8c44d0c6edbdd0d1d2e90bb469316f0a0c07430a8fb76a9"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/home/run/model-route-audit.jsonl",
+      "sha256": "c92d8247fd0ce810c99dac66d6354bfe69883851fb4bd99ba9548aeb78d46941"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/home/run/runner/model-route/route-audit.mjs",
+      "sha256": "74468ebf7bc19f2e6ac6760a8b1d48ce148edd218d7b8fc13931aa63fd5477f2"
+    },
+    {
+      "relativePath": "gates/upstream-health-20260928-1/route-config-comparison.json",
+      "sha256": "745d583484e7100196be484571226535398c6c9f342d22e74b87ccd8db55010b"
+    }
+  ],
+  "status": "representative-log-chain-passed; independent-mode-unverified; not-admitted",
+  "positions": [
+    {
+      "id": "control-supervisor-log-5",
+      "condition": "supervisor-log",
+      "representativeChainPassed": true,
+      "main": {
+        "sessionId": "session-1a2eb507-6860-44b2-a0b2-de234a617d75",
+        "modelRequests": 24,
+        "successfulRequests": 24,
+        "routeMismatchCount": 0,
+        "durableAssistantCount": 24,
+        "usage": [
+          {
+            "inputTokens": 8051,
+            "outputTokens": 108,
+            "totalTokens": 9439,
+            "cacheReadTokens": 1280
+          },
+          {
+            "inputTokens": 374,
+            "outputTokens": 103,
+            "totalTokens": 9693,
+            "cacheReadTokens": 9216
+          },
+          {
+            "inputTokens": 383,
+            "outputTokens": 178,
+            "totalTokens": 10033,
+            "cacheReadTokens": 9472
+          },
+          {
+            "inputTokens": 366,
+            "outputTokens": 968,
+            "totalTokens": 11062,
+            "cacheReadTokens": 9728
+          },
+          {
+            "inputTokens": 696,
+            "outputTokens": 203,
+            "totalTokens": 10883,
+            "cacheReadTokens": 9984
+          },
+          {
+            "inputTokens": 329,
+            "outputTokens": 606,
+            "totalTokens": 11559,
+            "cacheReadTokens": 10624
+          },
+          {
+            "inputTokens": 636,
+            "outputTokens": 323,
+            "totalTokens": 11839,
+            "cacheReadTokens": 10880
+          },
+          {
+            "inputTokens": 274,
+            "outputTokens": 532,
+            "totalTokens": 12198,
+            "cacheReadTokens": 11392
+          },
+          {
+            "inputTokens": 581,
+            "outputTokens": 155,
+            "totalTokens": 12384,
+            "cacheReadTokens": 11648
+          },
+          {
+            "inputTokens": 236,
+            "outputTokens": 863,
+            "totalTokens": 13259,
+            "cacheReadTokens": 12160
+          },
+          {
+            "inputTokens": 4664,
+            "outputTokens": 406,
+            "totalTokens": 6478,
+            "cacheReadTokens": 1408
+          },
+          {
+            "inputTokens": 14675,
+            "outputTokens": 155,
+            "totalTokens": 15342,
+            "cacheReadTokens": 512
+          },
+          {
+            "inputTokens": 1534,
+            "outputTokens": 70,
+            "totalTokens": 16708,
+            "cacheReadTokens": 15104
+          },
+          {
+            "inputTokens": 243,
+            "outputTokens": 76,
+            "totalTokens": 16831,
+            "cacheReadTokens": 16512
+          },
+          {
+            "inputTokens": 402,
+            "outputTokens": 147,
+            "totalTokens": 17189,
+            "cacheReadTokens": 16640
+          },
+          {
+            "inputTokens": 182,
+            "outputTokens": 70,
+            "totalTokens": 17276,
+            "cacheReadTokens": 17024
+          },
+          {
+            "inputTokens": 148,
+            "outputTokens": 121,
+            "totalTokens": 17421,
+            "cacheReadTokens": 17152
+          },
+          {
+            "inputTokens": 229,
+            "outputTokens": 227,
+            "totalTokens": 17736,
+            "cacheReadTokens": 17280
+          },
+          {
+            "inputTokens": 374,
+            "outputTokens": 281,
+            "totalTokens": 18063,
+            "cacheReadTokens": 17408
+          },
+          {
+            "inputTokens": 466,
+            "outputTokens": 94,
+            "totalTokens": 18224,
+            "cacheReadTokens": 17664
+          },
+          {
+            "inputTokens": 200,
+            "outputTokens": 946,
+            "totalTokens": 19194,
+            "cacheReadTokens": 18048
+          },
+          {
+            "inputTokens": 2103,
+            "outputTokens": 271,
+            "totalTokens": 20550,
+            "cacheReadTokens": 18176
+          },
+          {
+            "inputTokens": 419,
+            "outputTokens": 695,
+            "totalTokens": 21338,
+            "cacheReadTokens": 20224
+          },
+          {
+            "inputTokens": 14308,
+            "outputTokens": 366,
+            "totalTokens": 15186,
+            "cacheReadTokens": 512
+          }
+        ],
+        "successfulRequestEvidence": [
+          {
+            "localCallIdSha256": "51c397d24fa5c3f2d7fef958e793fb8fd649f9309b9b366ef5dae61480bbb337",
+            "localHttpIdSha256": "71a48d42d3b7c965dc211178f918e4e923d997e1ae99a8ea1d0bf0c7d66c7f2d",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [
+              {
+                "header": "x-request-id",
+                "sha256": "061437d299f871bf6c206529c21b712fdab9f282916a4c6ff0ca7a576e0779b0"
+              }
+            ],
+            "statusCode": 200
+          },
+          {
+            "localCallIdSha256": "79f987788d0d7121ef801fd96c59980f01949d7938b73f24200c986fd405c674",
+            "localHttpIdSha256": "2e98d7ffd78ca6a8d4fc1e2ea3d244e72d939fc39070fc13e58c84568c3c0944",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [
+              {
+                "header": "x-request-id",
+                "sha256": "f764aafe8066c998ed5f9a69c352e8607fb9917543c0e938a9c9451544233f6f"
+              }
+            ],
+            "statusCode": 200
+          },
+          {
+            "localCallIdSha256": "36255639aae5ce14de056b25d56e47b274ff34334e764ced1ae4a54dad680ea4",
+            "localHttpIdSha256": "c40a47440898a95dc29718f6fea8455cbc7bc7f12365295248273ed1386f00ef",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [
+              {
+                "header": "x-request-id",
+                "sha256": "053792c5ec26951a89d16d043c433725d1b0c3e77c12db36afd5600b07d990cb"
+              }
+            ],
+            "statusCode": 200
+          }
+        ],
+        "actualHttpRequests": 24,
+        "routesMatched": true,
+        "allObservedIntended": true,
+        "protocolDeviation": false,
+        "routeStatus": "matched",
+        "httpStatusCounts": {
+          "200": 24
+        },
+        "finishKindCounts": {
+          "tool-calls": 22,
+          "stop": 2
+        },
+        "transportErrorTypeCounts": {},
+        "successfulRequestAndDurableAnswer": true
+      },
+      "reviewers": [
+        {
+          "sessionId": "task-review-cc5fcab1-a30f-48b9-b84c-857eec308090",
+          "modelRequests": 6,
+          "successfulRequests": 6,
+          "routeMismatchCount": 0,
+          "durableAssistantCount": 6,
+          "usage": [
+            {
+              "inputTokens": 3230,
+              "outputTokens": 1119,
+              "totalTokens": 4605,
+              "cacheReadTokens": 256
+            },
+            {
+              "inputTokens": 575,
+              "outputTokens": 708,
+              "totalTokens": 4739,
+              "cacheReadTokens": 3456
+            },
+            {
+              "inputTokens": 2084,
+              "outputTokens": 74,
+              "totalTokens": 6126,
+              "cacheReadTokens": 3968
+            },
+            {
+              "inputTokens": 1613,
+              "outputTokens": 66,
+              "totalTokens": 7695,
+              "cacheReadTokens": 6016
+            },
+            {
+              "inputTokens": 881,
+              "outputTokens": 3821,
+              "totalTokens": 12254,
+              "cacheReadTokens": 7552
+            },
+            {
+              "inputTokens": 1551,
+              "outputTokens": 2564,
+              "totalTokens": 12435,
+              "cacheReadTokens": 8320
+            }
+          ],
+          "successfulRequestEvidence": [
+            {
+              "localCallIdSha256": "be2456443be63e70ec205b9e317c4a16153b4365050bd61133aedc12e8c335f1",
+              "localHttpIdSha256": "5a2bf77861c6fad84d19e8022e571abca60ef33c88e7fd1199c77d67c16a9169",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "4cd1453c7d6b9038880182f2d6a4a920fb2488d3964441fa0e9d418321f1ccbb"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "d6f7a24f2e78290c50de8dd1815703fb1b0bc18d1619df7f44618b743a23bc75",
+              "localHttpIdSha256": "b8139ce9100f70cccc939852c339d14a15924add2329ac8f6fe9819c69d1a034",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "743b89250929b890204d552b10171b8efe642d7a1f574cc4adf4512e3f187036"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "005aa2d2abff7043df861904767b2aeffc5da97ca1a3700025e17fc73d0276fc",
+              "localHttpIdSha256": "0ad5b3890f6678e2c29a02b79c1d7429e0a62c754bb98f852fb6dc8dfcfe59a8",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "e7b2b89e5cd140d225c91c833f8f11d76c71ee047d371971b83d1dc4d83d336b"
+                }
+              ],
+              "statusCode": 200
+            }
+          ],
+          "actualHttpRequests": 6,
+          "routesMatched": true,
+          "allObservedIntended": true,
+          "protocolDeviation": false,
+          "routeStatus": "matched",
+          "httpStatusCounts": {
+            "200": 6
+          },
+          "finishKindCounts": {
+            "tool-calls": 6
+          },
+          "transportErrorTypeCounts": {},
+          "successfulRequestAndDurableAnswer": true,
+          "jobId": "7aec2319-acfd-4173-be98-92af0ec96157",
+          "kind": "plan",
+          "cutoff": 75,
+          "jobStatus": "applied",
+          "parentMatched": true,
+          "decisionRecorded": true,
+          "independent": false,
+          "successfulIndependentChecks": 0
+        },
+        {
+          "sessionId": "task-review-95a9a1ba-e414-444e-b621-ca2f519a07b5",
+          "modelRequests": 9,
+          "successfulRequests": 9,
+          "routeMismatchCount": 0,
+          "durableAssistantCount": 9,
+          "usage": [
+            {
+              "inputTokens": 1952,
+              "outputTokens": 144,
+              "totalTokens": 3888,
+              "cacheReadTokens": 1792
+            },
+            {
+              "inputTokens": 824,
+              "outputTokens": 91,
+              "totalTokens": 4627,
+              "cacheReadTokens": 3712
+            },
+            {
+              "inputTokens": 1586,
+              "outputTokens": 62,
+              "totalTokens": 6128,
+              "cacheReadTokens": 4480
+            },
+            {
+              "inputTokens": 1790,
+              "outputTokens": 57,
+              "totalTokens": 7863,
+              "cacheReadTokens": 6016
+            },
+            {
+              "inputTokens": 6094,
+              "outputTokens": 75,
+              "totalTokens": 13849,
+              "cacheReadTokens": 7680
+            },
+            {
+              "inputTokens": 2741,
+              "outputTokens": 129,
+              "totalTokens": 16566,
+              "cacheReadTokens": 13696
+            },
+            {
+              "inputTokens": 460,
+              "outputTokens": 57,
+              "totalTokens": 16901,
+              "cacheReadTokens": 16384
+            },
+            {
+              "inputTokens": 2470,
+              "outputTokens": 503,
+              "totalTokens": 19741,
+              "cacheReadTokens": 16768
+            },
+            {
+              "inputTokens": 1299,
+              "outputTokens": 1941,
+              "totalTokens": 22440,
+              "cacheReadTokens": 19200
+            }
+          ],
+          "successfulRequestEvidence": [
+            {
+              "localCallIdSha256": "3fdd8ce4754dcc9261301dc98cc6113bde76749a0ffef07d5a19d6d69a4896ca",
+              "localHttpIdSha256": "324670ec6191ec1f6faba65e5ff3545b6872dc1642a59cc5479562bbcabf968b",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "143c842cae3d93176ecad14270d5ba81b3c97388033e5478b950156281f4b39a"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "4a199df7f0f4aa89defd9805fecbbe53a1afe45e5722184b85b6ed1879a4a1e7",
+              "localHttpIdSha256": "f3f511426bdec8e0b545616b88a267e35cef48dc8a14e82fcd2033f79126bd95",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "6f70f9a9dfb7289fe519c9b4bbc672faceb471a23fda0aa91d2ee5e8ee7fd232"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "5baf0cad58b8388a9f4f0d6a13d47df6a97ba6beaef7d4661a2eed5f0889980b",
+              "localHttpIdSha256": "08d2eb03ca51291e801b25e1b6e48a59c0dd4e8290cf58492bd2691227c73b92",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "1307294c1c7e6bb5a9bc4193975697c49379ee799ec23f5a9d1b45325bc5d771"
+                }
+              ],
+              "statusCode": 200
+            }
+          ],
+          "actualHttpRequests": 9,
+          "routesMatched": true,
+          "allObservedIntended": true,
+          "protocolDeviation": false,
+          "routeStatus": "matched",
+          "httpStatusCounts": {
+            "200": 9
+          },
+          "finishKindCounts": {
+            "tool-calls": 9
+          },
+          "transportErrorTypeCounts": {},
+          "successfulRequestAndDurableAnswer": true,
+          "jobId": "9706ad35-9751-4767-bee8-30b4d050b56a",
+          "kind": "stage",
+          "cutoff": 146,
+          "jobStatus": "applied",
+          "parentMatched": true,
+          "decisionRecorded": true,
+          "independent": false,
+          "successfulIndependentChecks": 0
+        },
+        {
+          "sessionId": "task-review-41e0f1bb-94c5-4de8-9cf2-57df2f1fed91",
+          "modelRequests": 11,
+          "successfulRequests": 11,
+          "routeMismatchCount": 0,
+          "durableAssistantCount": 11,
+          "usage": [
+            {
+              "inputTokens": 1842,
+              "outputTokens": 121,
+              "totalTokens": 3755,
+              "cacheReadTokens": 1792
+            },
+            {
+              "inputTokens": 989,
+              "outputTokens": 99,
+              "totalTokens": 4672,
+              "cacheReadTokens": 3584
+            },
+            {
+              "inputTokens": 2264,
+              "outputTokens": 61,
+              "totalTokens": 6805,
+              "cacheReadTokens": 4480
+            },
+            {
+              "inputTokens": 1828,
+              "outputTokens": 174,
+              "totalTokens": 8658,
+              "cacheReadTokens": 6656
+            },
+            {
+              "inputTokens": 6004,
+              "outputTokens": 63,
+              "totalTokens": 14515,
+              "cacheReadTokens": 8448
+            },
+            {
+              "inputTokens": 2779,
+              "outputTokens": 58,
+              "totalTokens": 17173,
+              "cacheReadTokens": 14336
+            },
+            {
+              "inputTokens": 4454,
+              "outputTokens": 79,
+              "totalTokens": 21685,
+              "cacheReadTokens": 17152
+            },
+            {
+              "inputTokens": 4350,
+              "outputTokens": 311,
+              "totalTokens": 26165,
+              "cacheReadTokens": 21504
+            },
+            {
+              "inputTokens": 1911,
+              "outputTokens": 887,
+              "totalTokens": 28526,
+              "cacheReadTokens": 25728
+            },
+            {
+              "inputTokens": 425,
+              "outputTokens": 1214,
+              "totalTokens": 29159,
+              "cacheReadTokens": 27520
+            },
+            {
+              "inputTokens": 1063,
+              "outputTokens": 2989,
+              "totalTokens": 31956,
+              "cacheReadTokens": 27904
+            }
+          ],
+          "successfulRequestEvidence": [
+            {
+              "localCallIdSha256": "94d116e84cc8b1f2d7d41d81a7b6890b157710f98e75af55e28ea2eb91eb513f",
+              "localHttpIdSha256": "08acebb68e27cc261bceb5492f93b4e6480338f48908c1c93c4d65116b7a4a7f",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "69100acf07daa4f3fe2583a1f3cb002f847852f800e10fc14241f3ec6aa97248"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "5119566e47ee9237c621911da7c28912717176e16137361fe8f2e145b1e73f85",
+              "localHttpIdSha256": "83de459d73f55240bc250502193f61eae731925fed1764cd31007746b7bb9646",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "77f9605b65146dcd09fddea23b9692230ce3f55595237480600a627509a8896d"
+                }
+              ],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "df836260dbd3d237b01c6f1709da9b38256fc0b3ac8045a3cfbf21dfe10ae57c",
+              "localHttpIdSha256": "b0470ba3391eeaf481276166d40a1c64062acb7421c40573688bf6792bdefabe",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [
+                {
+                  "header": "x-request-id",
+                  "sha256": "278507b15d9108312cabbc21fe57405d660cd7a85a040db21432069da042dee9"
+                }
+              ],
+              "statusCode": 200
+            }
+          ],
+          "actualHttpRequests": 11,
+          "routesMatched": true,
+          "allObservedIntended": true,
+          "protocolDeviation": false,
+          "routeStatus": "matched",
+          "httpStatusCounts": {
+            "200": 11
+          },
+          "finishKindCounts": {
+            "tool-calls": 11
+          },
+          "transportErrorTypeCounts": {},
+          "successfulRequestAndDurableAnswer": true,
+          "jobId": "b48933dd-ae75-4ef2-9827-cc3da102b584",
+          "kind": "completion",
+          "cutoff": 169,
+          "jobStatus": "applied",
+          "parentMatched": true,
+          "decisionRecorded": true,
+          "independent": false,
+          "successfulIndependentChecks": 0
+        }
+      ],
+      "routesMatched": true,
+      "allObservedIntended": true,
+      "protocolDeviation": false,
+      "decisionVerified": true,
+      "stageReviewVerified": true,
+      "completionReviewVerified": true,
+      "nativeStatus": "native-complete",
+      "cleanupAcknowledged": true,
+      "approvalCount": 1,
+      "rescueCount": 0
+    }
+  ],
+  "dailyRoute": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "dailyEffectiveRouteMatched": true,
+    "endpointMapping": "daily-loopback-to-docker-host; same scheme, port and provider path",
+    "evidence": [
+      {
+        "relativePath": "gates/upstream-health-20260928-1/daily-config.yml",
+        "sha256": "38948f9ad22df5f786cab483135315843ed3dcf4fbb6bb484b1433335f0d9adc"
+      },
+      {
+        "relativePath": "templates/supervisor-log/profiles/supervisor-eval/cordis.patch.yml",
+        "sha256": "e03322ecbbe1183be5b8dfae79a8464136dfafb8f4e1ab2e70d0f43afb16eed9"
+      }
+    ]
+  },
+  "notes": [
+    "The successful representative chain does not admit the two-mode release: the independent review condition remains unverified.",
+    "This is a new calibration case after an explicit authorized upstream retry; the failed log-4 case remains unchanged.",
+    "Native main, plan reviewer, stage reviewer and completion reviewer each completed actual intended HTTP requests, with provider request IDs saved only as SHA-256.",
+    "Formal model attempts remain 0/16; calibration requests are counted separately."
+  ],
+  "representativeChecks": {
+    "mainSuccessfulRequest": true,
+    "reviewerSuccessfulRequest": true,
+    "actualHttpEndpointMatched": true,
+    "durableLineageMatched": true,
+    "planDecisionRecorded": true,
+    "stageDecisionRecorded": true,
+    "completionDecisionRecorded": true
+  }
+}

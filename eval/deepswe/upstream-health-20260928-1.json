@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "codebuddy-upstream-health",
+  "model": "deepseek-v4.1-flash",
+  "provider": "deepseek-codebuddy",
+  "startedAtUnix": 1790610316.700476,
+  "automaticRetries": 0,
+  "benchmarkModelAttempts": 0,
+  "endpointSha256": "4638cc79c62a554163496b42d83b8df6855e91c349f4d2a48c729c609936813f",
+  "httpStatus": 200,
+  "successful": true,
+  "finishReason": "stop",
+  "usage": {
+    "prompt_tokens": 46,
+    "completion_tokens": 33,
+    "total_tokens": 79,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 31,
+      "rejected_prediction_tokens": 0,
+      "cached_tokens": 0
+    },
+    "prompt_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 46,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "prompt_cache_write_tokens": 0,
+    "completion_thinking_tokens": 31,
+    "credit": 0,
+    "cached_tokens": 0
+  },
+  "elapsedSec": 1.7253732681274414,
+  "evidence": [
+    {
+      "relativePath": "gates/upstream-health-20260928-1/result.json",
+      "sha256": "3b68049358bb2deed1836f496a1b71f774554415388f7327b55c2edaf78c9754"
+    },
+    {
+      "relativePath": "gates/upstream-health-20260928-1/daily-config.yml",
+      "sha256": "38948f9ad22df5f786cab483135315843ed3dcf4fbb6bb484b1433335f0d9adc"
+    },
+    {
+      "relativePath": "gates/upstream-health-20260928-1/route-config-comparison.json",
+      "sha256": "745d583484e7100196be484571226535398c6c9f342d22e74b87ccd8db55010b"
+    }
+  ],
+  "scope": "One direct daily-route health request; does not prove native controller or reviewer completion."
+}

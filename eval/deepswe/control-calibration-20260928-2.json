@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "supervisor-log-control-calibration",
+  "id": "control-supervisor-log-5",
+  "officialReward": null,
+  "mainSessionId": "session-1a2eb507-6860-44b2-a0b2-de234a617d75",
+  "status": "native-complete",
+  "nativeFinished": true,
+  "finishedBeforeDeadline": true,
+  "elapsedSec": 203.22829914093018,
+  "deadlineSec": 900,
+  "cleanupAcknowledged": true,
+  "initialApprovalCount": 1,
+  "rescueCount": 0,
+  "controllerOwners": [
+    "supervisor"
+  ],
+  "reviewKindsApplied": [
+    "completion",
+    "plan",
+    "stage"
+  ],
+  "containerStopped": true,
+  "cutoffHeadCommit": "8287831da357404da82072aafc121b05872c02c2",
+  "submittedHeadMatchedCutoff": true,
+  "committedHeadChangedFromBase": true,
+  "lateCommitDetected": false,
+  "baseCommit": "9777135e2382fd779a46b55be464150504d9477c",
+  "patchSha256": "f455af670e91bd12107a915987fc61d97c6349193b84b653805f1057db1631c8",
+  "originalVerifyUnmodified": true,
+  "independentPosthocFixtureTestExitCode": 0,
+  "independentPosthocFixtureTestOutputSha256": "d88f01435dc26cd3fe5b133a19f3c942296ed943deb4eff6e0e301bb089861cd",
+  "testScope": "Host Node24 posthoc fixed fixture tests, not official task reward",
+  "evidence": [
+    {
+      "relativePath": "gates/control-supervisor-log-5/terminal.json",
+      "sha256": "763ae7b9e8bc16dfe8c44d0c6edbdd0d1d2e90bb469316f0a0c07430a8fb76a9"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/home/run/cutoff-result.json",
+      "sha256": "845c0d1cc8561d78d9883e944b89426373248ec1592121cb66d89a12732f36da"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/submission/model.patch",
+      "sha256": "f455af670e91bd12107a915987fc61d97c6349193b84b653805f1057db1631c8"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/submission/receipt.json",
+      "sha256": "8785afca9c47d19fdf38a852917cb3e9d00c249ba03ef3b103367ff0785186f8"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/validation-supplement.json",
+      "sha256": "f777f3e8fb537ea6c4af170a7c804668cc6b0388ac5f6384f03663bde3beec26"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-5/metrics.json",
+      "sha256": "3c5907c0125a34e2bcc99f0c6a23f5012cb504e618c8981d674c99e0fc0c7563"
+    }
+  ],
+  "posthocValidationModelRequests": 0,
+  "caseActualModelRequests": 50,
+  "clarifiesOriginalValidationSha256": "4bf8c2906f04997cfbb3432ed586bdcfbf1de9eb9e790e98aa93a210b231aedc",
+  "routeResultSha256": "de09f5d860cb83b720566e2aa4c6abfb6f89b3872576b884c4045dab77994df1",
+  "benchmarkModelAttempts": 0,
+  "representativeChainPassed": true,
+  "fullControlGatePassed": false,
+  "metrics": {
+    "allSessionTokens": {
+      "uncachedInputTokens": 108932,
+      "outputTokens": 25431,
+      "cacheReadTokens": 568448,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": true,
+    "unreportedAttempts": 0,
+    "reviewWaitMs": 121754.0,
+    "repairTurns": 0,
+    "internalReviewFaults": {}
+  }
+}

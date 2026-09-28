@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-admission-status",
+  "sampleFile": "sample-20260928.json",
+  "sampleSha256": "5800c1897cf1a29c9b84e5674cf2d056acf1f62e6f42a82217f4dd9714e0d131",
+  "modelAdmitted": false,
+  "release": null,
+  "plannedFormalPositions": 16,
+  "deliveredFormalPositions": 0,
+  "gates": {
+    "modelRoute": {
+      "file": "model-route-gate-20260928-2.json",
+      "sha256": "70d66c9fbabda950008dbdb69cdc35d3e5690641e447afa689cdb6032a96dd72",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 5
+    },
+    "controlFlow": {
+      "file": "control-flow-gate-20260928.json",
+      "sha256": "8f28ac1c8d820e214984f5f9eb650bcb1a74c17c8a4e3f2912c3041d9f976e28",
+      "passed": false,
+      "parentVerifiedEvidenceCount": 7
+    },
+    "grading": {
+      "file": "grading-gate-20260928.json",
+      "sha256": "181fbc916bb586e62c43eab137ede89651aad37642a34ff383fe751a188b09eb",
+      "passed": true,
+      "parentVerifiedEvidenceCount": 8
+    }
+  },
+  "realModelCalibration": {
+    "positions": 2,
+    "actualHttpRequests": 69,
+    "normallyCompletedGenerations": 57,
+    "initialApprovals": 1,
+    "rescueActions": 0,
+    "routeMismatchCount": 0,
+    "latestReviewChainComplete": true,
+    "latestAllSessionTokens": {
+      "uncachedInputTokens": 108932,
+      "outputTokens": 25431,
+      "cacheReadTokens": 568448,
+      "cacheWriteTokens": 0
+    },
+    "latestTokenCoverageComplete": true,
+    "previousUnreportedAttempts": 12,
+    "combinedFullTokenCost": null,
+    "latestMetricsEvidence": {
+      "relativePath": "gates/control-supervisor-log-5/metrics.json",
+      "sha256": "3c5907c0125a34e2bcc99f0c6a23f5012cb504e618c8981d674c99e0fc0c7563"
+    }
+  },
+  "remainingAdmission": [
+    "Real initial authorization and completion in Goal/Plan",
+    "Supervisor-independent: actual main/reviewer requests, stage and completion decisions, independent checks and comparison",
+    "Independent check gateway tied to whole-task cutoff and acknowledged container quiescence",
+    "Final frozen inputs and full evidence admission after all gates pass"
+  ],
+  "notes": [
+    "Upstream failures are runtime faults, not route deviations.",
+    "Keyless controls and non-candidate calibration are excluded from the formal 16 positions.",
+    "Incomplete token coverage is unknown cost, not zero."
+  ],
+  "previousStatusFile": "admission-status-20260928.json",
+  "latestControlCalibration": {
+    "file": "control-calibration-20260928-2.json",
+    "sha256": "78371a521dc0af79f0356f3e835cde87317bab19373f01317f4ead764ea9b86c",
+    "representativeChainPassed": true,
+    "fullControlGatePassed": false
+  },
+  "latestHealth": {
+    "file": "upstream-health-20260928-1.json",
+    "sha256": "76ab5d890ae0e59ed420b4eb57b16d77b1070c7348f9051e7be3e5f3e4feeced",
+    "successful": true
+  }
+}
