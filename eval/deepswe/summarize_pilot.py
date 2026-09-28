@@ -10,6 +10,9 @@ from pathlib import Path
 def primary(result):
     terminal = result.get('terminal') or {}
     grade = result.get('grade') or {}
+    route = result.get('route') or {}
+    if route.get('routesMatched') is not True or route.get('protocolDeviation') is not False:
+        return None
     if terminal.get('nativeFinished') is False or terminal.get('finishedBeforeDeadline') is False:
         return False
     if terminal.get('nativeFinished') is not True or terminal.get('finishedBeforeDeadline') is not True:
@@ -71,6 +74,9 @@ def summarize(root, protocol):
             'terminalCounts': dict(terminal_counts),
             'officialRewards': dict(Counter(str((row.get('grade') or {}).get('reward')) for row in rows)),
             'gradingFaults': sum((row.get('grade') or {}).get('fault') is not None for row in rows),
+            'protocolDeviationPositions': sum((row.get('route') or {}).get('protocolDeviation') is True for row in rows),
+            'unverifiedRoutePositions': sum((row.get('route') or {}).get('routesMatched') is not True
+                                            and (row.get('route') or {}).get('protocolDeviation') is not True for row in rows),
             'internalReviewFaultPositions': sum(bool((row.get('terminal') or {}).get('reviewFault')) for row in rows),
             'falseCompletions': sum((row.get('terminal') or {}).get('nativeFinished') is True
                                     and (row.get('grade') or {}).get('reward') == 0

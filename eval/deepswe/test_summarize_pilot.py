@@ -8,7 +8,8 @@ from summarize_pilot import primary, summarize
 
 class SummaryTests(unittest.TestCase):
     def test_native_failure_and_unknown_grade_are_distinct(self):
-        self.assertFalse(primary({'terminal': {'nativeFinished': False}, 'grade': {'reward': 1}}))
+        self.assertFalse(primary({'terminal': {'nativeFinished': False}, 'grade': {'reward': 1},
+                                 'route': {'routesMatched': True, 'protocolDeviation': False}}))
         self.assertIsNone(primary({'terminal': {'nativeFinished': True, 'finishedBeforeDeadline': True,
                                              'cleanupAcknowledged': True}, 'grade': {'reward': None, 'fault': 'timeout'}}))
         self.assertIsNone(primary({'terminal': {'nativeFinished': True, 'finishedBeforeDeadline': True},
@@ -24,7 +25,8 @@ class SummaryTests(unittest.TestCase):
             (attempt / 'started.json').write_text('{}')
             (attempt / 'result.json').write_text(json.dumps({**first, 'terminal': {
                 'status': 'native-complete', 'nativeFinished': True, 'finishedBeforeDeadline': True,
-                'cleanupAcknowledged': True}, 'grade': {'reward': 1, 'fault': None}}))
+                'cleanupAcknowledged': True}, 'grade': {'reward': 1, 'fault': None},
+                'route': {'routesMatched': True, 'protocolDeviation': False}}))
             result = summarize(root, protocol)
             self.assertEqual((result['planned'], result['started'], result['sealed']), (16, 1, 1))
             goal = result['conditions']['goal']
@@ -40,6 +42,17 @@ class SummaryTests(unittest.TestCase):
             (attempt / 'result.json').write_text(json.dumps({**first, 'repeat': 9}))
             with self.assertRaises(ValueError):
                 summarize(root, protocol)
+
+    def test_route_failure_does_not_drop_or_count_a_position_as_valid_success(self):
+        result = {'terminal': {'nativeFinished': True, 'finishedBeforeDeadline': True,
+                               'cleanupAcknowledged': True}, 'grade': {'reward': 1, 'fault': None}}
+        self.assertIsNone(primary(result))
+        result['route'] = {'routesMatched': False, 'protocolDeviation': True}
+        self.assertIsNone(primary(result))
+        result['route'] = {'routesMatched': True, 'protocolDeviation': False,
+                           'decisionVerified': False}
+        result['terminal']['nativeFinished'] = False
+        self.assertFalse(primary(result))
 
 
 if __name__ == '__main__':

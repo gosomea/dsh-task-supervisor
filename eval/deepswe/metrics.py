@@ -26,9 +26,18 @@ def usage_coverage(events):
             continue
         settled.add(step)
         usage = data.get('usage')
+        chunks = [record['chunk'] for record in data.get('stream', [])
+                  if record.get('type') == 'chunk']
         if usage is None:
-            usage = next((record['chunk'].get('usage') for record in reversed(data.get('stream', []))
-                          if record.get('type') == 'chunk' and record['chunk'].get('type') == 'usage'), None)
+            usage = next((chunk.get('usage') for chunk in reversed(chunks)
+                          if chunk.get('type') == 'usage'), None)
+        # DSH synthesizes a zero usage chunk on transport/server failures. The
+        # settled log cannot prove the upstream billed nothing, or that partial
+        # usage covers the whole failed request. Retain projection totals as a
+        # reported lower bound, and keep full cost unknown for these attempts.
+        if any(chunk.get('type') == 'finish' and chunk.get('reason', {}).get('kind') == 'error'
+               for chunk in chunks):
+            usage = None
         slots[(*step, generations.get(step, 0))] = usage
     missing = sum(value is None for value in slots.values()) + len(starts - settled)
     return {'settledAttempts': len(slots), 'unreportedAttempts': missing,

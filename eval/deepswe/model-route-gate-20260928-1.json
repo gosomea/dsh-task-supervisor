@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "kind": "model-route-gate",
+  "passed": false,
+  "checks": {
+    "mainSuccessfulRequest": false,
+    "reviewerSuccessfulRequest": false,
+    "dailyEffectiveRouteMatched": true,
+    "supervisorBothModes": false,
+    "actualHttpEndpointMatched": false,
+    "durableLineageMatched": false,
+    "independentReviewerCheckExecuted": false
+  },
+  "benchmarkModelAttempts": 0,
+  "smokeConditions": [
+    "supervisor-log"
+  ],
+  "evidence": [
+    {
+      "relativePath": "gates/control-supervisor-log-4/route-result.json",
+      "sha256": "41176ea488ca4613d1c7dcc502d962c478c364930cb1244442f1dd1e06e445e9"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-4/terminal.json",
+      "sha256": "834d5b5322a9bc185f7160ccc9ed4c257f30739605da9f32421f6ad8ccaf1279"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-4/home/run/model-route-audit.jsonl",
+      "sha256": "27aa21e9dd3a99972de42bd200144e632773dfb4b1b7928d5d389aa816ad821f"
+    },
+    {
+      "relativePath": "gates/control-supervisor-log-4/home/run/runner/model-route/route-audit.mjs",
+      "sha256": "4895452e5bb6b4e840618434301a2f3bf3e11841d7892d97b4f096e360b3a09e"
+    },
+    {
+      "relativePath": "model-route-daily-20260928.json",
+      "sha256": "f37727d6c8ef1485f5d288528f7b5e3d921cf82a79282ffb41fce4af55346024"
+    }
+  ],
+  "status": "not-admitted; actual-log-route-proved; upstream-failure-before-decision; independent-mode-unverified",
+  "positions": [
+    {
+      "id": "control-supervisor-log-4",
+      "condition": "supervisor-log",
+      "main": {
+        "sessionId": "session-40caf47e-ec9f-47cc-934d-3047617c8813",
+        "modelRequests": 10,
+        "successfulRequests": 4,
+        "routeMismatchCount": 0,
+        "durableAssistantCount": 4,
+        "usage": [
+          {
+            "inputTokens": 8819,
+            "outputTokens": 204,
+            "totalTokens": 9535,
+            "cacheReadTokens": 512
+          },
+          {
+            "inputTokens": 499,
+            "outputTokens": 91,
+            "totalTokens": 9806,
+            "cacheReadTokens": 9216
+          },
+          {
+            "inputTokens": 380,
+            "outputTokens": 205,
+            "totalTokens": 10185,
+            "cacheReadTokens": 9600
+          },
+          {
+            "inputTokens": 562,
+            "outputTokens": 891,
+            "totalTokens": 11309,
+            "cacheReadTokens": 9856
+          }
+        ],
+        "successfulRequestEvidence": [
+          {
+            "localCallIdSha256": "fa1aaf296d3ca39ad4a1d4f1bacd90a4de8f6460d59f021477e6f309ccf2f907",
+            "localHttpIdSha256": "68ced3990d7539674cd5eec3e0c198512732420bd3ed5485d5fb1af82e13e84e",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [],
+            "statusCode": 200
+          },
+          {
+            "localCallIdSha256": "7c1df9ca01e3bbc7a0f9a0779960f5f1d66df846e3ec51a8921574f3f21cd474",
+            "localHttpIdSha256": "6ec3650ccdb4c0d1ab9446b59fa176d4dc20bffe4420dd6819610e4b59f9cd67",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [],
+            "statusCode": 200
+          },
+          {
+            "localCallIdSha256": "a0dc52cd260e7d31b01d70cbe377557c942c46c91f9eff621dba9e6992596dfb",
+            "localHttpIdSha256": "01320846cc4b04ab845e86c60f256e57a7e7a1cb26ac796dbabed0da99ed110f",
+            "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+            "providerRequestIds": [],
+            "statusCode": 200
+          }
+        ],
+        "actualHttpRequests": 10,
+        "routesMatched": true,
+        "allObservedIntended": true,
+        "protocolDeviation": false,
+        "routeStatus": "matched",
+        "httpStatusCounts": {
+          "200": 4,
+          "502": 6
+        },
+        "finishKindCounts": {
+          "tool-calls": 4,
+          "error": 6
+        },
+        "transportErrorTypeCounts": {},
+        "successfulRequestAndDurableAnswer": true
+      },
+      "reviewers": [
+        {
+          "sessionId": "task-review-90ee4595-0573-4bd7-9251-887411c7ed33",
+          "modelRequests": 9,
+          "successfulRequests": 3,
+          "routeMismatchCount": 0,
+          "durableAssistantCount": 3,
+          "usage": [
+            {
+              "inputTokens": 3335,
+              "outputTokens": 137,
+              "totalTokens": 3728,
+              "cacheReadTokens": 256
+            },
+            {
+              "inputTokens": 634,
+              "outputTokens": 886,
+              "totalTokens": 5104,
+              "cacheReadTokens": 3584
+            },
+            {
+              "inputTokens": 1918,
+              "outputTokens": 73,
+              "totalTokens": 6087,
+              "cacheReadTokens": 4096
+            }
+          ],
+          "successfulRequestEvidence": [
+            {
+              "localCallIdSha256": "3bf7693a38bdffde1688bec93e8d8ee94e58bcecf4b41d79a66afdba95261265",
+              "localHttpIdSha256": "e32a474df0bc19bf0134e17a5677dec437f41f794468de55a916632ff5cf469a",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "0d3d6cf6691e806dcc4fc556a5167f6f758242f6db2b2571f7e37c8b64131083",
+              "localHttpIdSha256": "2a23380b09d5b6cfc199a8b6093be76375bdf542122404dd788837da446962d4",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [],
+              "statusCode": 200
+            },
+            {
+              "localCallIdSha256": "9d70f81301e110deef0900cf11a4bddf6f33df71345ecde7f8c31c99dd1f219b",
+              "localHttpIdSha256": "6e6ee324f2ce6526a274cc99bc52fd803e806cd83ebadb35eeeac4ce90172603",
+              "endpointSha256": "d399b899207b9e30c68a9d6b947d73769b5114e973392a08490d9556fc311d24",
+              "providerRequestIds": [],
+              "statusCode": 200
+            }
+          ],
+          "actualHttpRequests": 9,
+          "routesMatched": true,
+          "allObservedIntended": true,
+          "protocolDeviation": false,
+          "routeStatus": "matched",
+          "httpStatusCounts": {
+            "200": 4,
+            "502": 4,
+            "504": 1
+          },
+          "finishKindCounts": {
+            "tool-calls": 3,
+            "error": 6
+          },
+          "transportErrorTypeCounts": {
+            "SocketError": 1
+          },
+          "successfulRequestAndDurableAnswer": true,
+          "jobId": "8039bfcf-9bf9-45ae-9b5a-cadcde1c4623",
+          "kind": "plan",
+          "cutoff": 41,
+          "jobStatus": "failed",
+          "parentMatched": true,
+          "decisionRecorded": false,
+          "independent": false,
+          "successfulIndependentChecks": 0
+        }
+      ],
+      "routesMatched": true,
+      "allObservedIntended": true,
+      "protocolDeviation": false,
+      "decisionVerified": false,
+      "stageReviewVerified": false,
+      "completionReviewVerified": false,
+      "nativeStatus": "infrastructure-fault",
+      "cleanupAcknowledged": false,
+      "rescueCount": 0
+    }
+  ],
+  "dailyRoute": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "dailyEffectiveRouteMatched": true,
+    "endpointMapping": "daily-loopback-to-docker-host; same scheme, port and provider path",
+    "profileSha256": [
+      "d0c55af07c3b03022fd013cd683f6b43c44220a5ae76cc8ef37946fa5734e848",
+      "e03322ecbbe1183be5b8dfae79a8464136dfafb8f4e1ab2e70d0f43afb16eed9"
+    ]
+  },
+  "notes": [
+    "Successful HTTP and completed generations establish actual request routing; the failed plan decision does not establish controller completion or independent artifact checks.",
+    "The loaded immutable observer copy predates response request-ID hashing; provider request ID evidence is absent, not fabricated from local IDs.",
+    "Failed HTTP calls without provider-reported usage retain unknown cost; reported usage is a lower bound.",
+    "All formal model attempts remain 0/16; this is a separate calibration attempt."
+  ]
+}

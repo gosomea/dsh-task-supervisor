@@ -4,6 +4,27 @@ from metrics import collect, usage_coverage
 
 
 class MetricTests(unittest.TestCase):
+    def test_native_synthetic_zero_on_provider_failure_is_not_free(self):
+        events = [{'type': 'step/start', 'data': {'turn': 1, 'step': 1}},
+                  {'type': 'assistant/attempt', 'data': {'turn': 1, 'step': 1,
+                    'stream': [
+                        {'type': 'chunk', 'chunk': {'type': 'usage', 'usage': {
+                            'inputTokens': 0, 'outputTokens': 0, 'totalTokens': 0}}},
+                        {'type': 'chunk', 'chunk': {'type': 'finish', 'reason': {
+                            'kind': 'error', 'failure': {'code': 'SERVER'}}}}]}},
+                  {'type': 'llm/retry-started', 'data': {'turn': 1, 'step': 1}},
+                  {'type': 'assistant/message', 'data': {'turn': 1, 'step': 1,
+                    'usage': {'inputTokens': 5}}}]
+        self.assertEqual(usage_coverage(events)['unreportedAttempts'], 1)
+        tokens = {'uncachedInputTokens': 5, 'outputTokens': 2,
+                  'cacheReadTokens': 0, 'cacheWriteTokens': 0}
+        sessions = {'main': [{'type': 'session', 'id': 'main'}, *events]}
+        projections = {'main': {'record': {'rows': {'tokenUsage': {'val': tokens}}}}}
+        result = collect(sessions, projections, 'main')
+        self.assertFalse(result['tokenCoverageComplete'])
+        self.assertIsNone(result['allSessionTokens'])
+        self.assertEqual(result['tokensReported'], tokens)
+
     def test_interrupted_attempt_embedded_usage_is_reported(self):
         events = [{'type': 'step/start', 'data': {'turn': 1, 'step': 1}},
                   {'type': 'assistant/attempt', 'data': {'turn': 1, 'step': 1,
