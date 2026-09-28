@@ -52,6 +52,7 @@ export const taskSchema = z.object({
   id: z.string().uuid(),
   revision: z.number().int().positive(),
   objective: z.string().min(1),
+  creationRequestId: z.string().min(1).optional(),
   responseLanguage: z.string().min(1).optional(),
   lastApproval: z.object({ planVersion: z.number().int().nonnegative(), userMessageSeq: z.number().int().nonnegative().nullable() }).strict().optional(),
   requirementsVersion: z.number().int().positive(),

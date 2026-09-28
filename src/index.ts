@@ -16,13 +16,14 @@ import { languagePolicy, resolveLanguage, continuationContext } from './task-con
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { validateProvenance } from './provenance.ts'
+import { DRAFT_NAMESPACE } from './drafts.ts'
 import { REVIEW_NAMESPACE, faultFrom, recordReview } from './review-records.ts'
 import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
-  NAMESPACE, READABLE_RECORD_VERSIONS, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
+  NAMESPACE, READABLE_RECORD_VERSIONS, taskSchema, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
   type TaskSnapshot,
 } from './state.ts'
 
@@ -233,6 +234,7 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   ctx.agents.registerSessionControlReader(NAMESPACE, READABLE_RECORD_VERSIONS)
   ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, [1])
+  ctx.agents.registerSessionControlReader(DRAFT_NAMESPACE, [1])
   ctx.sessionProjections.register(taskProjection)
   ctx.systemPrompt.section({ name: 'task-supervisor:language', order: 2450, interpolate: false,
     text: ({ agent }) => {
@@ -242,7 +244,25 @@ export function apply(ctx: Context, config: Config = {}): void {
     },
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
-  const consultation = installConsultation(ctx, config.reviewerModel)
+  async function createTask(agent: Agent, objective: string, creationId?: string): Promise<TaskSnapshot> {
+    if (creationId) {
+      for (const event of agent.session.snapshotEvents()) {
+        if (event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state') {
+          const parsed = taskSchema.safeParse(event.data.payload)
+          if (parsed.success && parsed.data.creationRequestId === creationId) return parsed.data
+        }
+      }
+    }
+    const task = current(agent)
+    if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
+    const next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
+      ...creationId === undefined ? {} : { creationRequestId: creationId } }
+    await commitAndWake(agent, task, next,
+      'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.')
+    return next
+  }
+
+  const consultation = installConsultation(ctx, config.reviewerModel, createTask)
   installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
     actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation)
   ctx.effect(() => () => {
@@ -470,7 +490,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         const main = ctx.agents.get(SessionId(binding.mainSessionId))
         if (!main) return { kind: 'error', text: '请先打开主会话，再操作任务。' }
         const boundTask = current(main)
-        if (boundTask?.id !== binding.taskId) {
+        if (binding.taskId !== undefined && boundTask?.id !== binding.taskId) {
           return { kind: 'error', text: '这是历史任务的督导对话；请打开当前任务后再操作。' }
         }
         const result = await ctx.commands.execute(main, `/task ${rawInput}`, [], signal)
@@ -491,12 +511,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (input === 'consult') return { kind: 'success', text: `Supervisor Session: ${(await consultation.open(agent)).id}` }
         if (input === '') return reply('Supervisor', task, life.armed)
         if (input.startsWith('new ')) {
-          if (task !== null && task.phase !== 'complete' && task.phase !== 'cleared') {
-            throw new Error('clear or finish the current task first')
-          }
-          const next = { ...newTask(input.slice(4)), responseLanguage: resolveLanguage(input.slice(4), config.responseLanguage, config.fallbackLanguage) }
-          await commitAndWake(agent, task, next,
-            `Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.`)
+          const next = await createTask(agent, input.slice(4))
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task new <objective>')

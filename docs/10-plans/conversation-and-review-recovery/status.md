@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | a | passed |  |
 | b | passed |  |
-| c | ready |  |
-| d | blocked | dependencies not passed or stale: c |
+| c | passed |  |
+| d | ready |  |
 | e | blocked | dependencies not passed or stale: d |
 | f | blocked | dependencies not passed or stale: e |

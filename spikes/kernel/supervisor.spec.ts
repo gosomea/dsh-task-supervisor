@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import * as Supervisor from '../../src/index.ts'
+import { draftOf, recordDraft } from '../../src/drafts.ts'
 import { reviewStage } from '../../src/reviewer.ts'
 import { validateProvenance } from '../../src/provenance.ts'
 import { appendTask, taskOf, newTask } from '../../src/state.ts'
@@ -850,7 +851,7 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   await main.whenIdle()
   const before = taskOf(ctx, main)!
   await ctx.commands.execute(main, '/task consult', [], signal)
-  const chatId = SessionId(`task-chat-${main.id}-${before.id}`)
+  const chatId = SessionId(`supervisor-chat-${main.id}`)
   const chat = ctx.agents.get(chatId)!
   expect(ctx.tools.get('supervisor_read_status', main)).toBeUndefined()
   expect(ctx.tools.get('supervisor_read_status', chat)).toBeDefined()
@@ -862,7 +863,7 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   expect(main.inbox.nextTurn).toHaveLength(0)
   const questionSeq = chat.session.snapshotEvents().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
   const call = (id: string, userSeq: number, revision: number) => ctx.tools.execute({ agent: chat, signal,
-    callId: ToolCallId(id), name: 'supervisor_control', arguments: { directive: 'pause', user_seq: userSeq, revision } })
+    callId: ToolCallId(id), name: 'supervisor_control', arguments: { directive: 'pause', task_id: before.id, user_seq: userSeq, revision } })
   expect((await call('question-not-control', questionSeq, before.revision)).isError).toBe(true)
   chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '暂停任务' }] }))
   await chat.whenIdle()
@@ -887,7 +888,7 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   expect(mainAgain.agent.inbox.nextTurn).toHaveLength(0)
 })
 
-it('routes consultation task commands to the bound main Session and rejects stale conversations', async () => {
+it('routes main-scoped consultation across tasks while legacy conversations remain bound', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-consult-commands-'))
   roots.push(root)
   const ctx = await host(root, new ScriptedAdapter())
@@ -898,7 +899,7 @@ it('routes consultation task commands to the bound main Session and rejects stal
   await main.whenIdle()
   await ctx.commands.execute(main, '/task consult', [], signal)
   const first = taskOf(ctx, main)!
-  const chat = ctx.agents.get(SessionId(`task-chat-${main.id}-${first.id}`))!
+  const chat = ctx.agents.get(SessionId(`supervisor-chat-${main.id}`))!
 
   expect((await ctx.commands.execute(chat, '/task', [], signal))?.result.text).toContain(first.id)
   expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result.kind).toBe('success')
@@ -910,10 +911,117 @@ it('routes consultation task commands to the bound main Session and rejects stal
   const second = taskOf(ctx, main)!
   expect(second.id).not.toBe(first.id)
   expect(second.objective).toBe('Report the Node version')
-  expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result).toMatchObject({ kind: 'error' })
+  expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result.kind).toBe('success')
   expect(taskOf(ctx, main)?.id).toBe(second.id)
+  const legacy = await ctx.agents.create({ sessionId: SessionId(`task-chat-${main.id}-${first.id}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  legacy.agent.session.append('extension/record', { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 1, kind: 'binding', recordId: 'legacy', payload: { mainSessionId: main.id, taskId: first.id } })
+  expect((await ctx.commands.execute(legacy.agent, '/task pause', [], signal))?.result.kind).toBe('error')
 })
 
+
+async function proposalFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-proposal-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent: main } = await ctx.agents.create({ sessionId: SessionId('proposal-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(main, '/task consult', [], signal)
+  const chat = ctx.agents.get(SessionId(`supervisor-chat-${main.id}`))!
+  const say = async (text: string) => {
+    chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text }] }))
+    await chat.whenIdle()
+    return chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+  }
+  const call = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ agent: chat, signal, name,
+    callId: ToolCallId(`proposal-${chat.session.seq}`), arguments: args })
+  const save = async (questions: string[] = []) => {
+    const seq = await say('我想开发我的世界，先做一个可运行的小原型')
+    await call('supervisor_update_draft', { version: draftOf(ctx, main)?.version ?? 0, user_seq: seq,
+      title: '体素原型', requirements: '开发离线体素原型；键盘移动、方块添加删除；通过本地启动与交互验证。', questions })
+    return { seq, draft: draftOf(ctx, main)! }
+  }
+  return { root, ctx, main, chat, signal, say, call, save }
+}
+
+it('discusses without a task and saves a proposal without authorizing execution', async () => {
+  const { ctx, main, chat, call, save } = await proposalFixture()
+  const { seq, draft } = await save(['浏览器还是桌面？'])
+  expect(taskOf(ctx, main)).toBeNull()
+  expect(main.inbox.nextTurn).toHaveLength(0)
+  expect(draft.language).toBe('zh-CN')
+  const context = chat.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'task-consultation-context')
+  expect(JSON.stringify(context)).toContain('Visible response language: zh-CN')
+  expect((await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })).isError).toBe(true)
+  expect(taskOf(ctx, main)).toBeNull()
+})
+
+it('requires subsequent exact-draft consent and deduplicates concurrent creation', async () => {
+  const { ctx, main, say, call, save } = await proposalFixture()
+  const { draft } = await save()
+  const ambiguous = await say('可以')
+  expect((await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: ambiguous })).isError).toBe(true)
+  const seq = await say('按这份草案创建任务')
+  await Promise.all([call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq }),
+    call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })])
+  await main.whenIdle()
+  expect(taskOf(ctx, main)?.phase).toBe('planning')
+  expect(taskOf(ctx, main)?.objective).toBe(draft.requirements)
+  expect(draftOf(ctx, main)?.status).toBe('created')
+  const states = main.session.snapshotEvents().filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor' && e.data.kind === 'state')
+  expect(states.filter(e => e.type === 'extension/record' && (e.data.payload as { revision: number }).revision === 1)).toHaveLength(1)
+  expect(JSON.stringify(main.session.snapshotEvents())).toContain('sourceUserSeq')
+})
+
+it('keeps draft edits separate from an active task and rejects unresolved or stale promotion', async () => {
+  const { ctx, main, signal, say, call, save } = await proposalFixture()
+  const { draft } = await save(['关键选择'])
+  let seq = await say('按这份草案创建任务')
+  await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })
+  expect(taskOf(ctx, main)).toBeNull()
+  await ctx.commands.execute(main, '/task new 统计文件', [], signal); await main.whenIdle()
+  const before = taskOf(ctx, main)
+  const refined = await save()
+  expect(taskOf(ctx, main)).toEqual(before)
+  seq = await say('按这份草案创建任务')
+  await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })
+  expect(draftOf(ctx, main)?.version).toBe(refined.draft.version)
+  const seq2 = await say('按这份草案创建任务')
+  await call('supervisor_create_draft', { draft_id: draft.id, version: refined.draft.version, user_seq: seq2 })
+  expect(taskOf(ctx, main)).toEqual(before)
+  expect(draftOf(ctx, main)?.status).toBe('draft')
+})
+
+it('restores proposals after restart but rejects replayed user authorization', async () => {
+  const { root, ctx, main, chat, say, save } = await proposalFixture()
+  const { draft } = await save()
+  const seq = await say('按这份草案创建任务')
+  await ctx.sessions.flush(chat.session); await ctx.sessions.flush(main.session)
+  await ctx.fiber.dispose(); contexts.splice(contexts.indexOf(ctx), 1)
+  const next = await host(root, new ScriptedAdapter())
+  const mainAgain = (await next.agents.resume({ resumeSessionId: main.id, agentOptions: { provider: 'scripted', model: 'main' } })).agent
+  await next.commands.execute(mainAgain, '/task consult', [], new AbortController().signal)
+  const chatAgain = next.agents.get(chat.id)!
+  expect(draftOf(next, mainAgain)).toEqual(draft)
+  expect(taskOf(next, mainAgain)).toBeNull()
+  expect((await next.tools.execute({ agent: chatAgain, signal: new AbortController().signal, callId: ToolCallId('old-consent'),
+    name: 'supervisor_create_draft', arguments: { draft_id: draft.id, version: draft.version, user_seq: seq } })).isError).toBe(true)
+  expect(taskOf(next, mainAgain)).toBeNull()
+  // A fresh message is necessary even though the previous direct consent survives in the log.
+})
+
+it('reconciles a committed task after promotion is interrupted without creating or waking another', async () => {
+  const { ctx, main, say, call, save } = await proposalFixture()
+  const { draft } = await save()
+  const creationId = `draft:${draft.id}:${draft.version}`
+  await recordDraft(ctx, main, { ...draft, version: 2, status: 'creating', creationId })
+  const committed = { ...newTask(draft.requirements), creationRequestId: creationId }
+  appendTask(ctx, main, committed); await ctx.sessions.flush(main.session)
+  const seq = await say('按这份草案创建任务')
+  await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })
+  expect(taskOf(ctx, main)?.id).toBe(committed.id)
+  expect(draftOf(ctx, main)?.taskId).toBe(committed.id)
+  expect(draftOf(ctx, main)?.status).toBe('created')
+  expect(main.inbox.nextTurn).toHaveLength(0)
+})
 
 it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ownership and integration gating: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-workers-')); roots.push(root)

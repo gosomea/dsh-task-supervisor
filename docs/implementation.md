@@ -1,5 +1,7 @@
 # Implementation status
 
+Persistent main-Session consultation and versioned drafts are implemented. Discussion works without a task; explicit subsequent confirmation promotes an exact draft. Restart requires fresh authorization. Unified client entry and integrated deployment checks remain in progress.
+
 This page describes the runnable prototype as of 2026-09-27. The other design pages describe the intended product, including behavior that this build has not implemented.
 
 ## Bounded protocol repair and manual recovery (B)

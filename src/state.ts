@@ -10,11 +10,12 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 8
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8]
+export const RECORD_VERSION = 9
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
+import { DRAFT_NAMESPACE, draftSchema, foldDraft, type TaskDraft } from './drafts.ts'
 import { REVIEW_NAMESPACE, reviewJobSchema, foldReviewJobs, type ReviewJob } from './review-records.ts'
 import { taskSchema, reviewSchema, type TaskSnapshot, type TaskStage, type TaskCriterion } from './state-schema.ts'
 
@@ -22,6 +23,7 @@ export interface TaskProjection {
   current: TaskSnapshot | null
   failure: string | null
   reviews: z.infer<typeof reviewSchema>[]
+  draft: TaskDraft | null
   reviewJobs: ReviewJob[]
 }
 
@@ -40,13 +42,14 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the only authoritative task state from ordered extension records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 8,
-  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema), reviewJobs: z.array(reviewJobSchema) }),
-  init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [] }),
+  stateVersion: 9,
+  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema), reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable() }),
+  init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [], draft: null }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
-    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE].includes(event.data.namespace)) return state
+    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE].includes(event.data.namespace)) return state
     if (state.failure !== null) return state
     try {
+      if (event.data.namespace === DRAFT_NAMESPACE) return { ...state, draft: foldDraft(state.draft, event) }
       if (event.data.namespace === REVIEW_NAMESPACE) return { ...state, reviewJobs: foldReviewJobs(state.reviewJobs, event) }
       if (!READABLE_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'state') {
         throw new Error('unsupported Supervisor record')
@@ -72,7 +75,7 @@ export const taskProjection = {
       const review = next.lastReview
       const fresh = review !== null && !reviews.some(item => item.stageId === review.stageId
         && item.cutoff === review.cutoff && item.reviewerSessionId === review.reviewerSessionId)
-      return { current: next, failure: null, reviewJobs: state.reviewJobs, reviews: fresh ? [...reviews, review].slice(-50) : reviews }
+      return { current: next, failure: null, reviewJobs: state.reviewJobs, draft: state.draft, reviews: fresh ? [...reviews, review].slice(-50) : reviews }
     } catch (error: unknown) {
       return { ...state, failure: `Supervisor record at seq ${event.seq}: ${String(error)}` }
     }
@@ -117,6 +120,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     id: state.id,
     revision: state.revision,
     objective: state.objective,
+    ...state.creationRequestId === undefined ? {} : { creationRequestId: state.creationRequestId },
     ...state.responseLanguage === undefined ? {} : { responseLanguage: state.responseLanguage },
     ...state.lastApproval === undefined ? {} : { lastApproval: { ...state.lastApproval } },
     requirementsVersion: state.requirementsVersion,
