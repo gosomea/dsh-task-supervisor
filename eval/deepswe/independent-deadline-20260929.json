@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-whole-task-deadline-calibration",
+  "representativePassed": true,
+  "runtimeCodeCommit": "b0efb3e42c04f863c8e260cf7cb72c7b716edfe6",
+  "wholeTaskDeadlineSec": 120,
+  "clientDeadlineSec": 240,
+  "activeCancelFlag": false,
+  "cases": [
+    {
+      "id": "whole-task-deadline-b0efb3e-20260929-1",
+      "passed": false,
+      "modelRequests": 0,
+      "formalPositions": 0,
+      "evidence": [
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-1/safe-summary.json",
+          "sha256": "e2b9c92081f4076fd0d455eaeadd28623ba5255835d46fcfffde797273e0bcc5"
+        },
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-1/result.json",
+          "sha256": "01c750171b8dc2f1ecc92b49af2a8271b5ac7dd9f36ab69bb313c2f9e612a777"
+        }
+      ],
+      "faultType": "RuntimeError",
+      "failureCleanupAcknowledged": true,
+      "failureExplanation": "Fixture child JavaScript escaping prevented detached child readiness; incomplete fixture remains failed."
+    },
+    {
+      "id": "whole-task-deadline-b0efb3e-20260929-2",
+      "passed": false,
+      "modelRequests": 0,
+      "formalPositions": 0,
+      "evidence": [
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-2/safe-summary.json",
+          "sha256": "eb5410ea6c1e65d12dbee1be662bb4d08c11fccb9cad6bae303683e9c6053606"
+        },
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-2/result.json",
+          "sha256": "51dfab3bc5add55c789dd113394d63f67ee5a4d7574c964328b8d4f0651124f0"
+        }
+      ],
+      "faultType": "OSError",
+      "failureCleanupAcknowledged": true,
+      "failureExplanation": "Fixture host-side AF_UNIX sender failed; post-seal reproduction found its path too long. Native cutoff/removal evidence exists, but the complete fixture remains failed."
+    },
+    {
+      "id": "whole-task-deadline-b0efb3e-20260929-3",
+      "passed": true,
+      "modelRequests": 0,
+      "formalPositions": 0,
+      "evidence": [
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-3/safe-summary.json",
+          "sha256": "6de3fc5e8063aafcd3782c460980d9b56b9877410c72630c25268d7d99ac7c53"
+        },
+        {
+          "relativePath": "whole-task-deadline-b0efb3e-20260929-3/result.json",
+          "sha256": "af61a4328205afbdef0f18e77ba6cb5bf3dbb758574ab5e8ba675f46d270760b"
+        }
+      ],
+      "checks": {
+        "sameTaskDeadline": true,
+        "mainWatchdogDeadline": true,
+        "checkReadyBeforeDeadline": true,
+        "clientDeadlineLater": true,
+        "detachedTermIgnoringWriters": true,
+        "heartbeatStopped": true,
+        "nativeCheckTerminalRecorded": true,
+        "expiredRecoveryRejected": true,
+        "foreignSnapshotUnaffected": true,
+        "nativeRemovalAndDaemonAbsence": true,
+        "foreignStillRunningAfterClosure": true
+      },
+      "cutoffEnforcementLagSec": 0.0003619194030761719,
+      "nativeRemovalAcknowledged": true,
+      "fallbackRemoved": [],
+      "adminStopped": true,
+      "extraCheckCpuNs": null
+    }
+  ],
+  "modelRequests": 0,
+  "formalPositionsDelivered": 0,
+  "extraCheckCpuNs": null,
+  "notes": [
+    "All cases are separately sealed; earlier failures were not overwritten or replayed.",
+    "Only the successful third case satisfies the complete deadline fixture.",
+    "Expired recovery was observed through the original Linux administrator short socket, not a macOS socket.",
+    "This keyless resource check does not prove real reviewer reasoning, independent observations or comparison."
+  ]
+}
