@@ -3,7 +3,7 @@
 评测内容已统一到[评测设计与执行路线](evaluation.zh.md)。本页保留为导航，完整协议与待办只在主文档维护。
 
 - [执行顺序](evaluation.zh.md#执行顺序)：公开测试集优先，之后再做多任务 Session。
-- [公开数据集选择](evaluation.zh.md#公开数据集选择)：首选 SWE-bench Pro V2，再扩展 SWE-EVO 与 Terminal-Bench。
+- [公开数据集选择](evaluation.zh.md#公开数据集选择)：保留 SWE-bench Pro 冻结批次；新候选优先 Terminal-Bench 接入、DeepSWE 工程与 SlopCodeBench 连续任务。
 - [首轮比较协议](evaluation.zh.md#首轮比较协议)：原生 Goal、Plan、Supervisor 的交互与公平性。
 - [必须采集的指标](evaluation.zh.md#必须采集的指标)：首要结果、分母、诊断指标和缺失数据。
 - [后续多任务 Session](evaluation.zh.md#后续多任务-session)：Task／Plan／Goal 连续执行与新 Session 对照。

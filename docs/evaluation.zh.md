@@ -2,7 +2,7 @@
 
 **更新日期：2026-09-28。状态：两道冻结样本三组已封口，第三道已过环境门禁。** 本文统一维护评测问题、执行顺序、数据集、对照组、指标与结果交付。接入证据见 [SWE-bench Pro V2 记录](../eval/swebench-pro-v2/README.zh.md)，三组同题校准见 [NodeBB 校准结果](../eval/swebench-pro-v2/calibration-nodebb-20260928.zh.md)，逐题配对运行见 [冻结 NodeBB 结果](../eval/swebench-pro-v2/frozen-nodebb-20260928.zh.md)和[冻结 Navidrome 结果](../eval/swebench-pro-v2/frozen-navidrome-20260928.zh.md)；目前还没有足以估计总体胜率的样本、长程留出集或优越性结论。[架构](architecture.zh.md)负责产品设计，[实现状态](implementation.zh.md)记录运行能力。
 
-最新开发回归和恢复审计见[步骤 F](10-plans/conversation-and-review-recovery/evidence/f.md)，后续频率条件见[冻结协议](../eval/review-recovery/frequency-p2-protocol.zh.md)。旧冻结样本成绩保持原样；60 次旧版频率对照已启动，最新核对封口 6/60，见[阶段报告](../eval/review-recovery/p2-20260928/progress-20260928-1948.zh.md)。增强版独立检查另立协议与批次，旧成绩不合并。
+最新开发回归和恢复审计见[步骤 F](10-plans/conversation-and-review-recovery/evidence/f.md)，后续频率条件见[冻结协议](../eval/review-recovery/frequency-p2-protocol.zh.md)。旧冻结样本成绩保持原样；60 次旧版频率对照已启动，2026-09-28 19:48 核对封口 6/60，见[阶段报告](../eval/review-recovery/p2-20260928/progress-20260928-1948.zh.md)。增强版独立检查另立协议与批次，旧成绩不合并。
 
 ## 摘要
 
@@ -40,13 +40,30 @@
 
 | 顺序 | 数据集 | 用途与接入边界 |
 | --- | --- | --- |
-| 首选 | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | 真实仓库任务；官方提供 Harbor 任务目录、验收器、参考解和容器，以及独立环境补丁重验。先适配 DSH，再扩量。 |
-| 第二批 | [SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 补充跨文件、跨功能的项目演进任务；独立确认环境与验收稳定性。 |
-| 补充 | [Terminal-Bench](https://www.tbench.ai/news) | 补充复杂终端工作；固定一个发布版本，Challenges 可作为更长单任务的候选。 |
+| 已冻结批次 | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | 真实仓库任务；官方提供 Harbor 任务目录、验收器、参考解和容器，以及独立环境补丁重验。保留现有协议与结果。 |
+| 下一批建议 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) → [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | 先用已有 DSH 运行证据的终端任务验证接入，再做长程工程任务；正式题单与协议尚未冻结。 |
+| 连续任务候选 | [SlopCodeBench](https://github.com/SprocketLab/slop-code-bench) | 同项目需求逐步扩展；官方保留工作目录但重置 Session，同 Session 模式需单立协议。 |
+| 扩展候选 | [LongCLI-Bench](https://github.com/finyorko/longcli-bench)、[LHTB](https://github.com/zli12321/LHTB)、[SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 先核对评分、外部续行与环境门禁；不直接采用公开排行榜分数作本项目对照。 |
 
-SWE-bench Pro V2 已开始接入。默认 QEMU 环境首题参考解校验失败，独立的 VZ/Rosetta 环境对同题取得空补丁 0、参考解 1；该校准题的 Goal、Plan、Supervisor 补丁都获得外部 reward 1.0。六题冻结样本中的 NodeBB、Navidrome 与 Open Library 已通过空补丁 0、参考解 1 的环境门禁。NodeBB 三组已封口：Goal 按时完成并获外部 reward 1.0；Plan 超时、Supervisor 因审查格式失败暂停至超时，两者截止补丁的诊断 reward 都为 1.0，但主指标失败。Navidrome 三组均按时完成且外部通过。Open Library 尚未投递模型。校准题不计入冻结样本；两道冻结题仍不能支持总体比较。固定数据集 commit／版本、样本 ID、容器 digest、验收器版本及初始仓库提交；运行前检查许可证与环境要求。SWE-bench Pro V2 官方镜像标注为 linux/amd64，需逐题验证参考解与空补丁。不要将不同版本分数合并，或将修改了任务、交互、联网规则或时间上限的结果称为官方成绩。
+SWE-bench Pro V2 已开始接入。默认 QEMU 环境首题参考解校验失败，独立的 VZ/Rosetta 环境对同题取得空补丁 0、参考解 1；该校准题的 Goal、Plan、Supervisor 补丁都获得外部 reward 1.0。六题冻结样本中的 NodeBB、Navidrome 与 Open Library 已通过空补丁 0、参考解 1 的环境门禁。NodeBB 三组已封口：Goal 按时完成并获外部 reward 1.0；Plan 超时、Supervisor 因审查格式失败暂停至超时，两者截止补丁的诊断 reward 都为 1.0，但主指标失败。Navidrome 三组均按时完成且外部通过。首轮初始三组批次的 Open Library 尚未投递模型，后续 P2 另见阶段报告。校准题不计入冻结样本；两道冻结题仍不能支持总体比较。固定数据集 commit／版本、样本 ID、容器 digest、验收器版本及初始仓库提交；运行前检查许可证与环境要求。SWE-bench Pro V2 官方镜像标注为 linux/amd64，需逐题验证参考解与空补丁。不要将不同版本分数合并，或将修改了任务、交互、联网规则或时间上限的结果称为官方成绩。
 
 公开编码任务通常按单题组织。同一任务内部可以包含多次模型交互与续行，但这不等于同一 Session 连续多个用户任务。后者在 P3 单独定义；不用强行把不同仓库和基础提交的题目拼到一个工作区。
+
+### 2026-09-28 长程基准调研
+
+下述来源是别人已发布的运行证据与本项目的接入建议。本项目尚未运行这些新候选；旧 P2 不因本次调研换题、换版本或追加救场。增强独立检查的 SWE-bench Pro 预检发现：NodeBB 快照超过条目上限、Navidrome 的相对悬空链接导致捕获失败、容器内宿主没有 Docker 检查入口。这些属于快照和检查部署问题，不能推断数据集无法由 DSH 执行；换成另一容器基准仍须解决检查入口。
+
+| 候选 | 别人实际跑过的证据 | 对本项目的价值与限制 |
+| --- | --- | --- |
+| Terminal-Bench 2.1 | [Maka 九 harness 报告](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md)公布 89 题逐题 CSV，DSH 在 DeepSeek V4 Flash 下为 65/89；DSH 后跑且部分基础设施修复后重跑，属于描述性结果。 | 最直接的 DSH 接入参照。其 [adapter](https://github.com/apache/maka/blob/main/packages/eval/README.md)使用 JSON-RPC minimal composition；不能视为已验证本插件或 Goal／Plan。复用官方验收并验证后台服务存活、命令超时和依赖安装。 |
+| DeepSWE v1.1 | [官方题库](https://github.com/datacurve-ai/deep-swe)含 113 道原创工程任务；[DeepSeek 官方复现说明](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/evaluation/README.md)提供固定 Pier／题库版本和 SDK `dsh-minimal` adapter；[FrontierHarness](https://github.com/frontier-harness-eval/eval/blob/main/benchmark.json)亦在 9 道 DeepSWE 与 21 道 Terminal-Bench 上发布 DSH 多 profile 结果。 | 推荐的工程主线：提交补丁后在干净的独立容器评分。SDK minimal 不是本插件 preset；公开样本和网络环境变更也不构成等价对照。按任务要求配置资源，不能沿用旧 P2 的 1 CPU／4 GiB 并称官方复现。 |
+| SlopCodeBench | [论文](https://arxiv.org/html/2603.24755v1)报告 Claude Code、Codex 等在 20 个问题、93 个 checkpoint 上的运行；当前 [题库](https://github.com/gabeorlanski/scb-problems)已分离，需固定版本。 | 最贴近同项目多 Task：每次添加需求，同时验收旧功能。论文每 checkpoint 使用新容器，只继承工作目录，清空 Agent Session；保留 Session 的实验须与官方轨道分开报告。 |
+| LongCLI-Bench | [论文](https://arxiv.org/html/2602.14337v2)报告 Codex、Claude Code、OpenHands 在 20 题上的三次重复；[runner](https://github.com/finyorko/longcli-bench)提供需求、回归与步骤评分。 | 可测计划失效、早期停滞与回归；已有人报告并关闭的[环境／评分缺陷](https://github.com/finyorko/longcli-bench/issues/4)要求逐题确认修复版本。QEMU、并发测试及隐藏评分反馈须先校准；未找到 DSH 完整公开复现。 |
+| LHTB | [论文](https://arxiv.org/abs/2607.08964)发布 46 道长终端任务和密集奖励；[仓库](https://github.com/zli12321/LHTB)公布 Terminus-2 等运行，常规预算为 90 分钟。 | 可做更长的单任务压力测试。30/46 题启用隐藏验收失败后的外部自动续行，这会影响本项目的续行／完成判断比较；官方轨道与不反馈的产品轨道分开。历史结果早于验收器隔离与二值反馈改动，不与新批次混合；未找到 DSH 完整公开复现。 |
+
+建议接入顺序是 Terminal-Bench 控制题 → DeepSWE 工程小样本 → SlopCodeBench 连续任务；LongCLI 与 LHTB 在各自协议校准后扩展。先做无模型的参考解、无修改产物与检查运行器门禁；再冻结未用于调试的题单、四组（Goal／Plan／仅日志审查／独立检查审查）、重复数与资源。小样本用于接入和失败分类，正式替代结论仍遵循[结论门槛](#结论门槛)。选题按固定元数据规则，不按哪组能赢来筛。
+
+保留严格通过、部分需求完成、旧功能回归、错误完成、合法等待、内部故障、基础设施失败及全部 Session 用量。评估长程性还要记录活动时长、轮次、压缩和进展轨迹；长超时配置不等于实际持续长程执行。产品审查只能使用公开需求、产物与自己的检查，不能获得外部隐藏评分反馈；纠偏与误暂停未经盲审标注仍为缺失。
 
 ## 首轮比较协议
 
