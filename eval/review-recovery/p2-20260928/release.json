@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "kind": "frozen-p2-release",
+  "project": "/Users/yuqixian/forever-skills/projects/agent-research/deepseek-harness-plugins/dsh-task-supervisor",
+  "pluginCommit": "47de2e67193440a4763e1c77360a58ef0cbfdfc4",
+  "protocolSha256": "af1a6f7701bd816e0bcec978f57af9ccd8cda702ceee5982cd1a2bff4d288566",
+  "pluginRuntime": {
+    "sha256": "249cf2f8db81a9a728eaa68d92739f01b3ced4e5ea420e9440823f6dd92522b4",
+    "entries": 1312
+  },
+  "hostRuntime": {
+    "sha256": "d5042d22aef2f45dcd176be5af9b650c5114b564480c12fc7c4d39c40160bb47",
+    "entries": 158625
+  },
+  "runner": {
+    "sha256": "be7a0e7e833c0e376660acda1e9187673ed55aa641d01a9ce6470eacc8d90888",
+    "entries": 60
+  },
+  "nodeSha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+  "composition": {
+    "plan": "8737b287c5ffe38ff6d490da7c29190d1c82bc2c18d3557581f33972d8c51167",
+    "supervisor-current": "ead37c9af05cb4913d94afe8ffca138f4083f0c81f7b3342e2886cdbc111ad5f",
+    "supervisor-required": "b649802460d368dbec9452cf838bbb026b47b1dc428457270f3de94009750abd",
+    "supervisor-sparse": "6bbd850167bed0572b6308a548c8366ff86bcad0b1977f7d7986996ea31cc896",
+    "goal": "8737b287c5ffe38ff6d490da7c29190d1c82bc2c18d3557581f33972d8c51167"
+  },
+  "profiles": {
+    "plan": {
+      "sha256": "ecf25cb2846ebc87f1f0cf0edac30fdc81a5225f5d14f2bf4d71c4ee854cfd64",
+      "entries": 4
+    },
+    "supervisor-current": {
+      "sha256": "03750dacd083d151e7cd04c20e9369b26f2e6e4d16a6faf4e456b6f496513c64",
+      "entries": 6
+    },
+    "supervisor-sparse": {
+      "sha256": "0fe9438505ac2738f772a2304e8656064d42680506d96e04f3a0f49b4317ab7d",
+      "entries": 6
+    },
+    "supervisor-required": {
+      "sha256": "41074925127a7095cb3775a812ee3ccb619bcc38f3a76e438128448c57b867b5",
+      "entries": 6
+    },
+    "goal": {
+      "sha256": "ecf25cb2846ebc87f1f0cf0edac30fdc81a5225f5d14f2bf4d71c4ee854cfd64",
+      "entries": 4
+    }
+  },
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash"
+  },
+  "modelParity": {
+    "daily": {
+      "default": {
+        "provider": "opencode-go",
+        "model": "glm-5.3-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://127.0.0.1:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": []
+    },
+    "conditions": {
+      "plan": {
+        "default": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "firstCodeBuddyModel": "deepseek-v4.1-flash",
+        "api": "openai-completions",
+        "baseURL": "http://host.docker.internal:15721/tencent/v1",
+        "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+        "supervisor": []
+      },
+      "supervisor-current": {
+        "default": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "firstCodeBuddyModel": "deepseek-v4.1-flash",
+        "api": "openai-completions",
+        "baseURL": "http://host.docker.internal:15721/tencent/v1",
+        "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+        "supervisor": [
+          {
+            "reviewRepairAttempts": 1,
+            "reviewDeadlineMs": 600000,
+            "progressReviewMode": "current"
+          }
+        ]
+      },
+      "supervisor-required": {
+        "default": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "firstCodeBuddyModel": "deepseek-v4.1-flash",
+        "api": "openai-completions",
+        "baseURL": "http://host.docker.internal:15721/tencent/v1",
+        "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+        "supervisor": [
+          {
+            "reviewRepairAttempts": 1,
+            "reviewDeadlineMs": 600000,
+            "progressReviewMode": "required-only"
+          }
+        ]
+      },
+      "supervisor-sparse": {
+        "default": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "firstCodeBuddyModel": "deepseek-v4.1-flash",
+        "api": "openai-completions",
+        "baseURL": "http://host.docker.internal:15721/tencent/v1",
+        "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+        "supervisor": [
+          {
+            "reviewRepairAttempts": 1,
+            "reviewDeadlineMs": 600000,
+            "progressReviewMode": "configured",
+            "observationToolCalls": 48,
+            "observationIntervalMs": 600000,
+            "observationConsecutiveErrors": 3,
+            "maxAutomaticRoundsWithoutReport": 6
+          }
+        ]
+      },
+      "goal": {
+        "default": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "firstCodeBuddyModel": "deepseek-v4.1-flash",
+        "api": "openai-completions",
+        "baseURL": "http://host.docker.internal:15721/tencent/v1",
+        "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+        "supervisor": []
+      }
+    },
+    "policy": "Keep user-authorized P2 model fixed; current daily default differs and was not changed. Route parity is with the daily configured first CodeBuddy model, not the daily default selection."
+  },
+  "infra": {
+    "context": "colima-dsh-eval-rosetta",
+    "cpus": 1,
+    "memoryGiB": 4,
+    "timeLimitSec": 3000
+  },
+  "gradingRetries": 0,
+  "modelRetries": 0,
+  "notes": [
+    "Runtime and runner copies are independent; no mid-batch rebuilds.",
+    "Credentials remain private and are excluded from the published fingerprint.",
+    "Host snapshot is the existing Linux baseline; actual bytes are pinned rather than inferred from a Git label.",
+    "Preflight only created an empty Session and read /task; no model request or benchmark instruction."
+  ]
+}

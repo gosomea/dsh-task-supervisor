@@ -1,0 +1,422 @@
+[
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 1,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "28dfd5539af54ee558069e36a5d61061e44ab0afc24af6477b9910c65d3a6dc7"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 1,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "3ed679fce873a94c79dbf690e14486c5fc7bdbd2994095f9f6fc3144a61430f9"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 1,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "674a615fa64cddee1434f552dc5b8faa8d17c51798b18b255ef9921775906445"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 1,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "99cc0a1787eff65de88932ddcae8becdbd408048fdff12082a3fca0b42500b3a"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 1,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "cd5f443b1829878816a1665b3fd0272730590a2ca927b91651470573e01d0aa3"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 2,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "01c1f8294c8c93a35b2e282c0c2b98e7a823eeb1b240589237afeacbdf6b2945"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 2,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "2b50c0785e88da0ff9c2f3bce58cfea635f030e8ad820b98f15cb999c99ae173"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 2,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "4de6d57fb2bf6b4158080890a7eb0e89fec18c453a18a22685c96c1a26e322c3"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 2,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "d87d39dd577e489eb75093a0574bc9213ff9018bbe93aff829faff9a5283fa36"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 2,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "f394fc4cd9f3a43c54d4bc519250e9597111373fd5f9a8728e810da0e39cbc8e"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 3,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "293016b65ad55ff71e9533fa4b759e7353b9a588f0bf65749ac84c748ba35bab"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 3,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "5aa3932938edcab96ec2d738e0c3365304ea5ac5de8f1eeb00cf9b067bb5b50c"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 3,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "c80ca227a45d1caf4ae0d7ac221f130c68e4d5aed7fd2a31ffb786a587ebba05"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 3,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "d6f599b929f3157ea4e240f9468b6969d7db92908bde349283cab3d9c3492c8e"
+  },
+  {
+    "taskId": "instance_internetarchive__openlibrary-b67138b316b1e9c11df8a4a8391fe5cc8e75ff9f-ve8c8d62a2b60610a3c4631f5f23ed866bada9818",
+    "repeat": 3,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "dd93ed9619e2cf439716e4fc69a66fc0e876a4cc8aecd1de8f22030f9581693a"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 1,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "2f4c5274088918f04e12a9a3b5640da655a70bd664b943e4bb97cf8d21e54148"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 1,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "49492a2e799f21de7e4305c81056761ca9da348d0b9381a88cba1f61f43c6f32"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 1,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "c43c2e7a0b8cc395f2a17855f63e9935a960ca2d884ab6fa49b6687a787934ac"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 1,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "c77572240269fba6d63250fcd4a1b4d5196f8adcc1ea3720a41b26775b16beff"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 1,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "e33ea867ac6e8f6dcbc5389a2dbddd2659efefa8636d490aada5f1771ee4922f"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 2,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "618ec32006d0b422b65ddc273b41f5b960b03f21d3a2050d46039ca08575b2dd"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 2,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "859250125990b4f885000ceb7e01033ae19c80ce93066147c12b2d1bdfa26549"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 2,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "9e5a4bf1784a1b558cee78ed3d759d34b96d8521e813bb82c1ab150a8e2a704f"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 2,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "ae243b35d432b8abae33a5405845e1b1c4319781ace662d72c801de4ba5d25b6"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 2,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "b9c3e8e94d248676777bbe2b0b81d85cf022adad7d2f4a20a90f35ad2e983baf"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 3,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "036bc1cf413b3f428896f3db91b86867212efcdb69421325ed4d9b32607eda33"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 3,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "304d6366b808ac21022e4d8d276dae59f24f2e9eaa5aa6974a13cedc4ba70101"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 3,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "547113b696659d76e512933ba571ce381fb14012391a858d791d23b3cf64c315"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 3,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "5d2d2a4a14b2e625d830f834e2b8c13bdc3ad5d68792fe6fb656df0379317ed2"
+  },
+  {
+    "taskId": "instance_qutebrowser__qutebrowser-46e6839e21d9ff72abb6c5d49d5abaa5a8da8a81-v2ef375ac784985212b1805e1d0431dc8f1b3c171",
+    "repeat": 3,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "e7ca08044b2cc8d1c6df5db78022bba417e4f986f8670b21cd2b49b151a97b47"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 1,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "178066e12041d60cd24a07abad4a285632a46e00133f4607abcd3c4ba8795eeb"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 1,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "54bb5b15c9b2425e3eb7d04a3437e9fd5116b330694ec51c1430768b8f3accb9"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 1,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "81627ba8d78acd50332e99eadfc7f3d5ebf7df107c73ad8bc11326188baaf7c4"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 1,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "8e7748bdd07875952399f56e16778e4c953cd6d81098f8bfa4bbdccfd7f5f99a"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 1,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "bf105bfddf6b3576f9acd49c8ddfe6e8ecdd427e7ea9412da23887b8be28533b"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 2,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "1c33781d57e6681084681bddb48dd3ff08802a595cb0caefb18a004cc24b57db"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 2,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "2bfaf132dc7d010eff319adfcb250cdc5719d426b41df553f3745321ffccf2f5"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 2,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "316dd73e6c31ef1573854cb39bdfffdc5f075bd1390bd1286b184b8bcbc1c611"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 2,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "b04d2b1b10ad10d337e44c870796db9bf334bf77517276bad04c6036d0538d21"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 2,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "e6c12128aa73353b8c7a997d9d762f9026dd1d2edf34481ee95a035b2d3e8565"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 3,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "657c286c9ba9687379dff7e9b723f5fa348fc4c16dd8d994fc41a3a5657a12d1"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 3,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "6b41b9ad225d3d86f4cf1f8ca489ca9e50bee1a2b42d93e3b9198e314901604f"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 3,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "81ac23f75302f9eede59a97979679eb0f0fb960c30eb95a4954b7fe85ceb683b"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 3,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "8f800bf063cb04687e386dfe66124e800fb00b57a616f89626765cc506fe66e4"
+  },
+  {
+    "taskId": "instance_flipt-io__flipt-1737085488ecdcd3299c8e61af45a8976d457b7e",
+    "repeat": 3,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "d6b25f6ca3540f18ed83fa6c5893672bac6333543feb4cf65897964408e31c39"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 1,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "4925894335daec2cd284129518a873ca7eda80fea7d0178b404baa6d0f41bbbc"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 1,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "94f99081409cd8ee7d9f465aa7e9ee958a7fd9771e0a42bd34111a6719928879"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 1,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "f8a99a5981e7beed851202e5562f6c41e086bc1eecaba4b9a5d3f9b3a40b218f"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 1,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "fe2912697ad770ea6df4c96fdfff917b9e809a7a2b0b3a82b0c915e0718ad59e"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 1,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "ff75b0e72e593a92f2a0502f01c0b6c3d452e1bd2d3b13f78441880642699535"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 2,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "080f6a184b09e6de64bcda83e8692c857166d18117f8937ef1bd7f125eef890c"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 2,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "101905cc7c305165a50c7d53928cc810693a19764c448af4ecfbeec7691bc02b"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 2,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "727b8093c61bad998d94e8dd8b1a73fac27c58793c9894fce1ebddc827e27125"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 2,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "7ff6c632283922913f3c2ed78d3aeb0f18794441c996f03ccce9eca59ea85272"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 2,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "dcb34b46bf6e8e4ece63eaefc6bdc350b45c1c73222a8c1d7dfcf7e79feef773"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 3,
+    "condition": "plan",
+    "arm": "plan",
+    "rank": "2eecf7a177c98b4263d72ea497cb1609caffbf802bad560158a15b4853088162"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 3,
+    "condition": "supervisor-required",
+    "arm": "supervisor",
+    "rank": "3d23104a5bed7fe738724d93dacffcd3797e0bf623a44788f4a879cbe5004b2b"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 3,
+    "condition": "supervisor-current",
+    "arm": "supervisor",
+    "rank": "4045e6cc860546dc3ae3f8854d6e561882df4aedc8362ea7444c1524e3d806f7"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 3,
+    "condition": "goal",
+    "arm": "goal",
+    "rank": "42c16ab44eec4e903278b28e4e986ac18684affb7046d8d48ca212f6e381ae80"
+  },
+  {
+    "taskId": "instance_ansible__ansible-5e88cd9972f10b66dd97e1ee684c910c6a2dd25e-v906c969b551b346ef54a2c0b41e04f632b7b73c2",
+    "repeat": 3,
+    "condition": "supervisor-sparse",
+    "arm": "supervisor",
+    "rank": "b15ffd5dd8ae3678bc2a01d06c49d72d70f37ccee70852eaa656cb3b4e4adef6"
+  }
+]

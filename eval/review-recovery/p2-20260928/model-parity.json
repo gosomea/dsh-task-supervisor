@@ -1,0 +1,93 @@
+{
+  "daily": {
+    "default": {
+      "provider": "opencode-go",
+      "model": "glm-5.3-flash"
+    },
+    "firstCodeBuddyModel": "deepseek-v4.1-flash",
+    "api": "openai-completions",
+    "baseURL": "http://127.0.0.1:15721/tencent/v1",
+    "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+    "supervisor": []
+  },
+  "conditions": {
+    "plan": {
+      "default": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://host.docker.internal:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": []
+    },
+    "supervisor-current": {
+      "default": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://host.docker.internal:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": [
+        {
+          "reviewRepairAttempts": 1,
+          "reviewDeadlineMs": 600000,
+          "progressReviewMode": "current"
+        }
+      ]
+    },
+    "supervisor-required": {
+      "default": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://host.docker.internal:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": [
+        {
+          "reviewRepairAttempts": 1,
+          "reviewDeadlineMs": 600000,
+          "progressReviewMode": "required-only"
+        }
+      ]
+    },
+    "supervisor-sparse": {
+      "default": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://host.docker.internal:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": [
+        {
+          "reviewRepairAttempts": 1,
+          "reviewDeadlineMs": 600000,
+          "progressReviewMode": "configured",
+          "observationToolCalls": 48,
+          "observationIntervalMs": 600000,
+          "observationConsecutiveErrors": 3,
+          "maxAutomaticRoundsWithoutReport": 6
+        }
+      ]
+    },
+    "goal": {
+      "default": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "firstCodeBuddyModel": "deepseek-v4.1-flash",
+      "api": "openai-completions",
+      "baseURL": "http://host.docker.internal:15721/tencent/v1",
+      "credentialReference": "DEEPSEEK_CODEBUDY_API_KEY",
+      "supervisor": []
+    }
+  },
+  "policy": "Keep user-authorized P2 model fixed; current daily default differs and was not changed. Route parity is with the daily configured first CodeBuddy model, not the daily default selection."
+}

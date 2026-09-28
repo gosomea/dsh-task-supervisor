@@ -1,0 +1,4 @@
+{
+  "modelAttemptsBeforeFinalFreeze": 0,
+  "reason": "Before model admission, distinguish unscoreable completed runs from failures and validate Plan approval runtime. Preserve original preflight candidate. Plugin/runtime/profile bytes unchanged."
+}
