@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "runKind": "single-case-development",
+  "id": "kea-supervisor-2eb0797-single-20260929",
+  "taskId": "kea-atomic-signal-selectors",
+  "condition": "Supervisor-log",
+  "plannedModelAttempts": 1,
+  "comparison": false,
+  "datasetCommit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
+  "datasetVersion": "DeepSWE v1.1",
+  "pluginCommit": "2eb079789a03dbd8a4c8d94dba8098f187f52587",
+  "pluginBundleSha256": "055a8632005ee3e7cbb9af1a7604510b77bdec2a724bcf2ec443a45c85ee970a",
+  "imageDigest": "sha256:2a3e673e71b0516d27fa3a93f094633d606f5aa6fdcb01521334cafaacd47f24",
+  "netctlImage": "sha256:b9149c53a324707e9845691a01e94e7b01a9886475e690b37db7fc59b6bfd085",
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "maxTokens": 32000,
+    "reasoning": "provider-default"
+  },
+  "resources": {
+    "cpus": 2,
+    "memoryMiB": 8192,
+    "vmCpus": 4,
+    "vmMemoryMiB": 8192,
+    "architecture": "linux/amd64 via Rosetta",
+    "storageEnforcement": "official-docker-metadata-only"
+  },
+  "agentTimeoutSec": 10800,
+  "verifierTimeoutSec": 1800,
+  "policy": {
+    "executionApproval": "after-review",
+    "planningSupervision": true,
+    "truncationRecovery": true,
+    "reviewRepairAttempts": 1,
+    "maxRecoveryWithoutProgress": 2,
+    "progressReviewToolCalls": 24,
+    "progressReviewIntervalMs": 300000,
+    "progressReviewConsecutiveErrors": 3,
+    "maxAutomaticRoundsWithoutReport": 6,
+    "pauseDisposition": "seal-without-rescue",
+    "externalRescues": 0,
+    "submission": "committed-base-to-HEAD only"
+  },
+  "instructionSha256": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+  "profileSha256": "dad21cbf51b3effd3b51f83e0518e5fb6bed78206df1e45c425332ed9b740a4f",
+  "knownLimitations": [
+    "Development run; not inserted into original frozen16 paired comparison",
+    "Supervisor reads native session evidence; no independent artifact-check runner in this condition",
+    "8GiB VM also has OS overhead; not the original20GiB resource-certified VM",
+    "Reused published Kea case; not an unseen holdout",
+    "Runner snapshot seals idle manual-only pause immediately without rescue"
+  ]
+}
