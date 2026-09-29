@@ -24,6 +24,8 @@
 
 18 项无模型模拟原生接口测试覆盖这些分支，包括 unpause、释放租约和最终返回期间越过截止。真实 Linux/Docker 验收尚待完成。`acquire` 与 `withCutoffAuthority` 必须由可信部署提供真实独占权限和外部截止控制；接口上的布尔值不是权限证明。镜像 config ID 与 pull manifest digest 分开绑定。当前评测实例尚未部署新增的独占工作区卷、只读管理员挂载及可信范围注册；主 Host／控制器与模型工具共享权限，控制器来源也未得到认证。因此生产 profile 未启用该屏障。
 
+原生测试 probe 保留限长、限深和脱敏的嵌套错误诊断；`AggregateError` 的捕获与清理原因分别可见，不导出任意错误属性、控制对象或私有路径。失败尝试与清理证据保留在独立目录，不因诊断改进而重写。
+
 `publicProvenanceReceipt` 提供稳定证据 ID，并省略完整私有 world 的租约、daemon、owner 与容器绑定。模型读取工具及裁决门禁尚未接入；结构化主验证执行的实际程序、运行时依赖闭包和当前产物绑定也尚未实现。这些新增 API 不改变正式评测准入，当前仍为 0/16。
 
 ## 三类证据
@@ -42,7 +44,7 @@
 
 当前检查请求中的 `sessionId` 是客户端字符串，仅用于记录，不能作为新增流程收据的授权。可信启动器应先注册执行世界：Docker daemon、确切容器 ID 与 owner label、工作目录、主 Session 和租约；任务控制器再绑定任务版本、节点尝试、截止点与产物摘要。模型仅引用不透明绑定 ID。管理员自行核对身份，不接受客户端任意上传的“成功收据”；生产收据的通道或 capability 与模型可用的检查 socket 分开。
 
-现有原生 `subprocess.spawn` 返回受管 handle，没有通用的 spawn 审计事件；Cordis 的 `intercept` 合并配置，不能直接充当进程方法中间件。shell 通常只暴露 `bash -c`，PTC 的内层 `child_process` 和动态导入也不经过插件可见的直接调用边界。首个实现因此采用插件注册的结构化主验证工具，声明 `coverage=top-level-direct`，通过原生 spawn、done、输出收集与 waitForExit 记录结果。它不能替普通 shell／PTC 内部调用背书。二进制路径解析后还需取得实际文件摘要，并冻结只读文件及依赖，避免哈希与启动之间被替换。
+现有原生 `subprocess.spawn` 返回受管 handle，没有通用的 spawn 审计事件；Cordis 的 `intercept` 合并配置，不能直接充当进程方法中间件。shell 通常只暴露 `bash -c`，PTC 的内层 `child_process` 和动态导入也不经过插件可见的直接调用边界。拟实现的结构化主验证工具声明 `coverage=top-level-direct`，通过原生 spawn、done、输出收集与 waitForExit 记录结果。它不能替普通 shell／PTC 内部调用背书。二进制路径解析后还需取得实际文件摘要，并冻结只读文件及依赖，避免哈希与启动之间被替换。
 
 Git 捕获在主方受管写入收敛后进行；捕获前后核对 HEAD 和工作树摘要。管理员私有副本计算已提交内容、父提交关系、已跟踪及未跟踪文件状态。禁止执行仓库提供的 hooks、别名、外部 diff、过滤器与配置；不能直接在管理员环境信任任意仓库 Git 配置。`.git` 不进入普通模型可写检查目录，也不向模型导出凭据、远端认证信息或完整历史。无 Git 的任务返回明确的不可用状态。
 
@@ -51,6 +53,12 @@ Git 捕获在主方受管写入收敛后进行；捕获前后核对 HEAD 和工�
 检查复验使用管理员配置的相同冻结 runtime；只读挂载的可执行文件与依赖闭包都进入 release。主方执行过指定命令与独立方重新执行成功分别保存，不互相替代。运行器配置不由模型提供。
 
 拟提供 `inspect_task_provenance`，分页读取当前绑定收据并返回稳定证据 ID。验收器检查证据类型、版本、完整读取与当前产物绑定，Git 标准不能引用 README，执行流程标准不能仅引用版本号。先独立产物观察、再读取主报告的两阶段门禁继续保留；流程收据由管理员产生，可以独立检查，但不能携带主方成功总结。
+
+## 部署接入要求
+
+可信 Host、Session 存储和范围注册须位于主方执行容器之外。DSH 的 SSH、远程 filesystem、subprocess 和 sandbox provider 可通过插件组合使用；管理员另用不注册模型工具的本地执行 context 访问只读工作区卷、Git 与 Docker。工具注册 context 必须取得远程 PTC/runtime，不能只替换 Agent 的执行 service 却继承本地工具注册器。当前 `prepareVerification` 依赖 Host 本地 filesystem，仍需接入管理员快照 provider；单纯更换全局 filesystem 或 subprocess 不完成这一接入。
+
+跨平台部署要处理 Host 绝对路径：现有文件搜索工具按 Host 平台定位 `rg`，不能把 macOS 路径发送到 Linux；可在独立 profile 中使用远程 shell 的 `rg`。SSH helper、PTC bootstrap、Node 及完整依赖闭包须冻结并只读部署，远程原生范围的清理能力须实际验证。整容器截止停止与每条命令的范围收敛分别记录；未知或降级的进程范围不能产生 `rangeQuiescent=true`。这些要求尚未完成部署验收，也不改变日常 profile。
 
 ## 开发与验收顺序
 

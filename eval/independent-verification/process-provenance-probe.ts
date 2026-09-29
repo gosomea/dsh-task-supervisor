@@ -22,6 +22,42 @@ export interface Config {
   foreign: { id: string; name: string; ownerLabel: { name: string; value: string } }
   extraWriter: { name: string; ownerLabel: { name: string; value: string } }
 }
+export interface ProbeFailure {
+  name: string
+  message: string
+  code?: string | number
+  cause?: ProbeFailure
+  errors?: ProbeFailure[]
+}
+/** Preserve nested cleanup reasons without serializing scope, paths, control payloads or arbitrary error fields. */
+export function summarizeProbeFailure(error: unknown): ProbeFailure {
+  const seen = new Set<object>()
+  let remaining = 32
+  const text = (value: string, max: number) => value
+    .replace(/(?:\/[A-Za-z0-9_.@%+~:-]+)+/g, '[path]')
+    .replace(/\b[A-Za-z]:[\\/][^\s]+/g, '[path]')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max)
+  function visit(value: unknown, depth: number): ProbeFailure {
+    if (!(value instanceof Error)) return { name: 'NonError', message: 'Non-error failure omitted' }
+    if (depth >= 4 || remaining-- <= 0 || seen.has(value)) return { name: 'TruncatedError', message: 'Nested error limit reached' }
+    seen.add(value)
+    const result: ProbeFailure = { name: 'Error', message: 'Unreadable error diagnostics' }
+    try { if (typeof value.name === 'string') result.name = text(value.name, 80) } catch { /* Omit throwing getters. */ }
+    try { if (typeof value.message === 'string') result.message = text(value.message, 512) } catch { /* Omit throwing getters. */ }
+    // Read only scalar code plus standard cause/errors. Getter failures cannot prevent the result from being sealed.
+    try {
+      const code: unknown = (value as Error & { code?: unknown }).code
+      if (typeof code === 'string') result.code = text(code, 80)
+      else if (typeof code === 'number' && Number.isFinite(code)) result.code = code
+    } catch { /* Unreadable diagnostics are omitted. */ }
+    try { if (value.cause !== undefined) result.cause = visit(value.cause, depth + 1) } catch { /* Omit throwing getters. */ }
+    try {
+      if (value instanceof AggregateError && Array.isArray(value.errors)) result.errors = value.errors.slice(0, 6).map(item => visit(item, depth + 1))
+    } catch { /* Omit throwing getters. */ }
+    return result
+  }
+  return visit(error, 0)
+}
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 /** Atomic publication, with no overwrite of a prior attempt. */
 async function publish(path: string, value: unknown) {
@@ -144,7 +180,7 @@ async function runProbe(ctx: Context, config: Config, signal: AbortSignal) {
       && foreignAfter.State.Running && !foreignAfter.State.Paused
     checks.externalLeaseReleased = acquired === released
     observations.push({ boundary: captured.boundary, acquired, released, stoppedCounter: last })
-  } catch (error) { result.fault = { errorType: error instanceof Error ? error.name : 'unknown', message: String(error).slice(0, 2048) } }
+  } catch (error) { result.fault = summarizeProbeFailure(error) }
   finally {
     if (extra) {
       const row = await inspect(extra)
@@ -162,7 +198,7 @@ export function apply(ctx: Context, config: Config) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(new Error('native provenance probe overall deadline')), 120000)
     let rangesConfirmed: boolean | null = null
     try { if (await runProbe(ctx, config, controller.signal)) rangesConfirmed = true }
-    catch (error) { await publish(config.output, { schemaVersion: 1, kind: 'native-process-provenance-keyless', modelRequests: 0, passed: false, fault: { errorType: error instanceof Error ? error.name : 'unknown', message: String(error).slice(0, 2048) } }) }
+    catch (error) { await publish(config.output, { schemaVersion: 1, kind: 'native-process-provenance-keyless', modelRequests: 0, passed: false, fault: summarizeProbeFailure(error) }) }
     finally { clearTimeout(timer); await publish(join(config.controlRoot, 'probe-settled.json'), { probeReturned: true, nativeRangesSettled: rangesConfirmed, at: new Date().toISOString() }) }
     return () => controller.abort(new Error('native provenance probe disposed'))
   })
