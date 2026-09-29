@@ -98,7 +98,7 @@ afterEach(async () => {
 async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   reviewerModel?: { provider: string; model: string }, automaticContinuation = false,
   maxAutomaticRoundsWithoutReport = 3, planCoverageReview = false,
-  planningReadTools: string[] = [], extra: Supervisor.Config = {}): Promise<Context> {
+  planningReadTools: string[] | null = [], extra: Supervisor.Config = {}): Promise<Context> {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(LlmRuntime)
@@ -110,7 +110,7 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
-  if (supervisor) await ctx.plugin(Supervisor, { planningReadTools, automaticContinuation,
+  if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
     maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
   ctx.llm.registerAdapter(['scripted'], adapter)
@@ -1949,4 +1949,92 @@ it('withdraws creation input when the user pauses during its delivery flush', as
   release.resolve(); await create; await agent.whenIdle()
   expect(adapter.requests).toBe(0); expect(taskOf(ctx, agent)?.phase).toBe('paused')
   expect(agent.inbox.nextTurn).toHaveLength(0)
+})
+
+function planningChecks(progress: boolean, verdict = 'pass'): StreamChunk[][] {
+  return [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'planning-read'),
+    toolResponse('task_review_decision', { verdict, finding: '已核对调查与原始要求', evidence_seqs: [0],
+      planning: { facts: ['当前任务要求 Build import'], unknowns: ['实现入口待核对'], nextAction: '提交入口实现与验收计划', progress } }, 'planning-decision')]
+}
+
+it('independently observes tool investigation before a plan exists and preserves manual approval', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-forming-plan-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('inspect_workspace', {}, 'inspect-before-plan'),
+    toolResponse('task_submit_plan', { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }] }, 'formed-plan'), textResponse('等待批准')],
+    reviewer: planningChecks(true) })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { planningSupervision: true, observationToolCalls: 1 })
+  ctx.tools.register(defineContentToolFixture({ name: 'inspect_workspace', description: 'inspect fixture', parameters: {}, execute: async () => [{ type: 'text', text: 'entry is index.mjs' }] }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('forming-plan'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.phase).toBe('awaiting-approval'); expect(task.everApproved).toBe(false)
+  expect(task.planning).toMatchObject({ progress: true, noProgress: 0, nextAction: '提交入口实现与验收计划' })
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1); expect(jobs[0]).toMatchObject({ kind: 'planning', status: 'applied', input: { stages: [] } })
+  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.current?.planning).toEqual(task.planning)
+})
+
+it.each(['needs-user', 'stalled', 'repeated', 'fault'])('handles idle planning %s without execution or fake approval', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-forming-pause-')); roots.push(root)
+  const scripts = mode === 'fault' ? [textResponse('遗漏结构化决定')] : mode === 'needs-user' ? planningChecks(false, 'needs-user') : mode === 'repeated' ? [...planningChecks(true), ...planningChecks(true), ...planningChecks(true)] : [...planningChecks(false), ...planningChecks(false)]
+  const adapter = new ScriptedAdapter({ scripted: [textResponse('仍在形成计划'), textResponse('继续研究')], reviewer: scripts })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { planningSupervision: true })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`planning-${mode}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('paused'), { timeout: 5000 })
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', everApproved: false,
+    pauseReason: mode === 'fault' ? 'review-fault' : mode === 'needs-user' ? 'decision' : 'planning-stalled' })
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(mode === 'repeated' ? 3 : mode === 'stalled' ? 2 : 1)
+  expect(jobs.every(job => job.kind === 'planning')).toBe(true)
+})
+
+it('rejects a planning finding made stale while a downstream native pre-step hook waits', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-late-pause-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('inspect_workspace', {}, 'planning-inspect-late'), textResponse('这条旧纠偏不应生成')], reviewer: planningChecks(true) })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { planningSupervision: true, observationToolCalls: 1 })
+  ctx.tools.register(defineContentToolFixture({ name: 'inspect_workspace', description: 'read fixture', parameters: {}, execute: async () => [{ type: 'text', text: 'entry' }] }))
+  const entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>()
+  ctx.on('agent/pre-step', async ({ agent }, next) => {
+    if (taskOf(ctx, agent)?.planning && agent.id === 'planning-late-pause') { entered.resolve(); await release.promise }
+    return next()
+  })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-late-pause'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await entered.promise
+  const before = adapter.requests
+  await ctx.commands.execute(agent, '/task pause', [], new AbortController().signal)
+  release.resolve(); await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('paused'); expect(adapter.requests).toBe(before)
+})
+
+it('keeps a recovered planning decision stale when a direct user message arrives during review maintenance', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-retry-input-')); roots.push(root)
+  const adapter = new PausingAdapter({ scripted: [textResponse('规划待继续')], reviewer: [textResponse('没有决定'), ...planningChecks(true)] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { planningSupervision: true })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-retry-input'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('review-fault'))
+  await agent.whenIdle()
+  adapter.pauseNext = true; adapter.pauseModel = 'reviewer'
+  const retry = ctx.commands.execute(agent, '/task retry-review', [], new AbortController().signal)
+  await Promise.race([adapter.entered.promise, retry.then(result => { throw new Error(`retry ended before reviewer barrier: ${JSON.stringify(result)}`) })])
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '先不要用这份旧结论' }] }))
+  adapter.release.resolve(); await retry; await agent.whenIdle()
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' })
+  expect(taskOf(ctx, agent)?.planning).toBeUndefined()
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]?.status).toBe('stale')
+})
+
+it('admits an explicit post-approval read turn with native default read tools', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-default-read-gate-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter(), true, undefined, false, 3, false, null)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('default-read-gate'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  const result = await ctx.tools.execute({ callId: ToolCallId('default-gate-plan'), name: 'task_submit_plan', agent, signal: new AbortController().signal,
+    arguments: { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }], read_only_turns_before_write: 1 } })
+  expect(result.isError).toBe(false)
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', readOnlyTurnsBeforeWrite: 1 })
 })

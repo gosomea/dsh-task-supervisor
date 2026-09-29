@@ -4,6 +4,8 @@
 
 The prototype currently requires a small DSH host extension for durable `extension/record` events and reader admission. That extension is in an isolated DSH worktree; it has not been merged into standard DSH. See [implementation status](docs/implementation.md) before installing.
 
+Planning supervision is enabled by default (`planningSupervision`; `maxPlanningWithoutProgress: 2`). Before a submitted plan exists, native step boundaries use the existing activity observation thresholds; a completed planning turn without a submission, or a second truncation after recovery, also requests an independent planning review. Its evidence-linked facts, unknowns and next action stay bound to the requirements version. A pass only continues planning. `needs-user`, exhausted internal recovery and repeated independently judged lack of progress pause with distinct reasons. Disabling `automaticContinuation` prevents new rounds; disabling `observeLongTurns` suppresses in-turn observation, while `planningSupervision: false` suppresses planning reviews entirely.
+
 ## Current workflow
 
 1. `/task new <objective>` starts one supervised task and asks the main Agent to submit acceptance criteria and ordered stages with `task_submit_plan`.

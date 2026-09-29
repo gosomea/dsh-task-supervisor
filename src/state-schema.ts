@@ -35,9 +35,15 @@ export const reviewSchema = z.object({
     reasoningEffort: z.string().optional() }).strict().optional(),
 }).strict()
 const pendingReviewSchema = z.object({
-  kind: z.enum(['stage', 'progress', 'completion']),
+  kind: z.enum(['planning', 'stage', 'progress', 'completion']),
   stageId: z.string().min(1),
   evidence: z.string().min(1),
+}).strict()
+
+export const planningSummarySchema = z.object({
+  facts: z.array(z.string().min(1).max(1200)).max(20),
+  unknowns: z.array(z.string().min(1).max(1200)).max(20),
+  nextAction: z.string().min(1).max(2400), progress: z.boolean(),
 }).strict()
 
 export const reviewFaultSchema = z.object({
@@ -66,6 +72,9 @@ export const taskSchema = z.object({
     noProgress: z.number().int().nonnegative(), evidenceSeqs: z.array(z.number().int().nonnegative()),
     progressFingerprint: z.string(), messageId: z.string(), instruction: z.string() }).strict().optional(),
   responseLanguage: z.string().min(1).optional(),
+  planning: planningSummarySchema.extend({ requirementsVersion: z.number().int().positive(),
+    cutoff: z.number().int().nonnegative(), jobId: z.string().uuid(),
+    noProgress: z.number().int().nonnegative(), evidenceSeqs: z.array(z.number().int().nonnegative()) }).strict().optional(),
   lastApproval: z.object({ planVersion: z.number().int().nonnegative(), userMessageSeq: z.number().int().nonnegative().nullable() }).strict().optional(),
   requirementsVersion: z.number().int().positive(),
   planVersion: z.number().int().nonnegative(),
@@ -83,7 +92,7 @@ export const taskSchema = z.object({
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
   reviewFault: reviewFaultSchema.nullable().optional(),
-  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled']).nullable().optional(),
+  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled', 'planning-stalled']).nullable().optional(),
 }).strict()
 
 export type TaskSnapshot = z.infer<typeof taskSchema>

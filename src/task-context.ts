@@ -40,6 +40,7 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     `Current acceptance: ${JSON.stringify(task.criteria.filter(item => stage?.criterionIds.includes(item.id)))}`,
     task.lastReview === null ? 'No independent review yet.'
       : `Latest independent review: ${task.lastReview.stageId}; ${task.lastReview.verdict}; evidence cutoff ${task.lastReview.cutoff}.\n${excerpt(task.lastReview.finding, 1600)}`,
+    ...task.planning?.requirementsVersion === task.requirementsVersion ? [`Planning facts: ${JSON.stringify(task.planning.facts)}\nUnresolved questions: ${JSON.stringify(task.planning.unknowns)}\nPlanning next action: ${task.planning.nextAction}\nSource evidence seqs: ${task.planning.evidenceSeqs.join(', ')}`] : [],
     'Only accepted nodes are verified. Inspect existing work before repeating uncertain effects. Original user constraints remain authoritative. Use task_status for full plan and findings.',
     `Next action: ${instruction}`,
   ].join('\n\n')

@@ -66,6 +66,8 @@ export interface Config {
   planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
   automaticContinuation?: boolean
+  planningSupervision?: boolean
+  maxPlanningWithoutProgress?: number
   truncationRecovery?: boolean
   maxRecoveryWithoutProgress?: number
 }
@@ -117,6 +119,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   const recoveryLimit = config.maxRecoveryWithoutProgress ?? 2
   if (!Number.isSafeInteger(recoveryLimit) || recoveryLimit < 1 || recoveryLimit > 10) throw new TypeError('maxRecoveryWithoutProgress must be 1–10')
   if (config.truncationRecovery !== undefined && typeof config.truncationRecovery !== 'boolean') throw new TypeError('truncationRecovery must be a boolean')
+  const planningLimit = config.maxPlanningWithoutProgress ?? 2
+  if (!Number.isSafeInteger(planningLimit) || planningLimit < 1 || planningLimit > 10) throw new TypeError('maxPlanningWithoutProgress must be 1–10')
+  if (config.planningSupervision !== undefined && typeof config.planningSupervision !== 'boolean') throw new TypeError('planningSupervision must be a boolean')
   const closeWithResponse = installClosingResponse(ctx)
   const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
     elapsedMs: config.observationIntervalMs ?? 300000, consecutiveErrors: config.observationConsecutiveErrors ?? 3 }
@@ -125,7 +130,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
   if (config.observeLongTurns !== undefined && typeof config.observeLongTurns !== 'boolean') throw new TypeError('observeLongTurns must be a boolean')
   if (config.integrationTools !== undefined && (!config.integrationTools.length || config.integrationTools.some(name => typeof name !== 'string' || !name.trim()))) throw new TypeError('integrationTools must contain nonempty native tool names')
-  const planningReadTools = config.planningReadTools ?? []
+  const planningReadTools = config.planningReadTools ?? ['read', 'glob', 'grep']
   if (!Array.isArray(planningReadTools) || planningReadTools.some(tool => typeof tool !== 'string' || !tool.trim())) {
     throw new TypeError('planningReadTools must contain nonempty tool names')
   }
@@ -348,38 +353,54 @@ export function apply(ctx: Context, config: Config = {}): void {
     return paused
   }
 
-  async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal): Promise<TaskSnapshot | null> {
+  async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal, atIdle = false): Promise<TaskSnapshot | null> {
     const life = runtime(agent)
-    if (progressReviewMode === 'required-only' || config.observeLongTurns === false || !life.armed || !task.enabled || task.phase !== 'active'
-      || reviewAbort.has(agent)) return null
+    const planning = task.phase === 'planning'
+    const ending = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+    if (atIdle && planning && task.planning && (ending?.seq ?? -1) <= task.planning.cutoff) return null
+    if ((planning ? config.planningSupervision === false : progressReviewMode === 'required-only')
+      || (!atIdle && config.observeLongTurns === false) || !life.armed || !task.enabled || !['planning', 'active'].includes(task.phase)
+      || reviewAbort.has(agent) || hasPending(agent)) return null
     const node = task.stages[task.stageIndex]
-    const key = `${task.id}:${task.planVersion}:${node?.id}:${runsOf(task).find(run => run.id === node?.id)?.attempt}`
+    const key = planning ? `${task.id}:planning:${task.requirementsVersion}`
+      : `${task.id}:${task.planVersion}:${node?.id}:${runsOf(task).find(run => run.id === node?.id)?.attempt}`
     if (life.observation?.key !== key) {
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
-      return null
+      if (!atIdle) return null
     }
-    const reason = observationReason(agent.session.snapshotEvents(), life.observation, observationPolicy, Date.now())
+    const reason = atIdle ? 'Planning turn ended without a submitted plan' : observationReason(agent.session.snapshotEvents(), life.observation, observationPolicy, Date.now())
     if (reason === null) return null
-    const stageId = node?.id ?? 'completion'
+    const stageId = planning ? 'planning' : node?.id ?? 'completion'
     const abort = new AbortController()
     reviewAbort.set(agent, abort)
     try {
       const reviewSignal = AbortSignal.any([signal, abort.signal])
       const decision = await reviewStage(ctx, agent, task, stageId,
-        `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
-        reviewSignal, config.reviewerModel, 'progress', selectedReviewPolicy)
+        planning ? `Planning observation: ${reason}. Read actual investigation since the previous planning cutoff ${task.planning?.cutoff ?? 'none'}. No submitted DAG exists yet; separate confirmed facts from unknowns and propose one concrete next output. Duration/activity alone does not imply drift.`
+          : `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
+        reviewSignal, config.reviewerModel, planning ? 'planning' : 'progress', selectedReviewPolicy)
       reviewSignal.throwIfAborted()
       const latest = current(agent)
-      if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
+      if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed || hasPending(agent)) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
+      const sameSummary = planning && latest.planning && decision.planning
+        && JSON.stringify([...latest.planning.facts].sort()) === JSON.stringify([...decision.planning.facts].sort())
+        && JSON.stringify([...latest.planning.unknowns].sort()) === JSON.stringify([...decision.planning.unknowns].sort())
+      const planningProgress = decision.planning?.progress === true && !sameSummary
+      const noProgress = planning && !planningProgress ? (latest.planning?.noProgress ?? 0) + 1 : 0
+      const stalled = planning && noProgress >= planningLimit
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
-        phase: decision.verdict === 'needs-user' ? 'paused' : 'active', roundsSinceReview: 0,
-        reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
+        ...planning && decision.planning ? { planning: { ...decision.planning, progress: planningProgress, requirementsVersion: latest.requirementsVersion,
+          cutoff: decision.cutoff, jobId: decision.jobId, evidenceSeqs: decision.evidenceSeqs, noProgress } } : {},
+        phase: decision.verdict === 'needs-user' || stalled ? 'paused' : planning ? 'planning' : 'active', roundsSinceReview: 0,
+        reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : stalled ? 'planning-stalled' : null,
         lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
           imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
       appendTask(ctx, agent, next)
       await finishReviewRecord(agent, decision.jobId, 'applied')
       await flush(agent)
-      life.armed = next.phase === 'active'
+      reviewSignal.throwIfAborted()
+      if (disposed || current(agent)?.revision !== next.revision || hasPending(agent)) { life.armed = false; return null }
+      life.armed = next.phase === 'active' || next.phase === 'planning'
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
       return next
     } catch (error: unknown) {
@@ -408,9 +429,26 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (observed?.phase === 'paused') return { kind: 'reject' }
     const decision = await next()
     if (observed === null || decision.kind === 'reject') return decision
+    const admitted = current(agent)
+    if (disposed || signal.aborted || admitted?.id !== observed.id || admitted.revision !== observed.revision
+      || !admitted.enabled || !life.armed || hasPending(agent)) return { kind: 'reject' }
     return { ...decision, messages: [...decision.messages, inputFor(observed,
-      `Continue in this same turn under the progress finding: ${observed.lastReview?.finding}. A progress pass does not complete a node.`)] }
+      observed.phase === 'planning' ? `Continue planning: ${observed.planning?.nextAction}. This review does not approve implementation.`
+        : `Continue in this same turn under the progress finding: ${observed.lastReview?.finding}. A progress pass does not complete a node.`)] }
   })
+
+  /** Idle planning inspection shares native admission; delivery uses a separate maintenance job. */
+  async function reviewPlanning(agent: Agent, expected: TaskSnapshot): Promise<void> {
+    const observed = await agent.runMaintenance(async signal => {
+      const actual = current(agent)
+      if (disposed || actual?.id !== expected.id || actual.revision !== expected.revision || hasPending(agent)) return null
+      return observeStep(agent, actual, signal, true)
+    })
+    if (!observed && current(agent)?.revision === expected.revision && !hasPending(agent)) runtime(agent).armed = false
+    if (observed?.phase !== 'planning' || !runtime(agent).armed || config.automaticContinuation === false) return
+    await commitAndWake(agent, observed, { ...observed, revision: observed.revision + 1 },
+      `Continue planning from independently confirmed facts. Next action: ${observed.planning?.nextAction}. Submit task_submit_plan when ready; implementation is not approved.`)
+  }
 
   async function reviewProgress(agent: Agent, expected: TaskSnapshot): Promise<void> {
     await agent.runMaintenance(async maintenanceSignal => {
@@ -465,8 +503,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     })
   }
 
-  ctx.on('agent/status', ({ agent, status }) => {
-    if (status !== 'idle') return
+  function onIdle(agent: Agent): void {
     const life = runtime(agent)
     life.ownedTurn = false
     if (config.automaticContinuation === false && taskOf(ctx, agent)?.phase === 'planning'
@@ -477,6 +514,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (task === null || !['active', 'planning'].includes(task.phase) || !task.enabled || !runtime(agent).armed
       || hasPending(agent) || reviewAbort.has(agent) || task.pendingReview !== null) return
     scheduling.add(agent)
+    const admittedEnd = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.seq ?? -1
     void ctx.agents.withoutInitiator(async () => {
       try {
         const latest = current(agent)
@@ -486,6 +524,10 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (ending?.type === 'turn/end' && !['completed', 'max-tokens'].includes(ending.data.reason.kind)) { runtime(agent).armed = false; return }
         const boundary = recoveryBoundary(agent.session.snapshotEvents(), latest)
         if (boundary && config.truncationRecovery === false) { runtime(agent).armed = false; return }
+        if (latest.phase === 'planning' && config.planningSupervision !== false && boundary && latest.recovery) {
+          await reviewPlanning(agent, latest)
+          return
+        }
         if (config.truncationRecovery !== false) {
           if (boundary && latest.recovery?.endSeq !== boundary.endSeq) {
             const noProgress = latest.recovery?.progressFingerprint === boundary.progressFingerprint
@@ -506,7 +548,11 @@ export function apply(ctx: Context, config: Config = {}): void {
             return
           }
         }
-        if (latest.phase === 'planning') { runtime(agent).armed = false; return }
+        if (latest.phase === 'planning') {
+          if (config.planningSupervision !== false && ending?.type === 'turn/end' && ending.data.reason.kind === 'completed') await reviewPlanning(agent, latest)
+          else runtime(agent).armed = false
+          return
+        }
         if (progressReviewMode !== 'required-only' && latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
           await reviewProgress(agent, latest)
           return
@@ -522,9 +568,14 @@ export function apply(ctx: Context, config: Config = {}): void {
         ctx.logger.warn(`Supervisor continuation for ${agent.id} failed: ${String(error)}`)
       } finally {
         scheduling.delete(agent)
+        // A very short continuation can finish while the previous maintenance job releases.
+        // Reinspect only a newer native ending; never re-drive the same idle notification.
+        if (!disposed && ctx.agents.get(agent.id) === agent && agent.status === 'idle' && taskOf(ctx, agent)?.phase === 'planning'
+          && (agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.seq ?? -1) > admittedEnd) onIdle(agent)
       }
     })
-  })
+  }
+  ctx.on('agent/status', ({ agent, status }) => { if (status === 'idle') onIdle(agent) })
   ctx.on('agent/disposed', ({ agent }) => {
     reviewAbort.get(agent)?.abort()
     reviewAbort.delete(agent)
@@ -633,10 +684,11 @@ export function apply(ctx: Context, config: Config = {}): void {
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,
+            ...task.planning ? { planning: { ...task.planning, noProgress: 0 } } : {},
             reviewFault: null, pauseReason: null, ...task.recovery ? { recovery: { ...task.recovery, noProgress: 0 } } : {} }
           await commitAndWake(agent, task, next,
             interruptedReview !== null
-              ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
+              ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'planning' ? 'task_submit_plan' : interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
               : next.phase === 'planning' ? `Resume planning: ${next.objective}. Submit the plan with task_submit_plan.`
                 : executionPrompt(agent, next,
                   'Resume the approved task. Check the current workspace before repeating any uncertain effects.'))
@@ -653,7 +705,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
             approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
-            phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null, recovery: undefined }
+            phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null, recovery: undefined, planning: undefined }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
             await flush(agent)
@@ -792,7 +844,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           reviewAbort.delete(agent)
         }
         const latest = current(agent)
-        if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled) {
+        if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || hasPending(agent)) {
           await finishReviewRecord(agent, planDecision.jobId, 'stale')
           throw new Error('plan review became stale after a task change')
         }
@@ -856,8 +908,13 @@ export function apply(ctx: Context, config: Config = {}): void {
         const decision = await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
           config.reviewerModel, job.kind, selectedReviewPolicy, job)
         const actual = current(agent)
-        if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled) {
+        if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled || hasPending(agent)) {
           await finishReviewRecord(agent, decision.jobId, 'stale')
+          if (actual?.id === reviewing.id && actual.revision === reviewing.revision) {
+            appendTask(ctx, agent, { ...actual, revision: actual.revision + 1, phase: 'paused', pauseReason: 'user', pendingReview: null, reviewFault: null })
+            runtime(agent).armed = false
+            await flush(agent)
+          }
           throw new Error('review recovery became stale')
         }
         let next: TaskSnapshot = { ...actual, revision: actual.revision + 1, pendingReview: null, reviewFault: null,
@@ -875,7 +932,9 @@ export function apply(ctx: Context, config: Config = {}): void {
             nodeRuns: job.input.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending', evidenceAfterSeq: agent.session.seq })),
             readOnlyTurnsBeforeWrite: job.input.readOnlyTurnsBeforeWrite ?? 0,
             approvedPlanVersion: expected.everApproved ? expected.planVersion + 1 : null }
-        } else if (job.kind === 'stage') next = finishNode(next, job.stageId, decision.verdict, agent.session.seq)
+        } else if (job.kind === 'planning') next = { ...next, phase: decision.verdict === 'needs-user' ? 'paused' : 'planning',
+          ...decision.planning ? { planning: { ...decision.planning, requirementsVersion: next.requirementsVersion, cutoff: decision.cutoff, jobId: decision.jobId, evidenceSeqs: decision.evidenceSeqs, noProgress: 0 } } : {} }
+        else if (job.kind === 'stage') next = finishNode(next, job.stageId, decision.verdict, agent.session.seq)
         appendTask(ctx, agent, next)
         await finishReviewRecord(agent, decision.jobId, 'applied')
         await flush(agent)
