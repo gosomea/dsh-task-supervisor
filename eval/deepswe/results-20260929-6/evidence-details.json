@@ -1,0 +1,903 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-posthoc-evidence-details",
+  "planned": 16,
+  "sealed": 6,
+  "deliveredInSealedResults": 4,
+  "terminalCounts": {
+    "infrastructure-fault": 3,
+    "native-stopped": 3
+  },
+  "gradingStartedPositions": 3,
+  "gradingFaultPositions": 0,
+  "unstartedGradeFaultPositions": 3,
+  "allSessionTokens": null,
+  "tokensReportedLowerBound": {
+    "uncachedInputTokens": 201321,
+    "outputTokens": 255689,
+    "cacheReadTokens": 2397952,
+    "cacheWriteTokens": 0
+  },
+  "tokenUnknownPositions": 10,
+  "counters": {
+    "reviewWaitMs": {
+      "measuredSum": 0,
+      "unknownPositions": 14
+    },
+    "checkWaitMs": {
+      "measuredSum": 0,
+      "unknownPositions": 14
+    },
+    "repairTurns": {
+      "measuredSum": 0,
+      "unknownPositions": 10
+    },
+    "humanInterventions": {
+      "measuredSum": 1,
+      "unknownPositions": 10
+    },
+    "extraCheckCpuNs": {
+      "measuredSum": null,
+      "unknownPositions": 16
+    },
+    "checkCount": {
+      "measuredSum": 0,
+      "unknownPositions": 12
+    },
+    "independentReviewJobs": {
+      "measuredSum": 0,
+      "unknownPositions": 12
+    },
+    "independentComparisonJobs": {
+      "measuredSum": 0,
+      "unknownPositions": 12
+    },
+    "unreportedAttempts": {
+      "measuredSum": 0,
+      "unknownPositions": 12
+    }
+  },
+  "pairedTaskRepeats": [
+    {
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "conditions": {
+        "goal": {
+          "id": "helm-array-merge-strategies-r1-goal",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": true
+        },
+        "supervisor-independent": {
+          "id": "helm-array-merge-strategies-r1-supervisor-independent",
+          "primarySuccess": false,
+          "officialReward": null,
+          "sealed": true
+        },
+        "plan": {
+          "id": "helm-array-merge-strategies-r1-plan",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "supervisor-log": {
+          "id": "helm-array-merge-strategies-r1-supervisor-log",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        }
+      }
+    },
+    {
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "conditions": {
+        "plan": {
+          "id": "helm-array-merge-strategies-r2-plan",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": true
+        },
+        "supervisor-independent": {
+          "id": "helm-array-merge-strategies-r2-supervisor-independent",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "goal": {
+          "id": "helm-array-merge-strategies-r2-goal",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "supervisor-log": {
+          "id": "helm-array-merge-strategies-r2-supervisor-log",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        }
+      }
+    },
+    {
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "conditions": {
+        "plan": {
+          "id": "kea-atomic-signal-selectors-r1-plan",
+          "primarySuccess": false,
+          "officialReward": 0,
+          "sealed": true
+        },
+        "supervisor-independent": {
+          "id": "kea-atomic-signal-selectors-r1-supervisor-independent",
+          "primarySuccess": false,
+          "officialReward": 0,
+          "sealed": true
+        },
+        "supervisor-log": {
+          "id": "kea-atomic-signal-selectors-r1-supervisor-log",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "goal": {
+          "id": "kea-atomic-signal-selectors-r1-goal",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        }
+      }
+    },
+    {
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "conditions": {
+        "goal": {
+          "id": "kea-atomic-signal-selectors-r2-goal",
+          "primarySuccess": false,
+          "officialReward": 0,
+          "sealed": true
+        },
+        "plan": {
+          "id": "kea-atomic-signal-selectors-r2-plan",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "supervisor-independent": {
+          "id": "kea-atomic-signal-selectors-r2-supervisor-independent",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        },
+        "supervisor-log": {
+          "id": "kea-atomic-signal-selectors-r2-supervisor-log",
+          "primarySuccess": null,
+          "officialReward": null,
+          "sealed": false
+        }
+      }
+    }
+  ],
+  "positions": [
+    {
+      "id": "helm-array-merge-strategies-r1-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "goal",
+      "sealed": true,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault",
+      "executionVersions": {},
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": "0c792d8b66482c07b2a29cd775784e44771520ba8c703e0bacc91b0c9d9080f0",
+      "delivered": false,
+      "graderStarted": false,
+      "tokens": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": "db1d5c9c3733b18d24f17017e937638d391c82b1eb5cbe10413b2924d9057459",
+      "sessionCount": null,
+      "gradingFault": {
+        "present": true,
+        "code": "pre-delivery-infrastructure-failure",
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": null,
+        "readFiles": null
+      },
+      "reviewWaitMs": 0,
+      "checkWaitMs": 0,
+      "repairTurns": 0,
+      "humanInterventions": 0,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "plan",
+      "sealed": true,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault",
+      "executionVersions": {},
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": "2fd2bb5bf638c27403f6afdb381feaf9c4156f48e17e6d2b6cbf4cd105e5b179",
+      "delivered": false,
+      "graderStarted": false,
+      "tokens": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": {
+        "present": true,
+        "code": "pre-delivery-plan-transport-infrastructure-failure",
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": null,
+        "readFiles": null
+      },
+      "reviewWaitMs": 0,
+      "checkWaitMs": 0,
+      "repairTurns": 0,
+      "humanInterventions": 0,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "goal",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": 0,
+      "terminalStatus": "native-stopped",
+      "executionVersions": {
+        "launchReleaseSha256": "f940671b679c2efccd8c18b8741f5ee7667a1a2bd76eead8af1fb7bcd432382a",
+        "observerReleaseSha256": "63e186eda51249478178b545c745f6ca46c56bfd25c30ca704575b8ea2b63300",
+        "terminationPolicySha256": "a894c487a0524c0835e678b8a84d9c8b813f4bdf27aa1cfc86b45639c9ba3176"
+      },
+      "controlProtocolDeviation": true,
+      "nativeStop": {
+        "kind": "goal-round-driver-disarmed",
+        "reason": "max-tokens",
+        "activationObservation": "source-policy-inference-not-persisted-state",
+        "turn": 1,
+        "seq": 91,
+        "nativeStoppedAtUnix": 1790666105.548,
+        "planModeSeq": null,
+        "taskRevision": null,
+        "taskStateSeq": null,
+        "planModeActive": null,
+        "driverSourceSha256": "3aa362932c39ef300524051ce2d2998d049c765afeb548cb9a4941830fe61fac"
+      },
+      "resultSha256": "dad6998bdd6b75217f2449e2a87e80710b67b7c7348b12350be0d1cb8bd34d78",
+      "delivered": true,
+      "graderStarted": true,
+      "tokens": {
+        "uncachedInputTokens": 45417,
+        "outputTokens": 41683,
+        "cacheReadTokens": 230528,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 45417,
+        "outputTokens": 41683,
+        "cacheReadTokens": 230528,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": null,
+      "sessionCount": 1,
+      "gradingFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": 0,
+        "readFiles": 0
+      },
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": 0,
+      "humanInterventions": 1,
+      "extraCheckCpuNs": null,
+      "checkCount": 0,
+      "independentReviewJobs": 0,
+      "independentComparisonJobs": 0,
+      "unreportedAttempts": 0
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-independent",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault",
+      "executionVersions": {
+        "launchReleaseSha256": "63e186eda51249478178b545c745f6ca46c56bfd25c30ca704575b8ea2b63300",
+        "observerReleaseSha256": "63e186eda51249478178b545c745f6ca46c56bfd25c30ca704575b8ea2b63300",
+        "terminationPolicySha256": "a894c487a0524c0835e678b8a84d9c8b813f4bdf27aa1cfc86b45639c9ba3176"
+      },
+      "controlProtocolDeviation": false,
+      "nativeStop": null,
+      "resultSha256": "086b443ef298b1da307879fe053573c83f4b7c7ade2f4e1f05ec58b1a8daf94d",
+      "delivered": true,
+      "graderStarted": false,
+      "tokens": {
+        "uncachedInputTokens": 63438,
+        "outputTokens": 48267,
+        "cacheReadTokens": 1403264,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 63438,
+        "outputTokens": 48267,
+        "cacheReadTokens": 1403264,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": null,
+      "sessionCount": 1,
+      "gradingFault": {
+        "present": true,
+        "code": "execution-not-quiescent-or-submission-missing",
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": 0,
+        "readFiles": 0
+      },
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": 0,
+      "humanInterventions": 0,
+      "extraCheckCpuNs": null,
+      "checkCount": 0,
+      "independentReviewJobs": 0,
+      "independentComparisonJobs": 0,
+      "unreportedAttempts": 0
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "plan",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": 0,
+      "terminalStatus": "native-stopped",
+      "executionVersions": {
+        "launchReleaseSha256": "b13dac84cd69a9742484eea4815fb3ea4f1873e9edd7c2754daab92ba1e50180",
+        "observerReleaseSha256": "f1cd06cf839b39a53d862716154b32d17b274a4b01e826ce6de0905bf711676a",
+        "terminationPolicySha256": "9befcc681403d5fe63166a48272ba98962e3ad5534f726419e5e6f70bd441011"
+      },
+      "controlProtocolDeviation": true,
+      "nativeStop": {
+        "kind": "plan-mode-no-continuation",
+        "reason": "max-tokens",
+        "activationObservation": "no-auto-continuation-source-policy",
+        "turn": 1,
+        "seq": 137,
+        "nativeStoppedAtUnix": 1790679607.253,
+        "planModeSeq": 8,
+        "taskRevision": null,
+        "taskStateSeq": null,
+        "planModeActive": true,
+        "driverSourceSha256": "be75cc93d0774f33488b13eadace936603ddfbe5e28ae11d7027cee8ddd929e8"
+      },
+      "resultSha256": "db73aebfed1044b016a1aeeaec73774aae4d29d9be38d21ce54c488aae170711",
+      "delivered": true,
+      "graderStarted": true,
+      "tokens": {
+        "uncachedInputTokens": 49008,
+        "outputTokens": 94610,
+        "cacheReadTokens": 471552,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 49008,
+        "outputTokens": 94610,
+        "cacheReadTokens": 471552,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": null,
+      "sessionCount": 1,
+      "gradingFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": 0,
+        "readFiles": 0
+      },
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": 0,
+      "humanInterventions": 0,
+      "extraCheckCpuNs": null,
+      "checkCount": 0,
+      "independentReviewJobs": 0,
+      "independentComparisonJobs": 0,
+      "unreportedAttempts": 0
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-independent",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": 0,
+      "terminalStatus": "native-stopped",
+      "executionVersions": {
+        "launchReleaseSha256": "f1cd06cf839b39a53d862716154b32d17b274a4b01e826ce6de0905bf711676a",
+        "observerReleaseSha256": "259e108a6b12a2462534185d2c1964506114675f206a7a048e78fa3c3e5ed1ba",
+        "terminationPolicySha256": "d4ce9d0918b2cb9deb3782e4140c08ba9a5ca01cc0980543f48363d0177174cb"
+      },
+      "controlProtocolDeviation": true,
+      "nativeStop": {
+        "kind": "supervisor-planning-no-continuation",
+        "reason": "max-tokens",
+        "activationObservation": "planning-phase-source-policy-not-persisted-state",
+        "turn": 1,
+        "seq": 106,
+        "nativeStoppedAtUnix": 1790680951.046,
+        "planModeSeq": null,
+        "taskRevision": 1,
+        "taskStateSeq": 8,
+        "taskId": "5de6ee8d-586a-4ac4-b572-818ee013135d",
+        "planModeActive": null,
+        "driverSourceSha256": "7e7a36b77cd0d9c8282841a867ae2656c09cef6fe66ced4bdd4a7bcd0db46224"
+      },
+      "resultSha256": "9789923fdc11dc59e6e214dd022c9f246345d8863ae00d226d1a58c9548e056a",
+      "delivered": true,
+      "graderStarted": true,
+      "tokens": {
+        "uncachedInputTokens": 43458,
+        "outputTokens": 71129,
+        "cacheReadTokens": 292608,
+        "cacheWriteTokens": 0
+      },
+      "tokensReported": {
+        "uncachedInputTokens": 43458,
+        "outputTokens": 71129,
+        "cacheReadTokens": 292608,
+        "cacheWriteTokens": 0
+      },
+      "tokenSupplementSha256": null,
+      "sessionCount": 1,
+      "gradingFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "reviewFault": {
+        "present": false,
+        "code": null,
+        "errorType": null
+      },
+      "internalReviewFaults": {},
+      "independentEvidenceCoverage": {
+        "applicableCriterionFindings": 0,
+        "readFiles": 0
+      },
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": 0,
+      "humanInterventions": 0,
+      "extraCheckCpuNs": null,
+      "checkCount": 0,
+      "independentReviewJobs": 0,
+      "independentComparisonJobs": 0,
+      "unreportedAttempts": 0
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "plan",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-independent",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-independent",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "plan",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "goal",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "goal",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null,
+      "executionVersions": null,
+      "controlProtocolDeviation": null,
+      "nativeStop": null,
+      "resultSha256": null,
+      "delivered": null,
+      "graderStarted": null,
+      "tokens": null,
+      "tokensReported": null,
+      "tokenSupplementSha256": null,
+      "sessionCount": null,
+      "gradingFault": null,
+      "reviewFault": null,
+      "internalReviewFaults": null,
+      "independentEvidenceCoverage": null,
+      "reviewWaitMs": null,
+      "checkWaitMs": null,
+      "repairTurns": null,
+      "humanInterventions": null,
+      "extraCheckCpuNs": null,
+      "checkCount": null,
+      "independentReviewJobs": null,
+      "independentComparisonJobs": null,
+      "unreportedAttempts": null
+    }
+  ],
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "limitations": [
+    "The frozen primary definition is unchanged; unverified route positions remain unknown.",
+    "Two tasks and two repeats do not establish superiority or statistical independence.",
+    "Finding/file counts measure recorded coverage, not evidence correctness.",
+    "Raw result files remain unchanged; an applied token supplement has its own hash."
+  ],
+  "summaryReaderSha256": "a2be804e5d48dd372882f4231a082d9c48346b1a59004af9f102f288d64d43fd",
+  "exporterSha256": "b00bc04a2ff2d136c7d4df381d4c394b6978ad4cf1b22f348059237b8d1304be",
+  "sampleSha256": "d0947d610b20a0fa090007c9f869c1b830e93e94e6e4f8ee8595c9e1a2e96292",
+  "partial": true
+}

@@ -140,6 +140,10 @@ python3 -m unittest discover -s eval/deepswe -v
 
 [Supervisor 规划停止回归记录](supervisor-planning-stop-recovery-20260929.json)保存原 Session、截止与安全证据哈希。73 项聚焦测试和父代理真实日志回放通过：旧判断 running、新判断 native-stopped，nativeFinished=false。唯一旧评测控制器按精确身份停止，原 Host、Session、截止保留，没有追加模型投递或批准；等待新冻结观察器准入后接续评分。这轮只修评测器，不改变冻结插件的行为。
 
+新版 Supervisor 规划停止规则已完成冻结准入并接续原 Session，见[准入与评分记录](supervisor-planning-stop-admission-20260929.json)。第六次独立官方奖励为 0，139/151 测试通过；完整 Token 为 407,195，清理确认通过，批准和救场均为 0。原投递 v7／观察 v8 的控制版本偏差保留。[6 个位置的部分报告](results-20260929-6/report.zh.md)保留三次基础设施故障与三次有效评分；剩余十次由唯一控制器按原顺序推进。
+
+第七次原 Kea r2 Plan 已实际投递，Session 为 session-6a3c8820-8e0a-4bf1-8375-a9326b9fdbd6，原三小时窗口保持。记录时模型请求匹配冻结路由并返回 200，尚未批准；投递与观察均使用 v8。当前 6/16 已封口、1 次运行、9 次尚未投递。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。

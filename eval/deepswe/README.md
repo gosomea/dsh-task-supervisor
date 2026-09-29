@@ -140,6 +140,10 @@ The explicit nativeSupervisorPlanningStop and supervisorPluginSha256 policy pins
 
 The [Supervisor planning stop regression record](supervisor-planning-stop-recovery-20260929.json) preserves the original Session, deadline and safe evidence hashes. All 73 focused tests and the parent's actual-log replay passed: old observation running, new native-stopped, nativeFinished=false. Only the exact old evaluation controller was stopped; the original Host, Session and deadline remain, with no added model delivery or approval. Scoring awaits admission of the new frozen observer. This changes the evaluator, not frozen plugin behavior.
 
+The new Supervisor planning stop rule was admitted and resumed the original Session; see the [admission and scoring record](supervisor-planning-stop-admission-20260929.json). Position six received official reward 0 with 139/151 passing tests and 407,195 complete Tokens; cleanup was acknowledged, with zero approvals and rescues. Launch v7 versus observer v8 remains a control version deviation. The [six-position partial report](results-20260929-6/report.zh.md) retains three infrastructure faults and three valid grades; the single controller advances the remaining ten in the original order.
+
+Original position seven, Kea r2 Plan, was delivered to Session session-6a3c8820-8e0a-4bf1-8375-a9326b9fdbd6 with the original three-hour window. At observation, requests matched the frozen route and returned 200, with no approval yet; launch and observer both use v8. Six of sixteen positions are sealed, one is running and nine remain undelivered.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.
