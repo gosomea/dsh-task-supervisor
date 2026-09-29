@@ -1,0 +1,4 @@
+# Bilingual-pair consistency record: confirmed matching English and Chinese proposal.
+# Both languages carry equal authority. Re-record git blob hashes after paired edits.
+2026-09-29-planning-supervision.md: 0f6b2032f85bbf346f263b61697465e7050f4ebe
+2026-09-29-planning-supervision.zh.md: 85c4088b35b74e3265db3ed470368327bef2b3a5

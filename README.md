@@ -13,6 +13,8 @@ The prototype currently requires a small DSH host extension for durable `extensi
 5. `/task pause`, `/task off`, `/task on`, `/task resume`, `/task edit <objective>`, and `/task clear` control the lifecycle. Plan, stage, and completion checkpoints show separate cards for the main Agent's submission and the Supervisor's independent review, with event and reviewer Session references. Each side's remaining content expands separately. The right sidebar shows state and the relevant controls, including an explicit **Close Supervisor** button. A host restart restores the task but waits for manual resume.
 6. For a defect within a completed objective, propose impact through `task_propose_repair` or consultation. A user click returns the same task to its original DAG. Execution waits for confirmation; historical acceptance remains and affected nodes are reviewed again. See the [repair protocol](docs/completed-task-repair.md) and [validation evidence](docs/completed-task-repair-validation.md).
 
+Both the main Session and current task consultation accept `/task` commands; sidebar commands reach the same main-Session controller. Ordinary consultation leaves the task unchanged; explicit “pause task”, “resume task”, or “new task: complete objective” after completion forwards a control action. New tasks and pauses open the sidebar’s Task details tab. Older consultation remains historical and cannot control a newer task. Its composer stays at the sidebar bottom; task controls belong to Task details.
+
 After a task finishes, the same main Session can start another. The sidebar's **Task history** view reads completed and cleared tasks from the native Session log on demand, with read-only plans, nodes, and reviews. Its **New task** form submits to the existing `/task new` controller. The main Session's compact DAG follows only the current task; completed tasks show their final state without a prominent Clear task button. `/task clear` remains available for deliberate cancellation.
 
 For objectives that require completed read-only model turns after approval, the plan can set `read_only_turns_before_write` (0–10). The controller blocks writes until that many read-only turns have completed; interrupted turns do not count. This gate covers this explicit action-order constraint; it does not compile arbitrary natural-language timing requirements into rules.
@@ -50,6 +52,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
+| [Planning supervision and truncation recovery proposal](.agents/notes/proposed/feature/2026-09-29-planning-supervision.md) | Proposed: observation during plan formation, bounded contextual continuation and optional user-preauthorized execution approval. |
 | [Evaluation design and execution roadmap](docs/evaluation.md) | Public benchmarks first; datasets, comparison arms, metrics, checklist, and development-result links. |
 | [First prototype](docs/prototype.md) | Acceptance gates and comparison with Agent Team. |
 | [Supervisor Session](docs/session-runtime.md) | Durable control and recovery design. |

@@ -52,6 +52,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
+| [规划监督与截断恢复提案](.agents/notes/proposed/feature/2026-09-29-planning-supervision.zh.md) | 待实现：规划形成期间的观察、有上下文的有限续行与用户可选的自动执行批准。 |
 | [评测设计与执行路线](docs/evaluation.zh.md) | 公开基准优先；统一数据集、对照组、指标、待办与开发结果入口。 |
 | [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
 | [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |
