@@ -102,6 +102,8 @@ The new release explicitly binds `controlTerminationPolicy`: `nativeGoalStop=tru
 
 The repair retains the first two infrastructure failures and the third delivered Session, original deadline and logs without Agent redelivery. Launch and observer release hashes are recorded separately; mixed versions are marked as control protocol deviations. Remaining positions resume in the original order after freezing the new version. Recovery rereads the terminal under lock to avoid repeated cleanup. Failed new-policy admission cleans up an existing attempt only after checking exact container ownership and records the fault. All 36 control/stop tests and six export tests passed. Replay of the same real Session gives running with the old observer and native-stopped with the new observer. This record does not claim the remaining positions have completed or official grading has succeeded.
 
+The new observer is admitted and the single batch controller has started; see the [recovery admission record](native-stop-admission-20260929.json). At that observation, two of 16 positions were sealed. Recovery/grading of the third and the remaining 13 were pending; controller startup is not evaluation completion.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.

@@ -1,0 +1,33 @@
+{
+  "kind": "deepswe-native-stop-observer-admission",
+  "admitted": true,
+  "atUnix": 1790676522.9349859,
+  "runnerCommit": "b16c45e8c004b6f878c5111af277acb89d75fb3e",
+  "candidateSha256": "d40c6f552b829a972aeb9506985de4d1505e5d68dc8fcb4b3776b3aadd5ce1cb",
+  "manifestSha256": "68be872ee5ee92594d181d1b7ecce634d98e39a850d7783298c528219114fc3e",
+  "protocolSha256": "91d00a79a662a06cc64879d0da18dd114ecfc660c5947a07d6b4075f20328321",
+  "policy": {
+    "nativeGoalStop": true,
+    "goalDriverSha256": "3aa362932c39ef300524051ce2d2998d049c765afeb548cb9a4941830fe61fac",
+    "pauseDisposition": "seal-without-rescue"
+  },
+  "sameSessionRecovery": true,
+  "priorResultsUnchanged": 2,
+  "originalStartedUnchanged": true,
+  "modelRequestsDuringPreparation": 0,
+  "reviewTests": 42,
+  "remainingUndeliveredPositions": 13,
+  "denominator": 16,
+  "remoteCommitVerified": true,
+  "schemaVersion": 1,
+  "controllerLaunchReceiptSha256": "99166e1c1541768601958fcff9befb5cb17d965a05999ee696aa10345ee9d911",
+  "controllerStartIdentity": "Tue Sep 29 18:09:21 2026",
+  "observedAtUnix": 1790676610.4586759,
+  "sealedAtObservation": 2,
+  "resumedPosition": "kea-atomic-signal-selectors-r2-goal",
+  "originalDeadlineAtUnix": 1790676669.47124,
+  "formalSuccessesClaimed": false,
+  "thirdPositionGrade": "pending",
+  "remainingPositionStatus": "pending",
+  "activatedObservation": "source-policy-inference-not-persisted-state"
+}
