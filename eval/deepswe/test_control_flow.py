@@ -2,6 +2,7 @@
 import tempfile
 import json
 import os
+import subprocess
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -229,6 +230,43 @@ class ControlFlowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'storage metadata'):
             launch(spec)
         self.assertFalse(home.exists())
+
+    def test_network_helper_overrides_inherited_shell_entrypoint(self):
+        home = self.journal.root / 'network-home'
+        template = self.journal.root / 'template'
+        (template / 'profiles/eval-baseline').mkdir(parents=True)
+        (template / '.credentials.yaml').write_text('{}')
+        helper = 'sha256:' + 'b' * 64
+        lease = 'network-fixture'
+        spec = {'home': str(home), 'runtime': self.temp.name, 'template': str(template),
+                'condition': 'goal', 'imageDigest': 'sha256:' + 'a' * 64,
+                'formal': True, 'netctlImage': helper, 'port': 36200, 'lease': lease,
+                'storageMiB': 20480, 'storageEnforcement': 'official-docker-metadata-only'}
+        shell_checks = []
+        def image_runtime(_context, *args, **kwargs):
+            if args[0] == 'run' and '--name' in args:
+                (home / 'run/host.log').write_text('ready ?token=fixture')
+                return 'container-id'
+            if args[0] == 'inspect':
+                return json.dumps([{'Id': 'container-id', 'Name': '/dsh-deepswe-' + lease[:12],
+                    'Config': {'Labels': {'dsh.deepswe.attempt': lease}}}])
+            if args[0] == 'exec' and 'getent' in args:
+                return '192.0.2.1 STREAM host.docker.internal'
+            if args[0] == 'run' and helper in args:
+                # Docker appends command arguments to the image's inherited ENTRYPOINT.
+                entrypoint = args[args.index('--entrypoint') + 1] if '--entrypoint' in args else '/bin/sh'
+                command = [entrypoint, *args[args.index(helper) + 1:]]
+                # Parse without executing firewall commands or touching host networking.
+                check = subprocess.run([command[0], '-n', *command[1:]], capture_output=True)
+                self.assertEqual(check.returncode, 0, check.stderr.decode(errors='replace'))
+                shell_checks.append(command)
+            return ''
+        with patch('launch_host.docker', side_effect=image_runtime), \
+                patch('launch_host.controller_overlay', return_value=''), \
+                patch('launch_host.prepare_gateway', return_value=(None, '', [])):
+            receipt = launch(spec)
+        self.assertTrue(receipt['networkSealed'])
+        self.assertEqual(len(shell_checks), 1)
 
     def test_batch_position_layout_is_read_by_summary_without_a_host(self):
         from summarize_pilot import summarize

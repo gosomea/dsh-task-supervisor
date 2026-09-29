@@ -133,7 +133,7 @@ while true; do sleep 3600; done
                      'iptables -P OUTPUT DROP')
             docker(context, 'run', '--rm', '--platform', 'linux/amd64',
                    '--label', LABEL + '=' + lease, '--network', 'container:' + container,
-                   '--cap-add', 'NET_ADMIN', spec['netctlImage'], '/bin/sh', '-ec', rules)
+                   '--cap-add', 'NET_ADMIN', '--entrypoint', '/bin/sh', spec['netctlImage'], '-ec', rules)
         elif spec.get('formal', False):
             raise RuntimeError('formal task network is not sealed')
         deadline = time.monotonic() + 120
