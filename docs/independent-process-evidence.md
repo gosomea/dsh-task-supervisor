@@ -6,6 +6,16 @@ This is a pending plugin contract. The [real calibration](../eval/deepswe/contro
 
 A missing program or invalid directory permits corrected calls. Modified check copies, lost container identity or uncertain native cleanup still block acceptance. Error classification does not fabricate missing process evidence. Formal tasks retain their Git submission requirements and admission stays closed.
 
+## Implemented administrator API
+
+`dsh-task-supervisor/process-provenance` exposes a process-local administrator API. Strict schemas bind world, review scope and process receipts. Scopes include task and plan versions, node attempt, evidence cutoff and artifact digest; worlds identify an exact container, administrator lease and deadline.
+
+Receipts use exclusive creation and durable flush. Reads check a trusted seal, complete scope, world identity and storage-directory identity. Invalidated scopes retain their old receipts without admitting them to current decisions. Restart recovery requires receipt IDs and digests from trusted deployment storage; it never discovers arbitrary JSON as authoritative evidence. Unsupported capture persists `unavailable`, not successful evidence.
+
+This API is not a model tool and is not connected to the current evaluation instance. An administrator deployment must still implement independent identity checks and capture barriers. Permissions and hashes do not isolate a model with administrator filesystem access. The current main Host and model execution share one container and filesystem authority, so a readable socket, Session string or configuration secret cannot authenticate the controller. A future model reader needs a public projection rather than the complete private world.
+
+Thirteen keyless tests cover durable recovery, foreign task/artifact bindings, changed container identities, tampered receipts, capture invalidation, concurrent duplicate restoration, replaced storage and expiry during asynchronous checks. They validate the receipt API, not native Docker capture or real model acceptance.
+
 ## Three evidence types
 
 | Type | What it proves | Source |

@@ -9,6 +9,7 @@
     ".": "./lib/index.mjs",
     "./client": "./lib/client.js",
     "./check-gateway": "./lib/check-gateway.mjs",
+    "./process-provenance": "./lib/process-provenance.mjs",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
