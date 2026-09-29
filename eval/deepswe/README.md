@@ -116,6 +116,10 @@ The new resource_boundary.py checks resource exit both when skipping a sealed po
 
 The [failure/recovery summary](vm-resource-recovery-20260929.json) retains safe hashes and evidence limits. All 56 focused control, stop, export and resource-boundary tests passed, as did independent subagent review and parent validation against the actual original journal. The repair is frozen as a new runner version for the remaining 12 positions in their original order; all four original results, the denominator and deadline rules are retained. This records repair and resource recovery, not startup or completion of the remaining positions.
 
+Parent release admission has passed; see the [resource-boundary admission record](resource-boundary-admission-20260929.json). Runner and profile are newly frozen while the other 36 input roots remain unchanged. The sole controller resumes from original position five; startup and actual Session evidence are recorded separately from admission.
+
+The new controller started original Kea r1 Plan in Session session-e1bf28ce-7274-4d99-9f88-6f519705bb48. Actual main HTTP responses match deepseek-v4.1-flash on the frozen route and return 200 at the recorded observation. Four results are sealed; position five is running and the remaining eleven are queued. This is actual delivery evidence, not task completion or official reward.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.

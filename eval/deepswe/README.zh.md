@@ -116,6 +116,10 @@ python3 -m unittest discover -s eval/deepswe -v
 
 [故障与恢复摘要](vm-resource-recovery-20260929.json)保留安全哈希与证据边界。56 项控制、停止、导出及资源边界聚焦测试通过；子 Agent 独立复核通过，父代理对实际原 journal 的证明校验也通过。修复作为新的 runner 版本冻结，剩余 12 个位置按原顺序执行；原四个结果、分母和截止规则保留。这里记录修复及资源恢复，不声称剩余位置已启动或完成。
 
+父代理已完成新版冻结准入，见[资源边界准入记录](resource-boundary-admission-20260929.json)。runner 和 profile 使用新冻结字节，其余 36 个输入根保持不变。唯一控制器从原第 5 位置接续；启动及实际 Session 证据与准入分别记录。
+
+新版控制器已启动原 Kea r1 Plan，Session 为 session-e1bf28ce-7274-4d99-9f88-6f519705bb48。记录时实际主模型 HTTP 响应匹配冻结路由上的 deepseek-v4.1-flash，均返回 200。已有 4 个结果封口，第 5 次正在运行，另 11 次排队；这是实际投递证据，不代表任务完成或官方奖励。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。
