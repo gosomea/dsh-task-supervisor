@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-vm-resource-recovery",
+  "sealed": 4,
+  "planned": 16,
+  "remainingUnstarted": 12,
+  "position": "helm-array-merge-strategies-r1-supervisor-independent",
+  "sessionId": "session-2c33ada4-6954-4a23-af3d-0b595f1b178f",
+  "fault": {
+    "component": "dedicated-lima-vm",
+    "firstVzErrorChinaTime": "2026-09-29 18:19:05",
+    "managementCliStaleRunning": true,
+    "trigger": null,
+    "requestsBeforeFault": 38,
+    "planSubmitted": false,
+    "officialGradeStarted": false
+  },
+  "recovery": {
+    "sameProfileConfigBytes": true,
+    "agentRestarted": false,
+    "modelRequests": 0,
+    "approvals": 0,
+    "rescuePrompts": 0,
+    "originalActorExitObserved": true,
+    "completeDaemonInspect": true,
+    "remainingDaemonActors": 17,
+    "allStoppedNoRestart": true,
+    "foreignSetUnchanged": true
+  },
+  "limits": {
+    "removedEvidenceVolumes": 2,
+    "originalPrivateLedgerFullCoverage": false,
+    "originalCleanupAcknowledged": false,
+    "originalReward": null,
+    "resultRewritten": false,
+    "historicalChecksReconstructed": false
+  },
+  "resourceBoundary": {
+    "normalLeaseRequiresActualLedger": true,
+    "daemonRecoveryRequiresRawCompleteInspect": true,
+    "tested": 56,
+    "independentReviewPassed": true,
+    "actualJournalValidationPassed": true,
+    "nextAllocationRequiresReconciliation": true
+  },
+  "evidence": {
+    "originalResultSha256": "086b443ef298b1da307879fe053573c83f4b7c7ade2f4e1f05ec58b1a8daf94d",
+    "originalTerminalSha256": "c607554167b3cf6dd8b082d58f0bbc5ff7f2bcc01386e33cf071caf5e23f2124",
+    "controllerStopReceiptSha256": "54e89c161a047fb69a3f1403444bfa6dec49ba7b462e06eeae43fd7d3c35840f",
+    "faultSha256": "557a67877e67c2cd63a622305a21ffe50df157847f03acbf9350eee026e37d47",
+    "recoverySha256": "98800af08a858aabdd18c8f29aa0ad490d68d54122d907789858fe07d4ec5b01",
+    "profileConfigSha256": "50c1f7fd984f734dd56d0793d249dac265368aa7add821e6ad1bdcc55e619343",
+    "inventorySha256": "93af5c9ddcde593dd8b9e8d4f51d2f5c4881f54cfcfcc6b69f644e25a7f7264e",
+    "reconciliationSha256": "91fba120cabdb8b84e28e053ac8572624096ad5b87e5a747154bf2530452cc55"
+  },
+  "newRunnerAdmission": "pending",
+  "automaticReplacementAttempts": 0,
+  "scheduledFollowupEnabled": false
+}

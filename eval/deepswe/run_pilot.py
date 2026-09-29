@@ -307,6 +307,7 @@ def collect_route(spec, terminal):
 def run_batch(manifest):
     """Use one batch lease and the admitted order; never replace missing attempts."""
     from freeze_release import require_frozen_release
+    from resource_boundary import require_resource_boundary
     protocol = require_frozen_release(manifest['release'])
     rows = manifest['positions']
     if [row['id'] for row in rows] != [row['id'] for row in protocol['order']]:
@@ -322,13 +323,15 @@ def run_batch(manifest):
             result = journal.read('result.json')
             if result is not None:
                 validate_result_identity(result, spec)
+                require_resource_boundary(journal, result)
                 continue
             instruction_path = Path(spec['dataset']) / 'tasks' / spec['taskId'] / 'instruction.md'
             instruction = instruction_path.read_text()
             # An interrupted invocation reads the same started Session. It does
             # not rerun the Agent, grant another approval or allocate a new home.
             run_position(spec, instruction, position_root)
-            finalize_position(spec, position_root)
+            result = finalize_position(spec, position_root)
+            require_resource_boundary(journal, result)
         return batch.write('batch-result.json', {'schemaVersion': 1, 'planned': len(rows),
             'sealedIds': [row['id'] for row in rows], 'automaticAgentReruns': 0,
             'automaticInfrastructureReplacements': 0})

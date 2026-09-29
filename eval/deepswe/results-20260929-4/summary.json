@@ -1,0 +1,445 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-pilot-summary",
+  "planned": 16,
+  "started": 3,
+  "sealed": 4,
+  "conditions": {
+    "goal": {
+      "planned": 4,
+      "started": 1,
+      "sealed": 2,
+      "primarySuccesses": 0,
+      "knownFailures": 1,
+      "unknownPrimary": 3,
+      "successRate": null,
+      "successRateBounds": [
+        0.0,
+        0.75
+      ],
+      "terminalCounts": {
+        "infrastructure-fault": 1,
+        "native-stopped": 1
+      },
+      "officialRewards": {
+        "None": 1,
+        "0": 1
+      },
+      "gradingFaults": 1,
+      "protocolDeviationPositions": 0,
+      "unverifiedRoutePositions": 1,
+      "internalReviewFaultPositions": 0,
+      "falseCompletions": 0,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 45417,
+        "outputTokens": 41683,
+        "cacheReadTokens": 230528,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredPositions": 1,
+      "tokenUnknownPositions": 3,
+      "scalarMetrics": {
+        "reviewWaitMs": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "checkWaitMs": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "repairTurns": {
+          "measuredSum": 0,
+          "measuredPositions": 2,
+          "unknownPositions": 2
+        },
+        "humanInterventions": {
+          "measuredSum": 1,
+          "measuredPositions": 2,
+          "unknownPositions": 2
+        },
+        "extraCheckCpuNs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        }
+      },
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "plan": {
+      "planned": 4,
+      "started": 1,
+      "sealed": 1,
+      "primarySuccesses": 0,
+      "knownFailures": 0,
+      "unknownPrimary": 4,
+      "successRate": null,
+      "successRateBounds": [
+        0.0,
+        1.0
+      ],
+      "terminalCounts": {
+        "infrastructure-fault": 1
+      },
+      "officialRewards": {
+        "None": 1
+      },
+      "gradingFaults": 1,
+      "protocolDeviationPositions": 0,
+      "unverifiedRoutePositions": 1,
+      "internalReviewFaultPositions": 0,
+      "falseCompletions": 0,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredPositions": 1,
+      "tokenUnknownPositions": 3,
+      "scalarMetrics": {
+        "reviewWaitMs": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "checkWaitMs": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "repairTurns": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "humanInterventions": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "extraCheckCpuNs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        }
+      },
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-log": {
+      "planned": 4,
+      "started": 0,
+      "sealed": 0,
+      "primarySuccesses": 0,
+      "knownFailures": 0,
+      "unknownPrimary": 4,
+      "successRate": null,
+      "successRateBounds": [
+        0.0,
+        1.0
+      ],
+      "terminalCounts": {},
+      "officialRewards": {},
+      "gradingFaults": 0,
+      "protocolDeviationPositions": 0,
+      "unverifiedRoutePositions": 0,
+      "internalReviewFaultPositions": 0,
+      "falseCompletions": 0,
+      "allSessionTokenSumMeasured": null,
+      "tokenMeasuredPositions": 0,
+      "tokenUnknownPositions": 4,
+      "scalarMetrics": {
+        "reviewWaitMs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "checkWaitMs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "repairTurns": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "humanInterventions": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "extraCheckCpuNs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        }
+      },
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-independent": {
+      "planned": 4,
+      "started": 1,
+      "sealed": 1,
+      "primarySuccesses": 0,
+      "knownFailures": 1,
+      "unknownPrimary": 3,
+      "successRate": null,
+      "successRateBounds": [
+        0.0,
+        0.75
+      ],
+      "terminalCounts": {
+        "infrastructure-fault": 1
+      },
+      "officialRewards": {
+        "None": 1
+      },
+      "gradingFaults": 1,
+      "protocolDeviationPositions": 0,
+      "unverifiedRoutePositions": 0,
+      "internalReviewFaultPositions": 0,
+      "falseCompletions": 0,
+      "allSessionTokenSumMeasured": {
+        "uncachedInputTokens": 63438,
+        "outputTokens": 48267,
+        "cacheReadTokens": 1403264,
+        "cacheWriteTokens": 0
+      },
+      "tokenMeasuredPositions": 1,
+      "tokenUnknownPositions": 3,
+      "scalarMetrics": {
+        "reviewWaitMs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "checkWaitMs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        },
+        "repairTurns": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "humanInterventions": {
+          "measuredSum": 0,
+          "measuredPositions": 1,
+          "unknownPositions": 3
+        },
+        "extraCheckCpuNs": {
+          "measuredSum": null,
+          "measuredPositions": 0,
+          "unknownPositions": 4
+        }
+      },
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    }
+  },
+  "paired": [
+    {
+      "left": "goal",
+      "right": "plan",
+      "unknown": 4
+    },
+    {
+      "left": "goal",
+      "right": "supervisor-log",
+      "unknown": 4
+    },
+    {
+      "left": "goal",
+      "right": "supervisor-independent",
+      "unknown": 4
+    },
+    {
+      "left": "plan",
+      "right": "supervisor-log",
+      "unknown": 4
+    },
+    {
+      "left": "plan",
+      "right": "supervisor-independent",
+      "unknown": 4
+    },
+    {
+      "left": "supervisor-log",
+      "right": "supervisor-independent",
+      "unknown": 4
+    }
+  ],
+  "positions": [
+    {
+      "id": "helm-array-merge-strategies-r1-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "goal",
+      "sealed": true,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "plan",
+      "sealed": true,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "goal",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": 0,
+      "terminalStatus": "native-stopped"
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-independent",
+      "sealed": true,
+      "primarySuccess": false,
+      "officialReward": null,
+      "terminalStatus": "infrastructure-fault"
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "plan",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-independent",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-plan",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "plan",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-independent",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-independent",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-independent",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-independent",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-plan",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "plan",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r1-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 1,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-goal",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "goal",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r2-supervisor-log",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 2,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "kea-atomic-signal-selectors-r1-goal",
+      "taskId": "kea-atomic-signal-selectors",
+      "repeat": 1,
+      "condition": "goal",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-supervisor-log",
+      "taskId": "helm-array-merge-strategies",
+      "repeat": 2,
+      "condition": "supervisor-log",
+      "sealed": false,
+      "primarySuccess": null,
+      "officialReward": null,
+      "terminalStatus": null
+    }
+  ],
+  "limitations": [
+    "Two tasks and two repeats are correlated engineering checks, not superiority evidence.",
+    "No blind labels: false-pause and correction-benefit metrics remain null.",
+    "Incomplete token coverage must not be described as complete model cost."
+  ]
+}

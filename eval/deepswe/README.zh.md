@@ -106,6 +106,16 @@ python3 -m unittest discover -s eval/deepswe -v
 
 接续后的[部分评测报告](results-20260929-3/report.zh.md)记录 3/16 封口：两个投递前基础设施故障、一次真实 Goal 停止且官方奖励为 0。原始墙钟包含旧观察者空等，不能当作模型工作时间。其余位置仍在执行队列中，尚不能做条件优劣判断。
 
+## 专用 VM 故障与资源接续
+
+第四个位置 Helm r1 Supervisor-independent 已投递 38 次真实请求，尚未提交计划。专用 Lima VM 于 2026 年 9 月 29 日 18:19:05（北京时间）进入 VirtualMachineStateError，来宾连接关闭；管理 CLI 仍显示 Running。Docker 与 Session 观察超时，任务封口为基础设施故障，官方评分未启动。故障触发原因未知，不能将此前的全盘搜索工具调用认定为崩溃原因。最新[部分报告](results-20260929-4/report.zh.md)保留 4/16 封口、三次基础设施失败及一次 Goal 官方奖励 0；这不支持条件能力排名。
+
+恢复仅停止并重启专用 VM，同一 profile 的配置字节保持一致，没有改变 CPU、内存、磁盘、架构或模型，也没有重新投递原 Agent。原 main／admin 均观察到停止、PID 0、禁止自动重启，再按精确身份移除；全量 daemon 清单与 inspect 完全对应，余下 17 个非本次容器均停止且集合不变。恢复清理曾移除两份证据卷，旧私有 ledger 因而无法完整读回；其覆盖保持 false，原 cleanupAcknowledged=false、缺失提交与 reward=null 不改写。这是历史证据缺失，不能用当前 daemon 安全证明补造旧检查或原生清理确认。
+
+新增 resource_boundary.py，批次在跳过已封口位置以及完成新位置后都检查资源退出，未经确认不得分配下一位置。正常 lease 接续必须绑定原 result／started／launch 哈希、精确 main／admin、实际私有 ledger 全量读回与逐项检查容器。VM 故障接续采用另一类资源证明：成功停止原 VM、同配置重启、完整 daemon 清单和原始 inspect、原容器所有权及未受影响的外来集合。两类证明都只允许下一位置分配，不改变旧结果或评分。
+
+[故障与恢复摘要](vm-resource-recovery-20260929.json)保留安全哈希与证据边界。56 项控制、停止、导出及资源边界聚焦测试通过；子 Agent 独立复核通过，父代理对实际原 journal 的证明校验也通过。修复作为新的 runner 版本冻结，剩余 12 个位置按原顺序执行；原四个结果、分母和截止规则保留。这里记录修复及资源恢复，不声称剩余位置已启动或完成。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。
