@@ -48,12 +48,48 @@ def validate_position(spec, instruction, protocol):
 def run_position(spec, instruction, root, *, allow_smoke=False):
     """Execute a predeclared position; unresolved starts reuse original evidence."""
     journal = Journal(root)
+    if journal.read('terminal.json') is not None:
+        return journal.read('terminal.json')
+    protocol = None
     if not allow_smoke:
         from freeze_release import require_frozen_release
         protocol = require_frozen_release(spec['release'])
         validate_position(spec, instruction, protocol)
-    if journal.read('terminal.json') is not None:
-        return journal.read('terminal.json')
+    termination = (spec.get('release') or {}).get('controlTerminationPolicy') or {}
+    driver_sha = None
+    try:
+        if protocol is not None and termination != protocol['release'].get('controlTerminationPolicy', {}):
+            raise ValueError('Observer termination policy differs from admitted protocol')
+        if termination and (set(termination) != {'nativeGoalStop', 'goalDriverSha256', 'pauseDisposition'}
+                or termination['nativeGoalStop'] is not True
+                or termination['pauseDisposition'] != 'seal-without-rescue'):
+            raise ValueError('Unsupported admitted control termination policy')
+        if termination.get('nativeGoalStop'):
+            from native_stop import admitted_goal_driver, read_goal_stop
+            driver_sha = admitted_goal_driver(spec['runtime'], termination)
+    except (OSError, ValueError, KeyError) as error:
+        # Failed admission cannot launch a new task. For a previously delivered
+        # attempt, reconcile only the exact recorded owner under its lock.
+        with journal.controller():
+            terminal = journal.read('terminal.json')
+            if terminal is not None:
+                return terminal
+            started, receipt = journal.read('started.json'), journal.read('launch-receipt.json')
+            if started is None or receipt is None:
+                raise
+            owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
+            cleanup = quiesce(receipt, started, journal.root / 'submission')
+            journal.write('observer-admission-fault.json', {'errorType': type(error).__name__,
+                          'retryAllowed': False, 'redelivered': False})
+            return journal.write('terminal.json', {
+                'schemaVersion': 1, 'id': started['id'], 'condition': started['condition'],
+                'mainSessionId': started['sessionId'], 'sessionId': started['sessionId'],
+                'status': 'infrastructure-fault', 'executionStatus': 'observer-admission-fault',
+                'nativeFinished': False, 'finishedBeforeDeadline': False,
+                'endedAtUnix': time.time(), 'deadlineAtUnix': started['deadlineAtUnix'],
+                'approvalCount': int(journal.read('approval-receipt.json') is not None),
+                'rescueCount': 0, 'cleanupAcknowledged': cleanup['acknowledged'],
+                'submissionDir': cleanup.get('submissionDir'), 'cutoff': cleanup.get('cutoff')})
     if journal.read('pre-delivery-fault.json') is not None:
         raise RuntimeError('Original pre-delivery failure requires reconciliation; no redelivery')
     receipt = journal.read('launch-receipt.json')
@@ -64,6 +100,9 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
         receipt = launch(spec)
         journal.write('launch-receipt.json', receipt)
     home = Path(receipt['home'])
+    read_native_stop = None
+    if driver_sha is not None and spec['condition'] == 'goal':
+        read_native_stop = lambda session_id, values: read_goal_stop(home, session_id, values, driver_sha)
     try:
         owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
         rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'))
@@ -151,7 +190,8 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
                 journal.write('quiescence-error.json', {'errorType': type(error).__name__, 'atUnix': time.time()})
                 return {'acknowledged': False}
-        return supervise(rpc, journal, read_projection, stop)
+        return supervise(rpc, journal, read_projection, stop, read_native_stop=read_native_stop,
+                         stop_on_pause=termination.get('pauseDisposition') == 'seal-without-rescue')
     finally:
         if plan_process is not None:
             import os
@@ -218,8 +258,21 @@ def finalize_position(spec, root):
     result = {'schemaVersion': 1, 'id': spec['id'], 'taskId': spec['taskId'], 'repeat': spec['repeat'],
               'condition': spec['condition'], 'started': True,
               'delivered': journal.read('start-receipt.json') is not None,
-              'terminal': terminal, 'grade': grade, 'metrics': metrics, 'route': route}
+              'terminal': terminal, 'grade': grade, 'metrics': metrics, 'route': route,
+              **execution_versions(spec, journal)}
     return journal.write('result.json', result)
+
+
+def execution_versions(spec, journal):
+    """Attest launch and observer versions separately on resumed attempts."""
+    import hashlib
+    hashed = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    launch_release = (journal.read('launch-intent.json') or {}).get('release')
+    observer_release = spec.get('release')
+    return {'executionVersions': {'launchReleaseSha256': hashed(launch_release) if launch_release else None,
+            'observerReleaseSha256': hashed(observer_release) if observer_release else None,
+            'terminationPolicySha256': hashed((observer_release or {}).get('controlTerminationPolicy', {}))},
+            'controlProtocolDeviation': launch_release != observer_release if launch_release else None}
 
 
 def validate_result_identity(result, spec):

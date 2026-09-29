@@ -69,6 +69,7 @@ def details(root, protocol, summary):
         directory = root / 'attempts' / position['id']
         path = directory / 'result.json'
         row = {**position, 'terminalStatus': label(position.get('terminalStatus')),
+               'executionVersions': None, 'controlProtocolDeviation': None, 'nativeStop': None,
                'resultSha256': None, 'delivered': None, 'graderStarted': None,
                'tokens': None, 'tokensReported': None, 'tokenSupplementSha256': None,
                'sessionCount': None, 'gradingFault': None, 'reviewFault': None,
@@ -84,7 +85,19 @@ def details(root, protocol, summary):
             tokens, supplement_sha = normalized_tokens(directory, result)
             findings = metrics.get('independentEvidenceCoverage') or {}
             faults = metrics.get('internalReviewFaults')
-            row.update(resultSha256=digest(path), delivered=result.get('delivered'),
+            versions = result.get('executionVersions') or {}
+            stop = terminal.get('nativeStop') or {}
+            safe_stop = {key: label(stop.get(key)) for key in ('kind', 'reason', 'activationObservation')}
+            safe_stop.update({key: number(stop.get(key)) for key in ('turn', 'seq', 'nativeStoppedAtUnix')})
+            driver = stop.get('driverSourceSha256')
+            safe_stop['driverSourceSha256'] = driver if isinstance(driver, str) and re.fullmatch('[a-f0-9]{64}', driver) else None
+            row.update(executionVersions={key: value for key, value in versions.items()
+                       if key in ('launchReleaseSha256', 'observerReleaseSha256', 'terminationPolicySha256')
+                       and isinstance(value, str) and re.fullmatch('[a-f0-9]{64}', value)},
+                       controlProtocolDeviation=result.get('controlProtocolDeviation')
+                       if type(result.get('controlProtocolDeviation')) is bool else None,
+                       nativeStop=safe_stop if stop else None,
+                       resultSha256=digest(path), delivered=result.get('delivered'),
                        graderStarted=(directory / 'grade/started.json').is_file(),
                        tokens=tokens, tokensReported=token_buckets(metrics.get('tokensReported'))
                        or token_buckets(metrics.get('allSessionTokens')) or tokens,

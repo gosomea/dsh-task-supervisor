@@ -110,7 +110,7 @@ def projection_values(document):
     return {key: row.get('val') for key, row in document['record']['rows'].items()}
 
 
-def observe(condition, values, running, approved):
+def observe(condition, values, running, approved, native_stop=None):
     """Classify native completion without treating blocked/off as success."""
     if condition not in CONDITIONS:
         raise ValueError('unknown condition')
@@ -148,11 +148,14 @@ def observe(condition, values, running, approved):
         status = 'controller-off'
     elif phase == 'paused':
         status = 'internal-fault' if task.get('pauseReason') == 'review-fault' else 'paused'
+    elif condition == 'goal' and phase == 'active' and idle and native_stop is not None:
+        status = 'native-stopped'
     return {'status': status, 'nativeFinished': native_finished, 'taskPhase': phase,
             'pauseReason': task.get('pauseReason'), 'controllerOwners': owners,
             'idle': idle, 'reviewJobs': supervisor.get('reviewJobs', []),
             'reviewFault': task.get('reviewFault'), 'taskId': task.get('id'),
-            'planVersion': task.get('planVersion'), 'everApproved': task.get('everApproved', False)}
+            'planVersion': task.get('planVersion'), 'everApproved': task.get('everApproved', False),
+            'nativeStop': native_stop if status == 'native-stopped' else None}
 
 
 def begin(rpc, journal, condition, instruction, base_commit, attempt_id, *,
@@ -236,8 +239,11 @@ def approve_supervisor(rpc, journal, started, observation, *, clock=time.time):
 
 
 def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
-              clock=time.time, sleep=time.sleep, poll_sec=2):
-    """Observe the same attempt; pauses receive no rescue through the deadline.
+              clock=time.time, sleep=time.sleep, poll_sec=2, read_native_stop=None, stop_on_pause=False):
+    """Observe the same attempt; never send a rescue.
+
+    Legacy releases wait out pauses. An admitted termination policy can seal an
+    idle manual-only pause or an evidenced native stop before the maximum window.
 
     quiesce must return only after the native Host and owned descendants stop;
     it may export the committed patch before sealing but must never commit it.
@@ -252,6 +258,11 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
     first_pause = journal.read('pause-observed.json')
     last = None
     with journal.controller():
+        # A prior observer may seal after our first read but before this lock.
+        terminal = journal.read('terminal.json')
+        if terminal is not None:
+            return terminal
+        first_pause = journal.read('pause-observed.json')
         while True:
             now = clock()
             if now >= started['deadlineAtUnix']:
@@ -263,19 +274,32 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
                            if row['sessionId'] == started['sessionId'])
                 approved = journal.read('approval-receipt.json') is not None
                 last = observe(started['condition'], values, row['running'], approved)
+                if read_native_stop is not None and started['condition'] == 'goal' and last['idle'] and last['taskPhase'] == 'active':
+                    evidence = read_native_stop(started['sessionId'], values)
+                    # Reading compressed evidence does not lock native events.
+                    # Recheck the whole projection and live running flag before
+                    # acting on the stop; queued or resumed work invalidates it.
+                    fresh = projection_values(read_projection(started['sessionId']))
+                    row = next(row for row in rpc.call('session/list')['items']
+                               if row['sessionId'] == started['sessionId'])
+                    evidence = evidence if fresh == values else None
+                    last = observe(started['condition'], fresh, row['running'], approved, evidence)
                 if last['status'] in ('paused', 'internal-fault') and first_pause is None:
                     first_pause = journal.write('pause-observed.json', {
                         'atUnix': now, 'status': last['status'], 'taskPhase': last['taskPhase'],
                         'pauseReason': last['pauseReason'], 'rescueCount': 0})
-                # A pause is intentionally left for the rest of the frozen task
-                # window. No retry-review/resume/prompt or second approval follows.
+                # Legacy releases wait out pauses; either policy sends no
+                # retry-review/resume/prompt or second approval.
                 if first_pause is None:
                     if started['condition'].startswith('supervisor-'):
                         approve_supervisor(rpc, journal, started, last, clock=clock)
                     elif started['condition'] == 'plan' and not approved and approve_plan is not None:
                         approve_plan(started, journal)
-                if last['status'] in ('native-complete', 'native-blocked', 'controller-conflict', 'controller-off'):
+                if last['status'] in ('native-complete', 'native-blocked', 'controller-conflict', 'controller-off', 'native-stopped'):
                     status = last['status'] if first_pause is None else 'protocol-deviation'
+                    break
+                if stop_on_pause and last['status'] in ('paused', 'internal-fault') and last['idle']:
+                    status = 'manual-intervention-required'
                     break
             except (OSError, ValueError, KeyError, StopIteration, RuntimeError) as error:
                 # A transport failure is retained and does not reissue a mutation.
@@ -295,6 +319,7 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
             'taskPhase': last['taskPhase'] if last else None,
             'pauseReason': last['pauseReason'] if last else None,
             'firstPause': first_pause, 'reviewFault': last['reviewFault'] if last else None,
+            'nativeStop': last.get('nativeStop') if last else None,
             'controllerOwners': last['controllerOwners'] if last else [],
             'reviewJobs': last['reviewJobs'] if last else [],
             'approvalCount': int(journal.read('approval-receipt.json') is not None),

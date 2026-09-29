@@ -47,6 +47,76 @@ class ControlFlowTests(unittest.TestCase):
         return self.journal.write('started.json', {'schemaVersion': 1, 'id': 'fixture', 'condition': condition,
             'sessionId': 'session', 'startedAtUnix': 0, 'deadlineAtUnix': deadline, 'timeLimitSec': deadline})
 
+    def test_terminal_published_before_lock_prevents_second_cleanup(self):
+        from contextlib import contextmanager
+        self.started('goal')
+        terminal = {'status': 'native-stopped'}
+        @contextmanager
+        def acquired():
+            self.journal.write('terminal.json', terminal)
+            yield
+        with patch.object(self.journal, 'controller', acquired), patch('run_pilot.quiesce') as cleanup:
+            result = supervise(self.rpc, self.journal, lambda _: {}, cleanup)
+        self.assertEqual(result, terminal)
+        cleanup.assert_not_called()
+
+    def test_evidence_reader_cannot_seal_work_that_resumed_while_reading(self):
+        from native_stop import goal_stop_evidence
+        from test_native_stop import fixture
+        import copy
+        self.started('goal')
+        events, values = fixture()
+        state = copy.deepcopy(values)
+        clock = [1]
+        reads = []
+        def projection(_):
+            reads.append(1)
+            return {'record': {'rows': {k: {'val': v} for k, v in state.items()}}}
+        def evidence(_, old):
+            proof = goal_stop_evidence(events, old, 'a' * 64)
+            self.rpc.running = True
+            state['inbox']['next-turn'] = [{}]
+            return proof
+        def sleep(_):
+            clock[0] = 10
+        result = supervise(self.rpc, self.journal, projection, lambda *_: {'acknowledged': True},
+                           clock=lambda: clock[0], sleep=sleep, read_native_stop=evidence)
+        self.assertEqual(result['status'], 'deadline')
+        self.assertEqual(len(reads), 2)
+        self.assertIsNone(result['nativeStop'])
+
+    def test_resumed_policy_admission_failure_cleans_exact_owner_without_delivery(self):
+        from run_pilot import run_position
+        self.started('goal')
+        self.journal.write('launch-receipt.json', {'dockerContext': 'fixture', 'container': 'owned',
+                            'lease': 'lease', 'containerId': 'exact-id'})
+        policy = {'nativeGoalStop': True, 'goalDriverSha256': 'a' * 64,
+                  'pauseDisposition': 'seal-without-rescue'}
+        with patch('native_stop.admitted_goal_driver', side_effect=ValueError('changed')), \
+                patch('run_pilot.owned') as owner, patch('run_pilot.quiesce', return_value={'acknowledged': True}) as cleanup, \
+                patch('run_pilot.launch') as launch:
+            result = run_position({'release': {'controlTerminationPolicy': policy}, 'runtime': 'fixture'},
+                                  '', self.journal.root, allow_smoke=True)
+        owner.assert_called_once_with('fixture', 'owned', 'lease', 'exact-id')
+        cleanup.assert_called_once()
+        launch.assert_not_called()
+        self.assertEqual(result['executionStatus'], 'observer-admission-fault')
+        self.assertFalse(result['nativeFinished'])
+        self.assertEqual(self.rpc.commands, [])
+
+    def test_sealed_attempt_does_not_require_new_policy_admission(self):
+        from run_pilot import run_position
+        terminal = self.journal.write('terminal.json', {'status': 'native-stopped'})
+        self.assertEqual(run_position({}, '', self.journal.root), terminal)
+
+    def test_execution_versions_distinguish_original_launch_and_new_observer(self):
+        from run_pilot import execution_versions
+        self.journal.write('launch-intent.json', {'release': {'runner': 'v4'}})
+        evidence = execution_versions({'release': {'runner': 'v5'}}, self.journal)
+        self.assertTrue(evidence['controlProtocolDeviation'])
+        versions = evidence['executionVersions']
+        self.assertNotEqual(versions['launchReleaseSha256'], versions['observerReleaseSha256'])
+
     def test_admission_is_recorded_before_send_and_cannot_be_repeated(self):
         original = self.rpc.command
         def command(session, line):
@@ -97,6 +167,63 @@ class ControlFlowTests(unittest.TestCase):
         self.assertEqual(now[0], 10)
         self.assertEqual(self.rpc.commands, [])
         self.assertEqual(self.rpc.prompts, [])
+
+    def test_admitted_pause_policy_seals_failure_without_rescue_or_full_wait(self):
+        self.started()
+        task = {'id': 'task', 'phase': 'paused', 'pauseReason': 'review-fault', 'enabled': True}
+        def no_wait(_): self.fail('A manual-only pause must not consume the remaining task window')
+        terminal = supervise(self.rpc, self.journal, lambda _: document(task),
+            lambda *_: {'acknowledged': True}, clock=lambda: 1, sleep=no_wait, stop_on_pause=True)
+        self.assertEqual(terminal['status'], 'manual-intervention-required')
+        self.assertFalse(terminal['nativeFinished'])
+        self.assertEqual(terminal['firstPause']['status'], 'internal-fault')
+        self.assertEqual(terminal['endedAtUnix'], 1)
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(self.rpc.prompts, [])
+
+    def test_native_goal_stop_seals_original_attempt_once_without_rescue(self):
+        from test_native_stop import fixture
+        from native_stop import goal_stop_evidence
+        events, values = fixture()
+        self.started(condition='goal')
+        document = {'record': {'rows': {key: {'val': value} for key, value in values.items()}}}
+        cleanups = []
+        def cleanup(*_):
+            cleanups.append(True)
+            return {'acknowledged': True}
+        terminal = supervise(self.rpc, self.journal, lambda _: document, cleanup, clock=lambda: 3,
+            read_native_stop=lambda _, state: goal_stop_evidence(events, state, 'a' * 64),
+            sleep=lambda _: self.fail('Native disarm must not wait for the deadline'))
+        self.assertEqual(terminal['status'], 'native-stopped')
+        self.assertFalse(terminal['nativeFinished'])
+        self.assertEqual(terminal['nativeStop']['seq'], 2)
+        self.assertEqual(len(cleanups), 1)
+        supervise(self.rpc, self.journal, lambda _: document, cleanup, clock=lambda: 4)
+        self.assertEqual(len(cleanups), 1)
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(self.rpc.prompts, [])
+
+    def test_admitted_pause_policy_waits_for_active_turn_to_settle(self):
+        self.started()
+        self.rpc.running = True
+        now = [1]
+        task = {'id': 'task', 'phase': 'paused', 'enabled': True}
+        def settle(delay):
+            now[0] += delay
+            self.rpc.running = False
+        terminal = supervise(self.rpc, self.journal, lambda _: document(task),
+            lambda *_: {'acknowledged': True}, clock=lambda: now[0], sleep=settle, stop_on_pause=True)
+        self.assertEqual(terminal['status'], 'manual-intervention-required')
+        self.assertEqual(now[0], 3)
+        self.assertEqual(self.rpc.commands, [])
+
+    def test_invalid_stop_policy_rejected_before_host_launch(self):
+        from run_pilot import run_position
+        spec = {'release': {'controlTerminationPolicy': {'nativeGoalStop': 'typo'}}}
+        with patch('run_pilot.launch') as launch_host:
+            with self.assertRaisesRegex(ValueError, 'termination policy'):
+                run_position(spec, 'fixture', self.journal.root / 'policy', allow_smoke=True)
+            launch_host.assert_not_called()
 
     def test_terminal_is_immutable_and_reconcile_does_not_quiesce_twice(self):
         self.started()

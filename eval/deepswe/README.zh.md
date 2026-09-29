@@ -94,6 +94,14 @@ python3 -m unittest discover -s eval/deepswe -v
 
 上述命令验证采样可重复、改动版本与脏目录拒绝、配对矩阵、未准入拒绝、评分报告与异常脱敏。产物快照和检查进程的真实回归见[独立检查接入记录](../independent-verification/README.zh.md)。
 
+## 原生停止与暂停的封口
+
+2026 年 9 月 29 日，第三个正式位置在 15:15:05（北京时间）的 `turn/end`、seq 91 因 `max-tokens` 停止；旧观察者仅看 Goal 的 `active` 投影，将已停止的续行误判为运行，造成两个多小时空等。修复见[停止策略回归记录](native-stop-recovery-20260929.json)。停止状态不算任务完成或成功；原生 driver 的 `disarm` 来自冻结源码策略，激活状态没有持久化，不能声称直接观察到激活值。
+
+新 release 显式绑定 `controlTerminationPolicy`：`nativeGoalStop=true`、冻结 `goalDriverSha256`、`pauseDisposition=seal-without-rescue`。执行声明须与准入协议一致。10800 秒仍是最大任务窗口；最新停止事件、同一 Goal／revision／turn、空闲 Session、无开放 step／tool call 与两种空队列同时成立，才提前封口。读取证据后重新读取完整投影与实时运行状态，变化即废弃旧证据。仅需人工恢复的空闲暂停也封口为失败，不追加提示、恢复或批准；运行中的回合等待自然结束或原截止。未声明新策略的旧 release 保留旧规则。
+
+修复保留原先两个基础设施失败与第三次已投递 Session、原始截止和日志，不重投 Agent。新观察者与原模型运行器分别记录 release 哈希，混合版本标为控制协议偏差；剩余位置冻结新版本后接续原顺序。恢复时锁内重读封口，避免重复清理；新策略准入失败仅在核对既有精确容器所有权后清理并保存故障。36 项控制与停止测试、6 项报告导出测试通过；同一真实 Session 回放显示旧观察者为 `running`、新观察者为 `native-stopped`。这一记录不声称剩余位置已经完成或官方评分成功。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。

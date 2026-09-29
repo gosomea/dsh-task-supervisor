@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-native-stop-recovery",
+  "originalPosition": "kea-atomic-signal-selectors-r2-goal",
+  "originalStartedSha256": "6bf0ee1765eb8d2f86240cf4d6e23217a9a08d8527a15e5880a3f9d9ae2b9892",
+  "originalDeadlineAtUnix": 1790676669.47124,
+  "event": {
+    "seq": 91,
+    "time": 1790666105548,
+    "turn": 1,
+    "reason": "max-tokens"
+  },
+  "driverSourceSha256": "3aa362932c39ef300524051ce2d2998d049c765afeb548cb9a4941830fe61fac",
+  "sessionEvidenceSha256": "066bd8e63e58203ebaf16280de7cfc4325a60cd78030a3c8c4faa264378b7edb",
+  "controllerStopReceiptSha256": "3e2272fa75b424b7d11243c7732482d4ca82cbb90c7cde0d64afc25b42500d75",
+  "activationObservation": "source-policy-inference-not-persisted-state",
+  "sameSessionReplay": {
+    "oldObserver": "running",
+    "newObserver": "native-stopped",
+    "nativeFinished": false
+  },
+  "tests": {
+    "controlAndStop": 36,
+    "export": 6,
+    "modelRequests": 0
+  },
+  "originalResultsOverwritten": false,
+  "agentRedelivered": false,
+  "nextReleaseAdmission": "pending",
+  "scope": "eval-adapter-only-no-dsh-runtime-or-plugin-change"
+}

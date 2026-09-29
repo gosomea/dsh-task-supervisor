@@ -94,6 +94,14 @@ python3 -m unittest discover -s eval/deepswe -v
 
 This command checks reproducible selection, wrong revisions/dirty trees, pairing, admission refusal, grading reports and exception redaction. Real artifact and process regressions are in the [independent-check integration record](../independent-verification/README.md).
 
+## Sealing native stops and pauses
+
+On September 29, 2026, the third formal position stopped at 15:15:05 China time with `turn/end`, seq 91, reason `max-tokens`. The previous observer read only the active Goal projection and classified stopped continuation as running, causing over two hours of idle waiting. See the [stop-policy regression record](native-stop-recovery-20260929.json). A stop is neither task completion nor success. The driver disarm behavior is inferred from frozen source policy; activation is not persisted and is not claimed as directly observed.
+
+The new release explicitly binds `controlTerminationPolicy`: `nativeGoalStop=true`, frozen `goalDriverSha256`, and `pauseDisposition=seal-without-rescue`. Invocation and admitted protocol must declare the same policy. The 10800-second window remains a maximum. Early sealing requires the latest stop event, matching Goal/revision/turn, an idle Session, no open step or tool calls, and both inbox queues empty. The observer rereads the complete projection and live running state after reading evidence, discarding evidence on change. Idle pauses requiring manual recovery also seal as failures without prompts, resume or approval. Active turns settle naturally or reach the original deadline. Releases without this policy retain their previous behavior.
+
+The repair retains the first two infrastructure failures and the third delivered Session, original deadline and logs without Agent redelivery. Launch and observer release hashes are recorded separately; mixed versions are marked as control protocol deviations. Remaining positions resume in the original order after freezing the new version. Recovery rereads the terminal under lock to avoid repeated cleanup. Failed new-policy admission cleans up an existing attempt only after checking exact container ownership and records the fault. All 36 control/stop tests and six export tests passed. Replay of the same real Session gives running with the old observer and native-stopped with the new observer. This record does not claim the remaining positions have completed or official grading has succeeded.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.
