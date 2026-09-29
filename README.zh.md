@@ -25,6 +25,8 @@
 
 独立检查默认关闭。配置 `independentVerification` 后，节点与整体验收先读取当前产物快照并执行自己的检查，再对照主 Agent 汇报；运行时标准需要独立执行证据。当前提供插件内 Docker 后端，独立浏览器检查待开发。配置与限制见[实现状态](docs/implementation.zh.md#独立产物检查与两阶段审查)，真实正反例见[验收记录](docs/independent-verification-validation.zh.md)。
 
+生成达到单次输出上限时，`truncationRecovery` 默认开启，在当前任务准入有效且原生工具与队列已结清后恢复规划或执行。`automaticContinuation: false` 关闭自动新轮次；`maxRecoveryWithoutProgress` 默认 2，连续恢复没有新的可核实工具产出会暂停等待手动恢复。恢复消息、原回合、证据和计数保存在主 Session；暂停、关闭及重启不会自动恢复。
+
 ## 开发与隔离验证
 
 使用 Node 24 和包含 `extension/record` 宿主接缝的隔离 DSH checkout。日常 DSH checkout 与 profile 不需要修改。测试脚本通过 `DSH_SOURCE` 定位该工作树：

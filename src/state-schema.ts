@@ -62,6 +62,9 @@ export const taskSchema = z.object({
   }).strict()).optional(),
   objective: z.string().min(1),
   creationRequestId: z.string().min(1).optional(),
+  recovery: z.object({ endSeq: z.number().int().nonnegative(), turn: z.number().int().nonnegative(),
+    noProgress: z.number().int().nonnegative(), evidenceSeqs: z.array(z.number().int().nonnegative()),
+    progressFingerprint: z.string(), messageId: z.string(), instruction: z.string() }).strict().optional(),
   responseLanguage: z.string().min(1).optional(),
   lastApproval: z.object({ planVersion: z.number().int().nonnegative(), userMessageSeq: z.number().int().nonnegative().nullable() }).strict().optional(),
   requirementsVersion: z.number().int().positive(),
@@ -80,7 +83,7 @@ export const taskSchema = z.object({
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
   reviewFault: reviewFaultSchema.nullable().optional(),
-  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart']).nullable().optional(),
+  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled']).nullable().optional(),
 }).strict()
 
 export type TaskSnapshot = z.infer<typeof taskSchema>

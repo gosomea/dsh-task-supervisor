@@ -25,6 +25,8 @@ Reviewer model selection follows the main Agent's effective DSH route by default
 
 Independent checks are opt-in. `independentVerification` makes node and completion review inspect current artifact snapshots and run independent checks before comparing the main report. Runtime criteria require independent execution. The plugin provides a Docker backend; independent browser checks remain pending. See [configuration and limits](docs/implementation.md#independent-artifact-checks-and-two-stage-review) and [real positive/negative evidence](docs/independent-verification-validation.md).
 
+`truncationRecovery` is enabled by default: after a generation reaches its output limit, an admitted task may resume planning or execution once native tools and queues settle. `automaticContinuation: false` disables automatic new turns. `maxRecoveryWithoutProgress` defaults to 2; repeated recovery without novel verifiable tool output pauses for manual resume. Recovery messages, original turns, evidence and counts persist in the main Session; pause, off and restart never automatically resume.
+
 ## Development and isolated validation
 
 Use Node 24 and an isolated DSH checkout containing the `extension/record` host seam. The daily DSH checkout and profile need no changes. The test runner resolves the checkout from `DSH_SOURCE`:

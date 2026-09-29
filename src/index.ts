@@ -13,6 +13,7 @@ import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
+import { recoveryBoundary } from './recovery.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { changedAttempts } from './rework-records.ts'
@@ -65,6 +66,8 @@ export interface Config {
   planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
   automaticContinuation?: boolean
+  truncationRecovery?: boolean
+  maxRecoveryWithoutProgress?: number
 }
 
 interface Runtime {
@@ -111,6 +114,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
   const repairLimits = { files: config.repairMaxFiles ?? 10000, bytes: config.repairMaxBytes ?? 256 * 1024 * 1024 }
   for (const [key, value] of Object.entries(repairLimits)) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`repair ${key} limit must be a positive integer`)
+  const recoveryLimit = config.maxRecoveryWithoutProgress ?? 2
+  if (!Number.isSafeInteger(recoveryLimit) || recoveryLimit < 1 || recoveryLimit > 10) throw new TypeError('maxRecoveryWithoutProgress must be 1–10')
+  if (config.truncationRecovery !== undefined && typeof config.truncationRecovery !== 'boolean') throw new TypeError('truncationRecovery must be a boolean')
   const closeWithResponse = installClosingResponse(ctx)
   const observationPolicy = { toolCalls: config.observationToolCalls ?? 24,
     elapsedMs: config.observationIntervalMs ?? 300000, consecutiveErrors: config.observationConsecutiveErrors ?? 3 }
@@ -211,7 +217,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   /** The idle maintenance lock holds a queued followup until both records are durable. */
-  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string): Promise<void> {
+  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string, delivery?: ReturnType<typeof inputFor>): Promise<void> {
     await agent.runMaintenance(async signal => {
       signal.throwIfAborted()
       if (disposed) throw new Error('Supervisor is unloaded')
@@ -225,9 +231,22 @@ export function apply(ctx: Context, config: Config = {}): void {
       const committed = appendTask(ctx, agent, typeof next === 'function' ? next() : next)
       await flush(agent)
       signal.throwIfAborted()
+      const persisted = current(agent)
+      if (disposed || persisted?.id !== committed.id || persisted.revision !== committed.revision || hasPending(agent)) throw new Error('task or inbox changed before delivery')
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
-      agent.followup(commandInput === undefined ? inputFor(committed, instruction) : createUserMessage({ content: [{ type: 'text', text: commandInput }], source: { kind: 'user' } }))
-      await flush(agent)
+      const message = delivery ?? (commandInput === undefined ? inputFor(committed, instruction) : createUserMessage({ content: [{ type: 'text', text: commandInput }], source: { kind: 'user' } }))
+      agent.followup(message)
+      try {
+        await flush(agent)
+        signal.throwIfAborted()
+        const delivered = current(agent)
+        if (disposed || delivered?.id !== committed.id || delivered.revision !== committed.revision
+          || [...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(item => item.id !== message.id)) throw new Error('task or inbox changed during delivery')
+      } catch (error) {
+        agent.inbox.remove(message.id)
+        runtime(agent).armed = false
+        throw error
+      }
     })
   }
 
@@ -449,19 +468,45 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.on('agent/status', ({ agent, status }) => {
     if (status !== 'idle') return
     const life = runtime(agent)
-    if (life.ownedTurn && taskOf(ctx, agent)?.phase === 'planning') life.armed = false
     life.ownedTurn = false
+    if (config.automaticContinuation === false && taskOf(ctx, agent)?.phase === 'planning'
+      && !hasPending(agent) && !reviewAbort.has(agent)) life.armed = false
     if (disposed || config.automaticContinuation === false || scheduling.has(agent)
       || ctx.agents.get(agent.id) !== agent) return
     const task = taskOf(ctx, agent)
-    if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed
-      || hasPending(agent)) return
+    if (task === null || !['active', 'planning'].includes(task.phase) || !task.enabled || !runtime(agent).armed
+      || hasPending(agent) || reviewAbort.has(agent) || task.pendingReview !== null) return
     scheduling.add(agent)
     void ctx.agents.withoutInitiator(async () => {
       try {
         const latest = current(agent)
         if (disposed || latest === null || latest.id !== task.id || latest.revision !== task.revision
-          || latest.phase !== 'active' || !runtime(agent).armed || hasPending(agent)) return
+          || !['active', 'planning'].includes(latest.phase) || !runtime(agent).armed || hasPending(agent) || reviewAbort.has(agent) || latest.pendingReview !== null) return
+        const ending = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+        if (ending?.type === 'turn/end' && !['completed', 'max-tokens'].includes(ending.data.reason.kind)) { runtime(agent).armed = false; return }
+        const boundary = recoveryBoundary(agent.session.snapshotEvents(), latest)
+        if (boundary && config.truncationRecovery === false) { runtime(agent).armed = false; return }
+        if (config.truncationRecovery !== false) {
+          if (boundary && latest.recovery?.endSeq !== boundary.endSeq) {
+            const noProgress = latest.recovery?.progressFingerprint === boundary.progressFingerprint
+              ? latest.recovery.noProgress + 1 : 0
+            if (noProgress >= recoveryLimit) {
+              appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused', pauseReason: 'recovery-stalled', ...latest.recovery ? { recovery: { ...latest.recovery, noProgress } } : {} })
+              runtime(agent).armed = false
+              await flush(agent)
+              return
+            }
+            const instruction = `Generation reached its output limit; continue ${latest.phase === 'planning' ? 'planning and submit task_submit_plan; implementation is not approved' : 'the current approved node'}.\n`
+              + `Confirmed evidence (bounded): ${boundary.summary}\nEvidence seqs: ${boundary.evidenceSeqs.join(', ')}. Read the original Session for omitted detail.\n`
+              + 'Preserve existing investigation; do not repeat reads or uncertain side effects. Produce the next concrete deliverable, not another long reasoning-only response.'
+            const provisional = { ...latest, revision: latest.revision + 1 }
+            const delivery = inputFor(provisional, instruction)
+            const next: TaskSnapshot = { ...provisional, recovery: { endSeq: boundary.endSeq, turn: boundary.turn, evidenceSeqs: boundary.evidenceSeqs, progressFingerprint: boundary.progressFingerprint, noProgress, messageId: delivery.id, instruction } }
+            await commitAndWake(agent, latest, next, instruction, undefined, undefined, delivery)
+            return
+          }
+        }
+        if (latest.phase === 'planning') { runtime(agent).armed = false; return }
         if (progressReviewMode !== 'required-only' && latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
           await reviewProgress(agent, latest)
           return
@@ -588,7 +633,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             phase: task.phase === 'paused' || task.phase === 'reviewing'
               ? (task.everApproved ? 'active' : 'planning') : task.phase,
             pendingReview: null,
-            reviewFault: null, pauseReason: null }
+            reviewFault: null, pauseReason: null, ...task.recovery ? { recovery: { ...task.recovery, noProgress: 0 } } : {} }
           await commitAndWake(agent, task, next,
             interruptedReview !== null
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
@@ -608,7 +653,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
             approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
-            phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null }
+            phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null, recovery: undefined }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
             await flush(agent)

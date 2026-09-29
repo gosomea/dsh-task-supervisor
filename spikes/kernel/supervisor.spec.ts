@@ -1873,3 +1873,80 @@ it('recovers the same independent review Session and snapshot after a missing de
   expect(recovered.verification?.observations).toEqual(previous.verification?.observations)
   expect(recovered.attempt).toBe(previous.attempt + 1)
 })
+
+it('continues a native truncated planning turn once and stops at manual approval', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-truncation-')); roots.push(root)
+  const truncated: StreamChunk[] = [{ type: 'finish', reason: { kind: 'max-tokens' } }]
+  const adapter = new ScriptedAdapter({ scripted: [truncated, toolResponse('task_submit_plan', {
+    criteria: [{ id: 'c1', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }],
+    stages: [{ id: 'n1', title: 'Implement', criterionIds: ['c1'] }],
+  }, 'recovered-plan'), textResponse('Plan ready; waiting for approval')] })
+  const ctx = await host(root, adapter, true, undefined, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('recover-plan'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.phase).toBe('awaiting-approval'); expect(task.everApproved).toBe(false)
+  expect(task.recovery?.noProgress).toBe(0)
+  const events = agent.session.snapshotEvents()
+  expect(events.filter(e => e.type === 'user/message' && e.data.id === task.recovery?.messageId)).toHaveLength(1)
+  expect(events.some(e => e.type === 'turn/end' && e.data.reason.kind === 'max-tokens')).toBe(true)
+  const requests = adapter.requests
+  ctx.emit('agent/status', { agent, status: 'idle' })
+  await agent.whenIdle(); expect(adapter.requests).toBe(requests)
+})
+
+it('bounds repeated native planning truncations without new facts', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-stalled-')); roots.push(root)
+  const truncated: StreamChunk[] = [{ type: 'finish', reason: { kind: 'max-tokens' } }]
+  const adapter = new ScriptedAdapter({ scripted: [truncated, truncated, truncated, truncated] })
+  const ctx = await host(root, adapter, true, undefined, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('recover-stalled'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('paused')
+  expect(taskOf(ctx, agent)?.pauseReason).toBe('recovery-stalled')
+  expect(adapter.requests).toBe(3)
+})
+
+it('does not recover truncation when automatic continuation is disabled', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-planning-disabled-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [[{ type: 'finish', reason: { kind: 'max-tokens' } }]] })
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('recover-disabled'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(1); expect(taskOf(ctx, agent)?.recovery).toBeUndefined()
+  await ctx.commands.execute(agent, '/task resume', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(2)
+})
+
+it('withdraws the exact user-sourced creation input before failed delivery releases maintenance', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-recovery-flush-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('failed-delivery'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const original = ctx.sessions.flush.bind(ctx.sessions)
+  let calls = 0
+  vi.spyOn(ctx.sessions, 'flush').mockImplementation(async session => ++calls === 2 ? false : original(session))
+  const result = await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  expect(result?.result.kind).toBe('error')
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(0)
+  expect(agent.inbox.nextStep).toHaveLength(0); expect(agent.inbox.nextTurn).toHaveLength(0)
+})
+
+it('withdraws creation input when the user pauses during its delivery flush', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-recovery-pause-delivery-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('pause-delivery'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const original = ctx.sessions.flush.bind(ctx.sessions), entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>()
+  let calls = 0
+  vi.spyOn(ctx.sessions, 'flush').mockImplementation(async session => { if (++calls === 2) { entered.resolve(); await release.promise }; return original(session) })
+  const create = ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await entered.promise
+  await ctx.commands.execute(agent, '/task pause', [], new AbortController().signal)
+  release.resolve(); await create; await agent.whenIdle()
+  expect(adapter.requests).toBe(0); expect(taskOf(ctx, agent)?.phase).toBe('paused')
+  expect(agent.inbox.nextTurn).toHaveLength(0)
+})
