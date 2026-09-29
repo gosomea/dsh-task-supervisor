@@ -2038,3 +2038,109 @@ it('admits an explicit post-approval read turn with native default read tools', 
   expect(result.isError).toBe(false)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', readOnlyTurnsBeforeWrite: 1 })
 })
+
+const smallPlan = { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }] }
+function coverageChecks(verdict = 'pass'): StreamChunk[][] {
+  return [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'coverage-read'),
+    toolResponse('task_review_decision', { verdict, finding: '计划覆盖当前要求', evidence_seqs: [0] }, 'coverage-decision')]
+}
+
+it.each(['pass', 'revise', 'needs-user', 'fault'])('applies profile preauthorization only after a valid formal plan %s', async verdict => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-policy-plan-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'policy-plan'), textResponse('计划结果')], reviewer: verdict === 'fault' ? [textResponse('漏交决定')] : coverageChecks(verdict) })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, [], { executionApproval: 'after-review' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`policy-${verdict}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.phase).toBe(verdict === 'pass' ? 'active' : verdict === 'revise' ? 'planning' : 'paused')
+  expect(task.everApproved).toBe(verdict === 'pass')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(1)
+  if (verdict === 'pass') {
+    expect(task.lastApproval).toMatchObject({ source: 'policy', userMessageSeq: null, authorizationSeq: task.approvalPolicy?.grantSeq })
+    expect(task.approvedPlanVersion).toBe(task.planVersion)
+    // Global continuation is off: the policy grants approval, not an implicit new execution round.
+    expect((await ctx.commands.execute(agent, '/task', [], new AbortController().signal))?.result.text).toContain('(waiting)')
+    const unauthorized = await ctx.tools.execute({ callId: ToolCallId('policy-is-not-direct-user'), name: 'task_approve', arguments: {}, agent, signal: new AbortController().signal })
+    expect(unauthorized.isError).toBe(true)
+  } else expect(task.lastApproval).toBeUndefined()
+})
+
+it('invalidates initial approval and policy when the user materially edits an approved objective', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-policy-edit-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'edit-initial'), textResponse('approved')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, [], { executionApproval: 'after-review' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('policy-edit'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  await ctx.commands.execute(agent, '/task edit Build export', [], new AbortController().signal); await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.everApproved).toBe(false); expect(task.approvalPolicy).toBeUndefined(); expect(task.lastApproval).toBeUndefined()
+  expect(task.requirementsVersion).toBe(2); expect(task.phase).toBe('planning')
+})
+
+it('records revocation and allows a user to opt in at manual approval without a duplicate activation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-policy-choice-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'manual-plan'), textResponse('waiting')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('policy-choice'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  await ctx.commands.execute(agent, '/task auto-approve-off', [], new AbortController().signal)
+  expect(taskOf(ctx, agent)?.approvalPolicy).toMatchObject({ mode: 'manual', source: 'user-command' })
+  const rev = taskOf(ctx, agent)!.revision, id = taskOf(ctx, agent)!.id
+  const results = await Promise.all([ctx.commands.execute(agent, `/task auto-approve-on ${id} ${rev}`, [], new AbortController().signal), ctx.commands.execute(agent, `/task approve ${id} ${rev}`, [], new AbortController().signal)])
+  await agent.whenIdle()
+  expect(results.filter(result => result?.result.kind === 'success')).toHaveLength(1)
+  expect(taskOf(ctx, agent)?.phase).toBe('active')
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && (event.data.payload as Record<string, unknown>).phase === 'active')).toHaveLength(1)
+})
+
+it('persists revocation during formal plan review and never executes its late pass', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-policy-review-revoke-')); roots.push(root)
+  const adapter = new PausingAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'revoke-plan'),
+    textResponse('等待用户批准'), toolResponse('implement_import', {}, 'revoke-must-not-work')], reviewer: coverageChecks() })
+  adapter.pauseModel = 'reviewer'; adapter.pauseNext = true
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { executionApproval: 'after-review', progressReviewMode: 'required-only' })
+  let implementations = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'implement_import', description: 'implementation fixture', parameters: {}, execute: async () => { implementations++; return [{ type: 'text', text: 'implemented' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('policy-review-revoke'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal)
+  await adapter.entered.promise
+  try {
+    expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ kind: 'plan', status: 'started' })
+    expect((await ctx.commands.execute(agent, '/task auto-approve-off', [], signal))?.result.kind).toBe('success')
+    const revoked = taskOf(ctx, agent)!
+    expect(revoked.approvalPolicy).toMatchObject({ mode: 'manual', source: 'user-command' })
+    const reader = await ctx.sessionPersistence.open(agent.id, 'read')
+    try {
+      const persisted = (await reader.read(0, 256)).events.find(event => event.seq === revoked.approvalPolicy!.grantSeq)
+      expect(persisted).toMatchObject({ type: 'extension/record', data: { namespace: NAMESPACE, kind: 'state',
+        payload: { approvalPolicy: { mode: 'manual', source: 'user-command' } } } })
+    } finally { await reader.close() }
+  } finally { adapter.release.resolve() }
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'planning', everApproved: false, approvalPolicy: { mode: 'manual' } })
+  expect(taskOf(ctx, agent)?.lastApproval).toBeUndefined()
+  expect(implementations).toBe(0)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE
+    && (event.data.payload as Record<string, unknown>).phase === 'active')).toHaveLength(0)
+})
+
+it('runs a policy-approved native task through stage and whole-task acceptance without an approval message', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-policy-complete-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'auto-plan'), textResponse('按预授权执行'),
+    toolResponse('task_start_node', { stage_id: 'n', attempt: 1 }, 'auto-start'), toolResponse('implement_import', {}, 'auto-work'),
+    toolResponse('task_report_stage', { stage_id: 'n', evidence: 'implemented actual fixture output' }, 'auto-stage'),
+    toolResponse('task_request_completion', { evidence: 'all actual checks passed' }, 'auto-complete'), textResponse('已完成')],
+    reviewer: [...coverageChecks(), ...coverageChecks(), ...coverageChecks()] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { executionApproval: 'after-review', progressReviewMode: 'required-only' })
+  let implementations = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'implement_import', description: 'implementation fixture', parameters: {}, execute: async () => { implementations++; return [{ type: 'text', text: 'import implemented; checks pass' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('policy-complete'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('complete'), { timeout: 5000 }); await agent.whenIdle()
+  expect(implementations).toBe(1)
+  expect(taskOf(ctx, agent)?.lastApproval?.source).toBe('policy')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.map(job => job.kind)).toEqual(['plan', 'stage', 'completion'])
+  expect(agent.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(1)
+})

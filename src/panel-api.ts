@@ -12,7 +12,7 @@ import type { ConsultationMode } from './consultation.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
 
 const PATH = '/api/task-supervisor'
-const ACTIONS = new Set(['consult-mode', 'create-draft', 'consult', 'approve', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
+const ACTIONS = new Set(['consult-mode', 'create-draft', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
 
 function response(value: unknown, status = 200): Response {
   return Response.json(value, { status, headers: { 'cache-control': 'no-store' } })

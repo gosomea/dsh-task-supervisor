@@ -48,6 +48,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
     <div className="dsh-task-inline-summary"><div className="dsh-task-inline-copy">
       <p title={stage?.title ?? task.objective}>{stage ? `${nodeLabel(task, stage.id, state)} · ${executorLabel(task, sessionId, stage.id)} · ${headline(stage.title)}` : headline(task.objective)}</p>
       {rework && <small>{rework.stageId === stage?.id ? '返工原因' : '上游返工影响'}：{headline(rework.reason, 80)}</small>}
+      {task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <small>Supervisor · 本计划按你的预授权自动批准</small>}
       {task.phase === 'planning' && task.planning && <small title={task.planning.nextAction}>Supervisor · 下一项产出：{headline(task.planning.nextAction, 80)}</small>}
       {task.pauseReason === 'planning-stalled' && <small>规划检查未发现新进展，等待手动恢复。</small>}
       {task.recovery && <small>Supervisor · 生成截断后继续{task.phase === 'planning' ? '规划' : '任务'} · 无进展恢复 {task.recovery.noProgress} 次</small>}

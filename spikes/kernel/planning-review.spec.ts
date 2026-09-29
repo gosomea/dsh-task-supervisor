@@ -14,7 +14,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { reviewStage } from '../../src/reviewer.ts'
+import { reviewStage, reviewTruncationBoundary } from '../../src/reviewer.ts'
 import { foldReviewJobs, REVIEW_NAMESPACE, reviewJobSchema, type ReviewJob } from '../../src/review-records.ts'
 import { newTask } from '../../src/state.ts'
 import { verificationPolicy } from '../../src/verification.ts'
@@ -31,9 +31,11 @@ function toolResponse(name: string, args: Record<string, unknown>): StreamChunk[
     { type: 'finish', reason: { kind: 'tool-calls' } }]
 }
 class ScriptedAdapter extends LlmAdapter {
+  readonly requests: GenerateOptions[] = []
   constructor(readonly scripts: Record<string, StreamChunk[][]> = {}) { super() }
   override resolveModel(provider: string, model: string) { return Promise.resolve({ provider, id: model, name: model }) }
   override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    this.requests.push(options)
     for (const chunk of this.scripts[options.model]?.shift() ?? textResponse('No further decision')) yield chunk
   }
 }
@@ -124,6 +126,149 @@ it('repairs a missing planning summary once in the same Session and evidence cut
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
   expect(new Set(jobs.map(job => job.reviewerSessionId)).size).toBe(1)
   expect(jobs.at(-1)).toMatchObject({ attempt: 2, status: 'submitted' })
+})
+
+function truncatedResponse(): StreamChunk[] {
+  return [{ type: 'block-start', index: 0, blockType: 'reasoning' },
+    { type: 'reasoning-delta', index: 0, text: '尚未形成完整审查决定' },
+    { type: 'block-end', index: 0, block: { type: 'reasoning', text: '尚未形成完整审查决定' } },
+    { type: 'finish', reason: { kind: 'max-tokens' } }]
+}
+
+it.each(['planning', 'plan', 'stage'] as const)('repairs an actual reasoning-only max-tokens %s review in the original Session and cutoff', async kind => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  const cutoff = agent.session.seq - 1
+  adapter.scripts.reviewer = [truncatedResponse(), toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '证据核对完毕', evidence_seqs: [seq], ...kind === 'planning' ? { planning } : {} })]
+  const decision = await reviewStage(ctx, agent, task, kind, '观察', new AbortController().signal, selected, kind)
+  const records = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+    .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
+  const repairs = records.filter(job => job.status === 'repairing')
+  expect(repairs).toHaveLength(1)
+  expect(repairs[0]).toMatchObject({ attempt: 2, fault: { code: 'protocol-missing' }, taskRevision: task.revision, cutoff })
+  expect(repairs[0]!.fault?.message).toContain('max-tokens')
+  expect(new Set(records.map(job => job.reviewerSessionId)).size).toBe(1)
+  expect(new Set(records.map(job => job.deadlineAt)).size).toBe(1)
+  expect(records.at(-1)).toMatchObject({ status: 'submitted', attempt: 2, cutoff })
+  expect(decision.cutoff).toBe(cutoff)
+  expect(task).toMatchObject({ phase: 'planning', everApproved: false, revision: 1 })
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    expect(events.filter(event => event.type === 'turn/start')).toHaveLength(2)
+    expect(events.filter(event => event.type === 'turn/end').map(event => event.type === 'turn/end' && event.data.reason.kind)).toEqual(['max-tokens', 'completed'])
+    const repair = JSON.stringify(events.filter(event => event.type === 'user/message').at(-1))
+    expect(repair).toContain('actual latest native request reached its output limit')
+    expect(repair).toContain('do not repeat long reasoning')
+    expect(repair).toContain(`task revision ${task.revision} and cutoff ${cutoff}`)
+    expect(repair).not.toContain('preserve the same snapshot and phase')
+    expect(repair).not.toContain('record task_review_observations')
+    expect(repair).not.toContain('Independent reviews also require criteria')
+    if (kind !== 'planning') expect(repair).toContain('existing objective, acceptance criteria and original Session log evidence')
+  } finally { await reader.close() }
+})
+
+it('retains already-read evidence across truncation rather than requiring duplicate reads', async () => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  adapter.scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }), truncatedResponse(),
+    toolResponse('task_review_decision', { verdict: 'revise', finding: '保留证据，缩小调查问题', evidence_seqs: [seq], planning })]
+  const decision = await reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning')
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'read_task_evidence')).toHaveLength(1)
+    expect(events.filter(event => event.type === 'turn/start')).toHaveLength(2)
+  } finally { await reader.close() }
+})
+
+it.each([0, 1, 2])('bounds truncated review repair to the configured %i extra attempts', async repairAttempts => {
+  const { ctx, agent, adapter, task } = await fixture()
+  adapter.scripts.reviewer = Array.from({ length: repairAttempts + 2 }, truncatedResponse)
+  await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning', { repairAttempts }))
+    .rejects.toMatchObject({ fault: { code: 'protocol-missing', attempt: repairAttempts + 1 } })
+  expect(adapter.requests.filter(request => request.model === 'reviewer')).toHaveLength(repairAttempts + 1)
+  const jobs = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+    .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
+  expect(jobs.at(-1)).toMatchObject({ status: 'failed', attempt: repairAttempts + 1, repairLimit: repairAttempts })
+  expect(jobs.at(-1)!.fault?.message).toContain('native reason max-tokens')
+})
+
+it('does not use truncation to rescue a failed evidence tool', async () => {
+  const { ctx, agent, adapter, task } = await fixture()
+  adapter.scripts.reviewer = [toolResponse('read_task_text', { seq: 0 }), truncatedResponse(),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 })]
+  await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning'))
+    .rejects.toMatchObject({ fault: { code: 'evidence-read', attempt: 1 } })
+  expect(adapter.requests.filter(request => request.model === 'reviewer')).toHaveLength(2)
+})
+
+it.each(['blocked', 'aborted', 'error'] as const)('never repairs a native %s reviewer ending', async reason => {
+  const { ctx, agent, adapter, task } = await fixture()
+  if (reason === 'error') adapter.scripts.reviewer = [[{ type: 'finish', reason: { kind: 'error', failure: { code: 'TEST_PROVIDER', message: 'provider unavailable' } } }]]
+  else ctx.on('agent/pre-step', async ({ agent: reviewer }, next) => {
+    if (!reviewer.id.startsWith('task-review-')) return next()
+    if (reason === 'blocked') return { kind: 'reject' }
+    reviewer.cancel({ kind: 'parent' })
+    return next()
+  })
+  await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning'))
+    .rejects.toMatchObject({ fault: { attempt: 1 } })
+  const jobs = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+    .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
+  expect(jobs.some(job => job.status === 'repairing')).toBe(false)
+  expect(adapter.requests.filter(request => request.model === 'reviewer').length).toBeLessThanOrEqual(1)
+  const reader = await ctx.sessionPersistence.open(SessionId(jobs.at(-1)!.reviewerSessionId!), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    const ending = events.findLast(event => event.type === 'turn/end')
+    expect(ending?.type === 'turn/end' && ending.data.reason.kind).toBe(reason)
+  } finally { await reader.close() }
+})
+
+function reviewLog() {
+  const events: SessionEvent[] = []
+  function add(type: string, data: unknown) { events.push({ type, data, seq: events.length, time: events.length } as SessionEvent) }
+  add('turn/start', { turn: 1 }); add('step/start', { turn: 1, step: 1 })
+  const assistant = (step: number, reason: string) => add('assistant/message', { turn: 1, step,
+    message: { role: 'assistant', content: [{ type: 'reasoning', text: '尚未完成' }], source: { provider: 'scripted', model: 'reviewer' } },
+    stream: [{ type: 'chunk', time: 1, chunk: { type: 'finish', reason: { kind: reason } } }] })
+  assistant(1, 'max-tokens'); add('step/end', { turn: 1, step: 1 }); add('turn/end', { turn: 1, reason: { kind: 'max-tokens' } })
+  return { events, add, assistant }
+}
+it.each(['stop', 'tool-calls', 'error'])('requires the latest actual request to be truncated, not a sticky earlier turn marker before %s', reason => {
+  const log = reviewLog(); expect(reviewTruncationBoundary(log.events)).toEqual({ endSeq: 4, turn: 1 })
+  log.events.pop(); log.add('step/start', { turn: 1, step: 2 }); log.assistant(2, reason)
+  log.add('step/end', { turn: 1, step: 2 }); log.add('turn/end', { turn: 1, reason: { kind: 'max-tokens' } })
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
+})
+it.each(['aborted', 'error', 'blocked', 'interrupted', 'completed'])('does not accept a forged max request with native %s ending', reason => {
+  const log = reviewLog()
+  log.events.pop(); log.add('turn/end', { turn: 1, reason: { kind: reason } })
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
+})
+it('rejects unsettled tool obligations even when the native step was closed', () => {
+  const log = reviewLog(); log.events.splice(-2)
+  log.add('tool/call', { turn: 1, step: 1, callId: 'unfinished', name: 'read_task_evidence', arguments: '{}' })
+  log.add('step/end', { turn: 1, step: 1 }); log.add('turn/end', { turn: 1, reason: { kind: 'max-tokens' } })
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
+})
+it('rejects a declared tool call without a result even if it never became a native execution', () => {
+  const log = reviewLog()
+  const assistant = log.events.find(event => event.type === 'assistant/message')!
+  if (assistant.type === 'assistant/message') assistant.data.message = { ...assistant.data.message,
+    content: [...assistant.data.message.content, { type: 'tool-call', id: ToolCallId('not-started'), name: 'read_task_evidence', arguments: '{}' }] }
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
+})
+it('rejects settled tool effects after the purported final truncated response', () => {
+  const log = reviewLog(); log.events.splice(-2)
+  log.add('tool/call', { turn: 1, step: 1, callId: 'late', name: 'read_task_evidence', arguments: '{}' })
+  log.add('tool/result', { turn: 1, step: 1, message: { role: 'tool', source: { kind: 'tool', callId: 'late' }, content: [{ type: 'text', text: 'later success' }] } })
+  log.add('step/end', { turn: 1, step: 1 }); log.add('turn/end', { turn: 1, reason: { kind: 'max-tokens' } })
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
+})
+it.each(['user/message', 'turn/start', 'step/start', 'assistant/attempt'])('rejects post-boundary %s activity', type => {
+  const log = reviewLog(); log.add(type, { turn: 2, step: 1 })
+  expect(reviewTruncationBoundary(log.events)).toBeNull()
 })
 
 function job(kind: ReviewJob['kind'] = 'planning'): ReviewJob {

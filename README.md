@@ -9,7 +9,7 @@ Planning supervision is enabled by default (`planningSupervision`; `maxPlanningW
 ## Current workflow
 
 1. `/task new <objective>` starts one supervised task and asks the main Agent to submit acceptance criteria and ordered stages with `task_submit_plan`.
-2. `/task` shows status. A fresh reviewer checks a submitted plan against the original objective and returns omissions for revision. After that review passes, the initial plan waits for `/task approve` or the **Approve plan** button. Planning retains native DSH tool permissions, including `run_code`, file and command tools for workspace investigation. The main Agent is instructed to wait for approval before implementing deliverables. The original `/task new` input is recorded and displayed as a native user message.
+2. `/task` shows status. A fresh reviewer checks a submitted plan against the original objective and returns omissions for revision. After that review passes, the initial plan waits for `/task approve` or the **Approve plan** button by default; explicit `after-review` preauthorization admits it automatically. Planning retains native DSH tool permissions, including `run_code`, file and command tools for workspace investigation. The main Agent is instructed to wait for approval before implementing deliverables. The original `/task new` input is recorded and displayed as a native user message.
 3. After approval, the controller admits follow-up turns. The main Agent reports stage evidence with `task_report_stage`. A fresh reviewer reads bounded pages of the main Session log and returns `pass`, `revise`, or `needs-user`.
 4. If a configured number of turns pass without a stage report, a progress reviewer decides whether to continue, correct course, or pause for the user. Once all stages pass, `task_request_completion` starts a separate final review. Only its `pass` decision marks the task complete.
 5. `/task pause`, `/task off`, `/task on`, `/task resume`, `/task edit <objective>`, and `/task clear` control the lifecycle. Plan, stage, and completion checkpoints show separate cards for the main Agent's submission and the Supervisor's independent review, with event and reviewer Session references. Each side's remaining content expands separately. The right sidebar shows state and the relevant controls, including an explicit **Close Supervisor** button. A host restart restores the task but waits for manual resume.
@@ -28,6 +28,8 @@ Reviewer model selection follows the main Agent's effective DSH route by default
 Independent checks are opt-in. `independentVerification` makes node and completion review inspect current artifact snapshots and run independent checks before comparing the main report. Runtime criteria require independent execution. The plugin provides a Docker backend; independent browser checks remain pending. See [configuration and limits](docs/implementation.md#independent-artifact-checks-and-two-stage-review) and [real positive/negative evidence](docs/independent-verification-validation.md).
 
 `truncationRecovery` is enabled by default: after a generation reaches its output limit, an admitted task may resume planning or execution once native tools and queues settle. `automaticContinuation: false` disables automatic new turns. `maxRecoveryWithoutProgress` defaults to 2; repeated recovery without novel verifiable tool output pauses for manual resume. Recovery messages, original turns, evidence and counts persist in the main Session; pause, off and restart never automatically resume.
+
+`planningSupervision` defaults to `true` and checks plan formation before submission. `executionApproval` defaults to `manual`; select `after-review` in the profile or use `/task auto-approve-on` before first approval to preauthorize execution after an independent formal plan pass. `/task auto-approve-off` revokes it, including during review. Editing requirements clears approval and preauthorization. [Validation](docs/planning-supervision-validation.md) separates deterministic checks from real-model probes.
 
 ## Development and isolated validation
 
@@ -56,7 +58,7 @@ For a Web smoke test, build that checkout's Host and Client, initialize a separa
 | [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
 | [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
 | [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
-| [Planning supervision and truncation recovery proposal](.agents/notes/proposed/feature/2026-09-29-planning-supervision.md) | Proposed: observation during plan formation, bounded contextual continuation and optional user-preauthorized execution approval. |
+| [Planning supervision and execution approval](.agents/notes/implemented/feature/2026-09-29-planning-supervision.md) | Implemented: planning observation, contextual recovery, bounded reviewer supplementation and explicit execution preauthorization; evidence and limits linked. |
 | [Evaluation design and execution roadmap](docs/evaluation.md) | Public benchmarks first; datasets, comparison arms, metrics, checklist, and development-result links. |
 | [First prototype](docs/prototype.md) | Acceptance gates and comparison with Agent Team. |
 | [Supervisor Session](docs/session-runtime.md) | Durable control and recovery design. |

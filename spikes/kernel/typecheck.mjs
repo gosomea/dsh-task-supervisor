@@ -18,7 +18,7 @@ for (const side of ['host', 'client']) {
     jsx: ts.JsxEmit.ReactJSX, typeRoots: [resolve(source, 'scripts/types'), resolve(source, 'node_modules/@types')],
     paths: { ...parsed.options.paths, vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')] } }
   const program = ts.createProgram({ rootNames: side === 'host' ? [
-    resolve(project, 'spikes/kernel/planning-review.spec.ts'), resolve(project, 'spikes/kernel/recovery.spec.ts'), resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
+    resolve(project, 'spikes/kernel/execution-policy.spec.ts'), resolve(project, 'spikes/kernel/planning-review.spec.ts'), resolve(project, 'spikes/kernel/recovery.spec.ts'), resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
     resolve(project, 'spikes/kernel/artifact-snapshot.spec.ts'), resolve(project, 'spikes/kernel/review-check.spec.ts'), resolve(project, 'spikes/kernel/verification.spec.ts'),
     resolve(project, 'src/check-gateway.ts'), resolve(project, 'spikes/kernel/check-gateway.spec.ts'),
     resolve(project, 'eval/independent-verification/gateway-probe.ts'),

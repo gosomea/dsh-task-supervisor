@@ -31,6 +31,7 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
     'The supervised DAG is the task progress record. Do not create a second todo_write checklist or activate native Goal/Plan for this supervised task.',
     'Before implementing a node yourself, call task_start_node with its exact stage_id and current attempt. Do not start nodes during ordinary progress questions. Report or rework the running node before switching to another. task_delegate_nodes records worker starts separately.',
     `Task ${task.id}; requirements v${task.requirementsVersion}; plan v${task.planVersion}; state v${task.revision}.`,
+    task.approvalPolicy?.mode === 'after-review' ? 'Approval: controller after formal plan pass.' : 'Approval: wait for the user.',
     `Objective (full): ${task.objective}`,
     `Accepted nodes: ${acceptedNodes(task).join(', ') || 'none'}.`,
     task.stages.length === 0 ? 'No plan submitted yet; inspect and submit a plan before execution. Preserve requested node counts. dependsOn requires predecessor review passes; integrate worker outputs before reporting their nodes, never in a successor blocked on that review. Objective criteria use provenance {kind: user, reference: objective}.'

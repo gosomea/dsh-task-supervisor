@@ -1,5 +1,7 @@
 # Task state and control proposal
 
+The prototype defaults to manual first approval and supports explicit task/profile preauthorization after formal plan review passes. Editing requirements clears prior approval; restart and completed-task repair retain manual confirmation. See [implemented policy](../.agents/notes/implemented/feature/2026-09-29-planning-supervision.md).
+
 **Status: design proposal.** This page owns task capacity, storage, command routing, and recovery. The proposed defaults below are starting points for implementation, not measured limits or shipped configuration fields.
 
 ## Summary

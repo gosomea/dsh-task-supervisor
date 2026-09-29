@@ -42,7 +42,7 @@ interface ClientContext {
 }
 
 export const inject = ['sessions', 'slots', 'sidebarRightTabs', 'sidebarRight', 'uiSession', 'uiConversation']
-const ACTION_LABEL: Record<string, string> = { approve: '批准计划', pause: '暂停', resume: '恢复任务', 'retry-review': '重试审查',
+const ACTION_LABEL: Record<string, string> = { 'auto-approve-on': '审查通过后自动执行', 'auto-approve-off': '改为手动批准', approve: '批准计划', pause: '暂停', resume: '恢复任务', 'retry-review': '重试审查',
   off: '关闭督导', on: '重新启用督导' }
 const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementation: '实现选择' }
 function useTask(sessionId: string) {
@@ -236,6 +236,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
       {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} /></div>}
       {reviewId && (reviewSection ?? <p role="status">这次审查已超出当前历史窗口，请从原生会话日志查看原始记录。</p>)}
+      {task && <section className="dsh-task-section"><h3>执行批准</h3><p>{task.approvalPolicy?.mode === 'after-review' && task.approvalPolicy.mainSessionId === sessionId && task.approvalPolicy.requirementsVersion === task.requirementsVersion ? '按你的设置：计划通过独立审查后自动执行' : '手动批准计划后执行'}</p>{task.approvalPolicy && <small className="dsh-task-meta">来源：{task.approvalPolicy.source === 'profile' ? 'DSH profile 设置' : '用户任务设置'} · 授权事件 seq {task.approvalPolicy.grantSeq}</small>}{task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <p>本计划按预授权自动批准 · 授权 seq {task.lastApproval.authorizationSeq} · 审查作业 {task.lastApproval.reviewJobId}</p>}</section>}
       {task?.planning && task.planning.requirementsVersion === task.requirementsVersion && <section className="dsh-task-section"><h3>规划进展 · Supervisor</h3><p>{task.planning.nextAction}</p><Disclosure title={`已确认 ${task.planning.facts.length} 项 · 待核对 ${task.planning.unknowns.length} 项`}><h4>已确认事实</h4><ul>{task.planning.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul><h4>未决问题</h4><ul>{task.planning.unknowns.map((question, i) => <li key={i}>{question}</li>)}</ul><p className="dsh-task-meta">要求 v{task.planning.requirementsVersion} · 截至 seq {task.planning.cutoff} · 证据 {task.planning.evidenceSeqs.join(', ')} · 连续无进展 {task.planning.noProgress} 次</p></Disclosure></section>}
       {task?.pauseReason === 'planning-stalled' && <p role="status">独立规划检查未发现新的相关进展，已暂停。检查未决问题后可手动恢复。</p>}
       {task?.recovery && <section className="dsh-task-section"><Disclosure title="生成截断后的续行记录"><p>原回合 {task.recovery.turn} · 结束事件 seq {task.recovery.endSeq} · 连续无进展 {task.recovery.noProgress} 次</p><p className="dsh-task-review">{task.recovery.instruction}</p></Disclosure></section>}

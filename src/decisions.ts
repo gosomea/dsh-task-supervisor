@@ -35,8 +35,10 @@ export function controlActions(task: TaskSnapshot | null, armed: boolean, review
   if (task === null || task.phase === 'cleared') return []
   if (!task.enabled) return ['on']
   if (task.phase === 'complete') return []
-  if (reviewing) return ['pause', 'off']
-  if (task.phase === 'awaiting-approval') return ['approve', 'pause', 'off']
+  if (reviewing) return task.approvalPolicy?.mode === 'after-review' && !task.everApproved ? ['auto-approve-off', 'pause', 'off'] : ['pause', 'off']
+  const policyAction = task.approvalPolicy?.mode === 'after-review' ? 'auto-approve-off' : 'auto-approve-on'
+  if (task.phase === 'awaiting-approval') return ['approve', policyAction, 'pause', 'off']
+  if (task.phase === 'planning') return [armed ? 'pause' : 'resume', policyAction, 'off']
   if (task.phase === 'paused' && task.pauseReason === 'review-fault') return task.reviewFault?.retryable ? ['retry-review', 'off'] : ['off']
   if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']
   return ['pause', 'off']

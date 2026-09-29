@@ -1,6 +1,6 @@
 # Implementation status
 
-**Updated 2026-09-28: conversation and review-recovery steps A–F are implemented and jointly validated.** Task state version 11 reads versions 1–11 without rewriting history. [Step F](10-plans/conversation-and-review-recovery/evidence/f.md) links source gates and runtime evidence. Historical iteration sections below retain their original test counts.
+**Updated 2026-09-29: planning supervision, bounded main/reviewer truncation recovery and optional execution preauthorization are implemented.** Current task record version 14 reads 1–14; projection version 15 rebuilds; review record version 3 reads 1–3. [Validation](planning-supervision-validation.md) records current source gates, real-model probes and limits. The A–F table and earlier iteration sections below retain their historical scope and counts.
 
 | Step | Capability | Acceptance |
 | --- | --- | --- |

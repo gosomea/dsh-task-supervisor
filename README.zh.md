@@ -9,7 +9,7 @@
 ## 当前流程
 
 1. `/task new <目标>` 创建一个受督导任务，要求主 Agent 用 `task_submit_plan` 提交验收标准和有序阶段。
-2. `/task` 查看状态。提交计划时先由独立审查者检查原始目标的覆盖情况；遗漏要求会退回修订。初始计划通过审查后，等待 `/task approve` 或右侧面板的**批准计划**按钮。规划阶段沿用 DSH 原生工具权限，可通过 `run_code`、文件和命令工具勘察工作区；提示主 Agent 在批准前不实施交付物。`/task new` 的原始命令按原生用户消息记录并展示。
+2. `/task` 查看状态。提交计划时先由独立审查者检查原始目标的覆盖情况；遗漏要求会退回修订。初始计划通过审查后，默认等待 `/task approve` 或右侧面板的**批准计划**按钮；明确 `after-review` 预授权后自动准入执行。规划阶段沿用 DSH 原生工具权限，可通过 `run_code`、文件和命令工具勘察工作区；提示主 Agent 在批准前不实施交付物。`/task new` 的原始命令按原生用户消息记录并展示。
 3. 获批后，控制层准入后续轮次。主 Agent 用 `task_report_stage` 汇报阶段证据；新的审查者分页读取主 Session 的有界日志，返回通过、修订或需要用户决策。
 4. 达到可配置的未汇报轮次后，进展审查决定继续、纠偏或暂停请用户处理。所有阶段通过后，`task_request_completion` 启动独立的最终审查；只有最终审查通过才能记为完成。
 5. `/task pause`、`/task off`、`/task on`、`/task resume`、`/task edit <目标>`、`/task clear` 控制生命周期。计划、阶段和完成检查点分别显示主 Agent 提交和 Supervisor 的独立审查，附事件序号及审查 Session 身份。两方的后续内容可分别展开。右侧面板显示状态和对应按钮，包括明确的**关闭督导**按钮。宿主重启后恢复任务，但等待用户手动继续。
@@ -28,6 +28,8 @@
 独立检查默认关闭。配置 `independentVerification` 后，节点与整体验收先读取当前产物快照并执行自己的检查，再对照主 Agent 汇报；运行时标准需要独立执行证据。当前提供插件内 Docker 后端，独立浏览器检查待开发。配置与限制见[实现状态](docs/implementation.zh.md#独立产物检查与两阶段审查)，真实正反例见[验收记录](docs/independent-verification-validation.zh.md)。
 
 生成达到单次输出上限时，`truncationRecovery` 默认开启，在当前任务准入有效且原生工具与队列已结清后恢复规划或执行。`automaticContinuation: false` 关闭自动新轮次；`maxRecoveryWithoutProgress` 默认 2，连续恢复没有新的可核实工具产出会暂停等待手动恢复。恢复消息、原回合、证据和计数保存在主 Session；暂停、关闭及重启不会自动恢复。
+
+`planningSupervision` 默认 `true`，在提交前检查计划形成。`executionApproval` 默认 `manual`；可在 profile 选择 `after-review`，或首次批准前用 `/task auto-approve-on`，预授权正式计划通过独立审查后执行。`/task auto-approve-off` 撤销此项，审查进行中也可撤销。编辑要求会清除批准和预授权。[验收记录](docs/planning-supervision-validation.zh.md)区分确定性检查和真实模型探针。
 
 ## 开发与隔离验证
 
@@ -56,7 +58,7 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
 | [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
 | [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
-| [规划监督与截断恢复提案](.agents/notes/proposed/feature/2026-09-29-planning-supervision.zh.md) | 待实现：规划形成期间的观察、有上下文的有限续行与用户可选的自动执行批准。 |
+| [规划监督与执行批准](.agents/notes/implemented/feature/2026-09-29-planning-supervision.zh.md) | 已实现：规划观察、上下文恢复、有限审查补交与明确执行预授权；链接包含证据与限制。 |
 | [评测设计与执行路线](docs/evaluation.zh.md) | 公开基准优先；统一数据集、对照组、指标、待办与开发结果入口。 |
 | [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
 | [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |

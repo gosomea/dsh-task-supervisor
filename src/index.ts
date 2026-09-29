@@ -13,6 +13,7 @@ import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
+import { policyApproval } from './execution-policy.ts'
 import { recoveryBoundary } from './recovery.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
@@ -66,6 +67,7 @@ export interface Config {
   planCoverageReview?: boolean
   maxAutomaticRoundsWithoutReport?: number
   automaticContinuation?: boolean
+  executionApproval?: 'manual' | 'after-review'
   planningSupervision?: boolean
   maxPlanningWithoutProgress?: number
   truncationRecovery?: boolean
@@ -119,6 +121,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   const recoveryLimit = config.maxRecoveryWithoutProgress ?? 2
   if (!Number.isSafeInteger(recoveryLimit) || recoveryLimit < 1 || recoveryLimit > 10) throw new TypeError('maxRecoveryWithoutProgress must be 1–10')
   if (config.truncationRecovery !== undefined && typeof config.truncationRecovery !== 'boolean') throw new TypeError('truncationRecovery must be a boolean')
+  if (config.executionApproval !== undefined && !['manual', 'after-review'].includes(config.executionApproval)) throw new TypeError('executionApproval must be manual or after-review')
   const planningLimit = config.maxPlanningWithoutProgress ?? 2
   if (!Number.isSafeInteger(planningLimit) || planningLimit < 1 || planningLimit > 10) throw new TypeError('maxPlanningWithoutProgress must be 1–10')
   if (config.planningSupervision !== undefined && typeof config.planningSupervision !== 'boolean') throw new TypeError('planningSupervision must be a boolean')
@@ -304,9 +307,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
     const task = current(agent)
     if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
-    const next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
+    let next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
-    await commitAndWake(agent, task, next,
+    await commitAndWake(agent, task, () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } },
       'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.', undefined, commandInput)
     return next
   }
@@ -334,6 +337,11 @@ export function apply(ctx: Context, config: Config = {}): void {
       await flush(agent)
     }
   })
+
+  function approvalFor(agent: Agent, task: TaskSnapshot) {
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
+    return policyApproval(task, agent.id, agent.session.snapshotEvents(), job)
+  }
 
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === jobId)
@@ -609,7 +617,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.commands.register({
     name: 'task',
     description: 'Create, inspect, approve, pause, or resume a supervised task',
-    input: { hint: '[new <objective>|approve|edit <objective>|pause|resume|retry-review|clear|off|on]' },
+    input: { hint: '[new <objective>|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|clear|off|on]' },
     async handler({ agent, rawInput, signal }) {
       const binding = consultationBinding(agent)
       if (binding) {
@@ -623,7 +631,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
       }
       let input = rawInput.trim()
-      const bound = /^(approve|pause|resume|retry-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
+      const bound = /^(approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {
         const state = current(agent)
         if (state === null || state.id !== bound[2] || state.revision !== Number(bound[3])) {
@@ -644,6 +652,22 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (input === 'retry-review') {
           await retryReview(agent, task, signal)
           return reply('审查恢复完成；检查结果后批准计划或手动恢复任务。', current(agent), false)
+        }
+        if (input === 'auto-approve-on' || input === 'auto-approve-off') {
+          const revoking = input === 'auto-approve-off'
+          if (!task.enabled || !['planning', 'awaiting-approval', ...revoking ? ['reviewing'] : []].includes(task.phase) || task.everApproved || !revoking && reviewAbort.has(agent)) throw new Error('执行批准设置仅在首次规划或等待批准时修改；审查期间仍可撤销自动批准。')
+          const configured = appendTask(ctx, agent, { ...task, revision: task.revision + 1,
+            approvalPolicy: { mode: input === 'auto-approve-on' ? 'after-review' : 'manual', source: 'user-command',
+              mainSessionId: agent.id, requirementsVersion: task.requirementsVersion, grantSeq: agent.session.seq } })
+          await flush(agent)
+          if (revoking) reviewAbort.get(agent)?.abort(new Error('用户撤销自动批准；原审查控制结论已过期'))
+          const authorization = approvalFor(agent, configured)
+          if (authorization && configured.phase === 'awaiting-approval' && !hasPending(agent)) {
+            const approved = { ...approvedTask(configured, agent.session.seq), lastApproval: { planVersion: configured.planVersion, userMessageSeq: null, ...authorization } }
+            await commitAndWake(agent, configured, approved, executionPrompt(agent, approved, 'The user preauthorized execution after independent plan review. Execute the approved stage and report evidence.'))
+            return reply('按任务预授权自动批准', approved, life.armed)
+          }
+          return reply(input === 'auto-approve-on' ? '已设置：计划通过独立审查后自动执行' : '已撤销自动批准；等待手动批准', configured, life.armed)
         }
         if (input === 'approve') {
           const next = approvedTask(task, agent.session.seq)
@@ -704,7 +728,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
-            approvedPlanVersion: null, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
+            approvedPlanVersion: null, everApproved: false, lastApproval: undefined, approvalPolicy: undefined, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
             phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null, recovery: undefined, planning: undefined }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
@@ -828,7 +852,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')
       }
       let planDecision: Awaited<ReturnType<typeof reviewStage>> | undefined
-      if (config.planCoverageReview !== false) {
+      if (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review') {
         const abort = new AbortController()
         reviewAbort.set(agent, abort)
         try {
@@ -874,17 +898,26 @@ export function apply(ctx: Context, config: Config = {}): void {
           jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
           finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
           reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
-      appendTask(ctx, agent, withRuns(next, runsOf(next)))
+      let settled = appendTask(ctx, agent, withRuns(next, runsOf(next)))
       if (planDecision) await finishReviewRecord(agent, planDecision.jobId, 'applied')
       await flush(agent)
-      if (next.phase === 'active') runtime(agent).armed = true
-      closeWithResponse(agent, next.revision)
-      return { phase: next.phase, planVersion: next.planVersion,
+      exec.signal.throwIfAborted()
+      const authorization = approvalFor(agent, settled)
+      if (authorization && !disposed && current(agent)?.id === settled.id && current(agent)?.revision === settled.revision && runtime(agent).armed && !hasPending(agent)) {
+        settled = appendTask(ctx, agent, { ...approvedTask(settled, agent.session.seq),
+          lastApproval: { planVersion: settled.planVersion, userMessageSeq: null, ...authorization } })
+        await flush(agent)
+      }
+      if (disposed || current(agent)?.id !== settled.id || current(agent)?.revision !== settled.revision || hasPending(agent)) { runtime(agent).armed = false; throw new Error('task changed during plan admission') }
+      if (settled.phase === 'active') runtime(agent).armed = !authorization || config.automaticContinuation !== false
+      closeWithResponse(agent, settled.revision)
+      return { phase: settled.phase, planVersion: settled.planVersion,
+        ...authorization && settled.lastApproval?.source === 'policy' ? { approvalSource: 'policy', authorizationSeq: authorization.authorizationSeq, reviewJobId: authorization.reviewJobId } : {},
         ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
           finding: planDecision.finding },
-        message: next.phase === 'awaiting-approval'
+        message: settled.phase === 'awaiting-approval'
           ? `${planDecision ? 'The independent plan review passed. ' : ''}The user has not approved execution. Tell the user the plan is waiting for approval; do not claim no further decision is needed. ${CLOSING_MESSAGE}`
-          : CLOSING_MESSAGE }
+          : `${authorization && settled.lastApproval?.source === 'policy' ? 'Execution approved under the user task policy after independent plan review. ' : ''}${CLOSING_MESSAGE}` }
     },
   }))
 

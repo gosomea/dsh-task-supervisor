@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 1,
+  "testedCandidateSha256": "c811bb3e0bfe5cf9f331ee0268089e1ee9636951aea7dea1e43dfb6a62a8061c",
+  "testedClientSha256": "285d646d0687a6abf2e48f9305af8987f75bfce6b83a5e4655f149959e8d8b5d",
+  "routePolicy": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "maxTokens": 32000,
+    "reasoningEffort": "provider default; omitted"
+  },
+  "evidenceScope": "Native planning/approval/continuation control; legacy log-based reviews; external artifact oracle separate; no independentVerification or Docker",
+  "cases": [
+    {
+      "case": "manual",
+      "candidateSha256": "c811bb3e0bfe5cf9f331ee0268089e1ee9636951aea7dea1e43dfb6a62a8061c",
+      "clientSha256": "285d646d0687a6abf2e48f9305af8987f75bfce6b83a5e4655f149959e8d8b5d",
+      "mainSessionId": "session-b019a771-85f7-4ae5-8ea3-ec3a2e99b90c",
+      "taskId": "351b2bc4-f657-4c15-8e2b-9f68a0ddda7d",
+      "phase": "awaiting-approval",
+      "revision": 4,
+      "planVersion": 1,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "responseModel": "deepseek-v4.1-flash-ioa"
+        }
+      ],
+      "requestConfigs": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        },
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        }
+      ],
+      "finish": [
+        "completed"
+      ],
+      "reviewJobs": [
+        {
+          "reviewSessionId": "task-review-ac0fd432-d58f-4298-b2bc-6c8954589b87",
+          "reviewJobId": "38b48279-2818-4f10-ba45-3ba6fe2b9bb9",
+          "kind": "planning",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 22,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-af4a7fde-246a-446a-962c-9f2cd1af08bb",
+          "reviewJobId": "772d047f-3033-493f-b144-5109e2ac49d2",
+          "kind": "planning",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 35,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-d60dcc11-8152-4622-8d54-906b43cde6f1",
+          "reviewJobId": "19ea9f58-0be2-429c-87e6-5fa14bd9f8f2",
+          "kind": "plan",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 44,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        }
+      ],
+      "manualRescue": false,
+      "manualApproval": false,
+      "approvalPolicy": {
+        "mode": "manual",
+        "source": "profile",
+        "grantSeq": 4
+      },
+      "approval": {
+        "source": null,
+        "authorizationSeq": null,
+        "reviewJobId": null,
+        "planVersion": null
+      },
+      "workspaceChanged": false,
+      "externalOracle": null,
+      "ui": {
+        "verified": false,
+        "reason": "Edge navigation rejected with ERR_BLOCKED_BY_CLIENT; in-app browser channel unavailable"
+      }
+    },
+    {
+      "case": "auto",
+      "candidateSha256": "c811bb3e0bfe5cf9f331ee0268089e1ee9636951aea7dea1e43dfb6a62a8061c",
+      "clientSha256": "285d646d0687a6abf2e48f9305af8987f75bfce6b83a5e4655f149959e8d8b5d",
+      "mainSessionId": "session-18e4e1c6-ddd0-4d48-b597-c72f66cad777",
+      "taskId": "7d370f78-8caa-4968-b4ab-f8087489f7f3",
+      "phase": "complete",
+      "revision": 13,
+      "planVersion": 1,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "responseModel": "deepseek-v4.1-flash-ioa"
+        }
+      ],
+      "requestConfigs": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        },
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        },
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        },
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash",
+          "maxTokens": 32000,
+          "reasoningEffort": "absent"
+        }
+      ],
+      "finish": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "reviewJobs": [
+        {
+          "reviewSessionId": "task-review-cc06fc5c-06f7-45c7-9f78-eb98b550e1e4",
+          "reviewJobId": "92fa482b-3744-4a6b-bade-24777405bb5c",
+          "kind": "planning",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 23,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-c603caf4-cd28-4341-bfbf-2fa8ea92d306",
+          "reviewJobId": "3803c686-cc8c-44f6-8335-ca916e3c3b24",
+          "kind": "planning",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 36,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-900c5d9f-a90c-40aa-a133-ba81dce29e7a",
+          "reviewJobId": "28d3fcfb-0b4f-4e5c-a0ce-2e2643bac39a",
+          "kind": "planning",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 47,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-94ae78ac-f5e9-426c-a386-7efda4450d6e",
+          "reviewJobId": "8602bb22-8088-4dd6-9060-e85e4c7bdbb5",
+          "kind": "plan",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 56,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-086c5181-3c8e-49e4-940a-96a37010080e",
+          "reviewJobId": "8e7eea9a-de8f-4d73-898d-56131f19f23a",
+          "kind": "stage",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 98,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        },
+        {
+          "reviewSessionId": "task-review-24444b39-ac60-47ea-beea-55733c4d478c",
+          "reviewJobId": "a8c71e7a-5894-4dbe-88d3-520484b55747",
+          "kind": "completion",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "cutoff": 116,
+          "routes": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "responseModel": "deepseek-v4.1-flash-ioa"
+            }
+          ],
+          "requestConfigs": [
+            {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash",
+              "maxTokens": 32000,
+              "reasoningEffort": "absent"
+            }
+          ],
+          "finish": [
+            "completed"
+          ]
+        }
+      ],
+      "manualRescue": false,
+      "manualApproval": false,
+      "approvalPolicy": {
+        "mode": "after-review",
+        "source": "profile",
+        "grantSeq": 4
+      },
+      "approval": {
+        "source": "policy",
+        "authorizationSeq": 4,
+        "reviewJobId": "8602bb22-8088-4dd6-9060-e85e4c7bdbb5",
+        "planVersion": 1
+      },
+      "workspaceChanged": true,
+      "externalOracle": {
+        "runner": "External Node24 acceptance script, not reviewer execution",
+        "exitCode": 0,
+        "passed": true,
+        "results": [
+          {
+            "input": 0,
+            "expected": 0,
+            "actual": 0,
+            "passed": true
+          },
+          {
+            "input": 3,
+            "expected": 6,
+            "actual": 6,
+            "passed": true
+          },
+          {
+            "input": -2,
+            "expected": -4,
+            "actual": -4,
+            "passed": true
+          }
+        ],
+        "onlyEntryChanged": true
+      },
+      "ui": {
+        "verified": false,
+        "reason": "Edge navigation rejected with ERR_BLOCKED_BY_CLIENT; in-app browser channel unavailable"
+      }
+    }
+  ],
+  "finalBundleSha256": "055a8632005ee3e7cbb9af1a7604510b77bdec2a724bcf2ec443a45c85ee970a",
+  "finalSourceChecks": {
+    "kernelPassed": 334,
+    "kernelConditionalUnrun": 13,
+    "hostStrict": true,
+    "clientStrict": true,
+    "build": true,
+    "declaredPackageEntries": true,
+    "bilingualLineLinkChecks": true
+  },
+  "limits": {
+    "realReviewerTruncationSupplementationVerified": false,
+    "browserInteractionVerified": false,
+    "formalComparativeEvaluationRun": false,
+    "independentVerificationEnabled": false
+  }
+}

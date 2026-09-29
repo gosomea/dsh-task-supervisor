@@ -6,7 +6,7 @@ import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-api-session-controller/types'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -75,6 +75,50 @@ export function reviewerOptions(ctx: Context, main: Agent, fixed?: ReviewerModel
 function safeText(text: string, maxLength: number): string {
   const page = textPage(text, 0, maxLength)
   return page.truncated ? `${page.text}… [truncated; read_task_context or read_task_text for remaining text]` : page.text
+}
+
+/** A settled latest request, not the sticky turn reason alone, permits truncation repair. */
+export function reviewTruncationBoundary(events: readonly SessionEvent[]): { endSeq: number; turn: number } | null {
+  if (events.some((event, index) => !Number.isSafeInteger(event.seq) || event.seq < 0
+    || index > 0 && event.seq <= events[index - 1]!.seq)) return null
+  const end = events.findLast(event => event.type === 'turn/end')
+  if (end?.type !== 'turn/end' || end.data.reason.kind !== 'max-tokens') return null
+  const start = events.findLast(event => event.type === 'turn/start' && event.seq < end.seq)
+  if (start?.type !== 'turn/start' || start.data.turn !== end.data.turn) return null
+  if (events.some(event => event.seq > end.seq && ['user/message', 'developer/message', 'turn/start', 'step/start',
+    'step/end', 'assistant/message', 'assistant/attempt', 'tool/call', 'tool/result', 'request/header', 'request/context'].includes(event.type))) return null
+  const turn = events.filter(event => event.seq > start.seq && event.seq < end.seq)
+  const openSteps = new Set<number>(), closedSteps = new Set<number>(), pendingCalls = new Map<string, number>()
+  for (const event of turn) {
+    if (event.type === 'turn/start' || event.type === 'turn/end') return null
+    if (event.type === 'step/start') {
+      if (event.data.turn !== end.data.turn || !Number.isSafeInteger(event.data.step) || event.data.step < 1
+        || openSteps.size || closedSteps.has(event.data.step)) return null
+      openSteps.add(event.data.step)
+    } else if (event.type === 'step/end') {
+      if (event.data.turn !== end.data.turn || !openSteps.delete(event.data.step) || pendingCalls.size) return null
+      closedSteps.add(event.data.step)
+    } else if (event.type === 'assistant/message' || event.type === 'assistant/attempt'
+      || event.type === 'tool/call' || event.type === 'tool/result') {
+      if (event.data.turn !== end.data.turn || !openSteps.has(event.data.step)) return null
+      if (event.type === 'assistant/message') {
+        for (const block of event.data.message.content) if (block.type === 'tool-call') pendingCalls.set(block.id, event.data.step)
+      } else if (event.type === 'tool/call') pendingCalls.set(event.data.callId, event.data.step)
+      else if (event.type === 'tool/result') {
+        if (pendingCalls.get(event.data.message.source.callId) !== event.data.step) return null
+        pendingCalls.delete(event.data.message.source.callId)
+      }
+    }
+  }
+  if (openSteps.size || pendingCalls.size || closedSteps.size === 0) return null
+  const assistant = turn.findLast(event => event.type === 'assistant/message' || event.type === 'assistant/attempt')
+  if (assistant?.type !== 'assistant/message' || assistant.data.interrupted === true
+    || assistant.data.step !== Math.max(...closedSteps)) return null
+  const finishes = assistant.data.stream.filter(record => record.type === 'chunk' && record.chunk.type === 'finish')
+  if (finishes.length !== 1 || finishes[0]?.type !== 'chunk' || finishes[0].chunk.type !== 'finish'
+    || finishes[0].chunk.reason.kind !== 'max-tokens') return null
+  if (turn.some(event => event.seq > assistant.seq && (event.type === 'tool/call' || event.type === 'tool/result'))) return null
+  return { endSeq: end.seq, turn: end.data.turn }
 }
 
 function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
@@ -397,31 +441,34 @@ async function runReviewStage(
       signal.throwIfAborted()
       const events = handle.agent.session.snapshotEvents()
       const last = events.findLast(event => event.type === 'turn/end')
-      const errorResult = events.findLast(event => event.type === 'tool/result' && event.data.message.isError === true)
+      const errorResult = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
       const errorCall = errorResult?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === errorResult.data.message.source.callId) : undefined
-      const repairable = last?.type === 'turn/end' && last.data.reason.kind === 'completed'
-        && (!errorCall || errorCall.type === 'tool/call' && errorCall.data.name === 'task_review_decision')
+      const truncated = reviewTruncationBoundary(events)
+      const repairable = last?.type === 'turn/end' && (last.data.reason.kind === 'completed' || truncated !== null)
+        && (!errorResult || errorCall?.type === 'tool/call' && errorCall.data.name === 'task_review_decision')
+        && handle.agent.inbox.nextStep.length === 0 && handle.agent.inbox.nextTurn.length === 0
       if (!repairable || job.attempt - firstAttempt >= job.repairLimit) break
       job.fault = { jobId: job.id, stageId, cutoff, reviewerSessionId,
-        code: errorCall ? 'decision-invalid' : 'protocol-missing', message: '前一审查轮未成功提交有效决定，正在有限补交。',
+        code: errorCall ? 'decision-invalid' : 'protocol-missing',
+        message: `前一审查轮未成功提交有效决定，正在有限补交。原生结束原因：${last!.data.reason.kind}；turn ${last!.data.turn}，end seq ${last!.seq}。`,
         retryable: true, attempt: job.attempt, errorSeq: errorResult?.seq ?? last?.seq ?? null, outcomeKnown: true }
       job.attempt++
       job.status = 'repairing'
       await recordReview(ctx, main, { ...job, revision: ++job.revision })
       signal.throwIfAborted()
       handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
-        content: [{ type: 'text', text: `${languagePolicy(task)}\nThe previous turn did not record a valid task_review_decision. This is repair ${job.attempt - firstAttempt}/${job.repairLimit} for the SAME review, Session and cutoff ${cutoff}. Submit the decision using the tool, not prose. Required fields: verdict (pass, revise, needs-user), finding, evidence_seqs (nonempty, all read through the bound tools). ${reviewKind === 'planning' ? 'Planning reviews also require planning={facts,unknowns,nextAction,progress}, all facts supported by the cited original Session evidence. A pass only continues planning, never approves execution. Do not infer stagnation from long reasoning alone.' : 'Independent reviews also require criteria for every applicable item; preserve the same snapshot and phase, and record task_review_observations before comparison.'} Evidence gaps are revise or needs-user, not a reason to invent a pass. Inspect the preceding tool validation error if any. Read evidence again if required; do not inspect anything beyond cutoff ${cutoff}.` }] }))
+        content: [{ type: 'text', text: `${languagePolicy(task)}\n${truncated ? `The actual latest native request reached its output limit (max-tokens, turn ${truncated.turn}, end seq ${truncated.endSeq}). Preserve evidence already read in this Session and any recorded independent observations; do not repeat long reasoning or replay uncertain tool effects.` : 'The previous turn ended without recording a valid task_review_decision.'} This is repair ${job.attempt - firstAttempt}/${job.repairLimit} for the SAME review, Session, task revision ${task.revision} and cutoff ${cutoff}. Submit the decision using the tool, not prose. Required fields: verdict (pass, revise, needs-user), finding, evidence_seqs (nonempty, all read through the bound tools). ${reviewKind === 'planning' ? 'Planning reviews also require planning={facts,unknowns,nextAction,progress}, all facts supported by the cited original Session evidence. A pass only continues planning, never approves execution. Do not infer stagnation from long reasoning alone.' : job.verification ? 'Independent reviews also require criteria for every applicable item; preserve the same snapshot and phase, and record task_review_observations before comparison.' : 'Use the existing objective, acceptance criteria and original Session log evidence to submit the decision.'} Evidence gaps are revise or needs-user, not a reason to invent a pass. Inspect the preceding tool validation error if any. Read evidence again only if required; do not inspect anything beyond cutoff ${cutoff}. The original review deadline ${job.deadlineAt} is unchanged.` }] }))
     }
     if (submitted === undefined) {
       const events = handle.agent.session.snapshotEvents()
       const last = events.findLast(event => event.type === 'turn/end')
-      const invalid = events.findLast(event => event.type === 'tool/result' && event.data.message.isError === true)
+      const invalid = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
       const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
       const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
         : last?.type === 'turn/end' && last.data.reason.kind === 'aborted' ? 'cancelled'
         : call?.type === 'tool/call' ? call.data.name === 'task_review_decision' ? 'decision-invalid' : 'evidence-read' : 'protocol-missing'
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
-        message: code === 'protocol-missing' ? 'reviewer ended without a valid structured decision'
+        message: code === 'protocol-missing' ? `reviewer ended without a valid structured decision; native reason ${last?.type === 'turn/end' ? last.data.reason.kind : 'unknown'}, repair ${job.attempt - firstAttempt}/${job.repairLimit}`
           : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message : `review failed: ${code}`,
         retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })
     }
