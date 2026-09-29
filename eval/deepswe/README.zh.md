@@ -30,6 +30,12 @@ kind: "scratch"
 
 `summarize_pilot.py` 从固定顺序与逐次封口结果汇总，未运行、未封口或无法评分的位置仍保留在完整分母中。只有成功率没有未知项时才报告单一比例，否则报告上下界。`metrics.py` 依照持久 Session 父子关系汇总主会话、审查者与 Worker，不按文件时间猜测归属。原生重试缺少上游 usage、子会话缺失或 Token 投影缺失时，完整成本为 `null`，已回报部分另列。当前原生检查记录没有容器 CPU 累计值，该项保持 `null` 并说明缺口。
 
+## 结果导出
+
+[报告导出程序](export_pilot.py)读取原始封口结果，并使用通过 --summary-reader 指定的本批冻结汇总程序。它默认要求所有 16 个位置封口；--partial 仅生成明确标记的部分结果预览。新输出目录包含原定义的 summary.json、安全的 evidence-details.json 与中文 report.zh.md，已有目录不能覆盖。
+
+明细保留逐题、逐次重复的四条件结果、评分实际启动与未启动故障、Session 数量、审查及检查等待、补交、内部故障、检查与读取覆盖、完整 Token 和已回报下界。首位置的标量零 Token 只通过哈希绑定的零请求补充证据解释，原结果不改写；用量覆盖不足时完整成本仍为 null。
+
 ## 控制校准
 
 先校准 [Terminal-Bench 2.1](https://github.com/harbor-framework/terminal-bench-2-1) commit `d49e28f1e4ddd13d289e85a5f312a66750951932` 的 `kv-store-grpc` 与 `db-wal-recovery`，分别覆盖后台服务和文件产物。使用现有 Harbor 0.23.0 的官方 oracle／nop，不发送模型请求。控制记录见 [机器证据](controls-20260928.json)。

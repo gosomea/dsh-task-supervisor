@@ -30,6 +30,12 @@ Primary success requires the native controller to finish before the deadline, of
 
 `summarize_pilot.py` joins immutable order with sealed results, retaining unstarted, unfinished and unscoreable positions in the full denominator. It reports a single success rate only when no outcome is unknown; otherwise it reports bounds. `metrics.py` uses durable Session parentage to include main, reviewer and Worker costs, rather than guessing ownership from file times. Missing upstream usage after a native retry, missing child evidence or missing token projections makes complete cost `null`; reported partial totals remain separate. Native check records currently lack cumulative container CPU usage, so that field remains `null` with the limitation stated.
 
+## Result export
+
+The [report exporter](export_pilot.py) reads sealed raw results and uses the batch’s frozen summary reader supplied through --summary-reader. Final export requires all 16 positions to be sealed; --partial produces an explicitly marked incomplete preview. A new output directory contains summary.json with the original definitions, safe evidence-details.json and Chinese report.zh.md. Existing directories cannot be overwritten.
+
+Details retain the four conditions per task/repeat, actual grader starts versus pre-grading faults, Session counts, review/check waits, repairs, internal faults, check/read coverage, full token usage and its reported lower bound. The first slot’s scalar zero-token record is explained only through hash-bound zero-request supplemental evidence; raw results are unchanged. Incomplete usage coverage keeps complete cost null.
+
 ## Control calibration
 
 First calibrate `kv-store-grpc` and `db-wal-recovery` from [Terminal-Bench 2.1](https://github.com/harbor-framework/terminal-bench-2-1), commit `d49e28f1e4ddd13d289e85a5f312a66750951932`, covering background services and file artifacts. Existing Harbor 0.23.0 runs official oracle/nop without model calls. See the [machine evidence](controls-20260928.json).
