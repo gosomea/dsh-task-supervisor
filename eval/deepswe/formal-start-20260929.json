@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-pilot-start-status",
+  "observedAt": "2026-09-29T07:13:20.960191+00:00",
+  "plannedPositions": 16,
+  "sealedPositions": 2,
+  "sealedInfrastructureFailures": 2,
+  "deliveredModelPositions": 1,
+  "unstartedPositions": 13,
+  "sampleSha256": "d0947d610b20a0fa090007c9f869c1b830e93e94e6e4f8ee8595c9e1a2e96292",
+  "pluginCommit": "4459657b11f731d4cafaac53182b5afcc2f950de",
+  "runnerCommit": "9420ed41adb09f1bce187849ea5bf11bf8e3e7bd",
+  "matrix": {
+    "tasks": 2,
+    "conditions": [
+      "goal",
+      "plan",
+      "supervisor-log",
+      "supervisor-independent"
+    ],
+    "repeats": 2
+  },
+  "protocol": {
+    "initialAuthorization": 1,
+    "rescue": 0,
+    "automaticAgentReruns": 0,
+    "automaticInfrastructureReplacements": 0,
+    "agentDeadlineSec": 10800,
+    "verifierDeadlineSec": 1800,
+    "mainCpus": 2,
+    "mainMemoryMiB": 8192,
+    "submission": "Agent-committed patch only; official independent grader"
+  },
+  "sealedResults": [
+    {
+      "id": "helm-array-merge-strategies-r1-goal",
+      "started": false,
+      "delivered": false,
+      "status": "infrastructure-fault",
+      "mainSessionId": null,
+      "actualHttpRequests": 0,
+      "officialReward": null,
+      "cleanupAcknowledged": true,
+      "fault": {
+        "errorType": "UnicodeDecodeError",
+        "stage": "native-network-helper-launch",
+        "retryAllowed": false
+      },
+      "resultSha256": "0c792d8b66482c07b2a29cd775784e44771520ba8c703e0bacc91b0c9d9080f0"
+    },
+    {
+      "id": "helm-array-merge-strategies-r2-plan",
+      "started": true,
+      "delivered": false,
+      "status": "infrastructure-fault",
+      "mainSessionId": "session-351ecb7d-24f9-414c-a962-9479f5f64d62",
+      "actualHttpRequests": 0,
+      "officialReward": null,
+      "cleanupAcknowledged": true,
+      "fault": {
+        "errorType": "ERR_MODULE_NOT_FOUND",
+        "missingPackage": "playwright-core",
+        "stage": "native-plan-client-import",
+        "retryAllowed": false
+      },
+      "resultSha256": "2fd2bb5bf638c27403f6afdb381feaf9c4156f48e17e6d2b6cbf4cd105e5b179"
+    }
+  ],
+  "status": "formal candidate executing; controller continues original ordered batch",
+  "inference": "The first actual candidate is executing. No official score or model/condition performance conclusion is available; two pre-delivery infrastructure faults stay in the full denominator.",
+  "admission": {
+    "modelAdmitted": true,
+    "originalRequirements": 6,
+    "allPositionsValidated": 16,
+    "candidateSha256": "81a9e53fafbd744bd520e2a268f554ba4303a61730f2b1c46a2611cf8de0c7d9",
+    "protocolSha256": "bdb920888810e2d8bd24108433442bb8f84439ac4258162b188540747c30ee35",
+    "evidenceReferences": 69,
+    "rootFingerprints": {
+      "runner": "217b8ee9eb1a9b3e02c9f04f66d820a37cc38f47b96873b6ee0887a6fd8508a6",
+      "runtime": "7eb1cd53fb4852a209b92e7a881f6ba85d13dcc292647a0d844bfa84c3e21630",
+      "plugin": "35a4ddf29ea5c08cbe03e3558fee9f1647b83a2b491df3ef08ca52b18d9719a1",
+      "profile": "86f43de608283ddb29d2351cbb8b837bdb0b4209227773d42255738e77960f69"
+    },
+    "newRequirementsAdded": false
+  },
+  "infrastructureChecks": {
+    "networkHelperActualLaunchPassed": true,
+    "networkHelperEvidenceSha256": "ab8bdbcb3f443fd9ec8fa68c49aaea0c6135e50347f418c3596455c3a719a5cd",
+    "planActualModuleImportAndChromePassed": true,
+    "planEvidenceSha256": "d774314956a7d3364fa6ed7e0987bae5a97928b3511e685cfe98af81a2b33ecd"
+  },
+  "controller": {
+    "pid": 490,
+    "singleController": true,
+    "noAutomationCreated": true,
+    "phase": "formal candidate execution",
+    "launchReceiptSha256": "b4cc200ce2c17c670b27e4a9fbf0cb70d5026bad1d6eba94c720032927d17cae"
+  },
+  "activePositions": 1,
+  "activePosition": {
+    "id": "kea-atomic-signal-selectors-r2-goal",
+    "condition": "goal",
+    "sessionId": "session-a15f6b3b-be70-442d-bf0a-c55441137367",
+    "startedAt": "2026-09-29T07:11:09.471240+00:00",
+    "deadlineAt": "2026-09-29T10:11:09.471240+00:00",
+    "instructionSha256": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+    "startReceiptSha256": "4848e043fbb414a469a4fd299b5dca93d1507268383b34a73e6653ab4196b778",
+    "initialAuthorizationCount": 1,
+    "additionalRescueCount": 0,
+    "actualHttpRequestsAtObservation": 11,
+    "actualHttpResponsesAtObservation": 11,
+    "httpStatuses": [
+      200
+    ],
+    "routeMatched": true,
+    "model": "deepseek-v4.1-flash",
+    "provider": "deepseek-codebuddy",
+    "officialReward": null,
+    "firstHttpEvidenceSha256": "1a56a4b1bcadc0490ab389d40b3e611c6263889e0426e4cff64e36b02a0a650f",
+    "auditCapturedPrefixSha256": "5d24cd75493e28d2332dd8fbafb6f9b0cdf5394603f9454128e3391bb3fc492d",
+    "auditCapturedPrefixBytes": 17066
+  },
+  "resourceLimitations": {
+    "dedicatedVmCpus": 4,
+    "dedicatedVmMemoryMiB": 20480,
+    "nominalIndependentPeakCpus": 5,
+    "cpuOversubscription": true,
+    "reservation": false,
+    "storageEnforcement": "official-docker-metadata-only",
+    "extraCheckCpuNs": null
+  }
+}
