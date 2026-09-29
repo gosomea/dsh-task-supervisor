@@ -26,7 +26,11 @@ Eighteen keyless tests simulate native interfaces across these branches, includi
 
 The native probe retains bounded, depth-limited and redacted nested diagnostics. Capture and cleanup causes inside `AggregateError` remain distinct, without exporting arbitrary error properties, control objects or private paths. Failed attempts and cleanup evidence stay in separate directories and are never rewritten by diagnostic improvements.
 
-`publicProvenanceReceipt` returns a stable evidence ID and omits the complete private world's lease, daemon, owner and container bindings. The model reader and acceptance gate are not yet integrated. Actual structured main-validation execution, frozen runtime closure and current-artifact binding also remain unimplemented. These APIs do not change formal admission, which remains 0/16.
+`publicProvenanceReceipt` returns a stable evidence ID and omits the complete private world's lease, daemon, owner and container bindings. `createProvenanceConsumer` pages receipts and outputs, tracks complete reads and checks explicit process requirements. It rechecks the entire current scope before and after trusted reads, verifying administrator output IDs and raw digests before redacted display. Reading coverage is consumer-local memory; restart requires full rereading, and models cannot submit self-reported ranges.
+
+Explicit requirements distinguish Git and actual execution without guessing from criterion text. Git can require current artifacts to match HEAD, index and worktree, plus known whole-workspace cleanliness. Execution checks the actual runtime, binary and dependency digests, argv, cwd, unchanged artifacts and fully read output streams. Missing receipts, unknown cleanliness, timeouts, cancellation and incomplete execution cannot pass. Artifact behavior still requires existing independent file or runtime checks; process receipts cannot substitute for them. Nineteen keyless consumer tests cover valid, foreign, expired, partial, modified and unknown evidence, plus named API-key redaction in JSON output and serialized argv. Redaction covers recognized formats, not arbitrary secrets; raw digests never use display text.
+
+The consumer is not installed as a model tool or connected to existing decision admission. Structured main execution, frozen runtime dependencies and trusted deployment remain incomplete. Formal admission stays closed at 0/16.
 
 ## Three evidence types
 

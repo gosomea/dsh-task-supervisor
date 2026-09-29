@@ -3,7 +3,26 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 export function redact(text: string): string {
-  return text.replace(/(Bearer\s+|api[_-]?key\s*[:=]\s*|sk-)[A-Za-z0-9._-]{8,}/giu, '$1[redacted]')
+  // Named quoted assignments can also occur inside JSON-serialized argv or output.
+  // Match their quote escaping level so an escaped quote inside the value cannot expose its tail.
+  const assignment = /(\bapi[_-]?key(?:\\*["'])?\s*[:=]\s*)(\\*["'])/giu
+  let result = '', copied = 0, match: RegExpExecArray | null
+  while ((match = assignment.exec(text))) {
+    const delimiter = match[2]!, quote = delimiter.at(-1)!, escaping = delimiter.length - 1
+    let end = text.indexOf(quote, assignment.lastIndex)
+    while (end !== -1) {
+      let slashes = 0
+      while (text[end - slashes - 1] === '\\') slashes++
+      if (slashes >= escaping && (slashes - escaping) % (2 * (escaping + 1)) === 0) break
+      end = text.indexOf(quote, end + 1)
+    }
+    if (end === -1) continue // A malformed unfinished value has no complete quoted assignment.
+    result += text.slice(copied, match.index) + match[1]! + delimiter + '[redacted]' + delimiter
+    copied = end + 1
+    assignment.lastIndex = copied
+  }
+  result += text.slice(copied)
+  return result.replace(/(Bearer\s+|\bapi[_-]?key\s*[:=]\s*|sk-)[A-Za-z0-9._-]{8,}/giu, '$1[redacted]')
 }
 
 export function textPage(text: string, offset = 0, limit = 3000) {

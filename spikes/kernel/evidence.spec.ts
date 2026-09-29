@@ -3,6 +3,44 @@ import { redact, textPage } from '../../src/evidence.ts'
 import { validateProvenance } from '../../src/provenance.ts'
 import { newTask, taskJson, taskSchema, type TaskCriterion } from '../../src/state.ts'
 
+it('redacts named JSON API keys through quote escaping levels while preserving nonsecret fields', () => {
+  for (const key of ['api_key', 'apiKey', 'api-key', 'API_KEY']) {
+    let raw = JSON.stringify({ [key]: 'FAKE_TEST_TOKEN_123456', result: 'passed', count: 12 })
+    for (let depth = 0; depth < 3; depth++) {
+      const safe = redact(raw)
+      expect(safe).not.toContain('FAKE_TEST_TOKEN_123456')
+      expect(safe).toContain('[redacted]')
+      expect(safe).toContain('passed')
+      expect(() => JSON.parse(safe)).not.toThrow()
+      raw = JSON.stringify(raw)
+    }
+  }
+  const raw = JSON.stringify({ apiKey: 'prefix"inside\\suffix$123', apiKeyLabel: 'ordinary label' })
+  expect(JSON.parse(redact(raw))).toEqual({ apiKey: '[redacted]', apiKeyLabel: 'ordinary label' })
+  let trailing = JSON.stringify({ apiKey: 'FAKE_TRAILING_TOKEN_123456\\', result: 'tail' })
+  for (let depth = 0; depth < 3; depth++) {
+    expect(redact(trailing)).not.toContain('FAKE_TRAILING_TOKEN_123456')
+    expect(() => JSON.parse(redact(trailing))).not.toThrow()
+    trailing = JSON.stringify(trailing)
+  }
+  expect(redact('{"result":"passed","count":12,"apiKeyLabel":"normal","not_api_key":"normal"}'))
+    .toBe('{"result":"passed","count":12,"apiKeyLabel":"normal","not_api_key":"normal"}')
+})
+
+it('preserves existing Bearer, sk prefix and plain API key redaction', () => {
+  const raw = 'Bearer FAKE_BEARER_123456 sk-FAKE_SK_123456 api_key=FAKE_PLAIN_123456 apiKey: FAKE_CAMEL_123456'
+  const safe = redact(raw)
+  expect(safe).toBe('Bearer [redacted] sk-[redacted] api_key=[redacted] apiKey: [redacted]')
+})
+
+it('paginates quoted JSON assignments by the redacted character positions', () => {
+  const raw = JSON.stringify({ api_key: 'FAKE_TEST_TOKEN_123456', result: 'tail remains' })
+  let offset: number | null = 0, joined = ''
+  while (offset !== null) { const view = textPage(raw, offset, 3); joined += view.text; offset = view.nextOffset }
+  expect(joined).toBe(redact(raw)); expect(joined).not.toContain('FAKE_TEST_TOKEN_123456')
+  expect(joined).toContain('tail remains')
+})
+
 it('reconstructs redacted evidence across arbitrary page boundaries without losing the tail', () => {
   const raw = 'x'.repeat(699) + 'Bearer super-secret-credential\n' + 'y'.repeat(7300) + '\nFAILED at the end'
   let offset: number | null = 0
