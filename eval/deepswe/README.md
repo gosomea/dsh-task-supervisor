@@ -132,6 +132,14 @@ The new Plan stop observer is admitted and the sole controller has resumed the o
 
 The [five-position partial report](results-20260929-5/report.zh.md) records three infrastructure failures and two valid native stops with official reward zero. The fifth Plan has 139/151 passing tests, complete reported Token cost 615,170 and confirmed cleanup. Its launch remains v6 while observation uses v7, retained as a control version deviation. Position six, Kea r1 Supervisor-independent, has been delivered to a new original-position Session; the remaining ten are queued. The full denominator remains 16.
 
+## Resuming a native Supervisor planning stop
+
+Position six, Kea r1 Supervisor-independent, ended at 19:22:31 China time on September 29, 2026 with max-tokens at seq 106. The task remains planning, but has no submitted plan, approval or review job; the turn and step are closed and both inboxes and tool calls are empty. The frozen executed lib/index.mjs continues automatically only in the active phase, never planning. The initial message came from user, so neither ownedTurn nor a persisted armed=false observation can be claimed.
+
+The explicit nativeSupervisorPlanningStop and supervisorPluginSha256 policy pins the executed build. It recognizes only unapproved planning, matching the latest durable task ID, revision, phase, enabled, everApproved and pendingReview, explicitly empty reviewJobs and the current turn's latest max-tokens end. It rereads the full projection and live running flag after evidence collection; active, reviewing, pending approval and newly queued work are excluded. Legacy policies do not enable this recognition implicitly.
+
+The [Supervisor planning stop regression record](supervisor-planning-stop-recovery-20260929.json) preserves the original Session, deadline and safe evidence hashes. All 73 focused tests and the parent's actual-log replay passed: old observation running, new native-stopped, nativeFinished=false. Only the exact old evaluation controller was stopped; the original Host, Session and deadline remain, with no added model delivery or approval. Scoring awaits admission of the new frozen observer. This changes the evaluator, not frozen plugin behavior.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.

@@ -36,6 +36,16 @@ class EvidenceExportTests(unittest.TestCase):
         (folder / 'result.json').write_text(json.dumps(value))
         return folder
 
+    def test_supervisor_stop_exports_lineage_without_private_paths(self):
+        self.seal(0, overrides={'terminal': {'status': 'native-stopped', 'nativeFinished': False,
+            'nativeStop': {'kind': 'supervisor-planning-no-continuation', 'taskId': 'task-id',
+                'taskRevision': 1, 'taskStateSeq': 8, 'driverSourceSha256': 'c' * 64,
+                'privatePath': '/private/not-exported'}}})
+        stop = details(self.root, self.protocol, summarize(self.root, self.protocol))['positions'][0]['nativeStop']
+        self.assertEqual(stop['taskId'], 'task-id'); self.assertEqual(stop['taskRevision'], 1)
+        self.assertEqual(stop['taskStateSeq'], 8); self.assertEqual(stop['driverSourceSha256'], 'c' * 64)
+        self.assertNotIn('privatePath', stop)
+
     def test_plan_stop_export_retains_mode_and_source_without_private_paths(self):
         self.seal(0, overrides={'terminal': {'status': 'native-stopped', 'nativeFinished': False,
             'nativeStop': {'kind': 'plan-mode-no-continuation', 'reason': 'max-tokens', 'turn': 1,

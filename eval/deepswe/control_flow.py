@@ -110,6 +110,11 @@ def projection_values(document):
     return {key: row.get('val') for key, row in document['record']['rows'].items()}
 
 
+def native_stop_candidate(condition, phase, approved):
+    return (condition == 'plan' or (condition == 'goal' and phase == 'active')
+            or (condition.startswith('supervisor-') and phase == 'planning' and not approved))
+
+
 def observe(condition, values, running, approved, native_stop=None):
     """Classify native completion without treating blocked/off as success."""
     if condition not in CONDITIONS:
@@ -138,7 +143,7 @@ def observe(condition, values, running, approved, native_stop=None):
     native_finished = False
     if conflict:
         status = 'controller-conflict'
-    elif idle and native_stop is not None and (condition == 'plan' or (condition == 'goal' and phase == 'active')):
+    elif idle and native_stop is not None and native_stop_candidate(condition, phase, approved):
         status = 'native-stopped'
     elif condition == 'plan' and approved and not plan.get('active') and idle and response:
         status, native_finished = 'native-complete', True
@@ -274,8 +279,8 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
                            if row['sessionId'] == started['sessionId'])
                 approved = journal.read('approval-receipt.json') is not None
                 last = observe(started['condition'], values, row['running'], approved)
-                native_stop_candidate = started['condition'] == 'plan' or (started['condition'] == 'goal' and last['taskPhase'] == 'active')
-                if read_native_stop is not None and last['idle'] and native_stop_candidate:
+                if (read_native_stop is not None and last['idle']
+                        and native_stop_candidate(started['condition'], last['taskPhase'], approved)):
                     evidence = read_native_stop(started['sessionId'], values)
                     # Reading compressed evidence does not lock native events.
                     # Recheck the whole projection and live running flag before

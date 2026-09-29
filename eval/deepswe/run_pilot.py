@@ -58,12 +58,15 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
     termination = (spec.get('release') or {}).get('controlTerminationPolicy') or {}
     driver_sha = None
     plan_sha = None
+    supervisor_sha = None
     try:
         if protocol is not None and termination != protocol['release'].get('controlTerminationPolicy', {}):
             raise ValueError('Observer termination policy differs from admitted protocol')
         required_policy = {'nativeGoalStop', 'goalDriverSha256', 'pauseDisposition'}
         if termination.get('nativePlanStop'):
             required_policy |= {'nativePlanStop', 'planModeSha256'}
+        if termination.get('nativeSupervisorPlanningStop'):
+            required_policy |= {'nativeSupervisorPlanningStop', 'supervisorPluginSha256'}
         if termination and (set(termination) != required_policy
                 or termination['nativeGoalStop'] is not True
                 or termination['pauseDisposition'] != 'seal-without-rescue'):
@@ -76,6 +79,11 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
                 raise ValueError('Native Plan stop policy must be explicitly enabled')
             from native_stop import admitted_plan_mode
             plan_sha = admitted_plan_mode(spec['runtime'], termination)
+        if termination.get('nativeSupervisorPlanningStop'):
+            if termination['nativeSupervisorPlanningStop'] is not True:
+                raise ValueError('Supervisor planning stop policy must be explicitly enabled')
+            from native_stop import admitted_supervisor_plugin
+            supervisor_sha = admitted_supervisor_plugin(spec['release']['roots']['plugin'], termination)
     except (OSError, ValueError, KeyError) as error:
         # Failed admission cannot launch a new task. For a previously delivered
         # attempt, reconcile only the exact recorded owner under its lock.
@@ -115,6 +123,9 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
     elif plan_sha is not None and spec['condition'] == 'plan':
         from native_stop import read_plan_stop
         read_native_stop = lambda session_id, values: read_plan_stop(home, session_id, values, plan_sha)
+    elif supervisor_sha is not None and spec['condition'].startswith('supervisor-'):
+        from native_stop import read_supervisor_planning_stop
+        read_native_stop = lambda session_id, values: read_supervisor_planning_stop(home, session_id, values, supervisor_sha)
     try:
         owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
         rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'))

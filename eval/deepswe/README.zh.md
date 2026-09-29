@@ -132,6 +132,14 @@ python3 -m unittest discover -s eval/deepswe -v
 
 [5 个位置的部分报告](results-20260929-5/report.zh.md)记录三次基础设施失败与两次官方奖励 0 的有效原生停止。第五次 Plan 为 139/151 测试通过，完整回报 Token 为 615,170，清理已确认。其原投递保持 v6、观察使用 v7，保留为控制版本偏差。第六次 Kea r1 Supervisor-independent 已按原位置投递新 Session，另十次排队；完整分母仍为 16。
 
+## 原生 Supervisor 规划停止的接续
+
+第六个位置 Kea r1 Supervisor-independent 于 2026 年 9 月 29 日 19:22:31（北京时间）以 seq 106 的 max-tokens 结束。任务仍 planning，但未提交计划、未批准、没有审查 job，turn／step 关闭、工具和两类 inbox 为空。冻结插件实际 lib/index.mjs 的自动续行仅接受 active 阶段；planning 不会自行再开一轮。原消息来源为 user，不能宣称观测到了 ownedTurn 或持久 armed=false。
+
+新增显式 nativeSupervisorPlanningStop 与 supervisorPluginSha256，绑定实际执行构建的哈希。仅在批准前 planning 阶段匹配最后持久任务记录的 ID、revision、phase、enabled、everApproved 和 pendingReview，且 reviewJobs 明确为空、最新 max-tokens 对应当前 turn 时识别停止。采证后重读全部投影与实时运行状态；active、reviewing、待批准或新入队工作不能套用此规则。旧策略不会默认启用新判断。
+
+[Supervisor 规划停止回归记录](supervisor-planning-stop-recovery-20260929.json)保存原 Session、截止与安全证据哈希。73 项聚焦测试和父代理真实日志回放通过：旧判断 running、新判断 native-stopped，nativeFinished=false。唯一旧评测控制器按精确身份停止，原 Host、Session、截止保留，没有追加模型投递或批准；等待新冻结观察器准入后接续评分。这轮只修评测器，不改变冻结插件的行为。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。

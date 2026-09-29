@@ -47,6 +47,66 @@ class ControlFlowTests(unittest.TestCase):
         return self.journal.write('started.json', {'schemaVersion': 1, 'id': 'fixture', 'condition': condition,
             'sessionId': 'session', 'startedAtUnix': 0, 'deadlineAtUnix': deadline, 'timeLimitSec': deadline})
 
+    def test_supervisor_planning_seals_once_without_prompt_or_approval(self):
+        from test_native_stop import supervisor_fixture
+        from native_stop import supervisor_planning_stop_evidence
+        events, values = supervisor_fixture(); self.started('supervisor-independent')
+        projection = {'record': {'rows': {k: {'val': v} for k, v in values.items()}}}
+        with patch('run_pilot.quiesce', return_value={'acknowledged': True}) as cleanup:
+            terminal = supervise(self.rpc, self.journal, lambda _: projection, cleanup,
+                clock=lambda: 3, sleep=lambda _: self.fail('stopped planning must not idle'),
+                read_native_stop=lambda _, state: supervisor_planning_stop_evidence(events, state, 'c' * 64))
+            self.assertEqual(terminal['status'], 'native-stopped')
+            self.assertEqual(terminal['approvalCount'], 0)
+            self.assertFalse(terminal['nativeFinished'])
+            supervise(self.rpc, self.journal, lambda _: projection, cleanup, clock=lambda: 4)
+            cleanup.assert_called_once()
+        self.assertEqual(self.rpc.commands, []); self.assertEqual(self.rpc.prompts, [])
+
+    def test_supervisor_reread_discards_stop_if_review_work_appears(self):
+        from test_native_stop import supervisor_fixture
+        from native_stop import supervisor_planning_stop_evidence
+        events, state = supervisor_fixture(); self.started('supervisor-log')
+        def projection(_):
+            return {'record': {'rows': {k: {'val': v} for k, v in state.items()}}}
+        def evidence(_, old):
+            proof = supervisor_planning_stop_evidence(events, old, 'c' * 64)
+            state['taskSupervisor']['reviewJobs'] = [{'status': 'running'}]; self.rpc.running = True
+            return proof
+        clock = [1]
+        terminal = supervise(self.rpc, self.journal, projection, lambda *_: {'acknowledged': True},
+            clock=lambda: clock[0], sleep=lambda _: clock.__setitem__(0, 10), read_native_stop=evidence)
+        self.assertEqual(terminal['status'], 'deadline'); self.assertIsNone(terminal['nativeStop'])
+
+    def test_supervisor_reader_requires_explicit_new_policy(self):
+        from run_pilot import run_position
+        self.started('supervisor-independent')
+        self.journal.write('launch-receipt.json', {'dockerContext': 'fixture', 'container': 'owned',
+            'lease': 'lease', 'containerId': 'exact-id', 'home': self.temp.name, 'port': 1234})
+        legacy = {'nativeGoalStop': True, 'goalDriverSha256': 'a' * 64, 'pauseDisposition': 'seal-without-rescue'}
+        enabled = {**legacy, 'nativeSupervisorPlanningStop': True, 'supervisorPluginSha256': 'c' * 64}
+        for policy in (legacy, enabled):
+            with self.subTest(policy=policy), patch('native_stop.admitted_goal_driver', return_value='a' * 64), \
+                    patch('native_stop.admitted_supervisor_plugin', return_value='c' * 64) as source, \
+                    patch('native_stop.read_supervisor_planning_stop', return_value={'proof': True}) as reader, \
+                    patch('run_pilot.owned'), patch('run_pilot.WebRpc', return_value=self.rpc), \
+                    patch('run_pilot.launch') as launch, patch('run_pilot.supervise') as monitor:
+                def inspect_reader(*args, **kwargs):
+                    callback = kwargs['read_native_stop']
+                    if policy is legacy: self.assertIsNone(callback)
+                    else: self.assertEqual(callback('session', {}), {'proof': True})
+                    return {'status': 'fixture'}
+                monitor.side_effect = inspect_reader
+                run_position({'release': {'controlTerminationPolicy': policy, 'roots': {'plugin': 'build'}},
+                              'runtime': 'fixture', 'condition': 'supervisor-independent'},
+                             '', self.journal.root, allow_smoke=True)
+                launch.assert_not_called()
+                if policy is legacy: source.assert_not_called(); reader.assert_not_called()
+                else:
+                    source.assert_called_once_with('build', policy)
+                    reader.assert_called_once_with(Path(self.temp.name), 'session', {}, 'c' * 64)
+        self.assertEqual(self.rpc.commands, []); self.assertEqual(self.rpc.prompts, [])
+
     def test_plan_stop_seals_once_without_approval_or_delivery(self):
         from test_native_stop import plan_fixture
         from native_stop import plan_stop_evidence

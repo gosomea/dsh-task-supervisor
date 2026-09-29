@@ -95,3 +95,57 @@ def read_plan_stop(home, session_id, values, source_sha):
     if evidence is not None:
         evidence['sessionEvidence'] = hashes
     return evidence
+
+
+def admitted_supervisor_plugin(plugin, policy):
+    """Pin the executed build, whose planning phase has no continuation path."""
+    expected = policy.get('supervisorPluginSha256')
+    if not isinstance(expected, str) or re.fullmatch(r'[0-9a-f]{64}', expected) is None:
+        raise ValueError('Supervisor planning stop policy needs a verified build hash')
+    actual = hashlib.sha256((Path(plugin) / 'lib/index.mjs').read_bytes()).hexdigest()
+    if actual != expected:
+        raise ValueError('Supervisor planning stop policy differs from the admitted build')
+    return actual
+
+
+def supervisor_planning_stop_evidence(events, values, source_sha):
+    """Only unapproved planning can stop here; active and review work may resume."""
+    supervisor = values.get('taskSupervisor') or {}
+    task = supervisor.get('current') or {}
+    stats, boundary, inbox = (values.get(key) or {} for key in ('sessionStats', 'turnBoundary', 'inbox'))
+    if (task.get('phase') != 'planning' or task.get('enabled') is not True
+            or task.get('everApproved') is not False or 'pendingReview' not in task
+            or task['pendingReview'] is not None or supervisor.get('reviewJobs') != []
+            or not events or 'openStep' not in stats or stats['openStep'] is not None
+            or not isinstance(stats.get('pendingCalls'), (dict, list)) or stats['pendingCalls']
+            or 'openTurnStartSeq' not in boundary or boundary['openTurnStartSeq'] is not None
+            or any(not isinstance(inbox.get(key), list) or inbox[key] for key in ('next-turn', 'next-step'))):
+        return None
+    event = events[-1]
+    data = event.get('data') or {}
+    if (event.get('type') != 'turn/end' or (data.get('reason') or {}).get('kind') != 'max-tokens'
+            or type(data.get('turn')) is not int
+            or data['turn'] != stats.get('lastTurn') or data['turn'] != boundary.get('lastTurn')):
+        return None
+    change = next((row for row in reversed(events) if row.get('type') == 'extension/record'
+                   and (row.get('data') or {}).get('namespace') == 'dsh-task-supervisor'), None)
+    changed = (change or {}).get('data') or {}
+    payload = changed.get('payload') or {}
+    fields = ('id', 'revision', 'phase', 'enabled', 'everApproved', 'pendingReview')
+    if (changed.get('kind') != 'state' or not task.get('id')
+            or type(task.get('revision')) is not int or task['revision'] < 1
+            or any(key not in payload or payload[key] != task[key] for key in fields)):
+        return None
+    return {'kind': 'supervisor-planning-no-continuation', 'reason': 'max-tokens',
+            'turn': data['turn'], 'seq': event['seq'], 'nativeStoppedAtUnix': event['time'] / 1000,
+            'taskId': task['id'], 'taskRevision': task['revision'], 'taskStateSeq': change['seq'],
+            'driverSourceSha256': source_sha,
+            'activationObservation': 'planning-phase-source-policy-not-persisted-state'}
+
+
+def read_supervisor_planning_stop(home, session_id, values, source_sha):
+    sessions, _, hashes = read_home(Path(home))
+    evidence = supervisor_planning_stop_evidence(sessions.get(session_id, []), values, source_sha)
+    if evidence is not None:
+        evidence['sessionEvidence'] = hashes
+    return evidence
