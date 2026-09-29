@@ -47,6 +47,12 @@ Kea subsequently captured 25574 entries and 234315900 bytes. The production Reac
 
 See [Linux calibration evidence](linux-gateway-20260928.json) for outcomes, failed positions and evidence hashes. These are engineering integration checks, not official task rewards, model admission or evidence of superiority over Goal/Plan.
 
+## Native process-capture fixture
+
+`process-provenance-probe.ts` exercises the built administrator API in a keyless DSH profile. Its private controller owns exact main/admin identities, an exclusive workspace volume, a read-only administrator mount and an external cutoff. The fixture checks a detached writer during pause, independent Git facts, pause release, foreign owners, additional writers, callback failure and deadline cleanup. These observations do not establish production task registration, a main-execution receipt producer or model admission.
+
+External owner heartbeats are immutable, sequence-named records, flushed before exclusive publication. The probe validates the newest published record and refuses corrupt, redirected, regressing, stale or foreign-lease records instead of using an older active heartbeat. Shutdown publishes an inactive record. A read failure seals its origin, sequence, byte count and digest without raw content or lease material. Nested capture and cleanup errors remain bounded and redacted; every retry uses a new source-bound case, preserving prior results.
+
 ## Next integration item
 
 Independent checks require Host-owned bounded execution while official Agent containers cannot obtain global Docker administration. The next adapter must validate actual artifact capture, runner invocation, native process lifetime, background services, task deadlines and independent grading together. Changing datasets or reference adapters alone establishes none of these contracts. Runtime/profile/image/order freezing and four-arm real-model admission follow that validation.

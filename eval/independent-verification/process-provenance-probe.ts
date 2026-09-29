@@ -1,6 +1,6 @@
 /** Keyless profile fixture for the built administrator provenance API; never loads Agent/model plugins. */
-import { randomUUID } from 'node:crypto'
-import { cp, link, mkdir, open, readFile, readdir, rm } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { cp, link, lstat, mkdir, open, readFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
@@ -65,9 +65,29 @@ async function publish(path: string, value: unknown) {
   try { await file.writeFile(JSON.stringify(value, null, 2) + '\n'); await file.sync() } finally { await file.close() }
   try { await link(temp, path) } finally { await rm(temp, { force: true }) }
 }
-async function ownerActive(config: Config, deadline: string) {
-  const state = JSON.parse(await readFile(join(config.controlRoot, 'owner-state.json'), 'utf8')) as { lease: string; active: boolean; atUnixMs: number }
-  return state.lease === config.world.lease && state.active && Date.now() - state.atUnixMs < 2000 && Date.now() < Date.parse(deadline)
+interface OwnerRecord { sequence: number; lease: string; active: boolean; atUnixMs: number }
+/** Read only the newest published immutable heartbeat. Corrupt/latest/regressing records fail closed, never fall back. */
+export async function readProbeOwnerActive(controlRoot: string, lease: string, deadline: string, previousSequence = 0, now = Date.now()) {
+  const names = (await readdir(controlRoot)).filter(name => /^owner-state-[0-9]{12}\.json$/.test(name)).sort()
+  const newest = names.at(-1)
+  if (!newest) return { active: false, sequence: previousSequence }
+  const sequence = Number(newest.slice(12, 24)), path = join(controlRoot, newest)
+  let bytes: Buffer | undefined
+  try {
+    const stat = await lstat(path)
+    if (!stat.isFile() || stat.size > 4096) throw new Error('published owner record is not a bounded regular file')
+    bytes = await readFile(path)
+    const state = JSON.parse(bytes.toString('utf8')) as OwnerRecord
+    if (!Number.isSafeInteger(sequence) || sequence <= 0 || state.sequence !== sequence || sequence < previousSequence
+      || state.lease !== lease || typeof state.active !== 'boolean' || !Number.isFinite(state.atUnixMs)
+      || state.atUnixMs < 0 || state.atUnixMs > now + 1000) throw new Error('published owner record identity, sequence or timestamp is invalid')
+    return { active: state.active && now - state.atUnixMs < 2000 && now < Date.parse(deadline), sequence }
+  } catch (cause) {
+    const evidence = { origin: 'PROBE_OWNER_STATE', sequence, byteLength: bytes?.length ?? null,
+      sha256: bytes ? createHash('sha256').update(bytes).digest('hex') : null }
+    await publish(join(controlRoot, `owner-read-fault-${randomUUID()}.json`), evidence)
+    throw new Error(`PROBE_OWNER_STATE: latest published record rejected; sha256=${evidence.sha256 ?? 'unread'}`, { cause })
+  }
 }
 async function runProbe(ctx: Context, config: Config, signal: AbortSignal) {
   const api = await import(config.builtEntry) as typeof import('../../src/process-provenance.ts') & typeof import('../../src/provenance-docker.ts')
@@ -80,11 +100,16 @@ async function runProbe(ctx: Context, config: Config, signal: AbortSignal) {
       'Git analysis proves this captured metadata/baseline relation; binding authorization remains a trusted-caller duty.',
       'No model, process execution receipt, production task registration or formal candidate was exercised.'] }
   const checks = result.checks as Record<string, boolean>, observations = result.observations as unknown[]
-  let acquired = 0, released = 0
+  let acquired = 0, released = 0, lastOwnerSequence = 0
+  const ownerActive = async (deadline: string) => {
+    const state = await readProbeOwnerActive(config.controlRoot, config.world.lease, deadline, lastOwnerSequence)
+    lastOwnerSequence = state.sequence
+    return state.active
+  }
   const policy: PausedWorldPolicy = { ...config.policy, async acquire(world) {
-    if (!await ownerActive(config, world.deadlineAt)) throw new Error('external deployment owner is inactive')
+    if (!await ownerActive(world.deadlineAt)) throw new Error('external deployment owner is inactive')
     acquired++
-    return { active: () => ownerActive(config, world.deadlineAt), async release() { released++ },
+    return { active: () => ownerActive(world.deadlineAt), async release() { released++ },
       withCutoffAuthority: (bounded, operation) => cutoffAuthority(world, bounded, operation) }
   } }
   async function docker(args: string[]) {
