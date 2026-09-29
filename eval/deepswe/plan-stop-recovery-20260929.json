@@ -31,7 +31,7 @@
     "originalStartReceiptSha256": "ff44a4bb9e7cbc2f5fcfff0ff6771a504675fa13590d7f2c28d5262ee3608c68",
     "planClientReconciliationSha256": "0d3b70ebe9b60667f2fa9819e8f604e7367ab31a7858224f5cb50b8c7082caad"
   },
-  "newObserverAdmission": "pending",
+  "newObserverAdmission": "plan-stop-admission-20260929.json",
   "oldThreeFieldPolicyPreserved": true,
   "remainingUndelivered": 11,
   "denominator": 16

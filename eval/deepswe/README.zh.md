@@ -128,6 +128,10 @@ python3 -m unittest discover -s eval/deepswe -v
 
 [Plan 停止回归记录](plan-stop-recovery-20260929.json)保留原 Session、停止时间和证据哈希。父代理 65 项聚焦测试通过，子 Agent 独立复核 63 项并回放真实日志通过；另两项覆盖实际 run_position 的新策略 reader 接线与安全报告字段。父代理真实回放同样确认旧判断 running、新判断 native-stopped，且不计完成。唯一 v6 控制器已停止，原辅助审批客户端按精确身份收敛，没有追加 prompt、批准或模型投递；主 Host 与原截止仍保留，等待新观察者从同一 Session 封口并评分。
 
+新版 Plan 停止观察器已准入，唯一控制器已接续原第 5 个 Session，见[Plan 停止准入记录](plan-stop-admission-20260929.json)。其终态为 native-stopped，清理确认通过，批准和救场均为 0 次。记录时官方评分待完成，原四个结果保持不变。
+
+[5 个位置的部分报告](results-20260929-5/report.zh.md)记录三次基础设施失败与两次官方奖励 0 的有效原生停止。第五次 Plan 为 139/151 测试通过，完整回报 Token 为 615,170，清理已确认。其原投递保持 v6、观察使用 v7，保留为控制版本偏差。第六次 Kea r1 Supervisor-independent 已按原位置投递新 Session，另十次排队；完整分母仍为 16。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。

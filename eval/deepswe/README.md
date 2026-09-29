@@ -128,6 +128,10 @@ The new explicit nativePlanStop=true and planModeSha256 policy preserves compati
 
 The [Plan stop regression record](plan-stop-recovery-20260929.json) retains the original Session, stop time and evidence hashes. All 65 focused parent tests passed; independent subagent review ran 63 tests and replayed the actual log successfully. Two additional tests cover new-policy reader wiring through run_position and safe report fields. Parent replay also gives old running versus new native-stopped without completion. The sole v6 controller was stopped and the exact auxiliary approval client reconciled without another prompt, approval or model delivery. The main Host and original deadline remain for same-Session sealing and grading by the new observer.
 
+The new Plan stop observer is admitted and the sole controller has resumed the original fifth Session; see the [Plan stop admission record](plan-stop-admission-20260929.json). Its terminal is native-stopped with cleanup confirmed, zero approvals and zero rescues. Official grading is pending at this observation; all four previous results remain unchanged.
+
+The [five-position partial report](results-20260929-5/report.zh.md) records three infrastructure failures and two valid native stops with official reward zero. The fifth Plan has 139/151 passing tests, complete reported Token cost 615,170 and confirmed cleanup. Its launch remains v6 while observation uses v7, retained as a control version deviation. Position six, Kea r1 Supervisor-independent, has been delivered to a new original-position Session; the remaining ten are queued. The full denominator remains 16.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.
