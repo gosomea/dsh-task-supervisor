@@ -41,9 +41,11 @@ def summarize_session(session_id, records, audit):
     for call_id, rows in calls.items():
         finishes = [row for row in rows if row["type"] == "model-finish"]
         responses = [row for row in rows if row["type"] == "http-response"]
+        requests = [row for row in rows if row["type"] == "http-request"]
         ends = [row for row in rows if row["type"] == "model-end"]
         if (all(row.get("provider") == PROVIDER and row.get("model") == MODEL for row in rows)
                 and any(row.get("finishKind") in ("stop", "tool-calls") for row in finishes)
+                and any(row.get("endpointMatched") is True for row in requests)
                 and any(row.get("endpointMatched") is True and 200 <= row.get("statusCode", 0) < 300 for row in responses)
                 and any(row.get("exhausted") is True for row in ends)
                 and not any(row["type"] in ("model-error", "http-error") for row in rows)):
@@ -81,6 +83,44 @@ def summarize_session(session_id, records, audit):
             "successfulRequestAndDurableAnswer": bool(successful and answers and not mismatches)}
 
 
+def successful_independent_checks(job, records):
+    """Instrumentation proof: model tool invocation, successful result and bound durable check.
+
+    This does not prove the reviewer accepted the task, read both streams, or passed a
+    later completion review. Those remain performance/verification results.
+    """
+    verification = job.get("verification", {})
+    snapshot_id = verification.get("snapshot", {}).get("id")
+    eligible = {check.get("id") for check in verification.get("checks", [])
+                if snapshot_id and check.get("snapshotId") == snapshot_id
+                and check.get("exitCode") == 0 and check.get("signal") is None
+                and not check.get("timedOut") and not check.get("cancelled")
+                and not check.get("outputIncomplete") and not check.get("changed")}
+    calls = {row.get("data", {}).get("callId"): row for row in records
+             if row.get("type") == "tool/call" and row.get("data", {}).get("name") == "run_review_check"}
+    observed = set()
+    for row in records:
+        if row.get("type") != "tool/result":
+            continue
+        message = row.get("data", {}).get("message", {})
+        call = calls.get(message.get("source", {}).get("callId"))
+        if message.get("isError") is not False or not call or call.get("seq", -1) >= row.get("seq", -1):
+            continue
+        for block in message.get("content", []):
+            if block.get("type") != "text":
+                continue
+            try:
+                result = json.loads(block.get("text", ""))
+            except (ValueError, TypeError):
+                continue
+            if (isinstance(result, dict) and result.get("id") in eligible and result.get("snapshotId") == snapshot_id
+                    and result.get("exitCode") == 0 and result.get("signal") is None
+                    and not result.get("timedOut") and not result.get("cancelled")
+                    and not result.get("outputIncomplete") and not result.get("changed")):
+                observed.add(result["id"])
+    return len(observed)
+
+
 def inspect_chain(main_id, sessions, audit, condition="supervisor-log"):
     """Only accept reviewers named by this main Session's durable review jobs."""
     main = sessions[main_id]
@@ -109,15 +149,18 @@ def inspect_chain(main_id, sessions, audit, condition="supervisor-log"):
         summary.update({"jobId": job["id"], "kind": job["kind"], "cutoff": job["cutoff"],
                         "jobStatus": job["status"], "parentMatched": header.get("parentSession") == main_id
                             and header.get("origin") == "subagent",
+                        "reviewFaultCode": (job.get("fault") or {}).get("code"),
+                        "reviewAttempt": job.get("attempt"), "repairLimit": job.get("repairLimit"),
+                        "protocolRecoveryCount": max(0, job["attempt"] - 1) if type(job.get("attempt")) is int else None,
                         "decisionRecorded": job.get("status") in ("submitted", "applied") and decision.get("type") == "tool/result"
                             and decision_call.get("data", {}).get("name") == "task_review_decision"
                             and message.get("isError") is False,
                         "independent": "verification" in job,
-                        "successfulIndependentChecks": sum(check.get("exitCode") == 0 and not check.get("timedOut")
-                            and not check.get("cancelled") for check in job.get("verification", {}).get("checks", []))})
+                        "successfulIndependentChecks": successful_independent_checks(job, child)})
         reviewers.append(summary)
     main_summary = summarize_session(main_id, main, audit)
     valid = [row for row in reviewers if row["successfulRequestAndDurableAnswer"] and row["parentMatched"] and row["decisionRecorded"]]
+    routed = [row for row in reviewers if row["successfulRequestAndDurableAnswer"] and row["parentMatched"]]
     family = {main_id}
     while True:
         children = {session_id for session_id, records in sessions.items() if records and records[0].get("origin") == "subagent"
@@ -136,29 +179,47 @@ def inspect_chain(main_id, sessions, audit, condition="supervisor-log"):
             "decisionVerified": bool(valid),
             "stageReviewVerified": any(row["kind"] == "stage" for row in valid),
             "completionReviewVerified": any(row["kind"] == "completion" for row in valid),
-            "independentCheckVerified": any(row["independent"] and row["successfulIndependentChecks"] > 0 for row in valid),
+            # This is an instrumentation check, independent of successful review decisions.
+            "independentCheckVerified": any(row["independent"] and row["successfulIndependentChecks"] > 0 for row in routed),
             "condition": condition,
             "passed": main_summary["successfulRequestAndDurableAnswer"] and not any(row["protocolDeviation"] for row in all_summaries)
-                and (bool(valid) if condition.startswith("supervisor-") else True)}
+                and (bool(routed) if condition.startswith("supervisor-") else True)}
 
 
 def build_gate(chains, daily, evidence):
-    """Require both real Supervisor modes, including stage and completion decisions."""
+    """Require functioning route/check instrumentation in both Supervisor modes.
+
+    Compatibility key supervisorBothModes means actual main/reviewer requests and
+    durable child lineage in each mode. It does not require successful stage or
+    completion decisions: faults, timeouts and false pauses are measured outcomes,
+    not excuses to exclude a correctly routed experiment from its denominator.
+    """
     expected = {"supervisor-log", "supervisor-independent"}
-    complete = set(chains) == expected
+    complete = set(chains) == expected and all(row["condition"] == condition for condition, row in chains.items())
     values = list(chains.values())
     checks = {
         "mainSuccessfulRequest": complete and all(row["main"]["successfulRequestAndDurableAnswer"] for row in values),
         "reviewerSuccessfulRequest": complete and all(any(review["successfulRequestAndDurableAnswer"]
             for review in row["reviewers"]) for row in values),
         "dailyEffectiveRouteMatched": daily.get("dailyEffectiveRouteMatched") is True,
-        "supervisorBothModes": complete and all(row["stageReviewVerified"] and row["completionReviewVerified"] for row in values),
+        "supervisorBothModes": complete and all(row["main"]["successfulRequestAndDurableAnswer"]
+            and any(review["parentMatched"] and review["successfulRequestAndDurableAnswer"] for review in row["reviewers"])
+            for row in values),
         "actualHttpEndpointMatched": complete and all(row["routesMatched"] and row["allObservedIntended"] for row in values),
         "durableLineageMatched": complete and all(any(review["parentMatched"] and review["successfulRequestAndDurableAnswer"]
             for review in row["reviewers"]) for row in values),
         "independentReviewerCheckExecuted": complete and chains["supervisor-independent"]["independentCheckVerified"],
     }
+    performance = {condition: {"decisionVerified": row["decisionVerified"],
+                   "stageReviewVerified": row["stageReviewVerified"], "completionReviewVerified": row["completionReviewVerified"],
+                   "reviewJobs": [{"jobId": review["jobId"], "kind": review["kind"], "status": review["jobStatus"],
+                                   "decisionRecorded": review["decisionRecorded"], "faultCode": review["reviewFaultCode"],
+                                   "attempt": review["reviewAttempt"], "repairLimit": review["repairLimit"],
+                                   "protocolRecoveryCount": review["protocolRecoveryCount"]}
+                                  for review in row["reviewers"]]}
+                   for condition, row in chains.items()}
     return {"schemaVersion": 1, "kind": "model-route-gate", "passed": all(checks.values()), "checks": checks,
+            "admissionScope": "route-and-independent-check-instrumentation", "performanceEvidence": performance,
             "benchmarkModelAttempts": 0, "smokeConditions": sorted(chains), "evidence": evidence}
 
 

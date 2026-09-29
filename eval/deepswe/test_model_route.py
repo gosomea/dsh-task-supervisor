@@ -11,7 +11,8 @@ from model_route import read_home
 
 def audit(session_id, finish="stop", endpoint=True):
     common = {"sessionId": session_id, "callId": session_id + "-call", "provider": "deepseek-codebuddy", "model": "deepseek-v4.1-flash"}
-    return [{**common, "type": "model-start"}, {**common, "type": "http-response", "endpointMatched": endpoint, "statusCode": 200},
+    return [{**common, "type": "model-start"}, {**common, "type": "http-request", "endpointMatched": endpoint},
+            {**common, "type": "http-response", "endpointMatched": endpoint, "statusCode": 200},
             {**common, "type": "model-finish", "finishKind": finish}, {**common, "type": "model-end", "exhausted": True}]
 
 
@@ -27,6 +28,20 @@ def fixture():
            "status": "applied", "decision": {"decisionSeq": 6}}
     main = [answer(), {"type": "extension/record", "data": {"namespace": "dsh-task-supervisor-review", "payload": job}}]
     return {"main": main, "review": child}, audit("main") + audit("review")
+
+
+def independent_fixture():
+    sessions, rows = fixture()
+    job = sessions["main"][-1]["data"]["payload"]
+    job.update({"kind": "stage", "status": "failed", "fault": {"code": "internal-timeout"}, "attempt": 2, "repairLimit": 1,
+                "verification": {"snapshot": {"id": "snapshot"}, "checks": [{"id": "check", "snapshotId": "snapshot", "exitCode": 0,
+                    "signal": None, "timedOut": False, "cancelled": False, "outputIncomplete": False, "changed": []}]}})
+    sessions["review"].extend([
+        {"type": "tool/call", "seq": 8, "data": {"callId": "check-call", "name": "run_review_check"}},
+        {"type": "tool/result", "seq": 9, "data": {"message": {"source": {"callId": "check-call"}, "isError": False,
+            "content": [{"type": "text", "text": json.dumps({"id": "check", "snapshotId": "snapshot", "exitCode": 0})}]}}},
+    ])
+    return sessions, rows
 
 
 class ActualRouteTests(unittest.TestCase):
@@ -72,10 +87,12 @@ class ActualRouteTests(unittest.TestCase):
         chain = inspect_chain("main", sessions, rows)
         daily = {"dailyEffectiveRouteMatched": True}
         self.assertFalse(build_gate({"supervisor-log": chain}, daily, [])["passed"])
-        gate = build_gate({"supervisor-log": chain, "supervisor-independent": chain}, daily, [])
+        independent = inspect_chain("main", sessions, rows, "supervisor-independent")
+        gate = build_gate({"supervisor-log": chain, "supervisor-independent": independent}, daily, [])
         self.assertFalse(gate["passed"])
-        self.assertFalse(gate["checks"]["supervisorBothModes"])
+        self.assertTrue(gate["checks"]["supervisorBothModes"])
         self.assertFalse(gate["checks"]["independentReviewerCheckExecuted"])
+        self.assertFalse(build_gate({"supervisor-log": chain, "supervisor-independent": chain}, daily, [])["checks"]["supervisorBothModes"])
 
     def test_http_200_is_not_successful_generation(self):
         for finish in ("error", "aborted", "max-tokens"):
@@ -83,9 +100,7 @@ class ActualRouteTests(unittest.TestCase):
 
     def test_provider_failure_is_not_route_deviation(self):
         rows = audit("main", "error")
-        rows[1]["statusCode"] = 502
-        rows[1]["type"] = "http-response"
-        rows.insert(1, {**rows[0], "type": "http-request", "endpointMatched": True})
+        next(row for row in rows if row["type"] == "http-response")["statusCode"] = 502
         report = summarize_session("main", [], rows)
         self.assertTrue(report["routesMatched"])
         self.assertFalse(report["protocolDeviation"])
@@ -110,7 +125,7 @@ class ActualRouteTests(unittest.TestCase):
         sessions["review"][0]["parentSession"] = "other"
         self.assertFalse(inspect_chain("main", sessions, rows)["passed"])
 
-    def test_failed_or_unbound_decision_is_rejected(self):
+    def test_failed_or_unbound_decision_is_not_a_route_failure(self):
         sessions, rows = fixture()
         for mutation in ("failed", "wrong-call"):
             changed = copy.deepcopy(sessions)
@@ -118,7 +133,70 @@ class ActualRouteTests(unittest.TestCase):
                 changed["review"][-1]["data"]["message"]["isError"] = True
             else:
                 changed["review"][-2]["data"]["name"] = "read_task_evidence"
-            self.assertFalse(inspect_chain("main", changed, rows)["passed"])
+            report = inspect_chain("main", changed, rows)
+            self.assertTrue(report["passed"])
+            self.assertFalse(report["decisionVerified"])
+
+    def test_correct_routes_with_review_timeout_admit_instrumentation_not_performance(self):
+        log_sessions, log_rows = fixture()
+        sessions, rows = independent_fixture()
+        chain = inspect_chain("main", sessions, rows, "supervisor-independent")
+        self.assertTrue(chain["independentCheckVerified"])
+        self.assertFalse(chain["stageReviewVerified"])
+        self.assertFalse(chain["completionReviewVerified"])
+        gate = build_gate({"supervisor-log": inspect_chain("main", log_sessions, log_rows), "supervisor-independent": chain},
+                          {"dailyEffectiveRouteMatched": True}, [])
+        self.assertTrue(gate["passed"])
+        self.assertTrue(gate["checks"]["supervisorBothModes"])
+        performance = gate["performanceEvidence"]["supervisor-independent"]
+        self.assertFalse(performance["decisionVerified"])
+        self.assertEqual(performance["reviewJobs"][0]["faultCode"], "internal-timeout")
+        self.assertEqual(performance["reviewJobs"][0]["status"], "failed")
+        self.assertEqual(performance["reviewJobs"][0]["protocolRecoveryCount"], 1)
+        self.assertEqual(performance["reviewJobs"][0]["repairLimit"], 1)
+
+    def test_independent_instrumentation_needs_actual_model_check_not_only_metadata(self):
+        log_sessions, log_rows = fixture()
+        for mutation in ("missing-tool", "failed-result", "foreign-snapshot", "incomplete", "modified"):
+            sessions, rows = independent_fixture()
+            if mutation == "missing-tool":
+                sessions["review"][-2]["data"]["name"] = "read_task_evidence"
+            elif mutation == "failed-result":
+                sessions["review"][-1]["data"]["message"]["isError"] = True
+            else:
+                check = sessions["main"][-1]["data"]["payload"]["verification"]["checks"][0]
+                if mutation == "foreign-snapshot":
+                    check["snapshotId"] = "foreign"
+                elif mutation == "incomplete":
+                    check["outputIncomplete"] = True
+                else:
+                    check["changed"] = ["tree"]
+            chain = inspect_chain("main", sessions, rows, "supervisor-independent")
+            gate = build_gate({"supervisor-log": inspect_chain("main", log_sessions, log_rows), "supervisor-independent": chain},
+                              {"dailyEffectiveRouteMatched": True}, [])
+            self.assertFalse(gate["passed"], mutation)
+            self.assertFalse(gate["checks"]["independentReviewerCheckExecuted"], mutation)
+
+    def test_no_actual_request_foreign_lineage_or_endpoint_mismatch_do_not_admit(self):
+        log_sessions, log_rows = fixture()
+        for mutation in ("no-request", "foreign-lineage", "wrong-endpoint"):
+            sessions, rows = independent_fixture()
+            if mutation == "no-request":
+                rows = [row for row in rows if row["type"] != "http-request"]
+            elif mutation == "foreign-lineage":
+                sessions["review"][0]["parentSession"] = "foreign"
+            else:
+                for row in rows:
+                    if row["sessionId"] == "review" and row["type"] in ("http-request", "http-response"):
+                        row["endpointMatched"] = False
+            chain = inspect_chain("main", sessions, rows, "supervisor-independent")
+            gate = build_gate({"supervisor-log": inspect_chain("main", log_sessions, log_rows), "supervisor-independent": chain},
+                              {"dailyEffectiveRouteMatched": True}, [])
+            self.assertFalse(gate["passed"], mutation)
+
+    def test_observed_response_without_request_is_not_success(self):
+        rows = [row for row in audit("main") if row["type"] != "http-request"]
+        self.assertFalse(summarize_session("main", [answer()], rows)["successfulRequestAndDurableAnswer"])
 
 
 if __name__ == "__main__":
