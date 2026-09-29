@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "scope": "first-seven-original-positions",
+  "plannedDenominator": 16,
+  "positions": [
+    {
+      "position": 1,
+      "id": "helm-array-merge-strategies-r1-goal",
+      "condition": "goal",
+      "status": "infrastructure-fault",
+      "delivered": false,
+      "reward": null,
+      "gradeFault": {
+        "code": "pre-delivery-infrastructure-failure",
+        "graderStarted": false
+      },
+      "resultSha256": "0c792d8b66482c07b2a29cd775784e44771520ba8c703e0bacc91b0c9d9080f0",
+      "tokenBuckets": 0,
+      "totalTokens": 0,
+      "modelRequests": 0,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": null,
+      "stopToSealSec": null,
+      "committedPatchBytes": null
+    },
+    {
+      "position": 2,
+      "id": "helm-array-merge-strategies-r2-plan",
+      "condition": "plan",
+      "status": "infrastructure-fault",
+      "delivered": false,
+      "reward": null,
+      "gradeFault": {
+        "code": "pre-delivery-plan-transport-infrastructure-failure",
+        "graderStarted": false
+      },
+      "resultSha256": "2fd2bb5bf638c27403f6afdb381feaf9c4156f48e17e6d2b6cbf4cd105e5b179",
+      "tokenBuckets": {
+        "uncachedInputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 0,
+      "modelRequests": 0,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": null,
+      "stopToSealSec": null,
+      "committedPatchBytes": null
+    },
+    {
+      "position": 3,
+      "id": "kea-atomic-signal-selectors-r2-goal",
+      "condition": "goal",
+      "status": "native-stopped",
+      "delivered": true,
+      "reward": 0,
+      "gradeFault": null,
+      "resultSha256": "dad6998bdd6b75217f2449e2a87e80710b67b7c7348b12350be0d1cb8bd34d78",
+      "tokenBuckets": {
+        "uncachedInputTokens": 45417,
+        "outputTokens": 41683,
+        "cacheReadTokens": 230528,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 317628,
+      "modelRequests": 11,
+      "reviewJobs": 0,
+      "approvalCount": 1,
+      "nativeDurationSec": 236.07676005363464,
+      "stopToSealSec": 10546.208837747574,
+      "committedPatchBytes": 0,
+      "lastResponseContentTypes": [
+        "reasoning"
+      ],
+      "lastResponseOutputTokens": 32000,
+      "providerStopReason": [
+        "length"
+      ],
+      "toolCallsByName": {
+        "bash": 20
+      },
+      "toolErrorsByCode": {},
+      "controlToolCalls": []
+    },
+    {
+      "position": 4,
+      "id": "helm-array-merge-strategies-r1-supervisor-independent",
+      "condition": "supervisor-independent",
+      "status": "infrastructure-fault",
+      "delivered": true,
+      "reward": null,
+      "gradeFault": {
+        "code": "execution-not-quiescent-or-submission-missing"
+      },
+      "resultSha256": "086b443ef298b1da307879fe053573c83f4b7c7ade2f4e1f05ec58b1a8daf94d",
+      "tokenBuckets": {
+        "uncachedInputTokens": 63438,
+        "outputTokens": 48267,
+        "cacheReadTokens": 1403264,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 1514969,
+      "modelRequests": 38,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": null,
+      "stopToSealSec": null,
+      "committedPatchBytes": null,
+      "lastResponseContentTypes": [
+        "reasoning",
+        "tool-call",
+        "tool-call"
+      ],
+      "lastResponseOutputTokens": 4751,
+      "providerStopReason": [
+        "toolUse"
+      ],
+      "toolCallsByName": {
+        "bash": 59,
+        "read": 10,
+        "web_search": 1,
+        "web_fetch": 1
+      },
+      "toolErrorsByCode": {
+        "WEB_PROVIDER_CREDENTIAL_MISSING": 1,
+        "WEB_PROVIDER_ERROR": 1
+      },
+      "controlToolCalls": []
+    },
+    {
+      "position": 5,
+      "id": "kea-atomic-signal-selectors-r1-plan",
+      "condition": "plan",
+      "status": "native-stopped",
+      "delivered": true,
+      "reward": 0,
+      "gradeFault": null,
+      "resultSha256": "db73aebfed1044b016a1aeeaec73774aae4d29d9be38d21ce54c488aae170711",
+      "tokenBuckets": {
+        "uncachedInputTokens": 49008,
+        "outputTokens": 94610,
+        "cacheReadTokens": 471552,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 615170,
+      "modelRequests": 17,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": 490.4996099472046,
+      "stopToSealSec": 843.6601550579071,
+      "committedPatchBytes": 0,
+      "lastResponseContentTypes": [
+        "reasoning"
+      ],
+      "lastResponseOutputTokens": 32000,
+      "providerStopReason": [
+        "length"
+      ],
+      "toolCallsByName": {
+        "bash": 15,
+        "read": 19
+      },
+      "toolErrorsByCode": {},
+      "controlToolCalls": []
+    },
+    {
+      "position": 6,
+      "id": "kea-atomic-signal-selectors-r1-supervisor-independent",
+      "condition": "supervisor-independent",
+      "status": "native-stopped",
+      "delivered": true,
+      "reward": 0,
+      "gradeFault": null,
+      "resultSha256": "9789923fdc11dc59e6e214dd022c9f246345d8863ae00d226d1a58c9548e056a",
+      "tokenBuckets": {
+        "uncachedInputTokens": 43458,
+        "outputTokens": 71129,
+        "cacheReadTokens": 292608,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 407195,
+      "modelRequests": 12,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": 361.5675039291382,
+      "stopToSealSec": 1062.6586170196533,
+      "committedPatchBytes": 0,
+      "lastResponseContentTypes": [
+        "reasoning"
+      ],
+      "lastResponseOutputTokens": 32000,
+      "providerStopReason": [
+        "length"
+      ],
+      "toolCallsByName": {
+        "bash": 7,
+        "read": 17,
+        "grep": 1,
+        "web_search": 1
+      },
+      "toolErrorsByCode": {
+        "WEB_PROVIDER_CREDENTIAL_MISSING": 1
+      },
+      "controlToolCalls": []
+    },
+    {
+      "position": 7,
+      "id": "kea-atomic-signal-selectors-r2-plan",
+      "condition": "plan",
+      "status": "native-stopped",
+      "delivered": true,
+      "reward": 0,
+      "gradeFault": null,
+      "resultSha256": "3223cb41840736547c4e671163109d212bb6fa866a21aea6a8b26fff826f04c8",
+      "tokenBuckets": {
+        "uncachedInputTokens": 42596,
+        "outputTokens": 57643,
+        "cacheReadTokens": 309248,
+        "cacheWriteTokens": 0
+      },
+      "totalTokens": 409487,
+      "modelRequests": 13,
+      "reviewJobs": 0,
+      "approvalCount": 0,
+      "nativeDurationSec": 313.3180842399597,
+      "stopToSealSec": 0.7191119194030762,
+      "committedPatchBytes": 0,
+      "lastResponseContentTypes": [
+        "reasoning"
+      ],
+      "lastResponseOutputTokens": 32000,
+      "providerStopReason": [
+        "length"
+      ],
+      "toolCallsByName": {
+        "bash": 5,
+        "glob": 1,
+        "read": 18,
+        "web_search": 1
+      },
+      "toolErrorsByCode": {
+        "WEB_PROVIDER_CREDENTIAL_MISSING": 1
+      },
+      "controlToolCalls": []
+    }
+  ],
+  "allSevenTokens": 3264449,
+  "deliveredPositions": 5,
+  "scoreablePositions": 4,
+  "infrastructurePositions": 3,
+  "noReviewerStartedInFirstSeven": true,
+  "limitations": [
+    "No full pairing or supervisor-log result in the first seven.",
+    "Controller versions differ in positions 3, 5 and 6.",
+    "Reasoning output and the configured cap are observed; causal model defects are not established."
+  ],
+  "sharedOutputLimitEvidence": {
+    "maxTokens": 32000,
+    "origin": "explicit-model-setting-in-daily-effective-config",
+    "allFourConditionsSelectedFirstSettingsMatched": true,
+    "dailyConfigEvidenceSha256": "38948f9ad22df5f786cab483135315843ed3dcf4fbb6bb484b1433335f0d9adc",
+    "selectedFirstComparisonEvidenceSha256": "759a092e84e74842d7301adec3d688e8de0a4eff2841a79fdf30b461edb11f88",
+    "actualRequestHeadersVerifiedInPositions": [
+      3,
+      5,
+      6,
+      7
+    ],
+    "allFourFinalResponsesReasoningOnly": true,
+    "finalOutputTokensEach": 32000,
+    "providerStopReasonEach": "length",
+    "singleRequestLimitNotTaskDeadline": true,
+    "upstreamLargerOutputSupportVerified": false
+  },
+  "identicalOfficialTestReportSha256": "1987b6b52284b5c9c44284789225b32f15a3359a6f73ca4dd10c1a7b7937c258",
+  "nativeSourceEvidence": {
+    "piAiOpenaiCompletionsSha256": "3c45b25268a7a1972262b39b6bc399e65cc1d0649efc5f9acee3838a7e05b11b",
+    "coreAgentLoopSha256": "f75cb46f4cfbde7f8c0201d55584c815d200e0f974ce27dbf8f9090b57da432c",
+    "supervisorBuiltSha256": "7e7a36b77cd0d9c8282841a867ae2656c09cef6fe66ced4bdd4a7bcd0db46224",
+    "finishMappingBugEstablished": false,
+    "independentSourceReviewCompleted": true
+  }
+}

@@ -144,6 +144,8 @@ The new Supervisor planning stop rule was admitted and resumed the original Sess
 
 Original position seven, Kea r2 Plan, was delivered to Session session-6a3c8820-8e0a-4bf1-8375-a9326b9fdbd6 with the original three-hour window. At observation, requests matched the frozen route and returned 200, with no approval yet; launch and observer both use v8. Six of sixteen positions are sealed, one is running and nine remain undelivered.
 
+The [first-seven analysis](results-20260929-7/analysis.zh.md) separates three infrastructure faults from four valid reward-zero grades. All four Kea final responses were reasoning-only, exactly 32,000 output Tokens and provider length stops; the cap came from the daily effective configuration. All four committed patches are empty and official test reports identical; neither Supervisor-independent attempt started a review. Position seven sealed about 0.72 seconds after stopping, improving the former idle wait; review effectiveness remains unmeasured.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.

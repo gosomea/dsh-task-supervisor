@@ -144,6 +144,8 @@ python3 -m unittest discover -s eval/deepswe -v
 
 第七次原 Kea r2 Plan 已实际投递，Session 为 session-6a3c8820-8e0a-4bf1-8375-a9326b9fdbd6，原三小时窗口保持。记录时模型请求匹配冻结路由并返回 200，尚未批准；投递与观察均使用 v8。当前 6/16 已封口、1 次运行、9 次尚未投递。
 
+[前七次分析](results-20260929-7/analysis.zh.md)将三个基础设施故障与四次有效奖励 0 分开。四次 Kea 的最终响应均为 reasoning-only、32,000 输出 Token、上游 length；实际 cap 沿用日常有效配置。四次已提交补丁为空、官方测试报告相同；两次 Supervisor-independent 都未启动审查。第七次停止至封口约 0.72 秒，旧空等缺口已改善；不能据此比较审查效果。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。
