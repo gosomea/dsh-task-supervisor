@@ -104,6 +104,8 @@ The repair retains the first two infrastructure failures and the third delivered
 
 The new observer is admitted and the single batch controller has started; see the [recovery admission record](native-stop-admission-20260929.json). At that observation, two of 16 positions were sealed. Recovery/grading of the third and the remaining 13 were pending; controller startup is not evaluation completion.
 
+The [partial evaluation report](results-20260929-3/report.zh.md) after recovery records three of 16 sealed positions: two pre-delivery infrastructure faults and one genuine Goal stop with official reward zero. Original elapsed wall time includes idle waiting by the old observer and is not model working time. Remaining positions are queued; no condition ranking is supported yet.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.
