@@ -47,6 +47,92 @@ class ControlFlowTests(unittest.TestCase):
         return self.journal.write('started.json', {'schemaVersion': 1, 'id': 'fixture', 'condition': condition,
             'sessionId': 'session', 'startedAtUnix': 0, 'deadlineAtUnix': deadline, 'timeLimitSec': deadline})
 
+    def test_plan_stop_seals_once_without_approval_or_delivery(self):
+        from test_native_stop import plan_fixture
+        from native_stop import plan_stop_evidence
+        events, values = plan_fixture()
+        self.started('plan')
+        projection = {'record': {'rows': {k: {'val': v} for k, v in values.items()}}}
+        with patch('run_pilot.quiesce', return_value={'acknowledged': True}) as cleanup:
+            terminal = supervise(self.rpc, self.journal, lambda _: projection, cleanup,
+                clock=lambda: 3, sleep=lambda _: self.fail('Stopped Plan cannot wait out deadline'),
+                read_native_stop=lambda _, state: plan_stop_evidence(events, state, 'b' * 64),
+                approve_plan=lambda *_: self.fail('Stopped Plan cannot be approved'))
+            self.assertEqual(terminal['status'], 'native-stopped')
+            self.assertFalse(terminal['nativeFinished'])
+            self.assertEqual(terminal['approvalCount'], 0)
+            cleanup.assert_called_once()
+            supervise(self.rpc, self.journal, lambda _: projection, cleanup, clock=lambda: 4)
+            cleanup.assert_called_once()
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(self.rpc.prompts, [])
+
+    def test_plan_resume_during_evidence_read_discards_old_stop(self):
+        from test_native_stop import plan_fixture
+        from native_stop import plan_stop_evidence
+        import copy
+        events, values = plan_fixture()
+        self.started('plan')
+        state = copy.deepcopy(values)
+        def projection(_):
+            return {'record': {'rows': {k: {'val': v} for k, v in state.items()}}}
+        def evidence(_, old):
+            result = plan_stop_evidence(events, old, 'b' * 64)
+            self.rpc.running = True
+            state['inbox']['next-turn'] = [{}]
+            return result
+        clock = [1]
+        result = supervise(self.rpc, self.journal, projection, lambda *_: {'acknowledged': True},
+            clock=lambda: clock[0], sleep=lambda _: clock.__setitem__(0, 10), read_native_stop=evidence)
+        self.assertEqual(result['status'], 'deadline')
+        self.assertIsNone(result['nativeStop'])
+
+    def test_legacy_plan_observer_does_not_enable_new_stop_policy(self):
+        from test_native_stop import plan_fixture
+        _, values = plan_fixture()
+        self.started('plan')
+        projection = {'record': {'rows': {k: {'val': v} for k, v in values.items()}}}
+        clock = [1]
+        result = supervise(self.rpc, self.journal, lambda _: projection, lambda *_: {'acknowledged': True},
+            clock=lambda: clock[0], sleep=lambda _: clock.__setitem__(0, 10))
+        self.assertEqual(result['status'], 'deadline')
+        self.assertIsNone(result['nativeStop'])
+
+    def test_resumed_plan_attaches_reader_only_for_explicit_new_policy(self):
+        from run_pilot import run_position
+        self.started('plan')
+        self.journal.write('launch-receipt.json', {'dockerContext': 'fixture', 'container': 'owned',
+            'lease': 'lease', 'containerId': 'exact-id', 'home': self.temp.name, 'port': 1234})
+        self.journal.write('plan-client-process.json', {'pid': 42})
+        legacy = {'nativeGoalStop': True, 'goalDriverSha256': 'a' * 64,
+                  'pauseDisposition': 'seal-without-rescue'}
+        enabled = {**legacy, 'nativePlanStop': True, 'planModeSha256': 'b' * 64}
+        for policy in (legacy, enabled):
+            with self.subTest(policy=policy), patch('native_stop.admitted_goal_driver', return_value='a' * 64), \
+                    patch('native_stop.admitted_plan_mode', return_value='b' * 64) as source, \
+                    patch('native_stop.read_plan_stop', return_value={'proof': True}) as reader, \
+                    patch('run_pilot.owned'), patch('run_pilot.WebRpc', return_value=self.rpc), \
+                    patch('run_pilot.launch') as launch, patch('run_pilot.supervise') as monitor:
+                def inspect_reader(*args, **kwargs):
+                    callback = kwargs['read_native_stop']
+                    if policy is legacy:
+                        self.assertIsNone(callback)
+                    else:
+                        self.assertEqual(callback('session', {'plan': {}}), {'proof': True})
+                    return {'status': 'fixture'}
+                monitor.side_effect = inspect_reader
+                run_position({'release': {'controlTerminationPolicy': policy}, 'runtime': 'fixture',
+                              'condition': 'plan'}, '', self.journal.root, allow_smoke=True)
+                launch.assert_not_called()
+                if policy is legacy:
+                    source.assert_not_called()
+                    reader.assert_not_called()
+                else:
+                    source.assert_called_once()
+                    reader.assert_called_once_with(Path(self.temp.name), 'session', {'plan': {}}, 'b' * 64)
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(self.rpc.prompts, [])
+
     def test_terminal_published_before_lock_prevents_second_cleanup(self):
         from contextlib import contextmanager
         self.started('goal')

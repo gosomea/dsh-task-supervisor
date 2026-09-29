@@ -138,6 +138,8 @@ def observe(condition, values, running, approved, native_stop=None):
     native_finished = False
     if conflict:
         status = 'controller-conflict'
+    elif idle and native_stop is not None and (condition == 'plan' or (condition == 'goal' and phase == 'active')):
+        status = 'native-stopped'
     elif condition == 'plan' and approved and not plan.get('active') and idle and response:
         status, native_finished = 'native-complete', True
     elif phase == 'complete' and idle:
@@ -148,8 +150,6 @@ def observe(condition, values, running, approved, native_stop=None):
         status = 'controller-off'
     elif phase == 'paused':
         status = 'internal-fault' if task.get('pauseReason') == 'review-fault' else 'paused'
-    elif condition == 'goal' and phase == 'active' and idle and native_stop is not None:
-        status = 'native-stopped'
     return {'status': status, 'nativeFinished': native_finished, 'taskPhase': phase,
             'pauseReason': task.get('pauseReason'), 'controllerOwners': owners,
             'idle': idle, 'reviewJobs': supervisor.get('reviewJobs', []),
@@ -274,7 +274,8 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
                            if row['sessionId'] == started['sessionId'])
                 approved = journal.read('approval-receipt.json') is not None
                 last = observe(started['condition'], values, row['running'], approved)
-                if read_native_stop is not None and started['condition'] == 'goal' and last['idle'] and last['taskPhase'] == 'active':
+                native_stop_candidate = started['condition'] == 'plan' or (started['condition'] == 'goal' and last['taskPhase'] == 'active')
+                if read_native_stop is not None and last['idle'] and native_stop_candidate:
                     evidence = read_native_stop(started['sessionId'], values)
                     # Reading compressed evidence does not lock native events.
                     # Recheck the whole projection and live running flag before
@@ -290,7 +291,7 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
                         'pauseReason': last['pauseReason'], 'rescueCount': 0})
                 # Legacy releases wait out pauses; either policy sends no
                 # retry-review/resume/prompt or second approval.
-                if first_pause is None:
+                if first_pause is None and last['status'] == 'running':
                     if started['condition'].startswith('supervisor-'):
                         approve_supervisor(rpc, journal, started, last, clock=clock)
                     elif started['condition'] == 'plan' and not approved and approve_plan is not None:

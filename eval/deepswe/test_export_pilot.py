@@ -36,6 +36,19 @@ class EvidenceExportTests(unittest.TestCase):
         (folder / 'result.json').write_text(json.dumps(value))
         return folder
 
+    def test_plan_stop_export_retains_mode_and_source_without_private_paths(self):
+        self.seal(0, overrides={'terminal': {'status': 'native-stopped', 'nativeFinished': False,
+            'nativeStop': {'kind': 'plan-mode-no-continuation', 'reason': 'max-tokens', 'turn': 1,
+                'seq': 137, 'planModeSeq': 3, 'planModeActive': True, 'driverSourceSha256': 'b' * 64,
+                'privatePath': '/private/not-exported', 'nativeStoppedAtUnix': 20}}})
+        snapshot = summarize(self.root, self.protocol)
+        evidence = details(self.root, self.protocol, snapshot)
+        stop = evidence['positions'][0]['nativeStop']
+        self.assertTrue(stop['planModeActive'])
+        self.assertEqual(stop['planModeSeq'], 3)
+        self.assertEqual(stop['driverSourceSha256'], 'b' * 64)
+        self.assertNotIn('privatePath', stop)
+
     def test_partial_matrix_cannot_be_mislabelled_final_or_overwrite_evidence(self):
         folder = self.seal(0)
         original = (folder / 'result.json').read_bytes()

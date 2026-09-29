@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from control_flow import observe
-from native_stop import admitted_goal_driver, goal_stop_evidence
+from native_stop import admitted_goal_driver, admitted_plan_mode, goal_stop_evidence, plan_stop_evidence
 
 
 def fixture():
@@ -20,7 +20,63 @@ def fixture():
     return events, values
 
 
+def plan_fixture(active=True):
+    events, values = fixture()
+    del values['goal']
+    values['plan'] = {'active': active, 'wanted': None, 'running': None}
+    events[0] = {'type': 'plan/mode', 'seq': 1, 'data': {'active': active}}
+    return events, values
+
+
 class NativeStopTests(unittest.TestCase):
+    def test_unsubmitted_plan_cannot_wait_out_an_ended_turn(self):
+        events, values = plan_fixture()
+        evidence = plan_stop_evidence(events, values, 'b' * 64)
+        result = observe('plan', values, False, False, evidence)
+        self.assertEqual(result['status'], 'native-stopped')
+        self.assertFalse(result['nativeFinished'])
+        self.assertTrue(evidence['planModeActive'])
+        self.assertEqual(evidence['planModeSeq'], 1)
+        self.assertEqual(observe('plan', values, True, False, evidence)['status'], 'running')
+
+    def test_approved_plan_truncated_response_is_not_completion(self):
+        events, values = plan_fixture(False)
+        values['turnOutline'] = {'turns': [{'response': 'unfinished response'}]}
+        evidence = plan_stop_evidence(events, values, 'b' * 64)
+        self.assertEqual(observe('plan', values, False, True, evidence)['status'], 'native-stopped')
+        self.assertEqual(observe('plan', values, False, True)['status'], 'native-complete')
+
+    def test_pending_modes_questions_queues_and_changed_plan_prevent_stop(self):
+        events, values = plan_fixture()
+        mutations = [('plan', 'pending', True), ('plan', 'wanted', False), ('plan', 'running', {}),
+                     ('plan', 'active', False), ('sessionStats', 'openStep', {}),
+                     ('sessionStats', 'pendingCalls', {'question': {}}),
+                     ('turnBoundary', 'openTurnStartSeq', 1), ('sessionStats', 'lastTurn', 2),
+                     ('inbox', 'next-turn', [{}]), ('inbox', 'next-step', [{}])]
+        for row, key, value in mutations:
+            with self.subTest(row=row, key=key):
+                changed = copy.deepcopy(values)
+                changed[row][key] = value
+                self.assertIsNone(plan_stop_evidence(events, changed, 'b' * 64))
+        self.assertIsNone(plan_stop_evidence(events[1:], values, 'b' * 64))
+        self.assertIsNone(plan_stop_evidence(events + [{'type': 'user/message'}], values, 'b' * 64))
+        changed = copy.deepcopy(events)
+        changed[-1]['data']['reason']['kind'] = 'complete'
+        self.assertIsNone(plan_stop_evidence(changed, values, 'b' * 64))
+
+    def test_plan_source_policy_requires_actual_frozen_bytes(self):
+        with tempfile.TemporaryDirectory() as root:
+            runtime = Path(root)
+            path = runtime / 'dsh-source/packages/plan/plan-mode/src/index.ts'
+            path.parent.mkdir(parents=True)
+            path.write_text('owned Plan fixture')
+            sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertEqual(admitted_plan_mode(runtime, {'planModeSha256': sha}), sha)
+            with self.assertRaises(ValueError):
+                admitted_plan_mode(runtime, {'planModeSha256': 'a' * 64})
+            with self.assertRaises(ValueError):
+                admitted_plan_mode(runtime, {})
+
     def test_current_max_token_stop_is_not_running_or_success(self):
         events, values = fixture()
         evidence = goal_stop_evidence(events, values, 'a' * 64)

@@ -88,7 +88,8 @@ def details(root, protocol, summary):
             versions = result.get('executionVersions') or {}
             stop = terminal.get('nativeStop') or {}
             safe_stop = {key: label(stop.get(key)) for key in ('kind', 'reason', 'activationObservation')}
-            safe_stop.update({key: number(stop.get(key)) for key in ('turn', 'seq', 'nativeStoppedAtUnix')})
+            safe_stop.update({key: number(stop.get(key)) for key in ('turn', 'seq', 'nativeStoppedAtUnix', 'planModeSeq')})
+            safe_stop['planModeActive'] = stop.get('planModeActive') if type(stop.get('planModeActive')) is bool else None
             driver = stop.get('driverSourceSha256')
             safe_stop['driverSourceSha256'] = driver if isinstance(driver, str) and re.fullmatch('[a-f0-9]{64}', driver) else None
             row.update(executionVersions={key: value for key, value in versions.items()

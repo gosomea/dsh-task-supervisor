@@ -120,6 +120,14 @@ python3 -m unittest discover -s eval/deepswe -v
 
 新版控制器已启动原 Kea r1 Plan，Session 为 session-e1bf28ce-7274-4d99-9f88-6f519705bb48。记录时实际主模型 HTTP 响应匹配冻结路由上的 deepseek-v4.1-flash，均返回 200。已有 4 个结果封口，第 5 次正在运行，另 11 次排队；这是实际投递证据，不代表任务完成或官方奖励。
 
+## 原生 Plan 停止的接续
+
+第五个正式位置 Kea r1 Plan 于 2026 年 9 月 29 日 19:00:07（北京时间）以 seq 137 的 max-tokens 结束规划回合。Plan 模式仍 active，但 turn／step 关闭、工具和两类 inbox 均为空，没有提交批准问答或批准收据。原生 Plan 只维护协作模式；通用 Agent loop 在 inbox 为空时结束，不会自动开启下一轮。旧 v6 观察者将模式 active 误作持续运行，这个缺口会再次造成空等。
+
+新增显式 nativePlanStop=true 与 planModeSha256，旧三字段停止策略保持兼容。新 reader 绑定最后 plan/mode 的序号和 active、对应 turn、最新 max-tokens 结束、关闭状态与空队列；完整投影中的 wanted／running 或 wire pending 表示待切换时拒绝停止。读取证据后重读完整投影和实时运行状态，变化即废弃。停止优先于 Plan 的“已有 response 即完成”判断，也不触发批准回调；批准后的实施回合被截断仍不能计为完成。
+
+[Plan 停止回归记录](plan-stop-recovery-20260929.json)保留原 Session、停止时间和证据哈希。父代理 65 项聚焦测试通过，子 Agent 独立复核 63 项并回放真实日志通过；另两项覆盖实际 run_position 的新策略 reader 接线与安全报告字段。父代理真实回放同样确认旧判断 running、新判断 native-stopped，且不计完成。唯一 v6 控制器已停止，原辅助审批客户端按精确身份收敛，没有追加 prompt、批准或模型投递；主 Host 与原截止仍保留，等待新观察者从同一 Session 封口并评分。
+
 ## Dev Note
 
 这一批与旧 P2 冻结批次分开。定时跟进保持关闭；现有用户 Web 实例和旧评测控制器保持各自配置。SlopCodeBench 是后续连续需求候选，官方新 Session 与本项目同 Session 扩展分别报告。

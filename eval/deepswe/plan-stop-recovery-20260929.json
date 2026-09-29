@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "deepswe-native-plan-stop-recovery",
+  "position": "kea-atomic-signal-selectors-r1-plan",
+  "sessionId": "session-e1bf28ce-7274-4d99-9f88-6f519705bb48",
+  "nativeStoppedAtUnix": 1790679607.253,
+  "seq": 137,
+  "turn": 1,
+  "planModeSeq": 8,
+  "planModeActive": true,
+  "reason": "max-tokens",
+  "initialApprovalCount": 0,
+  "rescueCount": 0,
+  "originalDeadlineAtUnix": 1790689916.75339,
+  "oldObservation": "running",
+  "newObservation": "native-stopped",
+  "nativeFinished": false,
+  "oldResultsUnchanged": 4,
+  "newAgentDeliveries": 0,
+  "parentTests": 65,
+  "independentReviewTests": 63,
+  "actualReplayPassed": true,
+  "source": {
+    "planModeSha256": "be75cc93d0774f33488b13eadace936603ddfbe5e28ae11d7027cee8ddd929e8",
+    "agentLoopSha256": "f75cb46f4cfbde7f8c0201d55584c815d200e0f974ce27dbf8f9090b57da432c"
+  },
+  "evidence": {
+    "controllerStopReceiptSha256": "9f02382847b11170e3f90ffc3da9b6a5780a7ed47cdf5a9fa58c4af31045a16b",
+    "originalStopEvidenceSha256": "3d151d5e82c24c280883834b4c7ceef10d64c898dc4a064c8c03c614a08e7956",
+    "originalStartedSha256": "b8e9da8519b88b694cfd3a229a206d85ef38152d5be54d135fdc0d614be1f3ac",
+    "originalStartReceiptSha256": "ff44a4bb9e7cbc2f5fcfff0ff6771a504675fa13590d7f2c28d5262ee3608c68",
+    "planClientReconciliationSha256": "0d3b70ebe9b60667f2fa9819e8f604e7367ab31a7858224f5cb50b8c7082caad"
+  },
+  "newObserverAdmission": "pending",
+  "oldThreeFieldPolicyPreserved": true,
+  "remainingUndelivered": 11,
+  "denominator": 16
+}

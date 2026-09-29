@@ -120,6 +120,14 @@ Parent release admission has passed; see the [resource-boundary admission record
 
 The new controller started original Kea r1 Plan in Session session-e1bf28ce-7274-4d99-9f88-6f519705bb48. Actual main HTTP responses match deepseek-v4.1-flash on the frozen route and return 200 at the recorded observation. Four results are sealed; position five is running and the remaining eleven are queued. This is actual delivery evidence, not task completion or official reward.
 
+## Reconciling native Plan stops
+
+The fifth formal position, Kea r1 Plan, ended its planning turn with max-tokens at seq 137 at 19:00:07 China time on September 29, 2026. Plan mode remained active, but turn/step were closed, tools and both inbox queues empty, and no approval question or receipt existed. Native Plan maintains collaboration mode; the generic Agent loop stops when the inbox is empty and starts no automatic next turn. The v6 observer mistook active mode for ongoing execution, causing another idle wait.
+
+The new explicit nativePlanStop=true and planModeSha256 policy preserves compatibility with the older three-field policy. The reader binds the last plan/mode sequence and active flag, corresponding turn, latest max-tokens end, closed state and empty queues. Pending wanted/running fields in the complete projection or pending in the wire view prevent sealing. The observer rereads the entire projection and live running state after reading evidence, discarding evidence on change. Stop classification precedes Plan's response-based completion rule and invokes no approval callback; truncated implementation after approval is still not completion.
+
+The [Plan stop regression record](plan-stop-recovery-20260929.json) retains the original Session, stop time and evidence hashes. All 65 focused parent tests passed; independent subagent review ran 63 tests and replayed the actual log successfully. Two additional tests cover new-policy reader wiring through run_position and safe report fields. Parent replay also gives old running versus new native-stopped without completion. The sole v6 controller was stopped and the exact auxiliary approval client reconciled without another prompt, approval or model delivery. The main Host and original deadline remain for same-Session sealing and grading by the new observer.
+
 ## Dev Note
 
 This batch stays separate from the frozen P2 batch. Scheduled follow-ups remain disabled; user Web deployments and the old controller retain their own configuration. SlopCodeBench remains a later continuous-requirement candidate, with its official fresh Sessions reported separately from our same-Session extension.
