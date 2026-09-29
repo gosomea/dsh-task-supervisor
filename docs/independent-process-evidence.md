@@ -16,6 +16,10 @@ This API is not a model tool and is not connected to the current evaluation inst
 
 Thirteen keyless tests cover durable recovery, foreign task/artifact bindings, changed container identities, tampered receipts, capture invalidation, concurrent duplicate restoration, replaced storage and expiry during asynchronous checks. They validate the receipt API, not native Docker capture or real model acceptance.
 
+The same administrator entry exposes `analyzeGitCapture`. It imports captured Git data into a fresh private calculation directory and uses native subprocess/Git plumbing to calculate HEAD, tree, parents, index and raw snapshot relationships. Source configuration, hooks, filters, external diff and object redirection never execute. Committed, staged, worktree and untracked differences remain distinct; excluding paths beyond `.git` makes whole-workspace cleanliness `null`.
+
+Eleven real temporary Git repository tests cover post-commit changes, correct but merely staged output, unborn repositories, hostile configuration/filters, packed objects, file modes/links, corrupt data and extra exclusions. This calculation module does not establish an original-world freeze, frozen Git runtime or authenticated capture origin. Its caller must satisfy those prerequisites; equal hashes cannot substitute for a write barrier.
+
 ## Three evidence types
 
 | Type | What it proves | Source |
