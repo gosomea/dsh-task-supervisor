@@ -68,3 +68,10 @@ export const provenanceReceiptSchema = z.object({ schemaVersion: z.literal(1), i
   }
 })
 export type ProvenanceReceipt = z.infer<typeof provenanceReceiptSchema>
+
+/** Reader output omits private daemon paths, lease material and administrator owner/mount bindings. */
+export function publicProvenanceReceipt(value: ProvenanceReceipt) {
+  const receipt = provenanceReceiptSchema.parse(value)
+  return { schemaVersion: receipt.schemaVersion, id: receipt.id, evidenceId: `provenance:${receipt.id}`,
+    createdAt: receipt.createdAt, scope: receipt.scope, body: receipt.body }
+}

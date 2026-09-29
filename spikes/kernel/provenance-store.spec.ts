@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProvenanceAuthority, type ProvenanceProvider } from '../../src/provenance-store.ts'
-import { provenanceReceiptSchema, type ProvenanceBody, type ProvenanceScope, type WorldBinding } from '../../src/provenance-schema.ts'
+import { provenanceReceiptSchema, publicProvenanceReceipt, type ProvenanceBody, type ProvenanceScope, type WorldBinding } from '../../src/provenance-schema.ts'
 
 const roots: string[] = []
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))) })
@@ -12,7 +12,7 @@ const signal = () => new AbortController().signal
 const digest = 'a'.repeat(64)
 function bindings() {
   const world: WorldBinding = { id: randomUUID(), lease: randomUUID(), mainSessionId: 'session-test',
-    backend: 'docker', daemonIdentity: 'unix:///private/daemon.sock', containerId: digest,
+    backend: 'docker', daemonIdentity: 'unix:///private/daemon.sock', containerId: 'c'.repeat(64),
     ownerLabel: { name: 'owner', value: 'test-lease' }, image: `sha256:${digest}`,
     workspaceIdentity: 'workspace-test', cwd: '/workspace', deadlineAt: new Date(Date.now() + 3600000).toISOString() }
   const scope: ProvenanceScope = { id: randomUUID(), worldId: world.id, taskId: randomUUID(), taskRevision: 1,
@@ -36,6 +36,12 @@ describe('administrator provenance authority', () => {
     const receipt = await authority.read(scope, seal.id, signal())
     expect(receipt.body).toEqual(unavailable)
     expect(receipt.scope.snapshotId).toBe(scope.snapshotId)
+    const visible = publicProvenanceReceipt(receipt)
+    expect(visible.evidenceId).toBe(`provenance:${receipt.id}`)
+    expect(visible).not.toHaveProperty('world')
+    for (const secret of [world.lease, world.daemonIdentity, world.ownerLabel.value, world.containerId, world.cwd]) {
+      expect(JSON.stringify(visible)).not.toContain(secret)
+    }
     const recovered = await createProvenanceAuthority(root, { verifyWorld: async () => {}, capture: async () => unavailable })
     recovered.registerWorld(world); recovered.registerScope(scope)
     await expect(recovered.read(scope, seal.id, signal())).rejects.toThrow('not admitted')

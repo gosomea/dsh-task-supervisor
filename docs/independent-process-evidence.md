@@ -20,6 +20,12 @@ The same administrator entry exposes `analyzeGitCapture`. It imports captured Gi
 
 Eleven real temporary Git repository tests cover post-commit changes, correct but merely staged output, unborn repositories, hostile configuration/filters, packed objects, file modes/links, corrupt data and extra exclusions. This calculation module does not establish an original-world freeze, frozen Git runtime or authenticated capture origin. Its caller must satisfy those prerequisites; equal hashes cannot substitute for a write barrier.
 
+`withPausedWorld` provides a Docker capture barrier in a separate administrator execution world. It verifies exact main/admin containers, owners, image config IDs, an exclusive named volume and a read-only administrator mount. After checking additional writable mounts, it invokes capture only with an acknowledged main-container pause. It releases only its own pause and confirms release after capture failures. At cutoff it obtains external cutoff authority, stops the exact original container and confirms non-running state. Unsupported topology, foreign owners, pre-existing pauses, lost authority and uncertain cleanup never produce an admitted boundary.
+
+Eighteen keyless tests simulate native interfaces across these branches, including cutoff during unpause, lease release and final return. Real Linux/Docker validation remains pending. Trusted deployment must implement real exclusive authority and external cutoff through `acquire` and `withCutoffAuthority`; a boolean is not an authority proof. Image config IDs and pull manifest digests are separately bound. The current evaluation instance has not deployed the new exclusive workspace volume, read-only administrator mount or trusted scope registration. Its main Host/controller shares authority with model tools, and controller origin remains unauthenticated. Its production profile therefore has not enabled the barrier.
+
+`publicProvenanceReceipt` returns a stable evidence ID and omits the complete private world's lease, daemon, owner and container bindings. The model reader and acceptance gate are not yet integrated. Actual structured main-validation execution, frozen runtime closure and current-artifact binding also remain unimplemented. These APIs do not change formal admission, which remains 0/16.
+
 ## Three evidence types
 
 | Type | What it proves | Source |
