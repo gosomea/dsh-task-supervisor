@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "runKind": "single-case-development",
+  "planned": 1,
+  "sealed": 1,
+  "taskId": "kea-atomic-signal-selectors",
+  "condition": "supervisor-log",
+  "resultSha256": "91730ee56459ec9c195b0284f63d4107a75fadbd385399d2dc7a93512daaf6fe",
+  "sessionId": "session-c896e288-afb3-4c72-9972-d3775da2a6f3",
+  "status": "native-complete",
+  "pauseReason": null,
+  "nativeFinished": true,
+  "elapsedSec": 6579.923752307892,
+  "deadlineSec": 10800.0,
+  "externalApprovalCount": 0,
+  "profilePreauthorization": true,
+  "automaticApprovalRecordCount": 1,
+  "externalRescueCount": 0,
+  "cleanupAcknowledged": true,
+  "officialReward": 0,
+  "officialScored": true,
+  "officialGradingFault": null,
+  "officialTests": {
+    "tests": 151,
+    "passed": 149,
+    "failed": 2,
+    "skipped": 0,
+    "pending": 0,
+    "other": 0
+  },
+  "officialTestReportSha256": "4a58e09bb9886aa39435c6369eb6d7dcef7583e092de7102550da57562a3d384",
+  "officialFailedTests": [
+    "[f2p] Atomic \"Signal\" Selectors (The Hybrid Engine) hybrid engine can be enabled and disabled",
+    "[f2p] Atomic \"Signal\" Selectors (The Hybrid Engine) stable identity across remounts"
+  ],
+  "separateGraderEnvironmentObserved": true,
+  "graderCleanupConfirmed": true,
+  "submission": {
+    "source": "committed-base-to-head",
+    "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+    "headCommit": "afe1874ced09cdd1c4801eb978c7324a825065a3",
+    "patchSha256": "cedbc65ba1a8a7b88c96fa16a5ce98636e4b3e874bb56ec8354a83570a72b826",
+    "patchBytes": 82736,
+    "workingTreeSubmitted": false
+  },
+  "routesMatched": true,
+  "mainHttpRequests": 196,
+  "reviewerSessionCount": 21,
+  "allSessionTokens": {
+    "uncachedInputTokens": 1846736,
+    "outputTokens": 1066222,
+    "cacheReadTokens": 39374592,
+    "cacheWriteTokens": 0
+  },
+  "tokensReported": {
+    "uncachedInputTokens": 1846736,
+    "outputTokens": 1066222,
+    "cacheReadTokens": 39374592,
+    "cacheWriteTokens": 0
+  },
+  "tokenCoverageComplete": true,
+  "reviewWaitMs": 3449770.0,
+  "repairTurns": 0,
+  "internalReviewFaults": {},
+  "maxTokenTurnCount": 3,
+  "maxTokenTurnsWithFollowingTurn": 3,
+  "uniqueDurableRecoveryReservations": 2,
+  "reviewKindCounts": {
+    "planning": 4,
+    "plan": 3,
+    "progress": 7,
+    "stage": 6,
+    "completion": 1
+  },
+  "reviewStatusCounts": {
+    "applied": 21
+  },
+  "nodeRuns": [
+    {
+      "id": "s1",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "id": "s2",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "id": "s3",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "id": "s4",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "id": "s5",
+      "attempt": 1,
+      "status": "passed"
+    },
+    {
+      "id": "s6",
+      "attempt": 1,
+      "status": "passed"
+    }
+  ],
+  "falsePauseRate": null,
+  "correctionBenefit": null
+}
