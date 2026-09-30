@@ -53,7 +53,7 @@ Later user edits invalidate control decisions based on older task versions. Late
 
 ## Final acceptance
 
-The final evaluator checks the current effective acceptance criteria against the actual workspace result. An isolated copy must include relevant committed, uncommitted, and untracked task artifacts; checking only repository HEAD could validate a different result. Record artifact identity, commands, outputs, and limitations. Pin the result to the task version and tested artifact snapshot; later relevant changes invalidate it.
+The final evaluator checks original user requirements against the actual workspace result. Plan criteria organize checks and cannot weaken or omit those requirements. An isolated copy must include relevant committed, uncommitted, and untracked task artifacts; checking only repository HEAD could validate a different result. Record artifact identity, commands, outputs, and limitations. Pin the result to the task version and tested artifact snapshot; later relevant changes invalidate it. Earlier node passes cannot establish acceptance of the combined delivery.
 
 The evaluator returns accepted, needs work, or needs user evidence. The controller records completion only for an accepted result with all required criteria supported. Infrastructure failure or missing credentials do not prove acceptance failure or success; they produce an explicit unresolved result. The evaluator can request repairs for unmet criteria but cannot expand scope with optional improvements. Its checks never modify the main workspace.
 
@@ -62,6 +62,18 @@ The evaluator returns accepted, needs work, or needs user evidence. The controll
 Persist review inputs, output, cursor advancement, intervention, and delivered messages through session events. Each decision has an identity and revision check so duplicate callbacks do not apply it twice. Reviewer errors or malformed output do not count as a passing review. Required reviews hold continuation while recovery is attempted; exhausted recovery waits for the user. Restart behavior follows [task lifecycle](task-lifecycle.md).
 
 The [generic enhancement plan](review-quality.md) distinguishes claims, execution logs and independently acquired evidence. Reviewers select methods from original requirements; an independent Session alone does not prove independent verification.
+
+## Implemented generic protocol
+
+`reviewVerification: log | independent` selects the effective acceptance mode. Omission preserves legacy behavior without invented evidence. Independent mode describes snapshot reads and isolated commands; independent browser observation is unavailable. Known required capabilities can be prepared through `requiredVerification` before delivery; plan-declared needs are prepared before implementation approval. Reads do not require a command runner, and missing necessary capability cannot silently fall back to passing log review.
+
+The reviewer reads the complete objective, necessary original input and constraints, lists artifacts and capabilities, then records requirement sources, facts, methods, expectations and coverage through `task_review_check_plan`. Explicit requirements remain distinct from hypotheses. Deliverable expansion and execution are gated until the initial plan exists. Checks may be appended with retained revisions, without task-category templates.
+
+After `task_review_observations` persists every check's results, acquired evidence, coverage and limitations, main reports, execution logs and historical conclusions become available. Comparison investigates discrepancies; `task_review_decision` cites this job's actual reads or runs. Explicit failures and unverified requirements prevent passing; unsupported preferences cannot block correct delivery. Exit status, file existence and test counts alone cannot establish satisfaction.
+
+`read_task_evidence_index` provides a cutoff-bound filtered/paginated redacted locator, linked calls/results, errors and truncation markers. Formal citations still require original-event reads. The side panel shows four phases and per-requirement inspection; metrics cover tool calls, repeated reads, durations, actual execution and all Session tokens. Existing progress-review frequency remains unchanged.
+
+Review record version 5 and projection cache 16 preserve legacy readability. New jobs pin artifact snapshots; repair/recovery retain job identity. See [validation](../eval/independent-verification/generic-quality-20260930/README.md) for actual evidence and capability boundaries.
 
 ## Dev Note
 

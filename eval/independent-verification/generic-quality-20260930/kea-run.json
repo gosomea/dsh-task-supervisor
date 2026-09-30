@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "exposed-single-case-development",
+  "taskId": "kea-atomic-signal-selectors",
+  "mainSessionId": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+  "condition": "supervisor-independent",
+  "pluginCommit": "0a92ba13497496cfc91eb667867c280d73e12ba1",
+  "runnerCommit": "fbbab678d970605b7367561dde337c12602243dd",
+  "instructionSha256": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+  "frozenInventories": {
+    "runner": "b7192928c53072e6149ace9646908855452aaac97ce0bdad5f338c53b396b589",
+    "runtime": "7eb1cd53fb4852a209b92e7a881f6ba85d13dcc292647a0d844bfa84c3e21630",
+    "plugin": "d24394a88858bfd4d57464d173feae3b2dda28fafd25818575535c1a4a6796e8",
+    "profile": "e76067d48f60dd3c528510d7b50fe1fdc52860d6645d06d31bb0015a86e355ea",
+    "node": "20c89d112c9f612abf505b9bdbe7e8cf47f3e69ab32a7862061628fc63a40da8",
+    "docker": "a32a2b1004569b182a078d55a27e75f87050afd5c6a306bc041db265e2b60386",
+    "pier": "8d2b8bdf4eba8d424c72b4bd1a7f8749ab2b9fbfccac00bd49a3b2edbf883f01",
+    "dataset": "d28f0bbd6f058b1eb455fc3886f53dd2419e631aba8f9db8193ae4981ace54b6",
+    "reviewAudit": "6aca773b5f5b8622e33f19b38e1f42b4975e961241d0e373f6175c606c13a699",
+    "hostNode": "6b36251e9f9f5b8b6a8af5b7ca893bf34b3811951cf331bb2895e28af1ca4ac8"
+  },
+  "imageDigest": "sha256:2a3e673e71b0516d27fa3a93f094633d606f5aa6fdcb01521334cafaacd47f24",
+  "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+  "deadlineSec": 10800.0,
+  "startedAtUnix": 1790745929.950846,
+  "deadlineAtUnix": 1790756729.950846,
+  "rpcCommandTimeoutSec": 660,
+  "mainResources": {
+    "cpus": 2,
+    "memoryMiB": 8192
+  },
+  "reviewVerification": "independent",
+  "initialAuthorization": "profile-after-review",
+  "pauseDisposition": "seal-without-rescue",
+  "rescueAfterPause": false,
+  "originalInstructionOnly": true,
+  "priorPreparationFailure": {
+    "modelRequests": 0,
+    "errorType": "TimeoutError",
+    "cleanupAcknowledged": true,
+    "recordSha256": "bd272266338fbb2e21fe4f414f8c94d44f4fb9c1813dedb6f1285f41700883f1"
+  },
+  "falsePauseRate": null,
+  "correctionBenefit": null
+}
