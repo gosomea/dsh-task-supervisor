@@ -5,10 +5,11 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { z } from 'zod'
 import { planningSummarySchema, reviewFaultSchema, taskSchema } from './state-schema.ts'
+import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
-export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4]
+export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
@@ -28,11 +29,12 @@ export const reviewJobSchema = z.object({
   verification: verificationSchema.optional(),
   verificationMode: z.enum(['log', 'independent']).optional(),
   requirementsProtocol: z.literal(1).optional(),
+  checkProtocol: z.literal(1).optional(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
     requiredCapabilities: z.array(z.enum(['read', 'run', 'visual'])).optional(),
     programs: z.array(z.string().min(1)).optional(),
     planning: planningSummarySchema.optional(),
-    criteria: z.array(findingSchema).optional(),
+    criteria: z.array(findingSchema).optional(), checks: z.array(checkFindingSchema).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict().superRefine((job, ctx) => {
   if (job.kind === 'planning') {
@@ -52,7 +54,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  agent.session.append('extension/record', { namespace: REVIEW_NAMESPACE, schemaVersion: job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  agent.session.append('extension/record', { namespace: REVIEW_NAMESPACE, schemaVersion: job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -61,7 +63,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (event.type !== 'extension/record' || event.data.namespace !== REVIEW_NAMESPACE) return [...jobs]
   if (!REVIEW_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'job') throw new Error('unsupported review record')
   const job = reviewJobSchema.parse(event.data.payload)
-  if (job.kind === 'planning' && ![3, 4].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
+  if (job.kind === 'planning' && ![3, 4, 5].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
@@ -72,9 +74,13 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || previous.verification && JSON.stringify(job.verification?.snapshot) !== JSON.stringify(previous.verification.snapshot)
     || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
     || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
+    || job.checkProtocol !== previous.checkProtocol
     || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
+  const priorPlan = previous?.verification?.checkPlan ?? [], plan = job.verification?.checkPlan ?? []
+  if (JSON.stringify(plan.slice(0, priorPlan.length)) !== JSON.stringify(priorPlan) || plan.some((entry, index) => entry.revision !== index + 1)) throw new Error('check plan history changed')
+  if (previous?.verification?.phase === 'comparison' && JSON.stringify(previous.verification.checkFindings) !== JSON.stringify(job.verification?.checkFindings)) throw new Error('independent check findings changed')
   return [...jobs.filter(item => item.id !== job.id), job].slice(-50)
 }
 

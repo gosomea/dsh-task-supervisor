@@ -2144,3 +2144,49 @@ it('runs a policy-approved native task through stage and whole-task acceptance w
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.map(job => job.kind)).toEqual(['plan', 'stage', 'completion'])
   expect(agent.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(1)
 })
+
+it.each(['document', 'structured', 'wrong-product'] as const)('new independent protocol plans before deliverable reads and checks actual product: %s', async kind => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-generic-review-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace)
+  const file = kind === 'document' ? 'brief.md' : 'record.json'
+  const content = kind === 'document' ? '# 摘要\n只能包含明确约定的结论。' : JSON.stringify({ approved: kind !== 'wrong-product', optional: false })
+  await writeFile(join(workspace, file), content)
+  const status = kind === 'wrong-product' ? 'failed' : 'satisfied'
+  const finding = { criterionId: 'c', status, method: 'read', finding: '实际读取内容与原始要求对照', evidenceIds: [`file:${file}`], checkIds: ['check-c'], coverage: '完整产物的约定字段和内容', limitations: '不声明运行行为' }
+  const check = { id: 'check-c', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: '静态内容满足约定', method: 'read', expected: '正确标题或 approved=true', coverage: '全部静态字段', basis: 'explicit' }
+  const result = { checkId: 'check-c', status, finding: finding.finding, evidenceIds: finding.evidenceIds, coverage: finding.coverage, limitations: finding.limitations }
+  let calls = 0; const inputs: string[] = []
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      inputs.push(JSON.stringify(options.messages))
+      const steps: [string, Record<string, unknown>][] = [
+        ['inspect_task_artifact', { action: 'read', path: file }],
+        ['inspect_task_artifact', { action: 'list' }],
+        ['task_review_check_plan', { checks: [check] }],
+        ['inspect_task_artifact', { action: 'read', path: file }],
+        ['task_review_observations', { findings: [finding], checks: [result] }],
+        ['read_task_context', { field: 'report' }],
+        ['read_task_evidence', { from_seq: 0, limit: 30 }],
+        ['task_review_decision', { verdict: status === 'failed' ? 'revise' : 'pass', finding: '产物独立检查结论', evidence_seqs: [0], criteria: [finding], checks: [result] }],
+      ]
+      const step = steps[calls++]
+      yield* step ? toolResponse(step[0], step[1], `generic-${calls}`) : textResponse('done')
+    }
+  }()
+  const ctx = await host(join(root, 'sessions'), adapter); await ctx.plugin(LocalFileSystem)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`generic-${kind}`), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
+  const task = newTask('交付明确的静态摘要或 approved=true 的结构化记录，不要求可选扩展。')
+  task.criteria = [{ id: 'c', text: '满足原始内容约定', provenance: { kind: 'user', reference: 'objective' } }]
+  task.stages = [{ id: 's', title: '交付', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
+  const decision = await reviewStage(ctx, agent, task, 's', 'PRIVATE_MISLEADING_REPORT_ALL_GREEN', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, 'stage', { repairAttempts: 0, checkProtocol: 1, verificationMode: 'independent', verification: verificationPolicy({ storageRoot: join(root, 'snapshots') }) })
+  expect(decision.verdict).toBe(status === 'failed' ? 'revise' : 'pass')
+  expect(inputs.slice(0, 6).every(input => !input.includes('PRIVATE_MISLEADING_REPORT_ALL_GREEN'))).toBe(true)
+  expect(inputs.slice(6).some(input => input.includes('PRIVATE_MISLEADING_REPORT_ALL_GREEN'))).toBe(true)
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.verification?.checkPlan).toHaveLength(1)
+  expect(job.verification?.checks).toEqual([]) // static requirements require no command runtime
+  expect(job.verification?.checkFindings).toEqual([result])
+  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.failure).toBeNull(); expect(replay.reviewJobs[0]?.decision?.checks).toEqual([result])
+})

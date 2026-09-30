@@ -19,6 +19,8 @@ import { planningSummarySchema } from './state-schema.ts'
 import { NAMESPACE, taskSchema, type TaskSnapshot } from './state.ts'
 import { prepareVerification, installVerification, validateFindings, findingParameters, type VerificationPolicy } from './verification.ts'
 import { snapshotFresh } from './artifact-snapshot.ts'
+import { checkResultsAsEvidence, checkFindingSchema, checkFindingParameters } from './review-check-plan.ts'
+import { reviewCapabilities } from './review-capabilities.ts'
 import { findingSchema, type CriterionFinding } from './verification-schema.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -33,7 +35,7 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1 }
+export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -51,6 +53,7 @@ export interface ReviewDecision {
   cutoff: number
   model: ReviewerModel
   reviewerSessionId: string
+  checks?: ReturnType<typeof checkFindingSchema.parse>[]
   criteria?: CriterionFinding[]
   planning?: PlanningSummary
   requiredCapabilities?: ('read' | 'run' | 'visual')[]
@@ -160,7 +163,8 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
     ...policy.verificationMode ? { verificationMode: verification ? 'independent' : 'log' } : {},
-    ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {} }
+    ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {},
+    ...verification && policy.checkProtocol ? { checkProtocol: policy.checkProtocol } : {} }
   await recordReview(ctx, main, job)
   try {
     signal.throwIfAborted()
@@ -210,7 +214,7 @@ async function runReviewStage(
   }
   const { options, model } = reviewerOptions(ctx, main, boundModel)
   const reviewerSessionId = SessionId(job.reviewerSessionId!)
-  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs'> | undefined
+  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs' | 'checks'> | undefined
   const observedSeqs = new Set<number>()
   const workerEvents = new Set<string>()
   const inspectedWorkers = new Set<string>()
@@ -224,10 +228,26 @@ async function runReviewStage(
     setup(agentCtx: Context) {
       agentCtx.tools.restrict({ allow: [] })
       if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal)
+      agentCtx.tools.register(defineTool({ name: 'read_task_input', description: 'Read original direct user messages only, bounded by this job cutoff. Available before independent discovery; excludes injected prompts, assistant reports and execution logs.',
+        parameters: { from_seq: { type: 'integer' }, limit: { type: 'integer' }, seq: { type: 'integer' }, offset: { type: 'integer' }, chars: { type: 'integer' } },
+        output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+        async execute(args) {
+          if (args.seq !== undefined) {
+            const event = main.session.snapshotEvents().find(item => item.seq === args.seq && item.seq <= cutoff && item.type === 'user/message' && item.data.source.kind === 'user')
+            if (!event) throw new Error('select an original direct user message inside this cutoff')
+            if (job.verification) { job.verification.readInputs = [...new Set([...(job.verification.readInputs ?? []), event.seq])]; await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
+            return { seq: event.seq, cutoff, ...textPage(eventText(event), args.offset, args.chars) }
+          }
+          const messages = main.session.snapshotEvents().filter(event => event.seq <= cutoff && event.seq >= (args.from_seq ?? 0) && event.type === 'user/message' && event.data.source.kind === 'user')
+          const events = messages.slice(0, Math.min(30, Math.max(1, args.limit ?? 10)))
+          if (job.verification) { job.verification.readInputs = [...new Set([...(job.verification.readInputs ?? []), ...events.map(event => event.seq)])]; await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
+          return { cutoff, events: events.map(evidenceRecord), nextSeq: events.length < messages.length ? events.at(-1)!.seq + 1 : null }
+        },
+      }))
       installImageEvidence(agentCtx, ctx, main, cutoff, imageAfterSeq, observedSeqs, imageSeqs, model, assertComparison)
-      agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'task_review_decision',
+      agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_input', 'task_review_decision',
         ...reviewKind === 'planning' ? [] : ['read_task_worker'],
-        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations'] : []].includes(exec.name)
+        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'task_review_check_plan'] : []].includes(exec.name)
         ? undefined : 'reviewers may only inspect evidence and submit a decision')
       agentCtx.tools.register(defineTool({
         name: 'read_task_evidence',
@@ -337,6 +357,7 @@ async function runReviewStage(
           evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } },
           required_capabilities: { type: 'array', ...reviewKind === 'plan' && job.requirementsProtocol ? { required: true as const } : {}, items: { type: 'string', enum: ['read', 'run', 'visual'] }, description: 'For plan review, independently determine capabilities needed to verify ORIGINAL requirements, regardless of main evidenceKind or task category. read=artifact content; run=calculations or observable behavior; visual=independent browser observation (unavailable). Empty only if no product verification applies.' },
           programs: { type: 'array', items: { type: 'string' }, description: 'Executable names needed for necessary independent run checks, e.g. node. Do not invent tools for read-only requirements.' },
+          checks: { ...checkFindingParameters, description: 'For new independent protocol, final results for every planned check, including supplementary comparison checks. Cite only actually inspected evidence and describe coverage/limitations.' },
           criteria: { ...findingParameters, description: 'Independent reviews require one final finding per applicable criterion, with inspected snapshot evidence. Omit only for legacy log-based reviews.' },
           planning: { type: 'object', ...reviewKind === 'planning' ? { required: true as const } : {}, additionalProperties: false,
             description: 'Required for planning reviews only. Every fact must be supported by original Session events already read and included in evidence_seqs; separate unknowns from confirmed facts. Progress describes new relevant findings or resolved unknowns, never time or token counts.',
@@ -358,7 +379,15 @@ async function runReviewStage(
             assertComparison()
             const findings = (args.criteria ?? []).map(item => findingSchema.parse(item))
             const applicable = reviewKind === 'completion' ? task.criteria : task.criteria.filter(item => stage?.criterionIds.includes(item.id))
-            validateFindings(job.verification, applicable.map(item => item.id), findings, args.verdict === 'pass')
+            let state = job.verification
+            if (job.checkProtocol) {
+              const results = (args.checks ?? state.checkFindings ?? []).map(item => checkFindingSchema.parse(item))
+              const facts = checkResultsAsEvidence(state, results, args.verdict === 'pass')
+              const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
+              validateFindings(basic, facts.map(item => item.criterionId), facts, false)
+              state = { ...state, checkFindings: results }
+            }
+            validateFindings(state, applicable.map(item => item.id), findings, args.verdict === 'pass')
             for (const criterion of applicable) {
               const finding = findings.find(item => item.criterionId === criterion.id)!
               if (finding.status === 'satisfied' && criterion.evidenceKind === 'runtime' && finding.method !== 'run') throw new Error('runtime criteria require independent execution')
@@ -382,7 +411,7 @@ async function runReviewStage(
           submitted = { verdict: args.verdict, finding: args.finding.trim(), evidenceSeqs,
             ...planning ? { planning } : {},
             ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
-            ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)) } : {} }
+            ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
           exec.concludeTurn()
           return { recorded: true, cutoff }
         },
@@ -414,6 +443,7 @@ async function runReviewStage(
           : reviewKind === 'progress'
             ? 'Assess recent progress toward the current stage. Pass means keep working on this stage; revise means course-correct; needs-user means a user decision is required. A progress pass does not complete a stage.'
             : 'Review the main Agent stage report against the objective and acceptance criteria.',
+        ...job.checkProtocol ? ['REQUIREMENT-DRIVEN INDEPENDENT REVIEW. Read the complete original objective and necessary original user input via read_task_input; list the artifact manifest and capabilities first. Record task_review_check_plan before expanding deliverable contents or executing checks. Input/constraint files may be read with an explicit purpose. Each check must identify a source requirement, fact/result, appropriate method, expected outcome, coverage and explicit requirement vs derived hypothesis. No mandatory task-category checklist: choose reads for static facts and runs/reproductions for computations or behavior; missing capabilities mean unverified. Examine whether existing test assertions and operation paths support requirements. A zero exit, existing file or test count alone is insufficient.', 'Include original requirements omitted or weakened by the main criteria (omit criterionId for them). Persist every check result alongside criteria in task_review_observations, then compare main claims/logs and investigate discrepancies. You may append supplementary checks, preserving earlier independent findings, and include their results in the final decision. Final acceptance checks the current combined deliverable and relationships, not prior node passes. Optional inferred preferences cannot block an otherwise correct product.'] : [],
         'DAG execution semantics: dependsOn requires that predecessors have PASSED independent review, not merely returned worker reports. Read the full proposed stages using read_task_context before a plan pass. Reject any downstream node that performs a check needed to accept its own predecessors: this creates a semantic deadlock even in an acyclic graph. Main-Agent integration checks belong inside delegated-node acceptance before its review. Preserve explicitly requested node counts; validation and reporting can be steps inside a node rather than extra DAG nodes.',
         'Explicit objective requirements must use provenance kind=user, reference=objective. Marking them implementation is source misclassification and requires revision.',
         'For delegated nodes, read_task_worker exposes the exact attempt’s settled native child log. A worker report never implies acceptance. Inspect main-Session integration checks after worker settlement, then apply the node criteria. The final task review must check the combined deliverable.',
@@ -436,7 +466,7 @@ async function runReviewStage(
           `Controller readOnlyTurnsBeforeWrite: ${task.readOnlyTurnsBeforeWrite ?? 0}.`],
         `Earlier failed reviews in this task: ${job.verification ? 'locked until independent observations' : safeText(JSON.stringify(failedReviews), 10000)}.`,
         `${reviewKind === 'planning' ? 'Planning observation' : reviewKind === 'plan' ? 'Proposed plan' : reviewKind === 'completion' ? 'Completion' : reviewKind === 'progress' ? 'Progress' : 'Stage'}: ${stageId}; reported evidence: ${job.verification ? 'locked until independent observations; then read_task_context(report)' : safeText(reportedEvidence, 5000)}`,
-        ...job.verification ? [`Snapshot ${job.verification.snapshot.id}; phase ${job.verification.phase}; applicable criteria: ${JSON.stringify(reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds)}. Command time limit ${verification!.checks?.commandMs ?? 'unavailable'}ms; review deadline ${job.deadlineAt}. Checks use cwd tree or probes; snapshot excludes ${JSON.stringify(job.verification.snapshot.excluded)}. Container runtime: ${JSON.stringify(verification!.checks?.container ?? null)}; use executable names or Linux paths inside the image, never host paths.`] : [],
+        ...job.verification ? [`Capabilities: ${JSON.stringify(reviewCapabilities(verification))}. Snapshot ${job.verification.snapshot.id}; phase ${job.verification.phase}; applicable criteria: ${JSON.stringify(reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds)}. Command time limit ${verification!.checks?.commandMs ?? 'unavailable'}ms; review deadline ${job.deadlineAt}. Checks use cwd tree or probes; snapshot excludes ${JSON.stringify(job.verification.snapshot.excluded)}. Container runtime: ${JSON.stringify(verification!.checks?.container ?? null)}; use executable names or Linux paths inside the image, never host paths.`] : [],
         `Review deadline: ${job.deadlineAt}. Finish with a valid decision before this deadline; use explicit unverified findings when evidence is insufficient instead of analysing indefinitely.`,
         'Submit exactly one task_review_decision with supporting Session seqs.',
       ].join('\n') }],

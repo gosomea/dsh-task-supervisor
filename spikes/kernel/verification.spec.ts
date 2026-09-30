@@ -140,3 +140,19 @@ it('permits artifact-only verification without a command runner and rejects unav
   await expect(prepareCapabilities({} as Context, {} as Agent, policy, { capabilities: ['visual'] }, new AbortController().signal)).rejects.toThrow('no log fallback')
   await expect(prepareCapabilities({} as Context, {} as Agent, undefined, { capabilities: [] }, new AbortController().signal)).resolves.toBeUndefined()
 })
+
+it('retains appended check plans, rejects missing coverage and keeps hypotheses separate from requirements', async () => {
+  const { appendCheckPlan, checkResultsAsEvidence } = await import('../../src/review-check-plan.ts')
+  const value = state()
+  const item = { id: 'static', criterionId: 'c', source: { kind: 'objective' as const, reference: 'objective' }, fact: 'static declaration', method: 'read' as const, expected: 'agreed value', coverage: 'declared content', basis: 'explicit' as const }
+  expect(() => appendCheckPlan(value, [item], ['c', 'd'], 'now')).toThrow('cover every')
+  appendCheckPlan(value, [item], ['c'], 'first')
+  appendCheckPlan(value, [{ ...item, id: 'hypothesis', basis: 'derived' }], ['c'], 'second')
+  expect(value.checkPlan!.map(entry => entry.revision)).toEqual([1, 2])
+  expect(() => appendCheckPlan(value, [item], ['c'], 'third')).toThrow('unique')
+  const findings = [{ checkId: 'static', status: 'satisfied' as const, finding: 'actual content', coverage: 'content', limitations: '', evidenceIds: ['file:code.js'] },
+    { checkId: 'hypothesis', status: 'failed' as const, finding: 'optional preference absent', coverage: 'optional property', limitations: 'not a user requirement', evidenceIds: ['file:code.js'] }]
+  expect(() => checkResultsAsEvidence(value, findings, true)).not.toThrow()
+  expect(() => checkResultsAsEvidence(value, findings.slice(1), true)).toThrow('every planned')
+  expect(() => checkResultsAsEvidence(value, [{ ...findings[0]!, status: 'unverified' }, findings[1]!], true)).toThrow('cannot pass')
+})

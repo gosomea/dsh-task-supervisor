@@ -152,7 +152,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
   const selectedReviewPolicy = { ...reviewerPolicy, verificationMode: effectiveVerification,
-    ...config.reviewVerification === 'independent' ? { requirementsProtocol: 1 as const } : {},
+    ...config.reviewVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,
     mode: progressReviewMode, rounds: maxAutomaticRoundsWithoutReport, inTurn: config.observeLongTurns !== false } }
