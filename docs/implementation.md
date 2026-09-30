@@ -1,6 +1,6 @@
 # Implementation status
 
-**In progress:** [Generic independent review](review-quality.md) is approved; step 0 establishes the documentation baseline. Steps 1–3 passed source gates; new real-model cases and the Kea regression are not yet validated; existing implementation and historical evidence remain below.
+**Updated: 2026-09-30.** [Generic independent review enhancement](review-quality.md) steps 0–3 are implemented and separately committed. Current task records are version 14, projection cache 16 and review records 5; legacy records remain readable without invented independent evidence. [Real-model fixtures](../eval/independent-verification/generic-quality-20260930/README.md) verify static read-only acceptance, passing independent data recomputation and rejection of incorrect data, while retaining the first static review timeout. The official Kea single-case development regression is running. Earlier version scopes remain below.
 
 **Updated 2026-09-29: planning supervision, bounded main/reviewer truncation recovery and optional execution preauthorization are implemented.** Current task record version 14 reads 1–14; projection version 15 rebuilds; review record version 3 reads 1–3. [Validation](planning-supervision-validation.md) records current source gates, real-model probes and limits. The A–F table and earlier iteration sections below retain their historical scope and counts.
 

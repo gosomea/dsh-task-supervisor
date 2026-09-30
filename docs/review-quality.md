@@ -2,7 +2,7 @@
 
 ## Summary
 
-Review follows original requirements, actual evidence and suitable methods. This is the approved implementation plan; status changes only after each step passes validation.
+Review follows original requirements, actual evidence and suitable methods. Steps 0–3 are implemented and separately committed, with source gates and cross-artifact real-model fixtures validated. The official Kea single-case development regression is running. The [validation record](../eval/independent-verification/generic-quality-20260930/README.md) retains successes, an internal timeout and an adapter failure.
 
 ## Completion criteria
 

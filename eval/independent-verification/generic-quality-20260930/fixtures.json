@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "scope": "native real-model review-stage fixture; controller result application not exercised by this hook",
+  "fixturePositions": 4,
+  "decisions": 3,
+  "internalTimeouts": 1,
+  "wrongProductVerdict": "revise",
+  "correctReadOnlyProductVerdict": "pass",
+  "browserIndependentExecutor": false,
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "cases": [
+    {
+      "id": "document",
+      "pluginCommit": "64eeb77",
+      "mainSessionId": "session-e95f0235-6d4a-4e60-8dd7-bfd746f1871d",
+      "reviewerSessionId": "task-review-fbb65ab1-7fa9-47b3-bb3b-1c8dea917625",
+      "jobId": "e40a4371-1d06-4863-ab14-f3a284e8c617",
+      "status": "failed",
+      "verdict": null,
+      "elapsedSec": 600.024,
+      "faultCode": "timeout",
+      "mode": "independent",
+      "snapshotManifestSha256": "13082579241faa8bbd26ded45add46794aaa7b9f08bdcb602100974c0ad4bb37",
+      "checkPlanRevisions": 4,
+      "checkMethods": [
+        "read"
+      ],
+      "plannedChecks": 7,
+      "resultStatuses": {
+        "satisfied": 7,
+        "failed": 0,
+        "unverified": 0
+      },
+      "commands": 3,
+      "readFiles": 1,
+      "allSessionTokens": null,
+      "tokenCoverageComplete": false,
+      "reviewToolCalls": 70,
+      "repeatedExactReads": 1,
+      "phases": [
+        {
+          "jobId": "e40a4371-1d06-4863-ab14-f3a284e8c617",
+          "kind": "stage",
+          "mode": "independent",
+          "planningMs": 8884.0,
+          "independentMs": null,
+          "comparisonAndDecisionMs": null
+        }
+      ],
+      "route": {
+        "successfulHttpResponses": 66,
+        "requestCount": 67,
+        "allRequestsMatchedRoute": true,
+        "transportErrors": 2,
+        "mainSuccessfulRequest": true,
+        "reviewerSuccessfulRequest": true
+      },
+      "falseAcceptanceRate": null
+    },
+    {
+      "id": "data-correct",
+      "pluginCommit": "64eeb77",
+      "mainSessionId": "session-4f34ece1-e292-48b8-b866-90bbac1703d0",
+      "reviewerSessionId": "task-review-c393ad4b-7915-4eee-bea4-4c2fc1ce1bf6",
+      "jobId": "e721d3f2-39c9-45b0-a128-10970656683e",
+      "status": "submitted",
+      "verdict": "pass",
+      "elapsedSec": 68.071,
+      "faultCode": null,
+      "mode": "independent",
+      "snapshotManifestSha256": "d35076bcf57a6bf72208ba1aa5aea44b8a092c4b8987a2b33c0b4d2dd87b12b8",
+      "checkPlanRevisions": 1,
+      "checkMethods": [
+        "read",
+        "run"
+      ],
+      "plannedChecks": 4,
+      "resultStatuses": {
+        "satisfied": 4,
+        "failed": 0,
+        "unverified": 0
+      },
+      "commands": 3,
+      "readFiles": 2,
+      "allSessionTokens": {
+        "uncachedInputTokens": 26094,
+        "outputTokens": 8821,
+        "cacheReadTokens": 195712,
+        "cacheWriteTokens": 0
+      },
+      "tokenCoverageComplete": true,
+      "reviewToolCalls": 27,
+      "repeatedExactReads": 0,
+      "phases": [
+        {
+          "jobId": "e721d3f2-39c9-45b0-a128-10970656683e",
+          "kind": "stage",
+          "mode": "independent",
+          "planningMs": 9186.0,
+          "independentMs": 31262.0,
+          "comparisonAndDecisionMs": 27572.0
+        }
+      ],
+      "route": {
+        "successfulHttpResponses": 22,
+        "requestCount": 22,
+        "allRequestsMatchedRoute": true,
+        "transportErrors": 0,
+        "mainSuccessfulRequest": true,
+        "reviewerSuccessfulRequest": true
+      },
+      "falseAcceptanceRate": null
+    },
+    {
+      "id": "data-wrong",
+      "pluginCommit": "64eeb77",
+      "mainSessionId": "session-22aa7091-5d71-4248-a075-9f13e2926ff6",
+      "reviewerSessionId": "task-review-6943cdf8-e5be-4494-bda6-32f41afa7956",
+      "jobId": "dafe272e-21d7-4ae3-b0f4-7e900187931f",
+      "status": "submitted",
+      "verdict": "revise",
+      "elapsedSec": 93.824,
+      "faultCode": null,
+      "mode": "independent",
+      "snapshotManifestSha256": "5145320249e70f131390538c18c86f28eca1ceb28a45218e33f856047bb2768b",
+      "checkPlanRevisions": 2,
+      "checkMethods": [
+        "read",
+        "run"
+      ],
+      "plannedChecks": 6,
+      "resultStatuses": {
+        "satisfied": 5,
+        "failed": 1,
+        "unverified": 0
+      },
+      "commands": 2,
+      "readFiles": 2,
+      "allSessionTokens": {
+        "uncachedInputTokens": 28303,
+        "outputTokens": 13327,
+        "cacheReadTokens": 249984,
+        "cacheWriteTokens": 0
+      },
+      "tokenCoverageComplete": true,
+      "reviewToolCalls": 32,
+      "repeatedExactReads": 1,
+      "phases": [
+        {
+          "jobId": "dafe272e-21d7-4ae3-b0f4-7e900187931f",
+          "kind": "stage",
+          "mode": "independent",
+          "planningMs": 19781.0,
+          "independentMs": 47423.0,
+          "comparisonAndDecisionMs": 26576.0
+        }
+      ],
+      "route": {
+        "successfulHttpResponses": 26,
+        "requestCount": 26,
+        "allRequestsMatchedRoute": true,
+        "transportErrors": 0,
+        "mainSuccessfulRequest": true,
+        "reviewerSuccessfulRequest": true
+      },
+      "falseAcceptanceRate": null
+    },
+    {
+      "id": "document-readonly",
+      "pluginCommit": "0a92ba1",
+      "mainSessionId": "session-28ffae3f-dcfa-442b-b13a-c4b05c1897ee",
+      "reviewerSessionId": "task-review-dbc05d55-d42a-48d1-aa0d-9be4561b099e",
+      "jobId": "863453e1-da1c-42e9-bdd0-8c6a4e389a5d",
+      "status": "submitted",
+      "verdict": "pass",
+      "elapsedSec": 32.962,
+      "faultCode": null,
+      "mode": "independent",
+      "snapshotManifestSha256": "194444b79f9c7ca8f7d76225224e725d210beceefe07b0fb45ca9125936f8355",
+      "checkPlanRevisions": 1,
+      "checkMethods": [
+        "read"
+      ],
+      "plannedChecks": 3,
+      "resultStatuses": {
+        "satisfied": 3,
+        "failed": 0,
+        "unverified": 0
+      },
+      "commands": 0,
+      "readFiles": 1,
+      "allSessionTokens": {
+        "uncachedInputTokens": 19748,
+        "outputTokens": 3434,
+        "cacheReadTokens": 80768,
+        "cacheWriteTokens": 0
+      },
+      "tokenCoverageComplete": true,
+      "reviewToolCalls": 15,
+      "repeatedExactReads": 0,
+      "phases": [
+        {
+          "jobId": "863453e1-da1c-42e9-bdd0-8c6a4e389a5d",
+          "kind": "stage",
+          "mode": "independent",
+          "planningMs": 7835.0,
+          "independentMs": 6371.0,
+          "comparisonAndDecisionMs": 18738.0
+        }
+      ],
+      "route": {
+        "successfulHttpResponses": 13,
+        "requestCount": 13,
+        "allRequestsMatchedRoute": true,
+        "transportErrors": 0,
+        "mainSuccessfulRequest": true,
+        "reviewerSuccessfulRequest": true
+      },
+      "falseAcceptanceRate": null
+    }
+  ],
+  "evidenceDigests": [
+    {
+      "file": "data-correct.result.json",
+      "sha256": "1babed84a0d6945222808a7f01ed78a69f115616cba74f3b91ab28d1afd668a6"
+    },
+    {
+      "file": "data-wrong.result.json",
+      "sha256": "e57aea5742b11f9e8cab460f77232de673af1e1daa87d2b3ab1ab916932500bd"
+    },
+    {
+      "file": "document-readonly.result.json",
+      "sha256": "904c3a92d74681f5ba542b10ecf5cc77283e708ebf56c36826b16c73df10a570"
+    },
+    {
+      "file": "route-audit.initial-fixtures.jsonl",
+      "sha256": "fe0abef76b86ce2623fe487078ee07e989ca368ed00cd69a056b6f88d3e44d93"
+    },
+    {
+      "file": "route-audit.jsonl",
+      "sha256": "d58215d6a8706df2f6101003f50addf14b3ae5d4f393329b5dd99c112d4db806"
+    },
+    {
+      "file": "route-audit.pre-fixture.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "route-audit.pre-inject.jsonl",
+      "sha256": "b8817e82b5190245c43a5b32cf08cf116a69533547b4d351fac3be332cb7327d"
+    },
+    {
+      "file": "route-audit.warmup.jsonl",
+      "sha256": "122f1697db44b72294cfb1e4b3e528070de46b622d3d3ec867f81f48429e488d"
+    }
+  ]
+}
