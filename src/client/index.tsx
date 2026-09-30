@@ -244,7 +244,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       {task?.recovery && <section className="dsh-task-section"><Disclosure title="生成截断后的续行记录"><p>原回合 {task.recovery.turn} · 结束事件 seq {task.recovery.endSeq} · 连续无进展 {task.recovery.noProgress} 次</p><p className="dsh-task-review">{task.recovery.instruction}</p></Disclosure></section>}
       {task?.pauseReason === 'recovery-stalled' && <p role="status">连续恢复未产生可核实的新进展，已暂停。检查现状后可手动恢复或修改目标。</p>}
       {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>任务已暂停，已保存审查现场。重试只恢复审查；后续执行仍需明确恢复。</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
-      {state.reviewVerification && <p className="dsh-task-muted">验收模式：{state.reviewVerification === 'independent' ? '独立产物验证' : '日志证据审查'} · 计划与进展采用日志审查</p>}
+      {state?.reviewVerification && <p className="dsh-task-muted">验收模式：{state.reviewVerification === 'independent' ? '独立产物验证' : '日志证据审查'} · 计划与进展采用日志审查</p>}
       {reviewJob && <ReviewInspection job={reviewJob} />}
       {!task ? <p>在督导对话中讨论想法、整理草案，或直接创建明确的任务。</p> : <>
         <section className="dsh-task-section"><h3>任务目标</h3><Disclosure title={headline(task.objective, 72)}><p className="dsh-task-objective">{task.objective}</p></Disclosure></section>
