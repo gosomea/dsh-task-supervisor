@@ -1,0 +1,324 @@
+{
+  "schemaVersion": 1,
+  "kind": "exposed-single-case-development-result",
+  "taskId": "kea-atomic-signal-selectors",
+  "id": "kea-supervisor-quality-fbbab67-single-20260930",
+  "mainSessionId": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+  "terminal": {
+    "status": "manual-intervention-required",
+    "elapsedSec": 1672.9565210342407,
+    "deadlineSec": 10800.0,
+    "approvalCount": 0,
+    "rescueCount": 0,
+    "cleanupAcknowledged": true,
+    "finishedBeforeDeadline": false
+  },
+  "grade": {
+    "reward": 0,
+    "scored": true,
+    "fault": null,
+    "tests": {
+      "tests": 151,
+      "passed": 139,
+      "failed": 12,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0
+    },
+    "execution": {
+      "reportedPositions": 151,
+      "missingResultPositions": 0,
+      "positionsWithResult": 151,
+      "allPositionsHaveResult": true
+    },
+    "separateEnvironmentObserved": true,
+    "cleanupConfirmed": true,
+    "officialFilesSha256": {
+      "environment/Dockerfile": "21754941b1392fb75d8a5b775a507608af2e4eced4e303659131388cd22cb53e",
+      "instruction.md": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+      "task.toml": "e348f26d469643cf8bfd535e9d9f86c8c20f7e7169aeda515223874a9dea271c",
+      "tests/Dockerfile": "5f3fab7316c0c02292338938d5ac198ef4862eec588322c69e77b4bdbb7eb233",
+      "tests/config.json": "f26007a19eeefae915f6902906c7f29ce6060f688a0ef783f327192b56166f39",
+      "tests/grader.py": "47cc9eaadf21e636323c360ec4fa786f0733ec9fd1d21ea5a5717ff9f8c4077c",
+      "tests/test.patch": "22a472624a5b29fc12ef5cb27da0af4c7e8636250e625a710ead46d6c07e9170",
+      "tests/test.sh": "b9c820bd610f1476221c663fd326574dcb1d0a97cde064a2ccad342651de1d56"
+    },
+    "evidenceSha256": {
+      "trialResult": "353c7d14575dae83c1b86832850c3192f0398816ee13c65167e945cc5400ae29",
+      "testReport": "1987b6b52284b5c9c44284789225b32f15a3359a6f73ca4dd10c1a7b7937c258"
+    },
+    "submission": {
+      "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "patchBytes": 0,
+      "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "committed-base-to-head",
+      "workingTreeDirty": false,
+      "workingTreeStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingTreeSubmitted": false,
+      "observedHeadCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headChangedSinceCutoff": false
+    },
+    "verifierDuration": {
+      "started_at": "2026-09-30T05:53:47.279360Z",
+      "finished_at": "2026-09-30T05:54:15.279208Z"
+    }
+  },
+  "officialReward": {
+    "reward": 0,
+    "f2p_total": 12,
+    "f2p_passed": 0,
+    "p2p_total": 139,
+    "p2p_passed": 139,
+    "f2p": 0.0,
+    "p2p": 1.0,
+    "partial": 0.9205298013245033
+  },
+  "metrics": {
+    "allSessionTokens": null,
+    "tokensReported": {
+      "uncachedInputTokens": 306729,
+      "outputTokens": 292648,
+      "cacheReadTokens": 3425664,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": false,
+    "unreportedAttempts": 1,
+    "reviewToolCalls": 120,
+    "repeatedExactReads": 0,
+    "checkCount": 0,
+    "plannedIndependentChecks": 0,
+    "recordedIndependentCheckResults": 0,
+    "independentReviewJobs": 0,
+    "independentEvidenceCoverage": {
+      "applicableCriterionFindings": 0,
+      "readFiles": 0
+    },
+    "internalReviewFaults": {
+      "timeout": 1
+    },
+    "reviewWaitMs": 867909.0,
+    "sessions": [
+      {
+        "sessionId": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+        "parentSession": null,
+        "usageCoverage": {
+          "settledAttempts": 23,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 121334,
+          "outputTokens": 134046,
+          "cacheReadTokens": 859904,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-18001ba8-17af-420b-9281-38a70e78c2de",
+        "parentSession": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+        "usageCoverage": {
+          "settledAttempts": 19,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 42696,
+          "outputTokens": 18244,
+          "cacheReadTokens": 504320,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-3448ed47-b2f5-4fb3-b1bf-57c83a5425f4",
+        "parentSession": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+        "usageCoverage": {
+          "settledAttempts": 31,
+          "unreportedAttempts": 1,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 82450,
+          "outputTokens": 117647,
+          "cacheReadTokens": 1347456,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-5335d0ab-1df1-47dd-8134-dc273d0dcc85",
+        "parentSession": "session-88d782a6-8a34-4c7c-9051-7c8074771220",
+        "usageCoverage": {
+          "settledAttempts": 21,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 60249,
+          "outputTokens": 22711,
+          "cacheReadTokens": 713984,
+          "cacheWriteTokens": 0
+        }
+      }
+    ],
+    "reviewPhaseDurations": [
+      {
+        "jobId": "cd8f901c-c865-498a-842a-4878550cb92d",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "7fa9876c-f4b0-4a92-abec-aa08cb3dfedc",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "1a9f97a6-7a32-41c3-88d2-ed10190d8bc7",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      }
+    ],
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "route": {
+    "routesMatched": true,
+    "protocolDeviation": false,
+    "auditSha256": "2d7bbfb79253788fa9a3ea48a9f9d21f035414f4409b9a8818d2da8334367dfe"
+  },
+  "jobs": [
+    {
+      "jobId": "cd8f901c-c865-498a-842a-4878550cb92d",
+      "kind": "planning",
+      "status": "applied",
+      "reviewerSessionId": "task-review-5335d0ab-1df1-47dd-8134-dc273d0dcc85",
+      "startedAt": "2026-09-30T05:31:49.868Z",
+      "finishedAt": "2026-09-30T05:34:22.724Z",
+      "faultCode": null,
+      "toolCalls": {
+        "read_task_context": 2,
+        "read_task_evidence_index": 7,
+        "read_task_evidence": 3,
+        "read_task_text": 22,
+        "read_task_input": 1,
+        "task_review_decision": 2
+      },
+      "toolErrors": [
+        {
+          "tool": "read_task_evidence_index",
+          "error": "Error: index requires nonnegative from_seq and limit 1–50"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: review decision must cite events read from the bound Session"
+        }
+      ]
+    },
+    {
+      "jobId": "7fa9876c-f4b0-4a92-abec-aa08cb3dfedc",
+      "kind": "planning",
+      "status": "applied",
+      "reviewerSessionId": "task-review-18001ba8-17af-420b-9281-38a70e78c2de",
+      "startedAt": "2026-09-30T05:40:33.538Z",
+      "finishedAt": "2026-09-30T05:42:28.548Z",
+      "faultCode": null,
+      "toolCalls": {
+        "read_task_context": 2,
+        "read_task_evidence_index": 4,
+        "read_task_evidence": 7,
+        "read_task_text": 23,
+        "read_task_call": 1,
+        "task_review_decision": 2
+      },
+      "toolErrors": [
+        {
+          "tool": "read_task_evidence_index",
+          "error": "Error: index requires nonnegative from_seq and limit 1–50"
+        },
+        {
+          "tool": "read_task_text",
+          "error": "Error: locate the event using an evidence page or index first"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: review decision must cite events read from the bound Session"
+        }
+      ]
+    },
+    {
+      "jobId": "1a9f97a6-7a32-41c3-88d2-ed10190d8bc7",
+      "kind": "plan",
+      "status": "failed",
+      "reviewerSessionId": "task-review-3448ed47-b2f5-4fb3-b1bf-57c83a5425f4",
+      "startedAt": "2026-09-30T05:42:40.208Z",
+      "finishedAt": "2026-09-30T05:52:40.251Z",
+      "faultCode": "timeout",
+      "toolCalls": {
+        "read_task_context": 4,
+        "read_task_evidence_index": 4,
+        "read_task_input": 1,
+        "read_task_call": 1,
+        "read_task_text": 24,
+        "task_review_decision": 4,
+        "read_task_evidence": 6
+      },
+      "toolErrors": [
+        {
+          "tool": "read_task_evidence_index",
+          "error": "Error: index requires nonnegative from_seq and limit 1–50"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: review decision must cite events read from the bound Session"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: review decision must cite events read from the bound Session"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: review decision must cite events read from the bound Session"
+        },
+        {
+          "tool": "task_review_decision",
+          "error": "Error: planning summaries belong to planning reviews"
+        }
+      ]
+    }
+  ],
+  "controlProtocolDeviation": false,
+  "freezeRecheck": {
+    "schemaVersion": 1,
+    "originalInventoryMatch": false,
+    "recordedEntriesUnchanged": true,
+    "addedOnlyPythonImportCache": true,
+    "added": [
+      "__pycache__/control_rpc.cpython-314.pyc",
+      "__pycache__/grade.cpython-314.pyc",
+      "__pycache__/metrics.cpython-314.pyc",
+      "__pycache__/model_route.cpython-314.pyc",
+      "__pycache__/native_stop.cpython-314.pyc",
+      "__pycache__/prepare_grade.cpython-314.pyc",
+      "__pycache__/read_control.cpython-314.pyc",
+      "__pycache__/run_pilot.cpython-314.pyc"
+    ],
+    "executableSourceUnchanged": true,
+    "modelRedelivered": false
+  },
+  "misacceptance": {
+    "taskDeclaredComplete": false,
+    "observedFalseCompletion": false,
+    "rate": null
+  },
+  "resultSha256": "1e691d20db27328b43570c2ae3592db780bb54c98ab61db0d6c325235c1bb767",
+  "notUnseenTask": true,
+  "comparisonClaims": false
+}

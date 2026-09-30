@@ -2,7 +2,7 @@
 
 ## Summary
 
-Review follows original requirements, actual evidence and suitable methods. Steps 0–3 are implemented and separately committed, with source gates and cross-artifact real-model fixtures validated. The official Kea single-case development regression is running. The [validation record](../eval/independent-verification/generic-quality-20260930/README.md) retains successes, an internal timeout and an adapter failure.
+Review follows original requirements, actual evidence and suitable methods. Steps 0–3 are implemented and separately committed, with source gates and cross-artifact real-model fixtures validated. A complete static task finishes through the controller; the official Kea regression is sealed with reward 0 after formal-plan review timeout in the frozen version, with subsequent protocol repairs validated separately. The [validation record](../eval/independent-verification/generic-quality-20260930/README.md) retains successes, an internal timeout and an adapter failure.
 
 ## Completion criteria
 
@@ -38,4 +38,4 @@ Report reward, F2P/P2P, independent coverage, false acceptance, internal faults,
 
 ## Dev Note
 
-The two Kea failures remain [public grading cases](../eval/deepswe/supervisor-single-20260929/README.zh.md), not generic prompts or controller rules. Evidence will be recorded as each step completes.
+The two Kea failures remain [public grading cases](../eval/deepswe/supervisor-single-20260929/README.zh.md), not generic prompts or controller rules. The validation record above retains implementation and official grading evidence, including successes and failures.

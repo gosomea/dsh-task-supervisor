@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "pluginCommit": "a859b4333d6b7f5cea8177a602d4e41ddf8aba84",
+  "kernel": {
+    "passed": 154,
+    "skipped": 1,
+    "files": 3,
+    "optionalDockerSkipped": true
+  },
+  "strictTypechecks": {
+    "host": "passed",
+    "client": "passed"
+  },
+  "build": "passed",
+  "logs": {
+    "kernel": {
+      "sha256": "27d7c92dc570d8778ad1decebd6f786a3b34c6fbe5763888a3a6025aee04cea4"
+    },
+    "types": {
+      "sha256": "229e7569dc8dd01a2f5c6c04ca879592eb63308ccb19927a5261b265cf8c5fe6"
+    },
+    "build": {
+      "sha256": "d8c853ae3d2d687d061cdde66e484450998db2c7e59951a55d3197b57a0ade06"
+    }
+  },
+  "package": {
+    "files": [
+      "package/lib/client.js",
+      "package/package.json",
+      "package/README.md",
+      "package/README.zh.md",
+      "package/lib/artifact-snapshot-BnpRjvlp.mjs",
+      "package/lib/check-gateway.mjs",
+      "package/lib/evidence-CFGwCdyD.mjs",
+      "package/lib/index.mjs",
+      "package/lib/process-provenance.mjs",
+      "package/lib/review-check-CISIA1-I.mjs",
+      "package/cordis.patch.yml"
+    ],
+    "sha256": "59064b7462691a8123d0693f2f6391a8f3f712e253047da96d1731de494da30d",
+    "exportsResolved": true,
+    "privateFixtureDataAbsent": true
+  },
+  "documentation": {
+    "bilingualPairsLineAligned": true,
+    "localLinksChecked": true
+  },
+  "firstTestFailureRetained": true
+}

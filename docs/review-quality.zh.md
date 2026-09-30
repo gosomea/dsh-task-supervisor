@@ -2,7 +2,7 @@
 
 ## 摘要
 
-审查围绕原始要求、实际证据和适当的方法展开。步骤 0–3 已实现并分别提交，源码门禁与跨产物真实模型夹具已验收；Kea 单题官方开发回归正在执行。[验收记录](../eval/independent-verification/generic-quality-20260930/README.zh.md)保留成功、内部超时与适配故障。
+审查围绕原始要求、实际证据和适当的方法展开。步骤 0–3 已实现并分别提交，源码门禁与跨产物真实模型夹具已验收；完整静态任务已通过控制器完成；Kea 官方回归已封口，reward 为 0，冻结版本在正式计划审查超时，后续协议修复另行验收。[验收记录](../eval/independent-verification/generic-quality-20260930/README.zh.md)保留成功、内部超时与适配故障。
 
 ## 完成口径
 
@@ -38,4 +38,4 @@
 
 ## Dev Note
 
-Kea 的两项失败只作为[公开评分案例](../eval/deepswe/supervisor-single-20260929/README.zh.md)，不写入通用模型提示或控制器规则。实施证据将随各步骤保存。
+Kea 的两项失败只作为[公开评分案例](../eval/deepswe/supervisor-single-20260929/README.zh.md)，不写入通用模型提示或控制器规则。实施及正式评分证据见上方验收记录，成功与失败均保留。

@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "kind": "complete-static-task-real-model-validation",
+  "pluginCommit": "a859b4333d6b7f5cea8177a602d4e41ddf8aba84",
+  "mainSessionId": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+  "phase": "complete",
+  "elapsedSec": 374.08666706085205,
+  "approvalSource": "policy",
+  "rescueCount": 0,
+  "fileSha256": "aed0277ff49ea3ca2339550ea2abfbe7510a4c6787b5adf62ef17046ec9b1b72",
+  "contentVerifiedAgainstOriginalRequirement": true,
+  "metrics": {
+    "allSessionTokens": {
+      "uncachedInputTokens": 139091,
+      "outputTokens": 39538,
+      "cacheReadTokens": 928768,
+      "cacheWriteTokens": 0
+    },
+    "tokensReported": {
+      "uncachedInputTokens": 139091,
+      "outputTokens": 39538,
+      "cacheReadTokens": 928768,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": true,
+    "unreportedAttempts": 0,
+    "sessions": [
+      {
+        "sessionId": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "parentSession": null,
+        "usageCoverage": {
+          "settledAttempts": 11,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 33740,
+          "outputTokens": 3501,
+          "cacheReadTokens": 90752,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-25b2a9c4-17dd-4f2a-9a2a-103cf8fc08e6",
+        "parentSession": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "usageCoverage": {
+          "settledAttempts": 22,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 40004,
+          "outputTokens": 12015,
+          "cacheReadTokens": 362624,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-3f4235fc-d004-42ca-9369-ae1ab8b97689",
+        "parentSession": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "usageCoverage": {
+          "settledAttempts": 8,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 14021,
+          "outputTokens": 7382,
+          "cacheReadTokens": 76160,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-7b22bd8c-09a0-414b-b744-0cb72ceb029f",
+        "parentSession": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "usageCoverage": {
+          "settledAttempts": 20,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 34119,
+          "outputTokens": 8740,
+          "cacheReadTokens": 333952,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-89746770-403c-4889-b9e3-b9e99e36a2f9",
+        "parentSession": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "usageCoverage": {
+          "settledAttempts": 4,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 6907,
+          "outputTokens": 2738,
+          "cacheReadTokens": 16000,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-f60412e0-d4f5-49a1-949d-5993aaeed768",
+        "parentSession": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+        "usageCoverage": {
+          "settledAttempts": 6,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 10300,
+          "outputTokens": 5162,
+          "cacheReadTokens": 49280,
+          "cacheWriteTokens": 0
+        }
+      }
+    ],
+    "missingReviewerSessions": [],
+    "excludedUnrelatedSessions": 12,
+    "reviewToolCalls": 89,
+    "repeatedExactReads": 2,
+    "plannedIndependentChecks": 8,
+    "recordedIndependentCheckResults": 8,
+    "reviewPhaseDurations": [
+      {
+        "jobId": "67c9578f-a48e-42ce-8de6-fce6e3328227",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "a0c57ac2-fd9e-49bb-9b95-022e34885c3a",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "cdf99740-4418-404c-bff8-bd945a20d468",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "3a317a57-228f-4209-9025-c4eea84d17fe",
+        "kind": "stage",
+        "mode": "independent",
+        "planningMs": 12017.0,
+        "independentMs": 30372.0,
+        "comparisonAndDecisionMs": 40033.0
+      },
+      {
+        "jobId": "ac982aa1-d139-41ac-827e-34ad0bc14a6f",
+        "kind": "completion",
+        "mode": "independent",
+        "planningMs": 8116.0,
+        "independentMs": 21157.0,
+        "comparisonAndDecisionMs": 41303.0
+      }
+    ],
+    "checkWaitMs": null,
+    "checkCount": 0,
+    "independentReviewJobs": 2,
+    "independentComparisonJobs": 2,
+    "independentEvidenceCoverage": {
+      "applicableCriterionFindings": 2,
+      "readFiles": 2
+    },
+    "extraCheckCpuNs": null,
+    "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "jobs": [
+    {
+      "id": "67c9578f-a48e-42ce-8de6-fce6e3328227",
+      "kind": "plan",
+      "status": "applied",
+      "verdict": "pass",
+      "requiredCapabilities": [
+        "read",
+        "run"
+      ],
+      "programs": [
+        "ls"
+      ],
+      "mode": "log",
+      "checkPlans": 0,
+      "commands": 0
+    },
+    {
+      "id": "a0c57ac2-fd9e-49bb-9b95-022e34885c3a",
+      "kind": "plan",
+      "status": "applied",
+      "verdict": "pass",
+      "requiredCapabilities": [
+        "read",
+        "run"
+      ],
+      "programs": null,
+      "mode": "log",
+      "checkPlans": 0,
+      "commands": 0
+    },
+    {
+      "id": "cdf99740-4418-404c-bff8-bd945a20d468",
+      "kind": "plan",
+      "status": "applied",
+      "verdict": "pass",
+      "requiredCapabilities": [
+        "read"
+      ],
+      "programs": null,
+      "mode": "log",
+      "checkPlans": 0,
+      "commands": 0
+    },
+    {
+      "id": "3a317a57-228f-4209-9025-c4eea84d17fe",
+      "kind": "stage",
+      "status": "applied",
+      "verdict": "pass",
+      "requiredCapabilities": null,
+      "programs": null,
+      "mode": "independent",
+      "checkPlans": 1,
+      "commands": 0
+    },
+    {
+      "id": "ac982aa1-d139-41ac-827e-34ad0bc14a6f",
+      "kind": "completion",
+      "status": "applied",
+      "verdict": "pass",
+      "requiredCapabilities": null,
+      "programs": null,
+      "mode": "independent",
+      "checkPlans": 1,
+      "commands": 0
+    }
+  ],
+  "route": {
+    "actualHttpRequests": 71,
+    "routesMatched": true,
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "auditSha256": "48df0ac2535881e122e4e179b5a445581c846d44ca7a4dcba16d6fbb2d52b4f8"
+  },
+  "limitations": [
+    "Two initial plan reviews unnecessarily required run; approval preflight refused the unavailable runner, then the main Agent resubmitted a read-only plan without rescue.",
+    "Semantic coverage and unannotated blind-review rates remain unknown."
+  ],
+  "misacceptance": {
+    "taskDeclaredComplete": true,
+    "externalRequirementCheckPassed": true,
+    "rate": null
+  },
+  "sourceResultSha256": "b89362e39bfdf9897142a4277e3970f277a6fddaf668d870a412bddd2ac4bd39"
+}
