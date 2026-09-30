@@ -67,3 +67,5 @@ This run records 120 reviewer tool calls, 867909 milliseconds of review wait and
 All-Session token totals remain `null` because one generation aborted by timeout does not report usage. Reported lower bounds are 306729 uncached input, 292648 output, 3425664 cache-read and 0 cache-write tokens, not complete costs. Frozen original files remain unchanged, but 8 Python import caches are added to the runner; the result records both the changed full inventory and unchanged executable sources.
 
 Browser/visual execution remains unimplemented; false-acceptance, false-pause and correction-benefit rates remain `null` without blind annotations. The complete static task, direct review fixtures and public grading retain separate scopes and do not establish long-horizon superiority over Goal or Plan.
+
+[Subsequent post-repair Kea validation and approval-collision repair](postfix-kea.md).

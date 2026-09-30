@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "kind": "post-repair-exposed-single-case-result",
+  "taskId": "kea-atomic-signal-selectors",
+  "id": "kea-supervisor-quality-707261f-verify-80g-20260930",
+  "mainSessionId": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+  "terminal": {
+    "status": "infrastructure-fault",
+    "taskPhase": "awaiting-approval",
+    "elapsedSec": 1517.4350218772888,
+    "deadlineSec": 10800.0,
+    "approvalCount": 0,
+    "approvalUncertain": true,
+    "rescueCount": 0,
+    "cleanupAcknowledged": true
+  },
+  "grade": {
+    "reward": 0,
+    "scored": true,
+    "fault": null,
+    "tests": {
+      "tests": 151,
+      "passed": 139,
+      "failed": 12,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0
+    },
+    "execution": {
+      "reportedPositions": 151,
+      "missingResultPositions": 0,
+      "positionsWithResult": 151,
+      "allPositionsHaveResult": true
+    },
+    "separateEnvironmentObserved": true,
+    "cleanupConfirmed": true,
+    "officialFilesSha256": {
+      "environment/Dockerfile": "21754941b1392fb75d8a5b775a507608af2e4eced4e303659131388cd22cb53e",
+      "instruction.md": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+      "task.toml": "e348f26d469643cf8bfd535e9d9f86c8c20f7e7169aeda515223874a9dea271c",
+      "tests/Dockerfile": "5f3fab7316c0c02292338938d5ac198ef4862eec588322c69e77b4bdbb7eb233",
+      "tests/config.json": "f26007a19eeefae915f6902906c7f29ce6060f688a0ef783f327192b56166f39",
+      "tests/grader.py": "47cc9eaadf21e636323c360ec4fa786f0733ec9fd1d21ea5a5717ff9f8c4077c",
+      "tests/test.patch": "22a472624a5b29fc12ef5cb27da0af4c7e8636250e625a710ead46d6c07e9170",
+      "tests/test.sh": "b9c820bd610f1476221c663fd326574dcb1d0a97cde064a2ccad342651de1d56"
+    },
+    "evidenceSha256": {
+      "trialResult": "d5f60254aa44429abc4bc7445f00c13da5d0d910ac2e95124f88e3c0183a4d10",
+      "testReport": "1987b6b52284b5c9c44284789225b32f15a3359a6f73ca4dd10c1a7b7937c258"
+    },
+    "submission": {
+      "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "patchBytes": 0,
+      "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "committed-base-to-head",
+      "workingTreeDirty": false,
+      "workingTreeStatusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workingTreeSubmitted": false,
+      "observedHeadCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headChangedSinceCutoff": false
+    },
+    "verifierDuration": {
+      "started_at": "2026-09-30T07:42:13.618532Z",
+      "finished_at": "2026-09-30T07:42:39.759987Z"
+    }
+  },
+  "metrics": {
+    "allSessionTokens": {
+      "uncachedInputTokens": 269359,
+      "outputTokens": 251254,
+      "cacheReadTokens": 2763776,
+      "cacheWriteTokens": 0
+    },
+    "tokensReported": {
+      "uncachedInputTokens": 269359,
+      "outputTokens": 251254,
+      "cacheReadTokens": 2763776,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": true,
+    "unreportedAttempts": 0,
+    "reviewToolCalls": 116,
+    "repeatedExactReads": 0,
+    "checkCount": 0,
+    "plannedIndependentChecks": 0,
+    "recordedIndependentCheckResults": 0,
+    "independentReviewJobs": 0,
+    "independentEvidenceCoverage": {
+      "applicableCriterionFindings": 0,
+      "readFiles": 0
+    },
+    "internalReviewFaults": {},
+    "reviewWaitMs": 851047.0,
+    "sessions": [
+      {
+        "sessionId": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "parentSession": null,
+        "usageCoverage": {
+          "settledAttempts": 24,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 63543,
+          "outputTokens": 95428,
+          "cacheReadTokens": 966912,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-4f63a643-202e-483a-8cc8-051bff0e05a0",
+        "parentSession": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "usageCoverage": {
+          "settledAttempts": 6,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 24355,
+          "outputTokens": 19911,
+          "cacheReadTokens": 84096,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-5cd152de-29f5-4601-a44e-f8e3f3fe74e4",
+        "parentSession": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "usageCoverage": {
+          "settledAttempts": 19,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 51308,
+          "outputTokens": 37601,
+          "cacheReadTokens": 599296,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-7674632d-6ea0-4e58-b617-77bbc1e603f5",
+        "parentSession": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "usageCoverage": {
+          "settledAttempts": 19,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 45125,
+          "outputTokens": 18779,
+          "cacheReadTokens": 474496,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-ca97c1ec-c4fe-4708-af0b-586101b0cc53",
+        "parentSession": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "usageCoverage": {
+          "settledAttempts": 12,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 33576,
+          "outputTokens": 5693,
+          "cacheReadTokens": 223104,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-d24499da-dbab-4868-98d9-b21a92ad19b7",
+        "parentSession": "session-1ed4920a-c37c-478f-837c-a4a3dd7196bd",
+        "usageCoverage": {
+          "settledAttempts": 15,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 51452,
+          "outputTokens": 73842,
+          "cacheReadTokens": 415872,
+          "cacheWriteTokens": 0
+        }
+      }
+    ],
+    "reviewPhaseDurations": [
+      {
+        "jobId": "b9e1bbfd-3b77-4e6a-81d6-1786dd98311f",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "60d97bc0-76c9-4189-9856-a9f31a2067df",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "d9603cb7-71b2-43bd-80dd-7851d0e39b07",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "8487bdee-05b0-41ae-9a6d-e9fadcb6c876",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "a0704a25-e1b4-438c-aa6b-bc30ccfdce97",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      }
+    ],
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "route": {
+    "routesMatched": true,
+    "protocolDeviation": false,
+    "auditSha256": "f8aecf6f26cdb0a20e1e79325bc907da0ada92fda38dacc1d0ad4d37ea27b6d8"
+  },
+  "jobs": [
+    {
+      "id": "b9e1bbfd-3b77-4e6a-81d6-1786dd98311f",
+      "kind": "planning",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-7674632d-6ea0-4e58-b617-77bbc1e603f5",
+      "startedAt": "2026-09-30T07:19:04.522Z",
+      "finishedAt": "2026-09-30T07:21:11.824Z",
+      "toolCalls": {
+        "read_task_context": 2,
+        "read_task_evidence": 2,
+        "read_task_evidence_index": 3,
+        "read_task_text": 20,
+        "read_task_input": 1,
+        "task_review_decision": 2
+      },
+      "summary": "Codebase mapped, plan not yet written."
+    },
+    {
+      "id": "60d97bc0-76c9-4189-9856-a9f31a2067df",
+      "kind": "planning",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-ca97c1ec-c4fe-4708-af0b-586101b0cc53",
+      "startedAt": "2026-09-30T07:26:35.661Z",
+      "finishedAt": "2026-09-30T07:27:20.366Z",
+      "toolCalls": {
+        "read_task_context": 1,
+        "read_task_evidence": 6,
+        "read_task_text": 6,
+        "read_task_evidence_index": 1,
+        "read_task_call": 4,
+        "task_review_decision": 1
+      },
+      "summary": "Proxy tracking validated; draft plan still pending."
+    },
+    {
+      "id": "d9603cb7-71b2-43bd-80dd-7851d0e39b07",
+      "kind": "plan",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "revise",
+      "reviewerSessionId": "task-review-d24499da-dbab-4868-98d9-b21a92ad19b7",
+      "startedAt": "2026-09-30T07:28:48.091Z",
+      "finishedAt": "2026-09-30T07:34:55.794Z",
+      "toolCalls": {
+        "read_task_context": 4,
+        "read_task_evidence_index": 4,
+        "read_task_evidence": 8,
+        "read_task_text": 8,
+        "read_task_call": 1,
+        "task_review_decision": 2
+      },
+      "summary": "Revise: enabled-mode ordering checks missing"
+    },
+    {
+      "id": "8487bdee-05b0-41ae-9a6d-e9fadcb6c876",
+      "kind": "planning",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-4f63a643-202e-483a-8cc8-051bff0e05a0",
+      "startedAt": "2026-09-30T07:34:55.826Z",
+      "finishedAt": "2026-09-30T07:36:44.588Z",
+      "toolCalls": {
+        "read_task_context": 1,
+        "read_task_evidence": 3,
+        "read_task_call": 2,
+        "read_task_text": 3,
+        "task_review_decision": 1
+      },
+      "summary": "Plan rejected; enabled-mode ordering gap"
+    },
+    {
+      "id": "a0704a25-e1b4-438c-aa6b-bc30ccfdce97",
+      "kind": "plan",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-5cd152de-29f5-4601-a44e-f8e3f3fe74e4",
+      "startedAt": "2026-09-30T07:37:56.601Z",
+      "finishedAt": "2026-09-30T07:41:19.176Z",
+      "toolCalls": {
+        "read_task_context": 5,
+        "read_task_input": 1,
+        "read_task_evidence_index": 4,
+        "read_task_evidence": 10,
+        "read_task_text": 3,
+        "read_task_call": 5,
+        "task_review_decision": 2
+      },
+      "summary": "Plan is complete; both prior blocking defects are fixed"
+    }
+  ],
+  "freezeRecheck": {
+    "allMatch": true,
+    "roots": {
+      "runner": true,
+      "runtime": true,
+      "plugin": true,
+      "profile": true,
+      "node": true,
+      "docker": true,
+      "pier": true,
+      "dataset": true,
+      "reviewAudit": true,
+      "hostNode": true
+    }
+  },
+  "controlProtocolDeviation": false,
+  "protocolImplementationFault": "Adapter sends manual approval while native policy preparation owns the admission; second request gets gateway busy and observer seals.",
+  "notUnseenTask": true,
+  "comparisonClaims": false,
+  "misacceptance": {
+    "taskDeclaredComplete": false,
+    "observedFalseCompletion": false,
+    "rate": null
+  },
+  "resultSha256": "ea3f78eb2b3cd36bd0390ade232f37138b29f892d7b330a3d402339e7f0a4908",
+  "officialReward": {
+    "reward": 0,
+    "f2p_total": 12,
+    "f2p_passed": 0,
+    "p2p_total": 139,
+    "p2p_passed": 139,
+    "f2p": 0.0,
+    "p2p": 1.0,
+    "partial": 0.9205298013245033
+  },
+  "collisionEvidence": {
+    "nativePlanToolCallSeq": 194,
+    "awaitingApprovalStateSeq": 198,
+    "manualApprovalCommandSeq": 200,
+    "manualApprovalErrorSeq": 201,
+    "manualApprovalWhileNativeToolUnsettled": true,
+    "gatewayError": "CHECK_INFRASTRUCTURE: gateway: gateway is busy, closing or expired",
+    "approvalIntentSha256": "c251ec0da90d97caf1755d1ec25ee0e410f4d802f325d5dbec59e4f0f508d675"
+  }
+}

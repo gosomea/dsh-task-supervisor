@@ -160,6 +160,8 @@ def observe(condition, values, running, approved, native_stop=None):
             'idle': idle, 'reviewJobs': supervisor.get('reviewJobs', []),
             'reviewFault': task.get('reviewFault'), 'taskId': task.get('id'),
             'planVersion': task.get('planVersion'), 'everApproved': task.get('everApproved', False),
+            'requirementsVersion': task.get('requirementsVersion'),
+            'approvalPolicy': task.get('approvalPolicy'), 'lastApproval': task.get('lastApproval'),
             'nativeStop': native_stop if status == 'native-stopped' else None}
 
 
@@ -224,8 +226,47 @@ def begin(rpc, journal, condition, instruction, base_commit, attempt_id, *,
     return started
 
 
+def observe_policy_approval(journal, started, observation, *, clock=time.time):
+    """Record a native grant without competing with its in-flight admission."""
+    policy = observation.get('approvalPolicy') or {}
+    if policy.get('mode') != 'after-review':
+        return False
+    if (policy.get('mainSessionId') != started['sessionId']
+            or type(policy.get('requirementsVersion')) is not int or policy['requirementsVersion'] < 1
+            or policy.get('requirementsVersion') != observation.get('requirementsVersion')
+            or type(policy.get('grantSeq')) is not int or policy['grantSeq'] < 0):
+        raise RuntimeError('native execution policy is outside this attempt')
+    if journal.read('approval-receipt.json') is not None or not observation['everApproved']:
+        return True
+    approval = observation.get('lastApproval') or {}
+    job = next((j for j in observation.get('reviewJobs', [])
+                if j.get('id') == approval.get('reviewJobId')), None)
+    if (approval.get('source') != 'policy'
+            or approval.get('authorizationSeq') != policy['grantSeq']
+            or type(approval.get('planVersion')) is not int
+            or type(observation.get('planVersion')) is not int
+            or not 1 <= approval['planVersion'] <= observation['planVersion']
+            or not job or job.get('kind') != 'plan'
+            or job.get('status') not in ('submitted', 'applied')
+            or job.get('mainSessionId') != started['sessionId']
+            or job.get('taskId') != observation['taskId']
+            or (job.get('decision') or {}).get('verdict') != 'pass'
+            or job.get('planVersion') != approval['planVersion'] - 1):
+        raise RuntimeError('native policy approval evidence does not match this plan')
+    if journal.read('approval-intent.json') is not None:
+        raise RuntimeError('native approval overlaps an existing manual approval intent')
+    journal.write('approval-receipt.json', {
+        'schemaVersion': 1, 'sessionId': started['sessionId'], 'atUnix': clock(),
+        'transport': 'native-supervisor-policy-observation', 'taskId': observation['taskId'],
+        'planVersion': approval['planVersion'], 'authorizationSeq': approval['authorizationSeq'],
+        'reviewJobId': approval['reviewJobId'], 'decision': 'observed-native-preauthorization'})
+    return True
+
+
 def approve_supervisor(rpc, journal, started, observation, *, clock=time.time):
-    """Grant only the first awaiting-approval plan, with a durable send intent."""
+    """Grant one manual approval; native preauthorization owns its admission."""
+    if observe_policy_approval(journal, started, observation, clock=clock):
+        return False
     if clock() >= started['deadlineAtUnix']:
         return False
     if observation['taskPhase'] != 'awaiting-approval' or observation['everApproved']:
@@ -279,6 +320,9 @@ def supervise(rpc, journal, read_projection, quiesce, *, approve_plan=None,
                            if row['sessionId'] == started['sessionId'])
                 approved = journal.read('approval-receipt.json') is not None
                 last = observe(started['condition'], values, row['running'], approved)
+                if started['condition'].startswith('supervisor-'):
+                    observe_policy_approval(journal, started, last, clock=clock)
+                    approved = journal.read('approval-receipt.json') is not None
                 if (read_native_stop is not None and last['idle']
                         and native_stop_candidate(started['condition'], last['taskPhase'], approved)):
                     evidence = read_native_stop(started['sessionId'], values)

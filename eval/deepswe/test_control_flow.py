@@ -295,6 +295,77 @@ class ControlFlowTests(unittest.TestCase):
         self.assertFalse(approve_supervisor(self.rpc, self.journal, started, observation, clock=lambda: 2))
         self.assertEqual(self.rpc.commands, ['/task approve'])
 
+    def policy_task(self, phase='awaiting-approval'):
+        return {'id': 'task', 'phase': phase, 'enabled': True, 'requirementsVersion': 1,
+                'planVersion': 1, 'everApproved': phase != 'awaiting-approval',
+                'approvalPolicy': {'mode': 'after-review', 'mainSessionId': 'session',
+                                   'requirementsVersion': 1, 'grantSeq': 8}}
+
+    def policy_projection(self, phase='active'):
+        task = self.policy_task(phase)
+        task['lastApproval'] = {'source': 'policy', 'planVersion': 1,
+                                'authorizationSeq': 8, 'reviewJobId': 'review'}
+        projection = document(task)
+        projection['record']['rows']['taskSupervisor']['val']['reviewJobs'] = [
+            {'id': 'review', 'kind': 'plan', 'status': 'applied', 'mainSessionId': 'session',
+             'taskId': 'task', 'planVersion': 0, 'decision': {'verdict': 'pass'}}]
+        return projection
+
+    def test_native_admission_in_flight_never_sends_competing_approval(self):
+        started = self.started()
+        task = self.policy_task()
+        values = {'taskSupervisor': {'current': task}}
+        observation = observe('supervisor-log', values, True, False)
+        self.assertFalse(approve_supervisor(self.rpc, self.journal, started, observation, clock=lambda: 1))
+        self.assertEqual(self.rpc.commands, [])
+        self.assertIsNone(self.journal.read('approval-intent.json'))
+        self.assertIsNone(self.journal.read('approval-receipt.json'))
+
+    def test_native_policy_receipt_is_observed_once_even_if_task_already_complete(self):
+        self.started()
+        projection = self.policy_projection('complete')
+        terminal = supervise(self.rpc, self.journal, lambda _: projection,
+                             lambda *_: {'acknowledged': True}, clock=lambda: 1,
+                             sleep=lambda _: self.fail('complete task must seal'))
+        receipt = self.journal.read('approval-receipt.json')
+        self.assertEqual(receipt['transport'], 'native-supervisor-policy-observation')
+        self.assertEqual(receipt['authorizationSeq'], 8)
+        self.assertEqual(terminal['approvalCount'], 1)
+        self.assertEqual(terminal['status'], 'native-complete')
+        self.assertIsNone(self.journal.read('approval-intent.json'))
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(supervise(self.rpc, self.journal, lambda _: self.fail('sealed'),
+                                   lambda *_: self.fail('sealed')), terminal)
+
+    def test_native_pending_then_complete_only_observes_policy(self):
+        self.started()
+        now = [1]
+        pending = document(self.policy_task())
+        terminal = supervise(self.rpc, self.journal,
+            lambda _: pending if now[0] == 1 else self.policy_projection('complete'),
+            lambda *_: {'acknowledged': True}, clock=lambda: now[0],
+            sleep=lambda _: now.__setitem__(0, 2))
+        self.assertEqual(terminal['approvalCount'], 1)
+        self.assertEqual(self.rpc.commands, [])
+        self.assertEqual(self.rpc.prompts, [])
+
+    def test_native_policy_scope_or_review_mismatch_cannot_fall_back_to_manual(self):
+        started = self.started()
+        for mismatch in ('session', 'review'):
+            with self.subTest(mismatch=mismatch):
+                projection = self.policy_projection()
+                values = {k: v['val'] for k, v in projection['record']['rows'].items()}
+                task = values['taskSupervisor']['current']
+                if mismatch == 'session':
+                    task['approvalPolicy']['mainSessionId'] = 'other-session'
+                else:
+                    values['taskSupervisor']['reviewJobs'][0]['decision']['verdict'] = 'revise'
+                observation = observe('supervisor-log', values, True, False)
+                with self.assertRaises(RuntimeError):
+                    approve_supervisor(self.rpc, self.journal, started, observation, clock=lambda: 1)
+                self.assertEqual(self.rpc.commands, [])
+                self.assertIsNone(self.journal.read('approval-receipt.json'))
+
     def test_deadline_never_approves(self):
         started = self.started(deadline=2)
         observation = {'taskPhase': 'awaiting-approval', 'everApproved': False, 'taskId': 'task', 'planVersion': 1}

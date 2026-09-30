@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-session-approval-record-replay",
+  "mainSessionId": "session-2dff1cd5-e480-4649-8d34-361687fd966d",
+  "taskPhase": "complete",
+  "taskId": "32e09ec6-60ca-43f9-b99e-8b10ae962207",
+  "planVersion": 3,
+  "authorizationSeq": 6,
+  "reviewJobId": "cdf99740-4418-404c-bff8-bd945a20d468",
+  "manualCommands": 0,
+  "receiptRecordedOnce": true,
+  "notNewModelRun": true,
+  "scope": "new observer matches an actual completed native task; pending-admission race is verified separately with controlled clock tests"
+}
