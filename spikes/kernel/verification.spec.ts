@@ -9,6 +9,7 @@ import * as Records from '../../src/review-records.ts'
 import { newTask } from '../../src/state.ts'
 import { complete, validateFindings, verificationPolicy, installVerification } from '../../src/verification.ts'
 import type { VerificationState, CriterionFinding } from '../../src/verification-schema.ts'
+import { appendCheckPlan, type CheckFinding } from '../../src/review-check-plan.ts'
 
 function state(): VerificationState {
   return { snapshot: { id: '00000000-0000-4000-8000-000000000001', workspace: '/source', digest: 'digest', root: '/evidence', baseline: '/evidence/baseline', check: '/evidence/check', excluded: [], entries: [] },
@@ -62,7 +63,7 @@ afterEach(() => vi.restoreAllMocks())
 
 /** Execute the registered tool body while mocking only native execution and the durable record boundary. */
 function verificationTool() {
-  type Tool = { name: string; execute(args: { argv: string[]; cwd: string }, exec: { concludeTurn(): void }): Promise<unknown> }
+  type Tool = { name: string; execute(args: object, exec: { concludeTurn(): void }): Promise<unknown> }
   const tools = new Map<string, Tool>()
   const ctx = { tools: { register: (tool: Tool) => { tools.set(tool.name, tool) } } } as unknown as Context
   const main = {} as Agent, controller = new AbortController()
@@ -82,8 +83,25 @@ function verificationTool() {
   const container = { context: 'test', image: 'sha256:' + 'a'.repeat(64), cpus: 1, memoryMiB: 512, pids: 64 }
   installVerification(ctx, ctx, main, job, SessionId('review'), verificationPolicy({ storageRoot: '/private/evidence', container }), controller.signal)
   const tool = tools.get('run_review_check')!, concludeTurn = vi.fn()
-  return { job, persisted, record, controller, concludeTurn, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn }) }
+  return { job, persisted, record, controller, concludeTurn, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn }),
+    observe: (findings: CriterionFinding[], checks: CheckFinding[]) => tools.get('task_review_observations')!.execute({ findings, checks }, { concludeTurn }) }
 }
+
+it('explains check associations and leaves rejected observations uncommitted before a valid same-job retry', async () => {
+  const f = verificationTool(), value = f.job.verification!
+  f.job.checkProtocol = 1
+  const item = { id: 'title', criterionId: 'c', source: { kind: 'objective' as const, reference: 'objective' }, fact: 'required title', method: 'read' as const, expected: 'agreed title', coverage: 'whole text', basis: 'explicit' as const }
+  appendCheckPlan(value, [item, { ...item, id: 'omitted', criterionId: null }], ['c'], 'now')
+  const checks: CheckFinding[] = ['title', 'omitted'].map(checkId => ({ checkId, status: 'satisfied', finding: 'read actual content', coverage: 'whole text', limitations: '', evidenceIds: ['file:code.js'] }))
+  const finding = { ...read, coverage: 'whole text', limitations: '', checkIds: ['title', 'omitted'] }
+  await expect(f.observe([finding], checks)).rejects.toThrow('expected checkIds=["title"]')
+  expect(value.checkFindings).toBeUndefined()
+  expect(value.phase).toBe('independent')
+  expect(f.record).not.toHaveBeenCalled()
+  await expect(f.observe([{ ...finding, checkIds: ['title'] }], checks)).resolves.toMatchObject({ phase: 'comparison' })
+  expect(value.checkFindings).toEqual(checks)
+  expect(f.persisted).toHaveLength(1)
+})
 function successfulCheck(): ReviewCheck.CheckResult {
   return { id: '00000000-0000-4000-8000-000000000005', snapshotId: state().snapshot.id, argv: ['node'], cwd: 'tree',
     startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), exitCode: 0, signal: null,

@@ -32,7 +32,9 @@ export function appendCheckPlan(state: VerificationState, checks: ReviewCheck[],
 export function checkResultsAsEvidence(state: VerificationState, results: CheckFinding[], passing: boolean): CriterionFinding[] {
   const checks = state.checkPlan?.flatMap(item => item.checks) ?? []
   if (!checks.length || results.length !== checks.length || new Set(results.map(item => item.checkId)).size !== results.length
-    || results.some(item => !checks.some(check => check.id === item.checkId))) throw new Error('report every planned check exactly once')
+    || results.some(item => !checks.some(check => check.id === item.checkId))) {
+    throw new Error(`report every planned check exactly once: expected checkIds=${JSON.stringify(checks.map(item => item.id))}; received=${JSON.stringify(results.map(item => item.checkId))}`)
+  }
   return results.map(result => {
     const check = checks.find(item => item.id === result.checkId)!
     if (passing && check.basis === 'explicit' && result.status !== 'satisfied') throw new Error('failed or unverified original requirements cannot pass')
