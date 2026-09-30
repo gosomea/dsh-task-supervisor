@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "kea-supervisor-quality-707261f-verify-20260930",
+  "mainSessionId": "session-755bb776-11ce-49bb-ae63-906f90e2a19a",
+  "kind": "pre-model-preparation-fault",
+  "faultCode": "ENOSPC",
+  "modelRequests": 0,
+  "modelSteps": 0,
+  "taskCreated": false,
+  "deliveryEvidence": "native task command returned error; only initial events and zero HTTP audit records",
+  "deliveryUncertainFlagRetained": true,
+  "retrySameSession": false,
+  "cleanupAcknowledged": true,
+  "checkCleanupAcknowledged": true,
+  "reward": null,
+  "gradingNotApplicable": true,
+  "vmBefore": {
+    "diskGiB": 60,
+    "availableBytes": 0,
+    "inodesExhausted": false
+  },
+  "recovery": "Expand this quiescent evaluation VM to80GiB, preserve all original evidence, allocate a new position before any model delivery.",
+  "rawFaultSha256": "80285f75ad28049e70c4f547379ad614d17e53a16995cad3116fea2682c36808"
+}
