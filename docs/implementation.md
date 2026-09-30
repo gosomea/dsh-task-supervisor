@@ -1,5 +1,7 @@
 # Implementation status
 
+**In progress:** [Generic independent review](review-quality.md) is approved; step 0 establishes the documentation baseline. Steps 1–3 and the new Kea regression are not yet validated; existing implementation and historical evidence remain below.
+
 **Updated 2026-09-29: planning supervision, bounded main/reviewer truncation recovery and optional execution preauthorization are implemented.** Current task record version 14 reads 1–14; projection version 15 rebuilds; review record version 3 reads 1–3. [Validation](planning-supervision-validation.md) records current source gates, real-model probes and limits. The A–F table and earlier iteration sections below retain their historical scope and counts.
 
 | Step | Capability | Acceptance |

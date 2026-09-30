@@ -61,6 +61,8 @@ The evaluator returns accepted, needs work, or needs user evidence. The controll
 
 Persist review inputs, output, cursor advancement, intervention, and delivered messages through session events. Each decision has an identity and revision check so duplicate callbacks do not apply it twice. Reviewer errors or malformed output do not count as a passing review. Required reviews hold continuation while recovery is attempted; exhausted recovery waits for the user. Restart behavior follows [task lifecycle](task-lifecycle.md).
 
+The [generic enhancement plan](review-quality.md) distinguishes claims, execution logs and independently acquired evidence. Reviewers select methods from original requirements; an independent Session alone does not prove independent verification.
+
 ## Dev Note
 
 Independent snapshots, verification before report comparison, bounded checks and confirmed reopening into the original DAG have isolated development validation; independent browser journeys remain pending. See [implementation status](implementation.md) and the [original plan](10-plans/independent-verification/plans.md). Historical reviews are not retroactively labelled independent executions.
