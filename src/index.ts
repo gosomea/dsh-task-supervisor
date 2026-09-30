@@ -24,6 +24,7 @@ import { validateProvenance } from './provenance.ts'
 import { DRAFT_NAMESPACE } from './drafts.ts'
 import { REVIEW_NAMESPACE, REVIEW_RECORD_VERSIONS, faultFrom, recordReview } from './review-records.ts'
 import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
+import { prepareCapabilities, type VerificationNeeds, type VerificationCapability } from './review-capabilities.ts'
 import { verificationPolicy, type VerificationConfig } from './verification.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
@@ -62,6 +63,8 @@ export interface Config {
   planningReadTools?: string[]
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
+  reviewVerification?: 'log' | 'independent'
+  requiredVerification?: VerificationNeeds
   independentVerification?: VerificationConfig
   reviewerModel?: ReviewerModel
   planCoverageReview?: boolean
@@ -144,8 +147,13 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
   const progressReviewMode = config.progressReviewMode ?? 'current'
   if (!['current', 'configured', 'required-only'].includes(progressReviewMode)) throw new TypeError('invalid progressReviewMode')
-  const selectedReviewPolicy = { ...reviewerPolicy,
-    ...config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
+  if (config.reviewVerification !== undefined && !['log', 'independent'].includes(config.reviewVerification)) throw new TypeError('reviewVerification must be log or independent')
+  if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
+  if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
+  const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
+  const selectedReviewPolicy = { ...reviewerPolicy, verificationMode: effectiveVerification,
+    ...config.reviewVerification === 'independent' ? { requirementsProtocol: 1 as const } : {},
+    ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,
     mode: progressReviewMode, rounds: maxAutomaticRoundsWithoutReport, inTurn: config.observeLongTurns !== false } }
   if (config.reviewerModel !== undefined
@@ -297,6 +305,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
   async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string): Promise<TaskSnapshot> {
+    if (effectiveVerification === 'independent' && config.requiredVerification) await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, config.requiredVerification, AbortSignal.timeout(reviewerPolicy.deadlineMs))
     if (creationId) {
       for (const event of agent.session.snapshotEvents()) {
         if (event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state') {
@@ -337,6 +346,15 @@ export function apply(ctx: Context, config: Config = {}): void {
       await flush(agent)
     }
   })
+
+  async function verifyBeforeApproval(agent: Agent, task: TaskSnapshot, signal: AbortSignal): Promise<void> {
+    if (effectiveVerification !== 'independent') return
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
+    const capabilities = new Set<VerificationCapability>(job?.decision?.requiredCapabilities ?? config.requiredVerification?.capabilities ?? ['read'])
+    for (const criterion of task.criteria) if (criterion.evidenceKind === 'runtime') capabilities.add('run'); else if (criterion.evidenceKind === 'visual') capabilities.add('visual')
+    const programs = job?.decision?.programs ?? config.requiredVerification?.programs
+    await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, { capabilities: [...capabilities], ...programs ? { programs } : {} }, signal)
+  }
 
   function approvalFor(agent: Agent, task: TaskSnapshot) {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
@@ -663,6 +681,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (revoking) reviewAbort.get(agent)?.abort(new Error('用户撤销自动批准；原审查控制结论已过期'))
           const authorization = approvalFor(agent, configured)
           if (authorization && configured.phase === 'awaiting-approval' && !hasPending(agent)) {
+            await verifyBeforeApproval(agent, configured, AbortSignal.timeout(reviewerPolicy.deadlineMs))
             const approved = { ...approvedTask(configured, agent.session.seq), lastApproval: { planVersion: configured.planVersion, userMessageSeq: null, ...authorization } }
             await commitAndWake(agent, configured, approved, executionPrompt(agent, approved, 'The user preauthorized execution after independent plan review. Execute the approved stage and report evidence.'))
             return reply('按任务预授权自动批准', approved, life.armed)
@@ -670,6 +689,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           return reply(input === 'auto-approve-on' ? '已设置：计划通过独立审查后自动执行' : '已撤销自动批准；等待手动批准', configured, life.armed)
         }
         if (input === 'approve') {
+          await verifyBeforeApproval(agent, task, AbortSignal.timeout(reviewerPolicy.deadlineMs))
           const next = approvedTask(task, agent.session.seq)
           await commitAndWake(agent, task, next,
             executionPrompt(agent, next,
@@ -761,6 +781,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       const task = !args.task_id || args.task_id === live?.id ? live : state?.archivedTasks.find(entry => entry.task.id === args.task_id)?.task ?? null
       return task === null ? null : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
         currentTaskId: live?.id ?? null,
+        reviewVerification: effectiveVerification,
         availableActions: task.phase === 'complete' ? ['task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
         executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
@@ -904,6 +925,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       exec.signal.throwIfAborted()
       const authorization = approvalFor(agent, settled)
       if (authorization && !disposed && current(agent)?.id === settled.id && current(agent)?.revision === settled.revision && runtime(agent).armed && !hasPending(agent)) {
+        await verifyBeforeApproval(agent, settled, exec.signal)
         settled = appendTask(ctx, agent, { ...approvedTask(settled, agent.session.seq),
           lastApproval: { planVersion: settled.planVersion, userMessageSeq: null, ...authorization } })
         await flush(agent)
@@ -913,6 +935,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       closeWithResponse(agent, settled.revision)
       return { phase: settled.phase, planVersion: settled.planVersion,
         ...authorization && settled.lastApproval?.source === 'policy' ? { approvalSource: 'policy', authorizationSeq: authorization.authorizationSeq, reviewJobId: authorization.reviewJobId } : {},
+        reviewVerification: effectiveVerification,
         ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
           finding: planDecision.finding },
         message: settled.phase === 'awaiting-approval'

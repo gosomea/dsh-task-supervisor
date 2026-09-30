@@ -129,3 +129,14 @@ it('keeps a recorded exit-127 command from supporting a satisfied criterion', ()
   value.readChecks = [{ id: check.id, stream: 'stdout', ranges: [[0, 0]], total: 0 }, { id: check.id, stream: 'stderr', ranges: [[0, 0]], total: 0 }]
   expect(() => validateFindings(value, ['c'], [{ ...read, method: 'run', evidenceIds: [check.id] }], true)).toThrow('failed check')
 })
+
+it('permits artifact-only verification without a command runner and rejects unavailable capabilities before dispatch', async () => {
+  const { reviewCapabilities, prepareCapabilities } = await import('../../src/review-capabilities.ts')
+  const policy = verificationPolicy({ storageRoot: '/private/evidence' })
+  expect(policy.checks).toBeUndefined()
+  expect(reviewCapabilities(policy).map(item => [item.id, item.configured])).toEqual([['read', true], ['run', false], ['visual', false]])
+  // Unavailable capabilities are detected before accessing any Host or Agent state.
+  await expect(prepareCapabilities({} as Context, {} as Agent, policy, { capabilities: ['run'] }, new AbortController().signal)).rejects.toThrow('CAPABILITY_UNAVAILABLE')
+  await expect(prepareCapabilities({} as Context, {} as Agent, policy, { capabilities: ['visual'] }, new AbortController().signal)).rejects.toThrow('no log fallback')
+  await expect(prepareCapabilities({} as Context, {} as Agent, undefined, { capabilities: [] }, new AbortController().signal)).resolves.toBeUndefined()
+})

@@ -15,7 +15,7 @@ import { CheckInputError } from './check-errors.ts'
 
 export interface VerificationConfig {
   storageRoot: string
-  container: ContainerPolicy
+  container?: ContainerPolicy
   excludedPaths?: string[]
   runtimeLinkTargets?: string[]
   maxFiles?: number
@@ -25,33 +25,32 @@ export interface VerificationConfig {
   checkGatewaySocket?: string
   deadlineMs?: number
 }
-export interface VerificationPolicy { storage: string; limits: SnapshotLimits; checks: CheckPolicy; deadlineMs: number }
+export interface VerificationPolicy { storage: string; limits: SnapshotLimits; checks?: CheckPolicy; deadlineMs: number }
 
 /** Resolve deployment input once; necessary checks fail closed when their native services are absent. */
 export function verificationPolicy(config: VerificationConfig): VerificationPolicy {
-  if (!config.container) throw new TypeError('verification requires a configured container runtime')
   if (!isAbsolute(config.storageRoot) || config.storageRoot === '/') throw new TypeError('verification storageRoot must be a private absolute directory')
   const limits = { files: config.maxFiles ?? 10000, bytes: config.maxBytes ?? 256 * 1024 * 1024, excluded: [...new Set(['.git', ...config.excludedPaths ?? []])], runtimeLinkTargets: [...config.runtimeLinkTargets ?? []] }
   if (limits.runtimeLinkTargets.some(path => !isAbsolute(path) || path.includes('\0'))) throw new TypeError('runtime link targets must be absolute paths')
   for (const value of [limits.files, limits.bytes]) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('verification limits must be positive integers')
   const deadlineMs = config.deadlineMs ?? 1800000
   if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('verification deadlineMs must be 1–3600000')
-  const checks = checkPolicy({ container: config.container,
+  const checks = config.container ? checkPolicy({ container: config.container,
     ...config.checkGatewaySocket === undefined ? {} : { gatewaySocket: config.checkGatewaySocket },
     ...config.commandDeadlineMs === undefined ? {} : { commandMs: config.commandDeadlineMs },
-    ...config.commandOutputBytes === undefined ? {} : { outputBytes: config.commandOutputBytes } })
-  return { storage: config.storageRoot, limits, checks, deadlineMs }
+    ...config.commandOutputBytes === undefined ? {} : { outputBytes: config.commandOutputBytes } }) : undefined
+  return { storage: config.storageRoot, limits, ...checks ? { checks } : {}, deadlineMs }
 }
 
 /** Bind the actual local execution world before capturing; a remote backend needs its own snapshot provider. */
 export async function prepareVerification(ctx: Context, main: Agent, job: ReviewJob, policy: VerificationPolicy, signal: AbortSignal): Promise<void> {
   if (job.verification) {
     if (!await snapshotFresh(job.verification.snapshot, policy.limits, signal)) throw new Error('SNAPSHOT_STALE: original artifacts changed; do not reuse this review')
-    await recoverCheckContainers(ctx, job.verification.snapshot, policy.checks, signal)
+    if (policy.checks) await recoverCheckContainers(ctx, job.verification.snapshot, policy.checks, signal)
     return
   }
   const fs = ctx.get('fs'), cwd = main.session.header.cwd
-  if (!fs || !cwd || !ctx.get('subprocess')) throw new Error('CHECK_INFRASTRUCTURE: bound filesystem and subprocess services required')
+  if (!fs || !cwd) throw new Error('CHECK_INFRASTRUCTURE: bound filesystem required')
   const root = await fs.resolve(cwd, { cwd, signal }), workspace = fs.processPath(root)
   if (fs.processPathFromHostPath(workspace) !== workspace) throw new Error('CHECK_INFRASTRUCTURE: independent snapshots require a host-backed filesystem')
   await mkdir(policy.storage, { recursive: true, mode: 0o700 })
@@ -129,7 +128,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     parameters: { name: { type: 'string', required: true }, content: { type: 'string', required: true } }, output,
     async execute(args) {
       signal.throwIfAborted()
-      if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,100}$/.test(args.name) || Buffer.byteLength(args.content) > policy.checks.outputBytes) throw new Error('probe requires a simple filename and bounded content')
+      if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,100}$/.test(args.name) || Buffer.byteLength(args.content) > (policy.checks?.outputBytes ?? policy.limits.bytes)) throw new Error('probe requires a simple filename and bounded content')
       const root = await realpath(join(state.snapshot.check, 'probes'))
       if (!within(state.snapshot.check, root)) throw new Error('probe directory left check tree')
       await writeFile(join(root, args.name), args.content, { flag: 'wx', mode: 0o600 })
@@ -139,6 +138,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
   ctx.tools.register(defineTool({ name: 'run_review_check', description: 'Run structured argv with cwd tree or probes in the bound isolated check copy. No network or source-workspace access. CHECK_INPUT means correct argv/cwd and retry; a nonzero exit is failed command evidence, not acceptance. Read both streams to diagnose it. Keep captured tree intact; never delete or repair source to make a check pass.',
     parameters: { argv: { type: 'array', required: true, items: { type: 'string' } }, cwd: { type: 'string', required: true }, timeout_ms: { type: 'integer' } }, output,
     async execute(args, exec) {
+      if (!policy.checks) throw new CheckInputError('CAPABILITY_UNAVAILABLE: independent command execution is not configured; mark the requirement unverified')
       const remaining = Date.parse(job.deadlineAt!) - Date.now()
       const commandMs = Math.min(policy.checks.commandMs, remaining, args.timeout_ms ?? policy.checks.commandMs)
       if (!Number.isSafeInteger(commandMs) || commandMs < 1) throw new Error('check deadline has expired or timeout_ms is invalid')

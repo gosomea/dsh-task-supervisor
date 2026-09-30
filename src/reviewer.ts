@@ -11,7 +11,7 @@ import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { installImageEvidence } from './image-evidence.ts'
-import { runsOf } from './graph.ts'
+import { runsOf, dependencies } from './graph.ts'
 import { evidenceRecord, eventText, textPage } from './evidence.ts'
 import { languagePolicy } from './task-context.ts'
 import { recordReview, ReviewFailure, type ReviewJob, type PlanningSummary } from './review-records.ts'
@@ -33,7 +33,7 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy }
+export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1 }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -53,6 +53,8 @@ export interface ReviewDecision {
   reviewerSessionId: string
   criteria?: CriterionFinding[]
   planning?: PlanningSummary
+  requiredCapabilities?: ('read' | 'run' | 'visual')[]
+  programs?: string[]
 }
 
 /** Select the profile's pending route first, then the last used or creation route. */
@@ -156,7 +158,9 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
     model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
     startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
-    input: task, evidence, fault: null, decision: null }
+    input: task, evidence, fault: null, decision: null,
+    ...policy.verificationMode ? { verificationMode: verification ? 'independent' : 'log' } : {},
+    ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {} }
   await recordReview(ctx, main, job)
   try {
     signal.throwIfAborted()
@@ -197,7 +201,7 @@ async function runReviewStage(
   const cutoff = job.cutoff
   const failedReviews = priorFailedReviews(main, task)
   const contextParts = {
-    objective: task.objective, criteria: JSON.stringify(task.criteria), stages: JSON.stringify({ stages: task.stages, ...job.verification ? {} : { nodeRuns: runsOf(task) } }),
+    objective: task.objective, criteria: JSON.stringify(task.criteria), stages: JSON.stringify({ stages: task.stages.map((stage, index) => ({ ...stage, dependsOn: dependencies(task.stages, index) })), ...job.verification ? {} : { nodeRuns: runsOf(task) } }),
     report: reportedEvidence, failedReviews: JSON.stringify(failedReviews),
   }
   const boundModel: ReviewerModel | undefined = job.model === null ? fixedModel : {
@@ -206,7 +210,7 @@ async function runReviewStage(
   }
   const { options, model } = reviewerOptions(ctx, main, boundModel)
   const reviewerSessionId = SessionId(job.reviewerSessionId!)
-  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning'> | undefined
+  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs'> | undefined
   const observedSeqs = new Set<number>()
   const workerEvents = new Set<string>()
   const inspectedWorkers = new Set<string>()
@@ -331,6 +335,8 @@ async function runReviewStage(
           verdict: { type: 'string', required: true, enum: ['pass', 'revise', 'needs-user'] },
           finding: { type: 'string', required: true, description: 'Start with a short, human-readable conclusion title on its own line (about 12 Chinese characters or 6 English words). Then explain the evidence and any required changes. Keep protocol IDs and log details out of the title.' },
           evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } },
+          required_capabilities: { type: 'array', ...reviewKind === 'plan' && job.requirementsProtocol ? { required: true as const } : {}, items: { type: 'string', enum: ['read', 'run', 'visual'] }, description: 'For plan review, independently determine capabilities needed to verify ORIGINAL requirements, regardless of main evidenceKind or task category. read=artifact content; run=calculations or observable behavior; visual=independent browser observation (unavailable). Empty only if no product verification applies.' },
+          programs: { type: 'array', items: { type: 'string' }, description: 'Executable names needed for necessary independent run checks, e.g. node. Do not invent tools for read-only requirements.' },
           criteria: { ...findingParameters, description: 'Independent reviews require one final finding per applicable criterion, with inspected snapshot evidence. Omit only for legacy log-based reviews.' },
           planning: { type: 'object', ...reviewKind === 'planning' ? { required: true as const } : {}, additionalProperties: false,
             description: 'Required for planning reviews only. Every fact must be supported by original Session events already read and included in evidence_seqs; separate unknowns from confirmed facts. Progress describes new relevant findings or resolved unknowns, never time or token counts.',
@@ -375,6 +381,7 @@ async function runReviewStage(
           }
           submitted = { verdict: args.verdict, finding: args.finding.trim(), evidenceSeqs,
             ...planning ? { planning } : {},
+            ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
             ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)) } : {} }
           exec.concludeTurn()
           return { recorded: true, cutoff }
@@ -420,6 +427,7 @@ async function runReviewStage(
         'An interruption or restart does not waive a user constraint. If an explicit requirement was not met, do not pass solely because the final artifact is correct; request revision, or needs-user if only the user can resolve the conflict.',
         'A historical first/never/before violation cannot be repaired by deleting the artifact and later repeating the steps. If the prior action already broke an irreversible ordering constraint, choose needs-user; do not later turn that finding into pass without a new user requirement.',
         'For ordering or separate-turn requirements, inspect the relevant tool calls with read_task_call, correlate each call with its tool result and turn/end, and cite the decisive Session seqs. An aborted turn does not satisfy a required completed turn.',
+        'Effective stages returned by read_task_context(stages) contain controller-normalized dependsOn edges. Omitted edges mean the preceding stage, not an independent root. For plan decisions determine verification needs from each original requirement; do not use task labels or trust evidenceKind as sufficient.',
         'For a proposed plan, if the objective explicitly requires a completed read-only model turn before any write, readOnlyTurnsBeforeWrite must be at least 1. A prose criterion alone is insufficient because the controller must enforce the gate. A requirement for a later tool call is not the same as a completed read-only model turn; do not invent that gate.',
         ],
         `Main Session: ${main.id}; cutoff: ${cutoff}; task revision: ${task.revision}.`,
@@ -428,7 +436,7 @@ async function runReviewStage(
           `Controller readOnlyTurnsBeforeWrite: ${task.readOnlyTurnsBeforeWrite ?? 0}.`],
         `Earlier failed reviews in this task: ${job.verification ? 'locked until independent observations' : safeText(JSON.stringify(failedReviews), 10000)}.`,
         `${reviewKind === 'planning' ? 'Planning observation' : reviewKind === 'plan' ? 'Proposed plan' : reviewKind === 'completion' ? 'Completion' : reviewKind === 'progress' ? 'Progress' : 'Stage'}: ${stageId}; reported evidence: ${job.verification ? 'locked until independent observations; then read_task_context(report)' : safeText(reportedEvidence, 5000)}`,
-        ...job.verification ? [`Snapshot ${job.verification.snapshot.id}; phase ${job.verification.phase}; applicable criteria: ${JSON.stringify(reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds)}. Command time limit ${verification!.checks.commandMs}ms; review deadline ${job.deadlineAt}. Checks use cwd tree or probes; snapshot excludes ${JSON.stringify(job.verification.snapshot.excluded)}. Container runtime: ${JSON.stringify(verification!.checks.container)}; use executable names or Linux paths inside the image, never host paths.`] : [],
+        ...job.verification ? [`Snapshot ${job.verification.snapshot.id}; phase ${job.verification.phase}; applicable criteria: ${JSON.stringify(reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds)}. Command time limit ${verification!.checks?.commandMs ?? 'unavailable'}ms; review deadline ${job.deadlineAt}. Checks use cwd tree or probes; snapshot excludes ${JSON.stringify(job.verification.snapshot.excluded)}. Container runtime: ${JSON.stringify(verification!.checks?.container ?? null)}; use executable names or Linux paths inside the image, never host paths.`] : [],
         `Review deadline: ${job.deadlineAt}. Finish with a valid decision before this deadline; use explicit unverified findings when evidence is insufficient instead of analysing indefinitely.`,
         'Submit exactly one task_review_decision with supporting Session seqs.',
       ].join('\n') }],
