@@ -128,7 +128,8 @@ def run_position(spec, instruction, root, *, allow_smoke=False):
         read_native_stop = lambda session_id, values: read_supervisor_planning_stop(home, session_id, values, supervisor_sha)
     try:
         owned(receipt['dockerContext'], receipt['container'], receipt['lease'], receipt['containerId'])
-        rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'))
+        rpc = WebRpc(home / 'run/host.log', f'http://127.0.0.1:{receipt["port"]}', startup_port=receipt.get('internalPort'),
+                     command_timeout=spec.get('rpcCommandTimeoutSec', 30))
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         try:
             cleanup = abort_before_delivery(receipt, journal.read('started.json'))
