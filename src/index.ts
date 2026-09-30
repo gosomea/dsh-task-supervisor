@@ -325,7 +325,7 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   const repairs = installRepairs(ctx, commitAndWake, repairLimits)
   const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
-  installPanelApi(ctx, agent => ({ armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
+  installPanelApi(ctx, agent => ({ reviewVerification: effectiveVerification, armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
     actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true

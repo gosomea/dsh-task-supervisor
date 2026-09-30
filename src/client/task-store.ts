@@ -9,6 +9,7 @@ export interface PanelState {
   task: TaskSnapshot | null
   live: boolean
   armed: boolean
+  reviewVerification?: 'log' | 'independent'
   reviewing: boolean
   actions: string[]
   draft?: TaskDraft | null

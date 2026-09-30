@@ -57,7 +57,7 @@ export async function prepareVerification(ctx: Context, main: Agent, job: Review
   if (fs.processPathFromHostPath(workspace) !== workspace) throw new Error('CHECK_INFRASTRUCTURE: independent snapshots require a host-backed filesystem')
   await mkdir(policy.storage, { recursive: true, mode: 0o700 })
   const snapshot = await captureSnapshot(workspace, policy.storage, policy.limits, signal)
-  job.verification = { snapshot, phase: 'independent', observations: [], checks: [], readFiles: [], readChecks: [] }
+  job.verification = { snapshot, phase: 'independent', observations: [], checks: [], readFiles: [], readChecks: [], ...job.checkProtocol ? { phaseTimes: { planning: new Date().toISOString() } } : {} }
   await recordReview(ctx, main, { ...job, revision: ++job.revision })
 }
 
@@ -123,6 +123,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     parameters: { checks: { ...checkPlanParameters, required: true } }, output,
     async execute(args) {
       appendCheckPlan(state, args.checks.map(item => reviewCheckSchema.parse({ ...item, criterionId: item.criterionId ?? null })), applicable, new Date().toISOString())
+      if (state.phaseTimes && !state.phaseTimes.independent) state.phaseTimes.independent = new Date().toISOString()
       await persist(); return { recorded: true, revision: state.checkPlan!.length, capabilities: reviewCapabilities(policy) }
     },
   }))
@@ -212,7 +213,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       validateFindings(state, ids, findings, false)
       // Visibility changes only after the comparison record is durably flushed.
       signal.throwIfAborted()
-      const next: VerificationState = { ...state, phase: 'comparison', observations: findings }
+      const next: VerificationState = { ...state, phase: 'comparison', observations: findings, ...state.phaseTimes ? { phaseTimes: { ...state.phaseTimes, comparison: new Date().toISOString() } } : {} }
       await recordReview(owner, main, { ...job, verification: next, revision: ++job.revision })
       Object.assign(state, next)
       return { recorded: true, snapshotId: state.snapshot.id, phase: state.phase }

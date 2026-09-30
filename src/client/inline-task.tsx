@@ -18,6 +18,8 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
   const key = `dsh-task-graph:${sessionId}:${task.id}`
   const [choice, setChoice] = useState<boolean | null>(() => preference(key))
   const expanded = choice ?? task.phase !== 'complete'
+  const reviewJob = state.reviewJobs?.filter(job => job.taskId === task.id).at(-1)
+  const reviewPhase = reviewJob?.decision ? '裁决已记录' : reviewJob?.verification?.phase === 'comparison' ? '对照汇报' : reviewJob?.verification ? reviewJob.checkProtocol && !reviewJob.verification.checkPlan?.length ? '制定检查' : '独立检查' : '日志审查'
   const stage = task.stages[task.stageIndex]
   const rework = stage ? nodeRework(task, stage.id, state.reworks) : undefined
   const actors = executionActors(task, sessionId)
@@ -53,6 +55,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       {task.pauseReason === 'planning-stalled' && <small>规划检查未发现新进展，等待手动恢复。</small>}
       {task.recovery && <small>Supervisor · 生成截断后继续{task.phase === 'planning' ? '规划' : '任务'} · 无进展恢复 {task.recovery.noProgress} 次</small>}
       {task.pauseReason === 'recovery-stalled' && <small>连续恢复未产生可核实的新进展，等待手动恢复。</small>}
+      {state.reviewing && reviewJob && <small>Supervisor · {reviewPhase} · 已运行 {reviewJob.verification?.checks.length ?? 0} 次独立检查</small>}
       {task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
     {state.repairs?.some(item => item.taskId === task.id && ['pending', 'confirmed'].includes(item.status)) && <div className="dsh-task-inline-summary"><span>修复提案待确认 · 任务仍为已完成</span><Button size="sm" variant="toolbar" onClick={() => open()}>查看影响范围</Button></div>}

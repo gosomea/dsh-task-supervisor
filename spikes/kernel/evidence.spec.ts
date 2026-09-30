@@ -68,3 +68,25 @@ it('requires provenance for new plans while preserving old snapshots and impleme
   expect(() => validateProvenance([{ ...criterion, provenance: { kind: 'user', reference: 'assistant said so', sourceSeq: 999 } }], [])).toThrow('no valid user source')
   expect(taskSchema.parse(taskJson({ ...task, criteria: [criterion] })).criteria).toEqual([criterion])
 })
+
+it('indexes redacted paired calls at a fixed cutoff without promoting summaries to citation evidence', async () => {
+  const { taskEvidenceIndex } = await import('../../src/evidence-index.ts')
+  const { SessionId } = await import('@deepseek-ai/dsh-session')
+  const { createUserMessage, createToolResultMessage, ToolCallId } = await import('@deepseek-ai/dsh-llm')
+  const { SessionStore } = await import('@deepseek-ai/dsh-session')
+  const { Context } = await import('@deepseek-ai/cordis')
+  const ctx = new Context(); await ctx.plugin(SessionStore)
+  const session = ctx.sessions.create(SessionId('index-fixture'))
+  try {
+  session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'original requirement' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+  const call = session.append('tool/call', { turn: 1, step: 1, callId: ToolCallId('call-index'), name: 'read_file', arguments: JSON.stringify({ apiKey: 'FAKE_KEY_123456', file: 'result.txt' }) })
+  const result = session.append('tool/result', { turn: 1, step: 1, message: createToolResultMessage({ callId: ToolCallId('call-index'), isError: true, content: [{ type: 'text', text: 'x'.repeat(900) }] }) }, { surfaceOp: 'append' })
+  const events = session.snapshotEvents()
+  const page = taskEvidenceIndex(events, result.seq, { tool: 'read_file', errorsOnly: true, limit: 1 })
+  expect(page.entries[0]).toMatchObject({ seq: call.seq, callSeq: call.seq, resultSeq: result.seq, error: true, citationReady: false })
+  expect(page.entries[0]!.summary).not.toContain('FAKE_KEY_123456')
+  const next = taskEvidenceIndex(events, result.seq, { fromSeq: page.nextSeq!, limit: 1 })
+  expect(next.entries[0]).toMatchObject({ seq: result.seq, truncated: true, totalChars: 900 })
+  expect(taskEvidenceIndex(events, call.seq, { tool: 'read_file' }).entries[0]?.resultSeq).toBeNull()
+  } finally { await ctx.fiber.dispose() }
+})

@@ -57,3 +57,22 @@ class MetricTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class IndependentProtocolMetrics(unittest.TestCase):
+    def test_records_check_coverage_phases_and_exact_repeated_reads(self):
+        job = {'id': 'j', 'mainSessionId': 'main', 'kind': 'stage', 'reviewerSessionId': 'review', 'verificationMode': 'independent',
+               'finishedAt': '2026-09-30T00:00:10+00:00', 'verification': {
+                   'checkPlan': [{'checks': [{'id': 'a'}, {'id': 'b'}]}],
+                   'checkFindings': [{'checkId': 'a'}, {'checkId': 'b'}],
+                   'phaseTimes': {'planning': '2026-09-30T00:00:00+00:00', 'independent': '2026-09-30T00:00:02+00:00', 'comparison': '2026-09-30T00:00:07+00:00'}}}
+        call = {'type': 'tool/call', 'data': {'name': 'inspect_task_artifact', 'arguments': '{"path":"x"}'}}
+        sessions = {'main': [{'type': 'session', 'id': 'main'}, {'type': 'extension/record', 'data': {'namespace': 'dsh-task-supervisor-review', 'payload': job}}],
+                    'review': [{'type': 'session', 'id': 'review', 'parentSession': 'main'}, call, call]}
+        result = collect(sessions, {}, 'main')
+        self.assertEqual(result['reviewToolCalls'], 2)
+        self.assertEqual(result['repeatedExactReads'], 1)
+        self.assertEqual(result['plannedIndependentChecks'], 2)
+        self.assertEqual(result['recordedIndependentCheckResults'], 2)
+        self.assertEqual(result['reviewPhaseDurations'][0]['independentMs'], 5000)
+        self.assertIsNone(result['allSessionTokens'])
+        self.assertIsNone(result['falsePauseRate'])

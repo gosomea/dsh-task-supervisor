@@ -1726,6 +1726,7 @@ it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_C
   const root = await mkdtemp(join(process.env.DSH_CHECK_STORAGE_BASE ?? tmpdir(), 'dsh-independent-review-')); roots.push(root)
   const workspace = join(root, 'source'); await mkdir(workspace)
   await writeFile(join(workspace, 'add.mjs'), 'export const add = (a,b) => a-b')
+  await writeFile(join(workspace, 'test.mjs'), "import {add} from './add.mjs'; import assert from 'node:assert/strict'; assert.equal(add(2,0),2); console.log('existing test green')")
   let checkId = '', calls = 0
   const observedInputs: string[] = []
   const adapter = new class extends ScriptedAdapter {
@@ -1733,14 +1734,15 @@ it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_C
       const input = JSON.stringify(options.messages); observedInputs.push(input)
       const id = input.match(/\\"id\\":\\"([a-f0-9-]{36})\\",\\"snapshotId/)
       if (id) checkId = id[1]!
-      const finding = { criterionId: 'c', status: 'failed', method: 'run', finding: '独立断言证明加法返回了减法结果', evidenceIds: [checkId] }
+      const finding = { criterionId: 'c', status: 'failed', method: 'run', finding: '独立断言证明加法返回了减法结果', evidenceIds: [checkId], checkIds: ['behavior'], coverage: 'actual arithmetic output', limitations: 'one independent reproduction' }
       const steps: [string, Record<string, unknown>][] = [
         ['read_task_context', { field: 'report' }],
+        ['task_review_check_plan', { checks: [{ id: 'behavior', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'returns actual sum', method: 'run', expected: '5', coverage: 'two operand values', basis: 'explicit' }] }],
         ['inspect_task_artifact', { action: 'read', path: 'add.mjs' }],
-        ['run_review_check', { argv: ['node', '--input-type=module', '-e', "import {add} from './add.mjs'; import assert from 'node:assert/strict'; assert.equal(add(2,3),5)"], cwd: 'tree' }],
+        ['run_review_check', { argv: ['node', '--input-type=module', '-e', "await import('./test.mjs'); import {add} from './add.mjs'; import assert from 'node:assert/strict'; assert.equal(add(2,3),5)"], cwd: 'tree' }],
         ['read_review_evidence', { check_id: checkId, stream: 'stdout' }],
         ['read_review_evidence', { check_id: checkId, stream: 'stderr' }],
-        ['task_review_observations', { findings: [finding] }],
+        ['task_review_observations', { findings: [finding], checks: [{ checkId: 'behavior', status: 'failed', finding: finding.finding, evidenceIds: [checkId], coverage: finding.coverage, limitations: finding.limitations }] }],
         ['read_task_context', { field: 'report' }],
         ['read_task_evidence', { from_seq: 0, limit: 30 }],
         ['task_review_decision', { verdict: 'revise', finding: '加法实现错误\n独立运行失败，主汇报与产物不一致', evidence_seqs: [0], criteria: [finding] }],
@@ -1758,11 +1760,11 @@ it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_C
   appendTask(ctx, agent, task)
   const policy = verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: process.env.DSH_CHECK_DOCKER_CONTEXT ?? 'default', image: process.env.DSH_CHECK_DOCKER_IMAGE ?? ('sha256:' + '0'.repeat(64)), cpus: 1, memoryMiB: 512, pids: 64 } })
   const decision = await reviewStage(ctx, agent, task, 's', 'PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN', new AbortController().signal,
-    { provider: 'scripted', model: 'reviewer' }, 'stage', { verification: policy, repairAttempts: 0 })
+    { provider: 'scripted', model: 'reviewer' }, 'stage', { verification: policy, repairAttempts: 0, checkProtocol: 1, verificationMode: 'independent' })
   expect(decision.verdict).toBe('revise')
   expect(decision.criteria?.[0]?.status).toBe('failed')
-  expect(observedInputs.slice(0, 7).every(input => !input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
-  expect(observedInputs.slice(7).some(input => input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
+  expect(observedInputs.slice(0, 8).every(input => !input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
+  expect(observedInputs.slice(8).some(input => input.includes('PRIVATE_MAIN_REPORT_ALL_TESTS_GREEN'))).toBe(true)
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
   expect(job.verification?.phase).toBe('comparison')
   expect(job.verification?.checks[0]).toMatchObject({ exitCode: 1, changed: [], timedOut: false, cancelled: false })

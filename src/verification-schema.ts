@@ -20,6 +20,7 @@ export const findingSchema = z.object({ criterionId: z.string().min(1), status: 
 export type CriterionFinding = z.infer<typeof findingSchema>
 export const verificationSchema = z.object({ snapshot: snapshotSchema, phase: z.enum(['independent', 'comparison']),
   observations: z.array(findingSchema),
+  phaseTimes: z.object({ planning: z.string(), independent: z.string().optional(), comparison: z.string().optional() }).strict().optional(),
   checkPlan: z.array(checkPlanRevisionSchema).optional(), checkFindings: z.array(checkFindingSchema).optional(),
   readInputs: z.array(z.number().int().nonnegative()).optional(), checks: z.array(checkResultSchema.omit({ stdout: true, stderr: true })),
   readFiles: z.array(z.object({ path: z.string(), purpose: z.enum(['input', 'constraint', 'deliverable']).optional(), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()),

@@ -87,10 +87,38 @@ def collect(sessions, projections, main_id):
             checks[check['id']] = check
     wait_ms = sum(max(0, (datetime.fromisoformat(row['finishedAt']) - datetime.fromisoformat(row['startedAt'])).total_seconds() * 1000)
                   for row in checks.values())
+    review_calls, repeated_reads, checks_planned, check_results = 0, 0, 0, 0
+    phase_rows = []
+    for job in jobs.values():
+        seen = set()
+        for event in sessions.get(job.get('reviewerSessionId'), []):
+            if event.get('type') != 'tool/call':
+                continue
+            review_calls += 1
+            data = event['data']
+            if data.get('name', '').startswith(('read_', 'inspect_')):
+                key = (data['name'], data.get('arguments'))
+                repeated_reads += int(key in seen)
+                seen.add(key)
+        verification = job.get('verification') or {}
+        checks_planned += sum(len(row['checks']) for row in verification.get('checkPlan', []))
+        check_results += len((job.get('decision') or {}).get('checks', verification.get('checkFindings', [])))
+        times = verification.get('phaseTimes') or {}
+        def elapsed(start, end):
+            if not start or not end:
+                return None
+            return max(0, (datetime.fromisoformat(end) - datetime.fromisoformat(start)).total_seconds() * 1000)
+        phase_rows.append({'jobId': job['id'], 'kind': job.get('kind'), 'mode': job.get('verificationMode'),
+                           'planningMs': elapsed(times.get('planning'), times.get('independent')),
+                           'independentMs': elapsed(times.get('independent'), times.get('comparison')),
+                           'comparisonAndDecisionMs': elapsed(times.get('comparison'), job.get('finishedAt'))})
     return {'allSessionTokens': reported if complete else None, 'tokensReported': reported,
             'tokenCoverageComplete': complete, 'unreportedAttempts': missing_usage,
             'sessions': evidence, 'missingReviewerSessions': missing_lineage,
             'excludedUnrelatedSessions': len(sessions) - len(linked),
+            'reviewToolCalls': review_calls, 'repeatedExactReads': repeated_reads,
+            'plannedIndependentChecks': checks_planned, 'recordedIndependentCheckResults': check_results,
+            'reviewPhaseDurations': phase_rows,
             'checkWaitMs': wait_ms if checks else None, 'checkCount': len(checks),
             'independentReviewJobs': sum('verification' in job for job in jobs.values()),
             'independentComparisonJobs': sum((job.get('verification') or {}).get('phase') == 'comparison' for job in jobs.values()),

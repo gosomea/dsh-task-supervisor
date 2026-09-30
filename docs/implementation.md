@@ -1,6 +1,6 @@
 # Implementation status
 
-**In progress:** [Generic independent review](review-quality.md) is approved; step 0 establishes the documentation baseline. Steps 1–3 and the new Kea regression are not yet validated; existing implementation and historical evidence remain below.
+**In progress:** [Generic independent review](review-quality.md) is approved; step 0 establishes the documentation baseline. Steps 1–3 passed source gates; new real-model cases and the Kea regression are not yet validated; existing implementation and historical evidence remain below.
 
 **Updated 2026-09-29: planning supervision, bounded main/reviewer truncation recovery and optional execution preauthorization are implemented.** Current task record version 14 reads 1–14; projection version 15 rebuilds; review record version 3 reads 1–3. [Validation](planning-supervision-validation.md) records current source gates, real-model probes and limits. The A–F table and earlier iteration sections below retain their historical scope and counts.
 
@@ -22,6 +22,8 @@ The E-frozen NodeBB development regression completed in 1342 seconds and earned 
 Step 1 is implemented: explicit `reviewVerification` selects log or independent artifact acceptance; omission preserves legacy configuration behavior. Independent mode requires private `storageRoot`; `container` is required only for execution. Plan reviewers declare `required_capabilities` and necessary `programs` from original requirements; first approval checks effective capabilities and toolchain. Administrators can declare known needs before dispatch with `requiredVerification`. Preparation proves availability, not product correctness. Review record 4 stores actual mode without inventing evidence for legacy jobs; plan dependencies are normalized.
 
 Step 2 is implemented: the new independent protocol persists `task_review_check_plan` before deliverable reads or commands. Input materials and applicable constraints can be read beforehand; original user messages have a separate paged reader. Checks distinguish explicit requirements from hypotheses and record methods, expectations and coverage. Findings bind check IDs to actual job evidence, with coverage and limitations in decisions. Comparison can append checks without rewriting independent discoveries. Review record 5 and projection cache 16 retain old readers without inventing historical plans. 106 related checks passed; one Docker-dependent execution check remains unrun. Both typechecks passed.
+
+Step 3 is implemented: `read_task_evidence_index` filters and pages a fixed job cutoff, correlates calls/results and retains redacted error/truncation summaries. Index access does not grant citation eligibility; originals must be read. The sidebar shows actual acceptance mode, inspection phases and per-check coverage/limitations; the main Session keeps short progress and native answers. Metrics add reviewer tool calls, repeated identical reads, phase times and independent check counts; durable lineage still covers all Session tokens. Observation frequency is unchanged. Real-model and new official Kea grading remain pending integrated validation.
 
 ## Completed-task repair in the original DAG
 
