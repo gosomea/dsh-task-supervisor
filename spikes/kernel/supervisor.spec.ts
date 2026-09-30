@@ -2147,7 +2147,7 @@ it('runs a policy-approved native task through stage and whole-task acceptance w
   expect(agent.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(1)
 })
 
-it.each(['document', 'structured', 'wrong-product'] as const)('new independent protocol plans before deliverable reads and checks actual product: %s', async kind => {
+it.each(['document', 'structured', 'wrong-product', 'mislabelled-static'] as const)('new independent protocol plans before deliverable reads and checks actual product: %s', async kind => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-generic-review-')); roots.push(root)
   const workspace = join(root, 'source'); await mkdir(workspace)
   const file = kind === 'document' ? 'brief.md' : 'record.json'
@@ -2178,7 +2178,7 @@ it.each(['document', 'structured', 'wrong-product'] as const)('new independent p
   const ctx = await host(join(root, 'sessions'), adapter); await ctx.plugin(LocalFileSystem)
   const { agent } = await ctx.agents.create({ sessionId: SessionId(`generic-${kind}`), agentOptions: { provider: 'scripted', model: 'scripted' }, meta: { cwd: workspace } })
   const task = newTask('交付明确的静态摘要或 approved=true 的结构化记录，不要求可选扩展。')
-  task.criteria = [{ id: 'c', text: '满足原始内容约定', provenance: { kind: 'user', reference: 'objective' } }]
+  task.criteria = [{ id: 'c', text: '满足原始内容约定', provenance: { kind: 'user', reference: 'objective' }, ...kind === 'mislabelled-static' ? { evidenceKind: 'runtime' as const } : {} }]
   task.stages = [{ id: 's', title: '交付', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
   const decision = await reviewStage(ctx, agent, task, 's', 'PRIVATE_MISLEADING_REPORT_ALL_GREEN', new AbortController().signal,
     { provider: 'scripted', model: 'reviewer' }, 'stage', { repairAttempts: 0, checkProtocol: 1, verificationMode: 'independent', verification: verificationPolicy({ storageRoot: join(root, 'snapshots') }) })
@@ -2188,6 +2188,7 @@ it.each(['document', 'structured', 'wrong-product'] as const)('new independent p
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
   expect(job.verification?.checkPlan).toHaveLength(1)
   expect(job.verification?.checks).toEqual([]) // static requirements require no command runtime
+  expect(inputs[0]).not.toContain('Use write_review_probe and run_review_check to reproduce behavior')
   expect(job.verification?.checkFindings).toEqual([result])
   const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
   expect(replay.failure).toBeNull(); expect(replay.reviewJobs[0]?.decision?.checks).toEqual([result])

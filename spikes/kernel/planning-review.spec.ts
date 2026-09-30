@@ -61,6 +61,18 @@ async function fixture() {
 const planning = { facts: ['用户要求先调查入口'], unknowns: ['入口的实现尚未核实'], nextAction: '读取现有入口并提交草案', progress: false }
 const selected = { provider: 'scripted', model: 'reviewer' }
 
+it.each(['page', 'message'] as const)('admits original user input citations in a formal plan review: %s', async view => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  adapter.scripts.reviewer = [toolResponse('read_task_input', view === 'page' ? { from_seq: seq } : { seq, offset: 0, chars: 6000 }),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '原始要求已核对', evidence_seqs: [seq] })]
+  const result = await reviewStage(ctx, agent, task, 'plan', 'submitted plan', new AbortController().signal, selected, 'plan', { repairAttempts: 0 })
+  expect(result).toMatchObject({ verdict: 'pass', evidenceSeqs: [seq] })
+  expect(result.planning).toBeUndefined()
+  const tool = adapter.requests.find(request => request.model === 'reviewer')!.tools?.find(tool => tool.name === 'task_review_decision')
+  expect(tool).toBeDefined()
+  expect(JSON.stringify(tool)).not.toContain('"planning":')
+})
+
 it.each(['pass', 'revise', 'needs-user'] as const)('records a %s planning decision without a DAG or artifact verification', async verdict => {
   const { ctx, agent, adapter, seq, task, root } = await fixture()
   const cutoff = agent.session.seq - 1
