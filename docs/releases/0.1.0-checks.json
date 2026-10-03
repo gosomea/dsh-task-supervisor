@@ -25,7 +25,7 @@
   "hostStrictTypecheck": "passed",
   "clientStrictTypecheck": "passed",
   "bilingualStructureAndLocalLinks": "passed",
-  "npmPublication": "pending-authentication",
+  "npmPublication": "published",
   "builtHostAndGatewayImports": "passed",
   "builtProvenanceExports": "passed",
   "webLoaderRegistration": "passed",
@@ -35,6 +35,16 @@
   "npmPublishDryRun": "passed",
   "checkedAt": "2026-10-04",
   "registry": "https://registry.npmjs.org",
-  "registryAuthentication": "401 Unauthorized",
-  "registryVersionBeforePublication": "404 Not Found"
+  "registryAuthentication": "authenticated as foreveryu",
+  "registryVersionBeforePublication": "404 Not Found",
+  "releaseSourceCommit": "4ee1f1953f11c2c49f03c16481a13dc333e63a6c",
+  "officialRegistryVerification": {
+    "name": "dsh-task-supervisor",
+    "version": "0.1.0",
+    "latest": "0.1.0",
+    "tarball": "https://registry.npmjs.org/dsh-task-supervisor/-/dsh-task-supervisor-0.1.0.tgz",
+    "integrity": "sha512-pCY9L6sB4d709AgNfdgJjKMmX0ymG3l6CTFEr2uk4kxFAphXaRn9bQ15pw1HKJRiCADTepY+2orR/sWdTE9exQ==",
+    "shasum": "781b634b204e37319b34bd09138c95df209080d4",
+    "downloadMatchesPreparedTarball": true
+  }
 }
