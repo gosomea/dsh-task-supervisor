@@ -1,0 +1,1027 @@
+{
+  "schemaVersion": 1,
+  "kind": "post-repair-exposed-single-case-result",
+  "taskId": "kea-atomic-signal-selectors",
+  "id": "kea-supervisor-quality-policy-verify-80g-20260930",
+  "mainSessionId": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+  "terminal": {
+    "status": "manual-intervention-required",
+    "taskPhase": "paused",
+    "elapsedSec": 3499.6014437675476,
+    "deadlineSec": 10800.0,
+    "approvalCount": 1,
+    "approvalUncertain": false,
+    "rescueCount": 0,
+    "cleanupAcknowledged": true
+  },
+  "grade": {
+    "reward": 0,
+    "scored": true,
+    "fault": null,
+    "tests": {
+      "tests": 151,
+      "passed": 139,
+      "failed": 12,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0
+    },
+    "execution": {
+      "reportedPositions": 151,
+      "missingResultPositions": 0,
+      "positionsWithResult": 151,
+      "allPositionsHaveResult": true
+    },
+    "separateEnvironmentObserved": true,
+    "cleanupConfirmed": true,
+    "officialFilesSha256": {
+      "environment/Dockerfile": "21754941b1392fb75d8a5b775a507608af2e4eced4e303659131388cd22cb53e",
+      "instruction.md": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+      "task.toml": "e348f26d469643cf8bfd535e9d9f86c8c20f7e7169aeda515223874a9dea271c",
+      "tests/Dockerfile": "5f3fab7316c0c02292338938d5ac198ef4862eec588322c69e77b4bdbb7eb233",
+      "tests/config.json": "f26007a19eeefae915f6902906c7f29ce6060f688a0ef783f327192b56166f39",
+      "tests/grader.py": "47cc9eaadf21e636323c360ec4fa786f0733ec9fd1d21ea5a5717ff9f8c4077c",
+      "tests/test.patch": "22a472624a5b29fc12ef5cb27da0af4c7e8636250e625a710ead46d6c07e9170",
+      "tests/test.sh": "b9c820bd610f1476221c663fd326574dcb1d0a97cde064a2ccad342651de1d56"
+    },
+    "evidenceSha256": {
+      "trialResult": "b94ed8a7a7682614ac92e2df950d83378b3b85b372dd30816cab8735bc8b85c3",
+      "testReport": "1987b6b52284b5c9c44284789225b32f15a3359a6f73ca4dd10c1a7b7937c258"
+    },
+    "submission": {
+      "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "patchBytes": 0,
+      "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "committed-base-to-head",
+      "workingTreeDirty": true,
+      "workingTreeStatusSha256": "5fde5fb99953bacc1ad459a739958194f132dac8cfc66976893d2121545a94d2",
+      "workingTreeSubmitted": false,
+      "observedHeadCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+      "headChangedSinceCutoff": false
+    },
+    "verifierDuration": {
+      "started_at": "2026-09-30T08:57:07.595753Z",
+      "finished_at": "2026-09-30T08:57:34.682005Z"
+    }
+  },
+  "metrics": {
+    "allSessionTokens": null,
+    "tokensReported": {
+      "uncachedInputTokens": 619199,
+      "outputTokens": 414620,
+      "cacheReadTokens": 13021440,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": false,
+    "unreportedAttempts": 1,
+    "reviewToolCalls": 284,
+    "repeatedExactReads": 2,
+    "checkCount": 12,
+    "plannedIndependentChecks": 7,
+    "recordedIndependentCheckResults": 6,
+    "independentReviewJobs": 1,
+    "independentEvidenceCoverage": {
+      "applicableCriterionFindings": 2,
+      "readFiles": 13
+    },
+    "internalReviewFaults": {
+      "check-infrastructure": 1
+    },
+    "reviewWaitMs": 2629264.0,
+    "sessions": [
+      {
+        "sessionId": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "parentSession": null,
+        "usageCoverage": {
+          "settledAttempts": 47,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 195544,
+          "outputTokens": 118295,
+          "cacheReadTokens": 2740736,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-0f1c75af-d897-4b64-9ee9-8a0ef995a876",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 20,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 66305,
+          "outputTokens": 25305,
+          "cacheReadTokens": 719232,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-1808594c-53e9-494f-8996-bc90b5ab57c6",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 107,
+          "unreportedAttempts": 1,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 127588,
+          "outputTokens": 153399,
+          "cacheReadTokens": 7696768,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-802ac44a-a9b8-452b-9015-c98b371e6e0a",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 17,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 56000,
+          "outputTokens": 38971,
+          "cacheReadTokens": 516864,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-9ed68891-2bac-45dc-ac5d-cce0ad53240e",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 12,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 44528,
+          "outputTokens": 10521,
+          "cacheReadTokens": 275328,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-e1678106-1d91-4aa8-910a-76783a007072",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 17,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 53112,
+          "outputTokens": 21290,
+          "cacheReadTokens": 538880,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-efac76dd-6abc-4bc7-bd1e-fce2f4c16f71",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 13,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 45191,
+          "outputTokens": 38561,
+          "cacheReadTokens": 283136,
+          "cacheWriteTokens": 0
+        }
+      },
+      {
+        "sessionId": "task-review-f6c834c8-f643-411d-bed1-059e47a55aba",
+        "parentSession": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+        "usageCoverage": {
+          "settledAttempts": 13,
+          "unreportedAttempts": 0,
+          "unsettledSteps": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 30931,
+          "outputTokens": 8278,
+          "cacheReadTokens": 250496,
+          "cacheWriteTokens": 0
+        }
+      }
+    ],
+    "reviewPhaseDurations": [
+      {
+        "jobId": "45eb30d1-0ee5-4ba0-8cb6-c964220f193b",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "fd39f670-7e81-4cba-9d97-6ac8d0008d02",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "441508d2-33e0-4ab0-bc0f-8df2044ea1ef",
+        "kind": "planning",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "54f3eed7-11cb-4d4c-9491-fe07e4eb2d6c",
+        "kind": "plan",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "0ea49260-500c-4250-ad02-996db351567d",
+        "kind": "progress",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "700bd07d-2625-4217-9059-8547e26e1323",
+        "kind": "progress",
+        "mode": "log",
+        "planningMs": null,
+        "independentMs": null,
+        "comparisonAndDecisionMs": null
+      },
+      {
+        "jobId": "02ff62bc-6209-4318-8a1d-e35ef58cc7ca",
+        "kind": "stage",
+        "mode": "independent",
+        "planningMs": 31655.0,
+        "independentMs": 1195706.0,
+        "comparisonAndDecisionMs": 546995.0
+      }
+    ],
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "route": {
+    "routesMatched": true,
+    "protocolDeviation": false,
+    "auditSha256": "567e86b7e8f3059ab6cda771b205a1eb0f6abe2dd337901e7c6804053e182581"
+  },
+  "jobs": [
+    {
+      "id": "45eb30d1-0ee5-4ba0-8cb6-c964220f193b",
+      "kind": "planning",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-9ed68891-2bac-45dc-ac5d-cce0ad53240e",
+      "startedAt": "2026-09-30T07:59:57.626Z",
+      "finishedAt": "2026-09-30T08:01:11.815Z",
+      "toolCalls": {
+        "read_task_context": 3,
+        "read_task_evidence": 4,
+        "read_task_evidence_index": 3,
+        "read_task_text": 10,
+        "task_review_decision": 1
+      },
+      "summary": "Reconnaissance is on-target and converging; a design draft is now the right next output.",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "fd39f670-7e81-4cba-9d97-6ac8d0008d02",
+      "kind": "plan",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "revise",
+      "reviewerSessionId": "task-review-efac76dd-6abc-4bc7-bd1e-fce2f4c16f71",
+      "startedAt": "2026-09-30T08:03:06.513Z",
+      "finishedAt": "2026-09-30T08:06:25.160Z",
+      "toolCalls": {
+        "read_task_context": 5,
+        "read_task_evidence_index": 2,
+        "read_task_evidence": 2,
+        "read_task_text": 10,
+        "read_task_call": 2,
+        "task_review_decision": 1
+      },
+      "summary": "N2 acceptance depends on downstream test",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "441508d2-33e0-4ab0-bc0f-8df2044ea1ef",
+      "kind": "planning",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-e1678106-1d91-4aa8-910a-76783a007072",
+      "startedAt": "2026-09-30T08:06:25.209Z",
+      "finishedAt": "2026-09-30T08:08:35.582Z",
+      "toolCalls": {
+        "read_task_evidence": 3,
+        "read_task_context": 2,
+        "read_task_call": 2,
+        "read_task_text": 19,
+        "read_task_evidence_index": 2,
+        "task_review_decision": 1
+      },
+      "summary": "Draft plan is converging; one targeted revision remains",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "54f3eed7-11cb-4d4c-9491-fe07e4eb2d6c",
+      "kind": "plan",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-802ac44a-a9b8-452b-9015-c98b371e6e0a",
+      "startedAt": "2026-09-30T08:08:50.945Z",
+      "finishedAt": "2026-09-30T08:12:21.313Z",
+      "toolCalls": {
+        "read_task_context": 7,
+        "read_task_evidence_index": 3,
+        "read_task_text": 11,
+        "read_task_evidence": 1,
+        "read_task_call": 1,
+        "task_review_decision": 1
+      },
+      "summary": "Plan revision resolves both defects; approve",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "0ea49260-500c-4250-ad02-996db351567d",
+      "kind": "progress",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-0f1c75af-d897-4b64-9ee9-8a0ef995a876",
+      "startedAt": "2026-09-30T08:19:12.115Z",
+      "finishedAt": "2026-09-30T08:21:48.964Z",
+      "toolCalls": {
+        "read_task_context": 4,
+        "read_task_evidence_index": 5,
+        "read_task_call": 9,
+        "read_task_text": 15,
+        "read_task_worker": 1,
+        "task_review_decision": 2
+      },
+      "summary": "N1 engine core under way; branch and green baseline verified",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "700bd07d-2625-4217-9059-8547e26e1323",
+      "kind": "progress",
+      "status": "applied",
+      "faultCode": null,
+      "verdict": "pass",
+      "reviewerSessionId": "task-review-f6c834c8-f643-411d-bed1-059e47a55aba",
+      "startedAt": "2026-09-30T08:25:08.875Z",
+      "finishedAt": "2026-09-30T08:26:07.676Z",
+      "toolCalls": {
+        "read_task_context": 5,
+        "read_task_evidence_index": 2,
+        "read_task_evidence": 8,
+        "read_task_call": 3,
+        "task_review_decision": 2
+      },
+      "summary": "N1 core and wiring on track, keep going",
+      "verificationMode": "log",
+      "independentVerification": null
+    },
+    {
+      "id": "02ff62bc-6209-4318-8a1d-e35ef58cc7ca",
+      "kind": "stage",
+      "status": "failed",
+      "faultCode": "check-infrastructure",
+      "verdict": null,
+      "reviewerSessionId": "task-review-1808594c-53e9-494f-8996-bc90b5ab57c6",
+      "startedAt": "2026-09-30T08:26:22.228Z",
+      "finishedAt": "2026-09-30T08:56:22.265Z",
+      "toolCalls": {
+        "read_task_context": 6,
+        "read_task_input": 1,
+        "inspect_task_artifact": 29,
+        "task_review_check_plan": 6,
+        "read_task_evidence_index": 4,
+        "run_review_check": 33,
+        "read_review_evidence": 14,
+        "read_task_call": 1,
+        "write_review_probe": 3,
+        "task_review_observations": 9,
+        "read_task_text": 8,
+        "task_review_decision": 18
+      },
+      "summary": "",
+      "verificationMode": "independent",
+      "independentVerification": {
+        "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+        "snapshotDigest": "5ab02310302ab31df105b9d64f93ae7a4406f0dc06574fd02eb94125bbde4e7f",
+        "snapshotEntries": 25697,
+        "phase": "comparison",
+        "checkPlan": [
+          {
+            "revision": 1,
+            "recordedAt": "2026-09-30T08:27:19.563Z",
+            "phase": "independent",
+            "checks": [
+              {
+                "id": "K1",
+                "criterionId": "C1",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "With resetContext({ atomicSelectors: true }) logic.selectorHealth is a function; with the default (false/unset) logic.selectorHealth is undefined.",
+                "method": "run",
+                "expected": "typeof logic.selectorHealth === 'function' when the flag is true, and === 'undefined' when the flag is absent/false, in the captured snapshot.",
+                "coverage": "Both flag states at logic build time, executed against the captured tree copy.",
+                "basis": "explicit"
+              },
+              {
+                "id": "K2",
+                "criterionId": "C7",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "logic.selectorHealth() returns { selectors: { [name]: { dependencies, dependents, evaluations, dirtyCause } }, topologicalOrder }.",
+                "method": "run",
+                "expected": "Returned object has exactly a selectors record whose entries carry array dependencies, array dependents, numeric evaluations, and dirtyCause null-or-string; topologicalOrder is an array of selector names.",
+                "coverage": "Shape and field types for a logic with reducer selectors and a derived selector chain.",
+                "basis": "explicit"
+              },
+              {
+                "id": "K3",
+                "criterionId": "C7",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "Health metadata association uses a stable identity keyed by logic.pathString plus the selector local name that survives the selectors()/addSelectorAndValue double registration; dependents list local selector names.",
+                "method": "run",
+                "expected": "After mount, health selectors keys/entries align with the logic's local selector names (no duplicates, no missing), a derived selector appears with its own entry, and dependents contains local names (no pathString prefix).",
+                "coverage": "Keyed logic (pathString) with connect-style alias plus derived selectors mounted once; repeated build does not duplicate or orphan entries.",
+                "basis": "explicit"
+              },
+              {
+                "id": "K4",
+                "criterionId": "C1",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "The engine plugin is only wired when options.atomicSelectors is true, and selectorHealth is attached so that it is absent (undefined) when disabled rather than a no-op function.",
+                "method": "read",
+                "expected": "Source shows the plugin activated conditionally on options.atomicSelectors, and the disabled path never assigns logic.selectorHealth.",
+                "coverage": "src/atomic/engine.ts, src/kea/context.ts, src/types.ts in the captured snapshot.",
+                "basis": "explicit"
+              },
+              {
+                "id": "K5",
+                "criterionId": "C7",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "Dependencies are leaf paths (e.g. user.name) relative to the logic, with stable id construction and no parent-node entries.",
+                "method": "read",
+                "expected": "Engine code relativizes absolute state paths against logic.path and prunes parent nodes when a descendant leaf was read; derived selectors are recorded by local name.",
+                "coverage": "Dependency computation section of src/atomic/engine.ts.",
+                "basis": "explicit"
+              },
+              {
+                "id": "K6",
+                "criterionId": "C1",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "With the flag default false the existing baseline test suite and type check remain green (baseline unchanged).",
+                "method": "run",
+                "expected": "pnpm run test:types exits 0 and the baseline jest suite (flag off) reports no failures in the captured snapshot.",
+                "coverage": "Full baseline jest run plus tsc type check as recorded by in-node acceptance for N1.",
+                "basis": "derived"
+              }
+            ]
+          },
+          {
+            "revision": 2,
+            "recordedAt": "2026-09-30T08:51:20.667Z",
+            "phase": "comparison",
+            "checks": [
+              {
+                "id": "K8",
+                "criterionId": "C1",
+                "source": {
+                  "kind": "objective",
+                  "reference": "objective"
+                },
+                "fact": "Re-confirm flag-on selectorHealth runtime behaviour with a fresh check.",
+                "method": "run",
+                "expected": "A fresh run check would re-confirm the flag-on/flag-off selectorHealth behaviour.",
+                "coverage": "Re-affirmation probe plan after the check tree was modified.",
+                "basis": "derived"
+              }
+            ]
+          }
+        ],
+        "checkFindings": [
+          {
+            "checkId": "K1",
+            "status": "unverified",
+            "finding": "src/kea/context.ts defaults atomicSelectors to false and activates the plugin only when true; only the plugin's beforeBuild defines selectorHealth, so the disabled path leaves logic.selectorHealth undefined.",
+            "coverage": "Read of the conditional plugin activation in src/kea/context.ts and the plugin's beforeBuild in src/atomic/engine.ts.",
+            "limitations": "Static only: the runtime two-flag-state probe I executed earlier is no longer citable because it wrote a file into the captured tree, after which the check gateway refused all further runs. A fresh run check is required to confirm the flag-on runtime behaviour.",
+            "evidenceIds": [
+              "file:src/kea/context.ts",
+              "file:src/atomic/engine.ts",
+              "file:src/kea/plugins.ts"
+            ]
+          },
+          {
+            "checkId": "K2",
+            "status": "unverified",
+            "finding": "getHealth() builds each entry with dependencies (leaf dep ids plus selector deps not already present), sorted local dependents, numeric evaluations and dirtyCause, and returns selectors plus topologicalOrder; but no src/ call site registers selectors with the engine, so the record stays empty for real logics and only the outer shape is exercised.",
+            "coverage": "Read of getHealth() entry construction in src/atomic/engine.ts.",
+            "limitations": "Cannot be exercised behaviourally at N1; must be re-checked once N2 routes selector creation through the engine.",
+            "evidenceIds": [
+              "file:src/atomic/engine.ts"
+            ]
+          },
+          {
+            "checkId": "K3",
+            "status": "unverified",
+            "finding": "The stable identity `${pathString}::${localName}` and node/wrapper reuse on re-registration exist in the engine, but with no engine call sites the selectors()/addSelectorAndValue double registration never reaches it, so identity survival is unobservable at N1.",
+            "coverage": "Read of idOf()/registerDerivedSelector in src/atomic/engine.ts and the baseline selector path in src/core/selectors.ts.",
+            "limitations": "Reachable only after N2 wires selectors through the engine.",
+            "evidenceIds": [
+              "file:src/atomic/engine.ts",
+              "file:src/core/selectors.ts"
+            ]
+          },
+          {
+            "checkId": "K4",
+            "status": "satisfied",
+            "finding": "The plugin is registered only under `if (newContext.options.atomicSelectors)`, and only its beforeBuild defines selectorHealth; the disabled path never creates the property, so logic.selectorHealth remains undefined when the flag is false/unset.",
+            "coverage": "Full read of openContext and the atomicSelectorsPlugin declaration, including its `selectorHealth: undefined` default.",
+            "limitations": "Static read; the runtime half depends on a repeatable fresh run check.",
+            "evidenceIds": [
+              "file:src/kea/context.ts",
+              "file:src/atomic/engine.ts",
+              "file:src/kea/plugins.ts"
+            ]
+          },
+          {
+            "checkId": "K5",
+            "status": "satisfied",
+            "finding": "Dependency recording relativizes to the logic slice: reducer wrappers wrap the raw slice with parts starting at [reducerKey]; recordContainer records the container, then recordLeaf records the leaf and deletes ancestor entries; derived selectors are recorded opaquely by local name; Map/Set/array reads encode `.map:<key>`, `.set:<value>` and `<index>`, and includes/indexOf/lastIndexOf record each checked element.",
+            "coverage": "Full read of the dependency-recording, proxy and collection code paths in src/atomic/engine.ts.",
+            "limitations": "Read-only; the encoding strings are only exercised once selector creation is routed through the engine (N2).",
+            "evidenceIds": [
+              "file:src/atomic/engine.ts"
+            ]
+          },
+          {
+            "checkId": "K6",
+            "status": "satisfied",
+            "finding": "With the flag default off the baseline jest suite is green (33/33 suites, 156/156 tests) and `npx tsc --noEmit -p .` printed nothing with TSC_EXIT=0.",
+            "coverage": "Full baseline jest suite and type check re-run against the captured snapshot before any probe file was added to the tree; both output streams read.",
+            "limitations": "The suite needed NODE_ENV=test in this check container (it presets NODE_ENV=production); without it, 13 React-rendering suites fail solely because React's production build rejects act().",
+            "evidenceIds": [
+              "c07539ec-f804-4329-9a39-c4cd7974e744",
+              "97baf8fd-1e14-4163-bea0-4d7a1cd423e4"
+            ]
+          }
+        ],
+        "observations": [
+          {
+            "criterionId": "C1",
+            "status": "unverified",
+            "method": "run",
+            "finding": "Static gating is correct and the flag-off baseline is green (33 suites / 156 tests; tsc clean with TSC_EXIT=0). The flag-on 'selectorHealth is a function' half is only statically supported at this point: the runtime probe that demonstrated it copied a file into the captured tree and is no longer valid evidence.",
+            "evidenceIds": [
+              "c07539ec-f804-4329-9a39-c4cd7974e744",
+              "97baf8fd-1e14-4163-bea0-4d7a1cd423e4"
+            ],
+            "checkIds": [
+              "K1",
+              "K4",
+              "K6"
+            ],
+            "coverage": "Read src/kea/context.ts, src/atomic/engine.ts, src/kea/plugins.ts; full flag-off baseline jest suite and npx tsc re-run against the snapshot (both output streams read).",
+            "limitations": "A fresh run check for the two flag states could not be completed because the check gateway refused all later runs with 'private check tree changed'. C1 is satisfied only for the flag-off baseline and the source-level gate; the flag-on runtime assertion remains unverified pending a repeatable run."
+          },
+          {
+            "criterionId": "C7",
+            "status": "unverified",
+            "method": "run",
+            "finding": "Engine-level plumbing for the health payload is present and read-verified, but it is not reachable from kea's real build path: nothing in src/ calls registerReducerSelector or registerDerivedSelector, so reducer and derived selectors are still created by the baseline reselect code in src/core/selectors.ts and src/core/reducers.ts. logic.selectorHealth() therefore returns an empty selectors record and empty topologicalOrder, and the criterion's populated dependencies/dependents/evaluations/dirtyCause payload plus the double-registration identity-survival clause are unverified at this stage.",
+            "evidenceIds": [],
+            "checkIds": [
+              "K2",
+              "K3",
+              "K5"
+            ],
+            "coverage": "Read src/atomic/engine.ts (getHealth, idOf, registerDerivedSelector, recordLeaf/recordContainer, proxy wrappers, topologicalOrder), src/types.ts, src/kea/context.ts, src/core/selectors.ts and src/core/reducers.ts.",
+            "limitations": "Populated-health behaviour becomes reachable only after N2 routes selector creation through the engine, and must then be re-verified independently. A read-derived risk to test then: `node.selectorSnapshots` is cleared/deleted but never assigned, while isDirty() compares `dep.lastResult` against `node.selectorSnapshots.get(name)`, so selectors with derived-selector inputs may be marked dirty with cause `selector:<name>` on every new state reference (potential conflict with C2/C4); not reproduced at runtime."
+          }
+        ],
+        "phaseTimes": {
+          "planning": "2026-09-30T08:26:47.909Z",
+          "independent": "2026-09-30T08:27:19.564Z",
+          "comparison": "2026-09-30T08:47:15.270Z"
+        },
+        "readFiles": [
+          {
+            "path": "src/atomic/engine.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                6000
+              ],
+              [
+                6000,
+                12000
+              ],
+              [
+                12000,
+                18000
+              ],
+              [
+                18000,
+                21897
+              ]
+            ],
+            "total": 21897
+          },
+          {
+            "path": "package.json",
+            "purpose": "constraint",
+            "ranges": [
+              [
+                0,
+                3000
+              ]
+            ],
+            "total": 4412
+          },
+          {
+            "path": "src/kea/context.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                3000,
+                3524
+              ]
+            ],
+            "total": 3524
+          },
+          {
+            "path": "src/core/selectors.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                3000,
+                3751
+              ]
+            ],
+            "total": 3751
+          },
+          {
+            "path": "src/core/reducers.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                2800,
+                5800
+              ]
+            ],
+            "total": 5806
+          },
+          {
+            "path": "src/index.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                1122
+              ]
+            ],
+            "total": 1122
+          },
+          {
+            "path": "src/kea/plugins.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                2253
+              ]
+            ],
+            "total": 2253
+          },
+          {
+            "path": "src/core/index.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                3000,
+                3123
+              ]
+            ],
+            "total": 3123
+          },
+          {
+            "path": "src/kea/build.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                3000,
+                6067
+              ]
+            ],
+            "total": 6067
+          },
+          {
+            "path": "test/jest/selectors.js",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ]
+            ],
+            "total": 5898
+          },
+          {
+            "path": "src/kea/store.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ]
+            ],
+            "total": 3032
+          },
+          {
+            "path": "src/types.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ],
+              [
+                14500,
+                16500
+              ]
+            ],
+            "total": 24071
+          },
+          {
+            "path": "src/kea/kea.ts",
+            "purpose": "deliverable",
+            "ranges": [
+              [
+                0,
+                3000
+              ]
+            ],
+            "total": 6899
+          }
+        ],
+        "checks": [
+          {
+            "id": "4512bb20-552c-4117-95f6-4c64e8629b10",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:28:34.432Z",
+            "finishedAt": "2026-09-30T08:28:35.970Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "8a06f3a4-baf0-4336-b4fc-335695c6cdd2",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:29:03.922Z",
+            "finishedAt": "2026-09-30T08:29:05.224Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "b77b322e-3fe4-401b-b5d6-ae2d51af5929",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:29:48.793Z",
+            "finishedAt": "2026-09-30T08:29:50.178Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "200f3783-343c-4016-88a5-efdb58771cfa",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:30:30.708Z",
+            "finishedAt": "2026-09-30T08:30:32.408Z",
+            "exitCode": 1,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "17aa4178-d93d-40d1-afdb-f60ff35f7a4f",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:31:10.294Z",
+            "finishedAt": "2026-09-30T08:31:11.873Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "8da8d060-6282-46ea-85f2-b7c21ab37674",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:32:06.030Z",
+            "finishedAt": "2026-09-30T08:32:20.751Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "e56ecc45-3b57-41b4-8cd4-fb23e337dad5",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:32:56.097Z",
+            "finishedAt": "2026-09-30T08:33:09.193Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "3517da6a-c6e0-4fd8-a118-a801dcf0aa2f",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:33:58.572Z",
+            "finishedAt": "2026-09-30T08:33:59.962Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "c07539ec-f804-4329-9a39-c4cd7974e744",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:34:50.035Z",
+            "finishedAt": "2026-09-30T08:35:04.243Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "97baf8fd-1e14-4163-bea0-4d7a1cd423e4",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:35:31.775Z",
+            "finishedAt": "2026-09-30T08:35:36.676Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "b8c3ebf3-8619-467b-bd08-c2be1370585d",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:36:14.323Z",
+            "finishedAt": "2026-09-30T08:36:15.694Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": []
+          },
+          {
+            "id": "14acb733-e3dd-4ac1-81af-ace12d403a72",
+            "snapshotId": "5edb0e72-fbd9-4869-be30-f3608c89045c",
+            "startedAt": "2026-09-30T08:37:35.898Z",
+            "finishedAt": "2026-09-30T08:37:41.079Z",
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "cancelled": false,
+            "outputIncomplete": false,
+            "changed": [
+              "test/jest/zz-atomic-n1-probe.js"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "freezeRecheck": {
+    "allMatch": true,
+    "roots": {
+      "runner": true,
+      "runtime": true,
+      "plugin": true,
+      "profile": true,
+      "node": true,
+      "docker": true,
+      "pier": true,
+      "dataset": true,
+      "reviewAudit": true,
+      "hostNode": true
+    }
+  },
+  "controlProtocolDeviation": false,
+  "protocolImplementationFault": "Independent check copied a probe into the captured tree; changed evidence remained invalid and subsequent checks were rejected as check-infrastructure.",
+  "notUnseenTask": true,
+  "comparisonClaims": false,
+  "misacceptance": {
+    "taskDeclaredComplete": false,
+    "observedFalseCompletion": false,
+    "rate": null
+  },
+  "resultSha256": "cce12b0a68cdd3dfd1d4019c95a2faef13f7085153f234c6cbcde8bf6cd8d30a",
+  "officialReward": {
+    "reward": 0,
+    "f2p_total": 12,
+    "f2p_passed": 0,
+    "p2p_total": 139,
+    "p2p_passed": 139,
+    "f2p": 0.0,
+    "p2p": 1.0,
+    "partial": 0.9205298013245033
+  },
+  "nativeApprovalObservation": {
+    "schemaVersion": 1,
+    "sessionId": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+    "atUnix": 1790756014.9706,
+    "transport": "native-supervisor-policy-observation",
+    "taskId": "216d8490-aeab-427a-abdf-cba54687fd7c",
+    "planVersion": 1,
+    "authorizationSeq": 8,
+    "reviewJobId": "54f3eed7-11cb-4d4c-9491-fe07e4eb2d6c",
+    "decision": "observed-native-preauthorization"
+  },
+  "manualApprovalIntentExists": false
+}

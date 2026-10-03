@@ -1,10 +1,22 @@
 # DSH Task Supervisor
 
-**Working native prototype, not a released plugin.** This project provides an independent `/task` workflow beside DSH Goal and Plan. The main Agent plans and executes in its normal Session; a deterministic controller owns task state and continuation, and a fresh read-only Agent reviews progress, stages, and completion. The reviewer may recommend a decision but cannot change workspace files or mutate the task directly.
+**0.1.0 development preview.** This project provides an independent `/task` workflow beside DSH Goal and Plan. The main Agent plans and executes in its normal Session; a deterministic controller owns task state and continuation, and a fresh read-only Agent reviews progress, stages, and completion. The reviewer may recommend a decision but cannot change workspace files or mutate the task directly.
 
 The prototype currently requires a small DSH host extension for durable `extension/record` events and reader admission. That extension is in an isolated DSH worktree; it has not been merged into standard DSH. See [implementation status](docs/implementation.md) before installing.
 
 Planning supervision is enabled by default (`planningSupervision`; `maxPlanningWithoutProgress: 2`). Before a submitted plan exists, native step boundaries use the existing activity observation thresholds; a completed planning turn without a submission, or a second truncation after recovery, also requests an independent planning review. Its evidence-linked facts, unknowns and next action stay bound to the requirements version. A pass only continues planning. `needs-user`, exhausted internal recovery and repeated independently judged lack of progress pause with distinct reasons. Disabling `automaticContinuation` prevents new rounds; disabling `observeLongTurns` suppresses in-turn observation, while `planningSupervision: false` suppresses planning reviews entirely.
+
+## Installation and version scope
+
+`0.1.0` targets an isolated DSH instance with the host extension described above. Build its Host and Client, use a separate `DSH_HOME` and profile, then install the published package:
+
+```sh
+dsh plugin add dsh-task-supervisor@0.1.0
+```
+
+The npm package contains the built Host, Web client, check gateway and bundle patch. Installation does not add the host extension to standard DSH. Reviews use the main Session log by default; independent artifact checks require explicit configuration and do not support independent browser observation yet.
+
+If an independent command modifies the captured artifact tree, its evidence is invalid and subsequent checks are rejected; automatic check-directory recovery has not passed validation. This version retains that limitation. See the [release notes](https://github.com/gosomea/dsh-task-supervisor/blob/main/docs/releases/0.1.0.md).
 
 ## Current workflow
 

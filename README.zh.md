@@ -1,10 +1,22 @@
 # DSH 长任务督导
 
-**已有可运行的原生原型，尚未发布为正式插件。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
+**0.1.0 开发预览。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
 
 原型目前需要一项小范围 DSH 宿主扩展，支持持久的 `extension/record` 事件及读取器准入。扩展位于隔离 DSH 工作树，尚未合入标准 DSH。安装前请先看[实现状态](docs/implementation.zh.md)。
 
 规划监督默认开启（`planningSupervision`；`maxPlanningWithoutProgress: 2`）。尚无正式计划时，在原生步骤边界复用已有活动观察阈值；正常规划轮结束而未提交计划，或恢复后再次截断，也会请求独立规划审查。带证据的事实、未决问题和下一步绑定要求版本；通过只允许继续规划。用户决定、内部恢复耗尽和连续独立判定的无进展分别以不同原因暂停。关闭 `automaticContinuation` 不开新轮；关闭 `observeLongTurns` 不在轮内观察，`planningSupervision: false` 则完全关闭规划审查。
+
+## 安装与版本范围
+
+`0.1.0` 面向具有上述宿主扩展的隔离 DSH 实例。构建该实例的 Host 与 Client，使用独立 `DSH_HOME` 和 profile，再安装发布包：
+
+```sh
+dsh plugin add dsh-task-supervisor@0.1.0
+```
+
+npm 包包含预构建的 Host、Web 客户端、检查网关和 bundle patch。安装不会为标准 DSH 自动添加宿主扩展。审查默认采用主 Session 日志；独立产物检查需要显式配置，并且尚不支持独立浏览器观察。
+
+独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制，详见[版本说明](https://github.com/gosomea/dsh-task-supervisor/blob/main/docs/releases/0.1.0.zh.md)。
 
 ## 当前流程
 

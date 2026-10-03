@@ -28,4 +28,16 @@ The runner now recognizes native `after-review` authorization scoped to the curr
 
 42 control-flow tests and 5 metrics tests pass. Race fixtures cover pending preparation, recording applied approval once, observing receipts after completion and rejecting wrong authorization/review identities. A [real Session replay](policy-observer-replay.json) matches the completed static task’s native authorization, plan and review ID with 0 manual commands; this is not a new model run.
 
-A subsequent frozen position validates the repair. The original reward 0 and this reward 0 remain unchanged; sealed Sessions are not resumed. The user-validation instance on 56085 remains running. Capability coverage, false acceptance and false pause metrics without blind annotations remain null.
+The subsequent position’s result appears below. The original reward 0 and this reward 0 remain unchanged; sealed Sessions are not resumed. The user-validation instance on 56085 remains running. Capability coverage, false acceptance and false pause metrics without blind annotations remain null.
+
+## Sealed result after native authorization observation repair
+
+A new position frozen at `1dfb95d` has finished; see the [freeze record](kea-policy-run.json) and [machine result](kea-policy-result.json). The runner only recorded the native authorization receipt and sent no manual approval. One initial authorization applied, frozen inventories matched and actual request routes matched.
+
+The reviewer formed an independent check plan, read 13 files, initiated 12 command checks and saved 6 check findings and 2 criterion observations. After a probe was added inside the captured tree, that command’s evidence was invalidated and the gateway rejected further commands. Unverified items remained explicit; a green baseline suite did not establish enabled behavior. A `check-infrastructure` internal fault eventually paused the task, which sealed without rescue and with acknowledged cleanup.
+
+Elapsed time was 3499.601 seconds, review wait 2629264 milliseconds and reviewer tool calls 284. Official reward was 0, F2P 0/12 and P2P 139/139; the committed patch was empty and uncommitted implementation was not graded. The score therefore includes workflow termination caused by review execution failure and does not establish the quality of a completed deliverable.
+
+All-Session tokens remain null because 1 model attempt has no report. Reported lower bounds are 619199 uncached input, 414620 output, 13021440 cache-read and 0 cache-write. False acceptance, correction benefit and false pause rates remain null without blind annotations; no false task completion was observed.
+
+The check-directory recovery draft has not passed real Docker validation and remains in private development cache, outside the 0.1.0 implementation. Recovery must not accept modified captured artifacts or replace this result; a new frozen position should validate it.

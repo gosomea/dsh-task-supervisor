@@ -1,7 +1,6 @@
 {
   "name": "dsh-task-supervisor",
   "version": "0.1.0",
-  "private": true,
   "description": "DSH-native supervised task lifecycle",
   "type": "module",
   "main": "lib/index.mjs",
@@ -59,5 +58,18 @@
     "@deepseek-ai/dsh-tools": "0.1.7-alpha.2",
     "zod": "4.4.3"
   },
-  "packageManager": "pnpm@11.7.0"
+  "packageManager": "pnpm@11.7.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gosomea/dsh-task-supervisor.git"
+  },
+  "homepage": "https://github.com/gosomea/dsh-task-supervisor#readme",
+  "bugs": {
+    "url": "https://github.com/gosomea/dsh-task-supervisor/issues"
+  },
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
 }

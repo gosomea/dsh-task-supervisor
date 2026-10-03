@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-policy-observer-repair-development-run",
+  "taskId": "kea-atomic-signal-selectors",
+  "id": "kea-supervisor-quality-policy-verify-80g-20260930",
+  "pluginCommit": "1dfb95d61c9aa7e779e4f16f5f45810bed041a93",
+  "runnerCommit": "1dfb95d61c9aa7e779e4f16f5f45810bed041a93",
+  "mainSessionId": "session-303d14f0-e65d-4bb0-8e8c-1f18d8504d14",
+  "instructionSha256": "a7bde3311b63eb381fc29740e504ccb259e60466625b0626fa440ac545527deb",
+  "frozenInventories": {
+    "runner": "0989b3c08d2a3580eca0898563a5c97cdd208aadee2c8724173e8a32d5f8807e",
+    "runtime": "7eb1cd53fb4852a209b92e7a881f6ba85d13dcc292647a0d844bfa84c3e21630",
+    "plugin": "656f9ac38b536a8595a40a9096008bdba6eaada66063bce52722865a89339088",
+    "profile": "e76067d48f60dd3c528510d7b50fe1fdc52860d6645d06d31bb0015a86e355ea",
+    "node": "20c89d112c9f612abf505b9bdbe7e8cf47f3e69ab32a7862061628fc63a40da8",
+    "docker": "a32a2b1004569b182a078d55a27e75f87050afd5c6a306bc041db265e2b60386",
+    "pier": "8d2b8bdf4eba8d424c72b4bd1a7f8749ab2b9fbfccac00bd49a3b2edbf883f01",
+    "dataset": "d28f0bbd6f058b1eb455fc3886f53dd2419e631aba8f9db8193ae4981ace54b6",
+    "reviewAudit": "6aca773b5f5b8622e33f19b38e1f42b4975e961241d0e373f6175c606c13a699",
+    "hostNode": "6b36251e9f9f5b8b6a8af5b7ca893bf34b3811951cf331bb2895e28af1ca4ac8"
+  },
+  "imageDigest": "sha256:2a3e673e71b0516d27fa3a93f094633d606f5aa6fdcb01521334cafaacd47f24",
+  "baseCommit": "6c7ebba57821989733a11d6f3888816658584d97",
+  "deadlineSec": 10800.0,
+  "rpcCommandTimeoutSec": 660,
+  "mainResources": {
+    "cpus": 2,
+    "memoryMiB": 8192
+  },
+  "hostInfrastructure": {
+    "vmProfile": "dsh-eval-rosetta",
+    "vmCpus": 4,
+    "vmMemoryMiB": 8192,
+    "vmDiskGiB": 80,
+    "diskExpandedBeforeFreeze": true,
+    "priorPreModelFault": "ENOSPC"
+  },
+  "initialAuthorization": "profile-after-review",
+  "approvalTransport": "observe-native-policy-no-competing-command",
+  "pauseDisposition": "seal-without-rescue",
+  "originalInstructionOnly": true,
+  "notUnseenTask": true,
+  "comparisonClaims": false,
+  "rescueAfterPause": false,
+  "userAuthorization": "ok 验证一下",
+  "priorPositionsPreserved": true,
+  "status": "started"
+}
