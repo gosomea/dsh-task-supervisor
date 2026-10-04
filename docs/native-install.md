@@ -13,7 +13,7 @@ dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-Run `/task new <objective>` in a blank Session before its first model turn, or select `Supervisor · Standard mode` before discussing requirements. The plugin preserves base preset configuration and derives its Supervisor variant. A started ordinary Session cannot change its native mode: create a new one. A supervised Session can start successive tasks while retaining history.
+Run `/task new <objective>` in a blank Session before its first model turn, or select `Supervisor · Standard mode` before discussing requirements. The plugin preserves base preset configuration and derives its Supervisor variant. A started ordinary Session cannot change its native mode: create a new one. A supervised Session can start successive tasks while retaining history. Closing Supervisor does not change the Session preset; use a new ordinary-mode Session for native Goal/Plan.
 
 Log review is the default; after plan review passes, `/task approve` or the approval button admits execution. Independent artifact checks still require storageRoot and necessary execution capabilities described in [implementation status](implementation.md#independent-artifact-checks-and-two-stage-review). A separate review Session does not prove independent product execution.
 

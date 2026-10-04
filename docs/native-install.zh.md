@@ -13,7 +13,7 @@ dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-在新建空白会话里，第一轮模型对话前运行 `/task new <目标>`；或者先选择 `Supervisor · 标准模式` 再讨论要求。插件会保留基础 preset 配置，并生成同一模式的 Supervisor 变体。已开始的普通 Session 不能更换原生模式，请新建。督导 Session 完成后可继续创建下一项任务，历史保留。
+在新建空白会话里，第一轮模型对话前运行 `/task new <目标>`；或者先选择 `Supervisor · 标准模式` 再讨论要求。插件会保留基础 preset 配置，并生成同一模式的 Supervisor 变体。已开始的普通 Session 不能更换原生模式，请新建。督导 Session 完成后可继续创建下一项任务，历史保留。关闭督导不会更换 Session 的 preset；需要原生 Goal／Plan 时新建普通模式会话。
 
 默认按日志审查，初始计划通过后等待 `/task approve` 或批准按钮。独立产物检查仍需按[实现状态](implementation.zh.md#独立产物检查与两阶段审查)配置 storageRoot 与实际需要的运行能力。单独的审查 Session 不代表独立运行过产物。
 

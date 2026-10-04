@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.1",
+  "checkedAt": "2026-10-04",
+  "releaseSourceCommit": "4cc5b47246f9ba158ae01c42da914756812ae9e9",
+  "npmPublication": "published",
+  "registry": "https://registry.npmjs.org",
+  "officialRegistryVerification": {
+    "version": "0.1.1",
+    "latest": "0.1.1",
+    "tarball": "https://registry.npmjs.org/dsh-task-supervisor/-/dsh-task-supervisor-0.1.1.tgz",
+    "integrity": "sha512-Dz78S8v0rEqKsl0nwaVb0o0pOwLEd7NX3HkHD0Tk+gfSs5F0sYmtjcpWxNww6iljHMGna4fsNoNr1K7WdNGYxw==",
+    "shasum": "6bd6e6ee8c7217a25190d1671206b60277c9faa2",
+    "downloadMatchesPreparedTarball": true
+  },
+  "bytes": 130917,
+  "sha256": "d8df9755bd8d553a61ba53073eebbaf370c68ad20294ee06bde75ee107772424",
+  "files": [
+    "package/lib/client.js",
+    "package/package.json",
+    "package/README.md",
+    "package/README.zh.md",
+    "package/lib/artifact-snapshot-DHu4fJ4E.mjs",
+    "package/lib/check-gateway.mjs",
+    "package/lib/evidence-BuyAWIxB.mjs",
+    "package/lib/index.mjs",
+    "package/lib/process-provenance.mjs",
+    "package/lib/review-check-BeONnj0X.mjs",
+    "package/cordis.patch.yml"
+  ],
+  "validationRecord": "../native-install-checks.json",
+  "publishedPackageInstall": {
+    "command": "dsh plugin --profile web add dsh-task-supervisor@0.1.1",
+    "registryOverride": "https://registry.npmjs.org",
+    "dshVersion": "0.2.0-rc.2",
+    "nodeVersion": "24.19.0",
+    "installedVersion": "0.1.1",
+    "restoredPreset": "dsh-task-supervisor:standard",
+    "currentTaskPhase": "paused",
+    "armed": false,
+    "completedHistoryCount": 1,
+    "reviewJobs": 3
+  },
+  "browserRendering": "unverified"
+}
