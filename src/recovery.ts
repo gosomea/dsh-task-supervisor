@@ -1,4 +1,5 @@
 /** Identify a settled native truncation; the controller owns authorization and delivery. */
+import { controlEvent } from './session-records.ts'
 import { createHash } from 'node:crypto'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { eventText, redact } from './evidence.ts'
@@ -15,6 +16,7 @@ export interface RecoveryBoundary {
 }
 
 function recordedTask(event: SessionEvent): TaskSnapshot | null {
+  event = controlEvent(event)
   if (event.type !== 'extension/record' || event.data.namespace !== NAMESPACE) return null
   if (event.data.kind !== 'state' || !READABLE_RECORD_VERSIONS.includes(event.data.schemaVersion)) return null
   const parsed = taskSchema.safeParse(event.data.payload)
@@ -32,6 +34,7 @@ function continuable(task: TaskSnapshot): boolean {
  * checked by the controller immediately before delivery. A missing prefix fails closed.
  */
 export function recoveryBoundary(events: readonly SessionEvent[], task: TaskSnapshot): RecoveryBoundary | null {
+  events = events.map(controlEvent)
   if (!continuable(task) || events.length === 0) return null
   for (let i = 0; i < events.length; i++) {
     if (!Number.isSafeInteger(events[i]!.seq) || events[i]!.seq < 0

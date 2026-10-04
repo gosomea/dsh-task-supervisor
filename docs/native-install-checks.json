@@ -1,0 +1,191 @@
+{
+  "date": "2026-10-04",
+  "version": "0.1.1",
+  "dshPublishedVersion": "0.2.0-rc.2",
+  "sourceTestVersion": "0.1.7-alpha.2",
+  "nodeVersion": "24.19.0",
+  "kernel": {
+    "passed": 347,
+    "skipped": 13,
+    "files": 23
+  },
+  "python": {
+    "deepswe": 159,
+    "reviewSummary": 14
+  },
+  "strictTypes": {
+    "host": true,
+    "client": true
+  },
+  "build": true,
+  "tarball": {
+    "bytes": 130917,
+    "sha256": "d8df9755bd8d553a61ba53073eebbaf370c68ad20294ee06bde75ee107772424",
+    "files": 11
+  },
+  "completedTask": {
+    "id": "6761ca17-aa60-4461-aefc-d1bd7dc5133b",
+    "phase": "complete",
+    "verificationMode": "log",
+    "approvalCount": 1,
+    "expectedSum": 20,
+    "reviews": [
+      {
+        "kind": "plan",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-0dce5014-510c-49ac-8409-c12e50b42f3c"
+      },
+      {
+        "kind": "stage",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-73d67b2e-ff7a-4848-aa35-61c7a6a545bc"
+      },
+      {
+        "kind": "completion",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-ff36cdd9-ec35-4032-9fa1-fd6a5748f226"
+      }
+    ]
+  },
+  "workspace": {
+    "inputUnchanged": true,
+    "onlyInputFile": true,
+    "sha256": "00a90ba79d3049486c7e32aecc55d481c10c250fcd1ba9692608cb5fb5c8a503"
+  },
+  "restart": {
+    "currentPhase": "paused",
+    "armed": false,
+    "completedHistoryCount": 1,
+    "missingPluginError": "agent-preset/not-found"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-80b43c0a-2737-45dc-aa8e-eb51783f3372",
+      "role": "main",
+      "eventCount": 189,
+      "logSha256": "9aa9eeac169a6c8d05dfbe79932e8ce5ef7e787571a8633dbd7b9a66364beed9",
+      "controlRecordInsertions": 24,
+      "surfaceControlMessages": 0,
+      "extensionEvents": 0,
+      "requestsWithResponses": 16,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "tokensReported": {
+        "inputTokens": 57565,
+        "outputTokens": 8333,
+        "cacheReadTokens": 136704,
+        "cacheWriteTokens": 0,
+        "totalTokens": 202602
+      },
+      "nativeGoalPlanTools": [],
+      "turnEndings": [
+        "completed",
+        "completed",
+        "completed",
+        "completed",
+        "interrupted"
+      ]
+    },
+    {
+      "sessionId": "task-review-0dce5014-510c-49ac-8409-c12e50b42f3c",
+      "role": "reviewer",
+      "eventCount": 39,
+      "logSha256": "eefa17e4e3b6be37fb44aefe518553cb0fdd157e7c8f1e284ab419adf4e26c20",
+      "controlRecordInsertions": 0,
+      "surfaceControlMessages": 0,
+      "extensionEvents": 0,
+      "requestsWithResponses": 5,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "tokensReported": {
+        "inputTokens": 11594,
+        "outputTokens": 6587,
+        "cacheReadTokens": 32128,
+        "cacheWriteTokens": 0,
+        "totalTokens": 50309
+      },
+      "nativeGoalPlanTools": [],
+      "turnEndings": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-73d67b2e-ff7a-4848-aa35-61c7a6a545bc",
+      "role": "reviewer",
+      "eventCount": 112,
+      "logSha256": "0ec73a2df1eb139a3968d36af3087eb76cb6a1611b3143f5801844b8cbb97cc8",
+      "controlRecordInsertions": 0,
+      "surfaceControlMessages": 0,
+      "extensionEvents": 0,
+      "requestsWithResponses": 16,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "tokensReported": {
+        "inputTokens": 33321,
+        "outputTokens": 20958,
+        "cacheReadTokens": 318208,
+        "cacheWriteTokens": 0,
+        "totalTokens": 372487
+      },
+      "nativeGoalPlanTools": [],
+      "turnEndings": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-ff36cdd9-ec35-4032-9fa1-fd6a5748f226",
+      "role": "reviewer",
+      "eventCount": 116,
+      "logSha256": "2dcb169b1603c423b5d6b982de44ab9ea1c67e85b23c1f7daf44058214edd96e",
+      "controlRecordInsertions": 0,
+      "surfaceControlMessages": 0,
+      "extensionEvents": 0,
+      "requestsWithResponses": 16,
+      "routes": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "tokensReported": {
+        "inputTokens": 45422,
+        "outputTokens": 18247,
+        "cacheReadTokens": 414208,
+        "cacheWriteTokens": 0,
+        "totalTokens": 477877
+      },
+      "nativeGoalPlanTools": [],
+      "turnEndings": [
+        "completed"
+      ]
+    }
+  ],
+  "limitations": [
+    "One log-mode read-only integration task, not independent product execution or a benchmark.",
+    "Reported main Session usage includes subsequent paused-task validation; unreported interrupted upstream usage is unknown.",
+    "Browser rendering unverified: Computer Use returned ERR_BLOCKED_BY_CLIENT and an unavailable Codex auth token.",
+    "Install reports missing profile peers; official DSH module fallback supplies the shared SDK.",
+    "Historical 0.1.0 private extension logs still require their original Host."
+  ],
+  "retainedDevelopmentFailure": {
+    "sessionId": "session-f63e5d21-6b8e-41b3-a643-82ff78e86ef7",
+    "kind": "tool-result-interleaving",
+    "fixedBy": "Native Inbox insertion and synchronous delivery cancellation",
+    "notCountedAsPass": true
+  }
+}

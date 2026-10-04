@@ -1,4 +1,5 @@
 /** Bounded views over fixed Session evidence; offsets address redacted text. */
+import { controlEvent } from './session-records.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
@@ -36,6 +37,7 @@ export function textPage(text: string, offset = 0, limit = 3000) {
 }
 
 export function eventText(event: SessionEvent): string {
+  event = controlEvent(event)
   switch (event.type) {
     case 'tool/call': return event.data.arguments
     case 'extension/record': return JSON.stringify(event.data.payload)
@@ -51,6 +53,7 @@ function contentText(content: readonly { type: string; text?: string }[]): strin
 }
 
 export function evidenceRecord(event: SessionEvent): JsonValue {
+  event = controlEvent(event)
   const base = { seq: event.seq, type: event.type }
   const page = (limit: number) => textPage(eventText(event), 0, limit)
   switch (event.type) {

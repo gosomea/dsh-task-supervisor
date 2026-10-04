@@ -4,6 +4,10 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
 from urllib.parse import urlsplit
 from metrics import read_home
 
@@ -125,7 +129,7 @@ def inspect_chain(main_id, sessions, audit, condition="supervisor-log"):
     """Only accept reviewers named by this main Session's durable review jobs."""
     main = sessions[main_id]
     jobs = {}
-    for row in main:
+    for row in map(control_event, main):
         if row.get("type") == "extension/record" and row.get("data", {}).get("namespace") == "dsh-task-supervisor-review":
             job = row["data"]["payload"]
             if job.get("mainSessionId") != main_id:

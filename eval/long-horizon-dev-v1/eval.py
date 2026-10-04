@@ -10,6 +10,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
+
 ROOT = Path(__file__).resolve().parent
 CASES = {item["id"]: item for item in json.loads((ROOT / "dataset.json").read_text())["cases"]}
 
@@ -69,7 +73,7 @@ def check_revision(workspace: Path, events: list[dict]) -> dict:
     expected = {"count": len(values), "sum": sum(values), "max": max(values)}
     assert json.loads((workspace / "report.json").read_text()) == expected, "revised report differs"
 
-    states = [(event["seq"], event["data"]["payload"]) for event in events
+    states = [(event["seq"], event["data"]["payload"]) for event in map(control_event, events)
               if event.get("type") == "extension/record"
               and event["data"].get("namespace") == "dsh-task-supervisor"]
     assert states, "no Supervisor state in main Session"

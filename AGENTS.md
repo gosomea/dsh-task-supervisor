@@ -24,4 +24,4 @@ DSH 源码仓库的 13 个 skill 已从仓库根目录的 `.agents/skills/` 通�
 
 ## 当前状态
 
-这里已有可安装到**隔离 DSH checkout** 的宿主与 Web 客户端原型。持久化控制依赖该 checkout 中尚未合入标准 DSH 的 `extension/record` 与读取器准入扩展。[实现状态](docs/implementation.zh.md)区分已运行代码、宿主前提与尚未实现的完整设计；[试验记录](docs/host-spike.zh.md)保留最初发现持久化缺口的证据。
+当前版本使用公开 DSH 原生 Inbox 记录与 Agent preset，不要求私有 Host 扩展。原生控制记录不得进入模型对话或标记为 `ignorable`；插入与取消交付必须同步完成，防止破坏工具调用／结果配对。0.1.0 的旧扩展日志继续使用原宿主，本版本不改写历史日志。[安装验收](docs/native-install.zh.md)记录公开发行版测试与边界，[实现状态](docs/implementation.zh.md)区分已运行代码与后续设计。

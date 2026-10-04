@@ -10,6 +10,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
+
 ROOT = Path(__file__).resolve().parent
 CASES = {case["id"]: case for case in json.loads((ROOT / "dataset.json").read_text())["cases"]}
 WRITE_TOOLS = {"write", "edit", "apply_patch", "multi_edit"}
@@ -26,7 +30,8 @@ def events_from(path: Path) -> list[dict]:
 
 
 def approval(events: list[dict]) -> tuple[int, dict]:
-    for event in events:
+    for stored in events:
+        event = control_event(stored)
         if event.get("type") != "extension/record":
             continue
         data = event["data"]
@@ -50,11 +55,13 @@ def check_separate_turns(workspace: Path, events: list[dict]) -> dict:
 
     calls = {event["data"]["callId"]: event for event in events if event.get("type") == "tool/call"}
     successful = set()
-    for event in events:
+    for stored in events:
+        event = control_event(stored)
         if event.get("type") == "tool/result" and event["data"]["message"].get("isError") is False:
             successful.add(event["data"]["message"]["source"]["callId"])
     turns = {}
-    for event in events:
+    for stored in events:
+        event = control_event(stored)
         if event.get("seq", -1) <= approval_seq:
             continue
         if event.get("type") == "turn/end":

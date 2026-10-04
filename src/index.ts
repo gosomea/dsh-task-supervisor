@@ -1,4 +1,6 @@
 /** Native DSH task controller: durable state, human commands, and model tools. */
+import { installStandardHost } from './standard-host.ts'
+import { controlEvent } from './session-records.ts'
 
 import type { Context } from '@deepseek-ai/cordis'
 import { installClosingResponse, CLOSING_MESSAGE } from './closing-response.ts'
@@ -21,8 +23,7 @@ import { changedAttempts } from './rework-records.ts'
 import { installRepairs } from './repair-runtime.ts'
 import { taskExecutionError } from './repairs.ts'
 import { validateProvenance } from './provenance.ts'
-import { DRAFT_NAMESPACE } from './drafts.ts'
-import { REVIEW_NAMESPACE, REVIEW_RECORD_VERSIONS, faultFrom, recordReview } from './review-records.ts'
+import { faultFrom, recordReview } from './review-records.ts'
 import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
 import { prepareCapabilities, type VerificationNeeds, type VerificationCapability } from './review-capabilities.ts'
 import { verificationPolicy, type VerificationConfig } from './verification.ts'
@@ -30,12 +31,12 @@ import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
 import { installPanelApi } from './panel-api.ts'
 import {
-  NAMESPACE, READABLE_RECORD_VERSIONS, taskSchema, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
+  NAMESPACE, taskSchema, criterionSchema, stageSchema, appendTask, newTask, taskJson, taskOf, taskProjection, validatePlan,
   type TaskSnapshot,
 } from './state.ts'
 
 export const name = 'task-supervisor'
-export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt', 'llm']
+export const inject = ['agentPresets', 'loader', 'agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt', 'llm']
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -115,7 +116,7 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 }
 
 /** Register one independently owned workflow on public DSH seams. */
-export function apply(ctx: Context, config: Config = {}): void {
+export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const reviewerPolicy = reviewPolicy({ ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
@@ -163,6 +164,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   if (config.planCoverageReview !== undefined && typeof config.planCoverageReview !== 'boolean') {
     throw new TypeError('planCoverageReview must be a boolean')
   }
+  const bindSupervisedSession = await installStandardHost(ctx)
   const lifetimes = new WeakMap<Agent, Runtime>()
   const knownAgents = new Set<Agent>()
   const reviewAbort = new Map<Agent, AbortController>()
@@ -196,7 +198,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     life.armed = false
     reviewAbort.get(agent)?.abort(new Error('Supervisor state changed'))
     for (const message of [...agent.inbox.nextStep, ...agent.inbox.nextTurn]) {
-      if (message.source.kind === 'task-supervisor') agent.inbox.remove(message.id)
+      if ((message.source.kind === 'task-supervisor' || message.source.kind === 'task-supervisor-record')) agent.inbox.remove(message.id)
     }
     if (life.ownedTurn && agent.status === 'running') {
       agent.cancel({ kind: 'hook', reason: 'Supervisor stopped' }, { keepInbox: true })
@@ -204,7 +206,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 
   function hasPending(agent: Agent): boolean {
-    return agent.inbox.nextStep.length > 0 || agent.inbox.nextTurn.length > 0
+    return [...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(message => message.source.kind !== 'task-supervisor-record')
   }
 
   /** Completed post-approval read turns survive restart; aborted turns never unlock writes. */
@@ -212,7 +214,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     const required = task.readOnlyTurnsBeforeWrite ?? 0
     const start = task.readOnlyGateStartSeq
     if (required === 0 || start === null || start === undefined) return 0
-    const events = agent.session.snapshotEvents().filter(event => event.seq >= start)
+    const events = agent.session.snapshotEvents().map(controlEvent).filter(event => event.seq >= start)
     const readCalls = new Set(events.filter(event => event.type === 'tool/call'
       && gateReadTools.has(event.data.name)).map(event => event.type === 'tool/call' ? event.data.callId : ''))
     const readTurns = new Set(events.filter(event => event.type === 'tool/result'
@@ -257,7 +259,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         signal.throwIfAborted()
         const delivered = current(agent)
         if (disposed || delivered?.id !== committed.id || delivered.revision !== committed.revision
-          || [...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(item => item.id !== message.id)) throw new Error('task or inbox changed during delivery')
+          || [...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(item => item.id !== message.id && item.source.kind !== 'task-supervisor-record')) throw new Error('task or inbox changed during delivery')
       } catch (error) {
         agent.inbox.remove(message.id)
         runtime(agent).armed = false
@@ -285,9 +287,6 @@ export function apply(ctx: Context, config: Config = {}): void {
     })
   }
 
-  ctx.agents.registerSessionControlReader(NAMESPACE, READABLE_RECORD_VERSIONS)
-  ctx.agents.registerSessionControlReader(REVIEW_NAMESPACE, REVIEW_RECORD_VERSIONS)
-  ctx.agents.registerSessionControlReader(DRAFT_NAMESPACE, [1])
   ctx.sessionProjections.register(taskProjection)
   ctx.systemPrompt.section({ name: 'task-supervisor:planning', order: 2451, interpolate: false,
     text: context => {
@@ -305,9 +304,10 @@ export function apply(ctx: Context, config: Config = {}): void {
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
   async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string): Promise<TaskSnapshot> {
+    await bindSupervisedSession(agent)
     if (effectiveVerification === 'independent' && config.requiredVerification) await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, config.requiredVerification, AbortSignal.timeout(reviewerPolicy.deadlineMs))
     if (creationId) {
-      for (const event of agent.session.snapshotEvents()) {
+      for (const event of agent.session.snapshotEvents().map(controlEvent)) {
         if (event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state') {
           const parsed = taskSchema.safeParse(event.data.payload)
           if (parsed.success && parsed.data.creationRequestId === creationId) return parsed.data
@@ -341,7 +341,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     life.ownedTurn = false
     if (source === 'resume') {
       for (const message of [...agent.inbox.nextStep, ...agent.inbox.nextTurn]) {
-        if (message.source.kind === 'task-supervisor') agent.inbox.remove(message.id)
+        if ((message.source.kind === 'task-supervisor' || message.source.kind === 'task-supervisor-record')) agent.inbox.remove(message.id)
       }
       await flush(agent)
     }
@@ -358,7 +358,7 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   function approvalFor(agent: Agent, task: TaskSnapshot) {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
-    return policyApproval(task, agent.id, agent.session.snapshotEvents(), job)
+    return policyApproval(task, agent.id, agent.session.snapshotEvents().map(controlEvent), job)
   }
 
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
@@ -382,7 +382,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   async function observeStep(agent: Agent, task: TaskSnapshot, signal: AbortSignal, atIdle = false): Promise<TaskSnapshot | null> {
     const life = runtime(agent)
     const planning = task.phase === 'planning'
-    const ending = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+    const ending = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')
     if (atIdle && planning && task.planning && (ending?.seq ?? -1) <= task.planning.cutoff) return null
     if ((planning ? config.planningSupervision === false : progressReviewMode === 'required-only')
       || (!atIdle && config.observeLongTurns === false) || !life.armed || !task.enabled || !['planning', 'active'].includes(task.phase)
@@ -394,7 +394,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
       if (!atIdle) return null
     }
-    const reason = atIdle ? 'Planning turn ended without a submitted plan' : observationReason(agent.session.snapshotEvents(), life.observation, observationPolicy, Date.now())
+    const reason = atIdle ? 'Planning turn ended without a submitted plan' : observationReason(agent.session.snapshotEvents().map(controlEvent), life.observation, observationPolicy, Date.now())
     if (reason === null) return null
     const stageId = planning ? 'planning' : node?.id ?? 'completion'
     const abort = new AbortController()
@@ -540,15 +540,15 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (task === null || !['active', 'planning'].includes(task.phase) || !task.enabled || !runtime(agent).armed
       || hasPending(agent) || reviewAbort.has(agent) || task.pendingReview !== null) return
     scheduling.add(agent)
-    const admittedEnd = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.seq ?? -1
+    const admittedEnd = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')?.seq ?? -1
     void ctx.agents.withoutInitiator(async () => {
       try {
         const latest = current(agent)
         if (disposed || latest === null || latest.id !== task.id || latest.revision !== task.revision
           || !['active', 'planning'].includes(latest.phase) || !runtime(agent).armed || hasPending(agent) || reviewAbort.has(agent) || latest.pendingReview !== null) return
-        const ending = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+        const ending = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')
         if (ending?.type === 'turn/end' && !['completed', 'max-tokens'].includes(ending.data.reason.kind)) { runtime(agent).armed = false; return }
-        const boundary = recoveryBoundary(agent.session.snapshotEvents(), latest)
+        const boundary = recoveryBoundary(agent.session.snapshotEvents().map(controlEvent), latest)
         if (boundary && config.truncationRecovery === false) { runtime(agent).armed = false; return }
         if (latest.phase === 'planning' && config.planningSupervision !== false && boundary && latest.recovery) {
           await reviewPlanning(agent, latest)
@@ -597,7 +597,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         // A very short continuation can finish while the previous maintenance job releases.
         // Reinspect only a newer native ending; never re-drive the same idle notification.
         if (!disposed && ctx.agents.get(agent.id) === agent && agent.status === 'idle' && taskOf(ctx, agent)?.phase === 'planning'
-          && (agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.seq ?? -1) > admittedEnd) onIdle(agent)
+          && (agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')?.seq ?? -1) > admittedEnd) onIdle(agent)
       }
     })
   }
@@ -788,7 +788,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),
         historicalTasks: state?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [],
         readyNodeIds: readyNodes(task),
-        approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents(), task) }
+        approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents().map(controlEvent), task) }
     },
   }))
 
@@ -818,7 +818,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       if (task.lastApproval?.planVersion === args.plan_version
         && task.lastApproval.userMessageSeq === args.user_message_seq) return { approved: true, duplicate: true }
-      if (approvalMessage(agent.session.snapshotEvents(), task) !== args.user_message_seq) {
+      if (approvalMessage(agent.session.snapshotEvents().map(controlEvent), task) !== args.user_message_seq) {
         throw new Error('a current, unambiguous direct user approval is required')
       }
       const next = approvedTask(task, agent.session.seq, args.user_message_seq)
@@ -867,7 +867,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const parsed = planInput.parse(args)
       validatePlan(parsed.criteria, parsed.stages)
-      validateProvenance(parsed.criteria, agent.session.snapshotEvents())
+      validateProvenance(parsed.criteria, agent.session.snapshotEvents().map(controlEvent))
       const readOnlyTurnsBeforeWrite = parsed.read_only_turns_before_write ?? 0
       if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
         throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')

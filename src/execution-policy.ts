@@ -1,4 +1,5 @@
 /** Resolve a durable execution grant; eligibility never schedules execution. */
+import { controlEvent } from './session-records.ts'
 import { isDeepStrictEqual } from 'node:util'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ReviewJob } from './review-records.ts'
@@ -14,6 +15,7 @@ export interface PolicyApproval {
 /** The caller must separately verify the live revision and continuation state. */
 export function policyApproval(task: TaskSnapshot, mainSessionId: string,
   events: readonly SessionEvent[], job: ReviewJob | null | undefined): PolicyApproval | null {
+  events = events.map(controlEvent)
   const parsed = taskSchema.shape.approvalPolicy.safeParse(task.approvalPolicy)
   const policy = parsed.success ? parsed.data : undefined
   if (!policy || policy.mode !== 'after-review' || policy.mainSessionId !== mainSessionId

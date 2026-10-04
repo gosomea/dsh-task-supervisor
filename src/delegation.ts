@@ -1,4 +1,5 @@
 /** Main-Agent initiated native workers with disjoint file ownership and a required integration handoff. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -25,11 +26,11 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
   const batches = new Map<Agent, Batch>()
   const owners = new Map<Agent, Ownership>()
   const failedTurns = new WeakSet<Agent>()
-  ctx.agents.registerSessionControlReader(NAMESPACE, [1])
+
   // Closed workers are evidence only. A new attempt must be dispatched by the main controller.
   ctx.on('agent/pre-step', ({ agent }, next) => {
     if (failedTurns.has(agent)) return Promise.resolve({ kind: 'reject' as const })
-    const worker = agent.session.snapshotEvents().some(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE)
+    const worker = agent.session.snapshotEvents().map(controlEvent).some(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE)
     return worker && !owners.has(agent) ? Promise.resolve({ kind: 'reject' as const }) : next()
   })
   ctx.on('agent/status', ({ agent, status }) => { if (status === 'idle') failedTurns.delete(agent) })
@@ -121,7 +122,7 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
             } })
           batch.handles.push(handle)
           owners.set(handle.agent, { main, revision: started.revision, keys: node.keys })
-          handle.agent.session.append('extension/record', { namespace: NAMESPACE, schemaVersion: 1, kind: 'binding', recordId: node.sessionId,
+          appendControlRecord(handle.agent, { namespace: NAMESPACE, schemaVersion: 1, kind: 'binding', recordId: node.sessionId,
             payload: { mainSessionId: main.id, taskId: task.id, planVersion: task.planVersion, nodeId: node.stage.id, attempt: run.attempt } })
           signal.throwIfAborted()
           handle.agent.followup(createUserMessage({ source: { kind: 'task-node-worker', taskId: task.id, nodeId: node.stage.id, attempt: run.attempt },
@@ -129,7 +130,7 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
           await handle.agent.whenIdle()
           signal.throwIfAborted()
           if (!await ctx.sessions.flush(handle.agent.session)) throw new Error('worker evidence is not durable')
-          const events = handle.agent.session.snapshotEvents()
+          const events = handle.agent.session.snapshotEvents().map(controlEvent)
           const end = [...events].reverse().find(event => event.type === 'turn/end')
           if (end?.type !== 'turn/end' || end.data.reason.kind !== 'completed') throw new Error(`node ${node.stage.id} did not complete its worker turn`)
           report ??= finalAssistantOutput(events)?.filter(block => block.type === 'text').map(block => block.text).join('\n') ?? null
@@ -174,7 +175,7 @@ export function installDelegation(ctx: Context, armed: (agent: Agent) => boolean
 export function requireIntegration(agent: Agent, nodeId: string, tools: readonly string[], ctx: Context) {
   const run = runsOf(taskOf(ctx, agent)!).find(run => run.id === nodeId)
   if (run?.integrationAfterSeq === undefined) return
-  const events = agent.session.snapshotEvents().filter(e => e.seq >= run.integrationAfterSeq!)
+  const events = agent.session.snapshotEvents().map(controlEvent).filter(e => e.seq >= run.integrationAfterSeq!)
   const calls = new Set(events.filter(e => e.type === 'tool/call' && tools.includes(e.data.name)).map(e => e.type === 'tool/call' ? e.data.callId : ''))
   if (!events.some(e => e.type === 'tool/result' && !e.data.message.isError && calls.has(e.data.message.source.callId))) {
     throw new Error('run a main-Session integration check after worker settlement before reporting this node')

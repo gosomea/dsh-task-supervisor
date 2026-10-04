@@ -1,4 +1,5 @@
 /** Persistent main-Session consultation; proposals never grant execution authority. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -20,7 +21,7 @@ type Binding = z.infer<typeof bindingSchema>
 type CreateTask = (main: Agent, objective: string, creationId?: string) => Promise<TaskSnapshot>
 export type ConsultationMode = 'discussion' | 'direct'
 export function consultationMode(chat: Agent, before = Infinity): ConsultationMode {
-  const record = chat.session.snapshotEvents().findLast(e => e.seq < before && e.type === 'extension/record'
+  const record = chat.session.snapshotEvents().map(controlEvent).findLast(e => e.seq < before && e.type === 'extension/record'
     && e.data.namespace === NAMESPACE && e.data.kind === 'input-mode')
   if (record?.type !== 'extension/record') return 'discussion'
   return z.object({ mode: z.enum(['discussion', 'direct']) }).strict().parse(record.data.payload).mode
@@ -30,7 +31,7 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 export function consultationBinding(agent: Agent): Binding | null {
-  for (const event of agent.session.snapshotEvents()) {
+  for (const event of agent.session.snapshotEvents().map(controlEvent)) {
     if (event.type !== 'extension/record' || event.data.namespace !== NAMESPACE || event.data.kind !== 'binding') continue
     if (![1, 2].includes(event.data.schemaVersion)) throw new Error('unsupported consultation binding')
     const binding = bindingSchema.parse(event.data.payload)
@@ -58,7 +59,7 @@ export function consultationDirective(text: string): string | null {
 }
 
 export function installConsultation(ctx: Context, fixedModel: ReviewerModel | undefined, createTask: CreateTask, repairs?: RepairController) {
-  ctx.agents.registerSessionControlReader(NAMESPACE, [1, 2])
+
   const floors = new WeakMap<Agent, number>()
   const targets = new WeakMap<Agent, { messageId: string; taskId: string | null }>()
   const opening = new Map<string, Promise<Agent>>()
@@ -78,30 +79,30 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     return { main, task }
   }
   function directUser(chat: Agent, seq: number) {
-    const event = chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    const event = chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
     if (event?.type !== 'user/message' || event.seq !== seq || seq < (floors.get(chat) ?? 0)) throw new Error('需要当前直接用户消息，不能复用历史或摘要授权。')
     return event
   }
   function userText(chat: Agent) {
-    const event = chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    const event = chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
     return event?.type === 'user/message' ? event.data.content.filter(b => b.type === 'text').map(b => b.text).join('\n') : ''
   }
   function directiveOf(chat: Agent): string | null {
     const text = userText(chat)
     const explicit = consultationDirective(text)
     if (explicit) return explicit
-    const user = chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    const user = chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
     return user && consultationMode(chat, user.seq) === 'direct' && text.trim() && !text.trim().startsWith('/') ? `new ${text.trim()}` : null
   }
   async function once(main: Agent, id: string, operation: () => Promise<unknown>, source: Record<string, string | number | null>) {
-    const prior = main.session.snapshotEvents().findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
+    const prior = main.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
     if (prior?.type === 'extension/record') return prior.data.payload
     const active = operations.get(id)
     if (active) return active
     const run = (async () => {
       const receipt = async (status: string, detail: string) => {
         const payload = { actionId: id, status, detail, ...source }
-        main.session.append('extension/record', { namespace: NAMESPACE, schemaVersion: 2, kind: 'action', recordId: id, payload })
+        appendControlRecord(main, { namespace: NAMESPACE, schemaVersion: 2, kind: 'action', recordId: id, payload })
         if (!await ctx.sessions.flush(main.session)) throw new Error('control receipt is not durable')
         return payload
       }
@@ -152,7 +153,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     const user = messages.findLast(message => message.source.kind === 'user')
     if (user && targets.get(agent)?.messageId !== user.id) targets.set(agent, { messageId: user.id, taskId: task?.id ?? null })
     const language = resolveLanguage(userText(agent), 'auto', draft?.language ?? task?.responseLanguage ?? 'zh-CN')
-    const latestUser = agent.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+    const latestUser = agent.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
     const mode = consultationMode(agent, latestUser?.seq)
     return { ...decision, messages: [...decision.messages, createUserMessage({ source: { kind: 'task-consultation-context' },
       content: [{ type: 'text', text: [
@@ -175,7 +176,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
       async execute(_args, exec) {
         if (!exec.agent) throw new Error('no Agent')
         const { main, task } = mainOf(exec.agent)
-        const user = exec.agent.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
+        const user = exec.agent.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
         const projection = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')
         return { repairProposals: JSON.parse(JSON.stringify(projection?.repairs ?? [])) as JsonValue, historicalTasks: projection?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [], task: task ? taskJson(task) : null, draft: draftOf(ctx, main), mainSessionId: main.id,
           taskId: task?.id ?? 'none', revision: task?.revision ?? 0, cutoff: main.session.seq - 1,
@@ -245,7 +246,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         if (!directive || directive === 'create-draft' || directive !== args.directive) throw new Error('当前用户消息没有明确授权此操作。')
         const { main, task } = mainOf(chat)
         const id = `${chat.id}:${user.seq}`
-        const prior = main.session.snapshotEvents().findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
+        const prior = main.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
         if (prior?.type === 'extension/record') return prior.data.payload
         if (args.task_id !== (task?.id ?? 'none') || args.revision !== (task?.revision ?? 0)) throw new Error('任务状态已变化，请重新读取。')
         const target = targets.get(chat)
@@ -269,7 +270,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     },
     async setMode(main: Agent, mode: ConsultationMode): Promise<void> {
       const chat = await this.open(main)
-      chat.session.append('extension/record', { namespace: NAMESPACE, schemaVersion: 2, kind: 'input-mode',
+      appendControlRecord(chat, { namespace: NAMESPACE, schemaVersion: 2, kind: 'input-mode',
         recordId: randomUUID(), payload: { mode } })
       if (!await ctx.sessions.flush(chat.session)) throw new Error('输入模式未持久化')
     },
@@ -287,7 +288,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
             meta: { ...main.session.header.cwd === undefined ? {} : { cwd: main.session.header.cwd } } })
         owned.add(handle.dispose)
         if (!exists) {
-          handle.agent.session.append('extension/record', { namespace: NAMESPACE, schemaVersion: 2, kind: 'binding', recordId: id, payload: { mainSessionId: main.id } })
+          appendControlRecord(handle.agent, { namespace: NAMESPACE, schemaVersion: 2, kind: 'binding', recordId: id, payload: { mainSessionId: main.id } })
           floors.set(handle.agent, handle.agent.session.seq)
         }
         if (!await ctx.sessions.flush(handle.agent.session)) throw new Error('consultation Session is not durable')

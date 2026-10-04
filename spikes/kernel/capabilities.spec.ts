@@ -1,3 +1,5 @@
+import { controlEvent } from '../../src/session-records.ts'
+import { installNativePresets } from './native-presets.ts'
 /** Real DSH services with scripted model output; these experiments do not measure review quality. */
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
@@ -83,6 +85,7 @@ async function kernel(adapter: ScriptedAdapter, root?: string) {
   await ctx.plugin(AgentRegistry)
   if (root) await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
+  await installNativePresets(ctx)
   ctx.effect(() => ctx.llm.registerAdapter(['scripted'], adapter))
   return ctx
 }
@@ -135,7 +138,7 @@ describe('Supervisor kernel capability experiments', () => {
     expect(adapter.requests).toHaveLength(0)
     agent.followup(message('Read the task.'))
     await agent.whenIdle()
-    expect(agent.session.snapshotEvents().filter(e => e.type === 'tool/result')).toHaveLength(1)
+    expect(agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'tool/result')).toHaveLength(1)
     expect(ctx.commands.list(agent).map(c => c.name)).toEqual(['task'])
     expect(ctx.get('goals')).toBeUndefined()
     expect(ctx.get('planMode')).toBeUndefined()
@@ -162,7 +165,7 @@ describe('Supervisor kernel capability experiments', () => {
     main.followup(message('Execute one stage.'))
     await entered.promise
     expect(adapter.requests.map(r => r.model)).toEqual(['executor'])
-    const prefix = main.session.snapshotEvents()
+    const prefix = main.session.snapshotEvents().map(controlEvent)
     const cutoff = prefix.at(-1)!.seq
     const { agent: reviewer } = await makeAgent(ctx, 'checkpoint-reviewer', 'reviewer')
     let readEvidence: readonly SessionEvent[] = []
@@ -215,7 +218,7 @@ describe('Supervisor kernel capability experiments', () => {
     agent.followup(message('one next action'))
     await agent.whenIdle()
     expect(adapter.requests).toHaveLength(1)
-    const admitted = agent.session.snapshotEvents().filter(e => e.type === 'user/message')
+    const admitted = agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message')
     expect(admitted).toHaveLength(2)
     expect(admitted.every(e => e.data.source.kind === 'supervisor-spike')).toBe(true)
   })
@@ -275,7 +278,7 @@ describe('Supervisor kernel capability experiments', () => {
     expect(agent.inbox.nextTurn).toHaveLength(1)
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'What is the status?' }], source: { kind: 'user' } }))
     await agent.whenIdle()
-    const inputs = agent.session.snapshotEvents().filter(e => e.type === 'user/message')
+    const inputs = agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message')
     expect(inputs.map(e => e.data.source.kind)).toEqual(['supervisor-spike', 'user'])
     expect(adapter.requests).toHaveLength(2)
   })
@@ -310,7 +313,7 @@ describe('Supervisor kernel capability experiments', () => {
     agent.steer(createUserMessage({ content: [{ type: 'text', text: 'Show the recovered state.' }], source: { kind: 'user' } }))
     await agent.whenIdle()
     expect(adapter.requests).toHaveLength(1)
-    const inputs = agent.session.snapshotEvents().filter(e => e.type === 'user/message')
+    const inputs = agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message')
     expect(inputs.flatMap(e => e.data.content).some(block => block.type === 'text' && block.text === 'old continuation')).toBe(false)
   })
 

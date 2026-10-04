@@ -9,7 +9,7 @@ export default defineConfig([{
   dts: false,
   clean: true,
   sourcemap: false,
-  deps: { neverBundle: ['@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-tools'] },
+  deps: { neverBundle: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-tools'] },
 }, {
   entry: { client: 'src/client/index.tsx' },
   outDir: 'lib',

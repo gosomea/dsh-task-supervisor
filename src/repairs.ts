@@ -1,4 +1,5 @@
 /** Completed-task repair proposals and deterministic acceptance-cycle transitions. */
+import { controlEvent } from './session-records.ts'
 import { z } from 'zod'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { affectedNodes, runsOf, withRuns } from './graph.ts'
@@ -59,6 +60,7 @@ export function reopenTask(task: TaskSnapshot, proposal: RepairProposal, evidenc
 }
 
 export function foldRepairs(current: RepairProposal[], event: SessionEvent): RepairProposal[] {
+  event = controlEvent(event)
   if (event.type !== 'extension/record' || event.data.namespace !== REPAIR_NAMESPACE) return current
   if (event.data.schemaVersion !== 1) throw new Error('unsupported repair record')
   if (event.data.kind === 'proposal') {

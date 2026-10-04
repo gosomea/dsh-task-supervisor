@@ -1,6 +1,10 @@
 """Bind native stop observations to admitted controller sources and Session events."""
 import hashlib
 from pathlib import Path
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
 import re
 
 from metrics import read_home
@@ -33,7 +37,7 @@ def goal_stop_evidence(events, values, driver_sha):
     if (event.get('type') != 'turn/end' or (data.get('reason') or {}).get('kind') != 'max-tokens'
             or data.get('turn') != stats.get('lastTurn') or data.get('turn') != boundary.get('lastTurn')):
         return None
-    change = next((row for row in reversed(events) if row.get('type') == 'goal/change'), None)
+    change = next((row for row in map(control_event, reversed(events)) if row.get('type') == 'goal/change'), None)
     changed = ((change or {}).get('data') or {}).get('goal') or {}
     if (not goal.get('id') or not goal.get('revision')
             or any(changed.get(key) != goal[key] for key in ('id', 'revision'))):
@@ -79,7 +83,7 @@ def plan_stop_evidence(events, values, source_sha):
             or type(data.get('turn')) is not int
             or data['turn'] != stats.get('lastTurn') or data['turn'] != boundary.get('lastTurn')):
         return None
-    change = next((row for row in reversed(events) if row.get('type') == 'plan/mode'), None)
+    change = next((row for row in map(control_event, reversed(events)) if row.get('type') == 'plan/mode'), None)
     if change is None or (change.get('data') or {}).get('active') is not plan['active']:
         return None
     return {'kind': 'plan-mode-no-continuation', 'reason': 'max-tokens',
@@ -127,7 +131,7 @@ def supervisor_planning_stop_evidence(events, values, source_sha):
             or type(data.get('turn')) is not int
             or data['turn'] != stats.get('lastTurn') or data['turn'] != boundary.get('lastTurn')):
         return None
-    change = next((row for row in reversed(events) if row.get('type') == 'extension/record'
+    change = next((row for row in map(control_event, reversed(events)) if row.get('type') == 'extension/record'
                    and (row.get('data') or {}).get('namespace') == 'dsh-task-supervisor'), None)
     changed = (change or {}).get('data') or {}
     payload = changed.get('payload') or {}

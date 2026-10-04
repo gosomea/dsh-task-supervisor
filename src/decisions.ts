@@ -1,4 +1,5 @@
 /** Version-bound approval from a direct user message, never an injected prompt. */
+import { controlEvent } from './session-records.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { NAMESPACE, type TaskSnapshot } from './state.ts'
 
@@ -10,7 +11,7 @@ export function isApprovalText(text: string): boolean {
 export function approvalMessage(events: readonly SessionEvent[], task: TaskSnapshot): number | null {
   let planSeq = -1
   let latestUser: Extract<SessionEvent, { type: 'user/message' }> | undefined
-  for (const event of events) {
+  for (const event of events.map(controlEvent)) {
     if (event.type === 'extension/record' && event.data.namespace === NAMESPACE) {
       const payload = event.data.payload
       if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)

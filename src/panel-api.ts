@@ -1,4 +1,5 @@
 /** Web panel transport on DSH Connection's authenticated Fetch surface. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
@@ -42,7 +43,7 @@ async function coldState(ctx: Context, sessionId: string, signal: AbortSignal): 
 async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undefined, signal: AbortSignal) {
   const collector = createTaskHistoryCollector()
   if (agent) {
-    for (const event of agent.session.snapshotEvents()) collector.add(event)
+    for (const event of agent.session.snapshotEvents().map(controlEvent)) collector.add(event)
     return collector.finish()
   }
   const id = SessionId(sessionId)
@@ -175,7 +176,7 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           try {
             const confirmation = { draftId: body.draftId, draftVersion: body.draftVersion, taskId: current?.id ?? null,
               taskRevision: current?.revision ?? null, source: 'web-confirmation', confirmedAt: new Date().toISOString() }
-            agent.session.append('extension/record', { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
+            appendControlRecord(agent, { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
               kind: 'confirmation', recordId: `web-draft:${body.draftId}:${body.draftVersion}`, payload: confirmation })
             if (!await ctx.sessions.flush(agent.session)) throw new Error('创建确认未持久化，请重试。')
             await consultation.promote(agent, body.draftId, body.draftVersion)

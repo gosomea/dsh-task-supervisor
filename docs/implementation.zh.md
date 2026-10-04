@@ -1,5 +1,7 @@
 # 实现状态
 
+**2026-10-04：0.1.1 普通安装适配。** 原生持久记录与 preset 准入已实现，投影缓存为 17。当前安装验收与限制以[安装验收](native-install.zh.md)为准；下方早期版本测试保留历史范围。
+
 **更新：2026-09-30。** [通用独立审查增强](review-quality.zh.md)步骤 0–3 已实现并分别提交。当前任务记录 14、投影缓存 16、审查记录 5；旧记录继续读取且不补造独立证据。[真实模型夹具](../eval/independent-verification/generic-quality-20260930/README.zh.md)验证了只读静态验收、正确数据复算通过和错误数据退回，并保留首次静态审查超时。完整静态任务已通过原生控制器完成；Kea 官方回归 reward 为 0，正式计划协议故障导致超时、空补丁封口，后续修复与完整任务验收另存。下文保留早期版本的历史范围。
 
 **更新：2026-09-29。规划监督、主模型与审查者有限截断恢复、可选执行预授权已实现。** 当前任务记录版本 14 可读 1–14，投影版本 15 重建，审查记录版本 3 可读 1–3。[验收记录](planning-supervision-validation.zh.md)维护当前源码门禁、真实模型探针和限制。下列 A–F 表及早期迭代章节保留其历史范围与数量。
@@ -80,9 +82,9 @@ A 的独立验收范围是记录与分类；补交、恢复按钮和草案随后
 
 宿主入口是 [`src/index.ts`](../src/index.ts)：注册 `/task`、任务模型工具、生命周期监听器、工具执行保护和可选的 Web 路由。Web 客户端位于 [`src/client/index.tsx`](../src/client/index.tsx)，挂载到 DSH 右侧边栏标签，通过 Connection 已认证的 `/api/task-supervisor` Fetch 路由读取和控制绑定任务。主 Agent 的文本、Markdown 与附件继续由原生会话渲染，插件不复制成卡片。检查点成功落盘后允许一次无工具的模型收尾回答；这一步仍写入原生 assistant 事件，下一节点等回答结束后由唯一控制器调度。审查摘要单独标注 Supervisor，并从“查看审查”打开右侧对应全文。该路由不另开监听端口，返回由 Session 派生的状态。已关闭的 Session 可用有界的持久层分页读取；控制操作需要存活的 Agent。
 
-任务记录作为 `extension/record` 事件保存在主 DSH Session。[`src/state.ts`](../src/state.ts)校验并折叠每次转换的完整状态。审查者使用自己的原生子 Session；主记录保存审查 Session ID、实际模型、证据 seq 和固定的主日志截止点。审查者持有绑定主 Session 的 `read_task_evidence`：每页最多 30 个事件，正文限长，并脱敏常见密钥模式；需要核查时还能用 `read_task_call` 按事件序号读取单个工具参数。工具保护拒绝其他审查工具。主 Session 文本是证据，不能成为审查者的指令。
+任务记录保存在主 DSH Session 的原生 `agent/inbox/spliced` 事件中。带插件来源的内部消息在同一同步调用内插入并取消交付，payload 保留在持久日志，不进入模型对话。`src/session-records.ts` 为状态投影提供只读归一化视图；不写新事件类型，不伪造用户指令，不标记 `ignorable`。审查、草案、修复和督导绑定复用这一载体，原 seq 与时间保持不变。
 
-配套的宿主变更位于隔离的 `deepseek-harness-supervisor-seam` 工作树。它增加原生、仅记录日志的 `extension/record` 事件，以及按 Cordis effect 生命周期注册的 `registerSessionControlReader(namespace, versions)` 准入检查；恢复时和领取每一步 inbox 输入前都会检查。缺少兼容读取器时，受控 Session 拒绝执行。这是当前必需的 DSH 前置扩展，尚非已发布的公共接缝；标准 DSH 构建目前不能安全运行此原型。
+`src/standard-host.ts` 从原生 preset 声明生成 Supervisor 变体并保留配置，只在该变体中停用 Goal／Plan 工作流行。空白 Session 可由 `/task new` 选择；已开始的普通 Session 必须新建。原生 preset 身份持久化后，缺插件的冷恢复无法加载该模式；热卸载保留的原生作用域门禁拒绝下一步与工具执行。0.1.0 的 `extension/record` 日志仍需原宿主；旧记录读取支持不等同于公开 DSH 解码器支持。完整版本和证据见[安装验收](native-install.zh.md)。
 
 ## 控制行为
 

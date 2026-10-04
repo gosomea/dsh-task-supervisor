@@ -1,4 +1,5 @@
 /** Fresh, read-only reviewer over a fixed main Session evidence cutoff. */
+import { controlEvent } from './session-records.ts'
 
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
@@ -129,7 +130,7 @@ export function reviewTruncationBoundary(events: readonly SessionEvent[]): { end
 
 function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
   const failures = new Map<string, JsonValue>()
-  for (const event of main.session.snapshotEvents()) {
+  for (const event of main.session.snapshotEvents().map(controlEvent)) {
     if (event.type !== 'extension/record' || event.data.namespace !== NAMESPACE) continue
     const parsed = taskSchema.safeParse(event.data.payload)
     if (!parsed.success || parsed.data.id !== task.id
@@ -235,13 +236,13 @@ async function runReviewStage(
         output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
         async execute(args) {
           if (args.seq !== undefined) {
-            const event = main.session.snapshotEvents().find(item => item.seq === args.seq && item.seq <= cutoff && item.type === 'user/message' && item.data.source.kind === 'user')
+            const event = main.session.snapshotEvents().map(controlEvent).find(item => item.seq === args.seq && item.seq <= cutoff && item.type === 'user/message' && item.data.source.kind === 'user')
             if (!event) throw new Error('select an original direct user message inside this cutoff')
             observedSeqs.add(event.seq)
             if (job.verification) { job.verification.readInputs = [...new Set([...(job.verification.readInputs ?? []), event.seq])]; await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
             return { seq: event.seq, cutoff, ...textPage(eventText(event), args.offset, args.chars) }
           }
-          const messages = main.session.snapshotEvents().filter(event => event.seq <= cutoff && event.seq >= (args.from_seq ?? 0) && event.type === 'user/message' && event.data.source.kind === 'user')
+          const messages = main.session.snapshotEvents().map(controlEvent).filter(event => event.seq <= cutoff && event.seq >= (args.from_seq ?? 0) && event.type === 'user/message' && event.data.source.kind === 'user')
           const events = messages.slice(0, Math.min(30, Math.max(1, args.limit ?? 10)))
           for (const event of events) observedSeqs.add(event.seq)
           if (job.verification) { job.verification.readInputs = [...new Set([...(job.verification.readInputs ?? []), ...events.map(event => event.seq)])]; await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
@@ -258,7 +259,7 @@ async function runReviewStage(
         output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
         async execute(args) {
           assertComparison()
-          const page = taskEvidenceIndex(main.session.snapshotEvents(), cutoff, { ...args.from_seq === undefined ? {} : { fromSeq: args.from_seq }, ...args.limit === undefined ? {} : { limit: args.limit }, ...args.types ? { types: args.types } : {}, ...args.tool ? { tool: args.tool } : {}, ...args.errors_only === undefined ? {} : { errorsOnly: args.errors_only } })
+          const page = taskEvidenceIndex(main.session.snapshotEvents().map(controlEvent), cutoff, { ...args.from_seq === undefined ? {} : { fromSeq: args.from_seq }, ...args.limit === undefined ? {} : { limit: args.limit }, ...args.types ? { types: args.types } : {}, ...args.tool ? { tool: args.tool } : {}, ...args.errors_only === undefined ? {} : { errorsOnly: args.errors_only } })
           for (const entry of page.entries) locatedSeqs.add(entry.seq)
           return { sessionId: main.id, ...page }
         },
@@ -494,7 +495,7 @@ async function runReviewStage(
       if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
       if (submitted !== undefined) break
       signal.throwIfAborted()
-      const events = handle.agent.session.snapshotEvents()
+      const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
       const errorResult = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
       const errorCall = errorResult?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === errorResult.data.message.source.callId) : undefined
@@ -515,7 +516,7 @@ async function runReviewStage(
         content: [{ type: 'text', text: `${languagePolicy(task)}\n${truncated ? `The actual latest native request reached its output limit (max-tokens, turn ${truncated.turn}, end seq ${truncated.endSeq}). Preserve evidence already read in this Session and any recorded independent observations; do not repeat long reasoning or replay uncertain tool effects.` : 'The previous turn ended without recording a valid task_review_decision.'} This is repair ${job.attempt - firstAttempt}/${job.repairLimit} for the SAME review, Session, task revision ${task.revision} and cutoff ${cutoff}. Submit the decision using the tool, not prose. Required fields: verdict (pass, revise, needs-user), finding, evidence_seqs (nonempty, all read through the bound tools). ${reviewKind === 'planning' ? 'Planning reviews also require planning={facts,unknowns,nextAction,progress}, all facts supported by the cited original Session evidence. A pass only continues planning, never approves execution. Do not infer stagnation from long reasoning alone.' : job.verification ? 'Independent reviews also require criteria for every applicable item; preserve the same snapshot and phase, and record task_review_observations before comparison.' : 'Use the existing objective, acceptance criteria and original Session log evidence to submit the decision.'} Evidence gaps are revise or needs-user, not a reason to invent a pass. Inspect the preceding tool validation error if any. Read evidence again only if required; do not inspect anything beyond cutoff ${cutoff}. The original review deadline ${job.deadlineAt} is unchanged.` }] }))
     }
     if (submitted === undefined) {
-      const events = handle.agent.session.snapshotEvents()
+      const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
       const invalid = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
       const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
@@ -527,7 +528,7 @@ async function runReviewStage(
           : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message : `review failed: ${code}`,
         retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })
     }
-    const events = handle.agent.session.snapshotEvents()
+    const events = handle.agent.session.snapshotEvents().map(controlEvent)
     const call = events.findLast(event => event.type === 'tool/call' && event.data.name === 'task_review_decision')
     const result = call?.type === 'tool/call' ? events.findLast(event => event.type === 'tool/result' && event.data.message.source.callId === call.data.callId && event.data.message.isError !== true) : undefined
     if (!result || !await ctx.sessions.flush(handle.agent.session)) throw new Error('review decision is not durable')

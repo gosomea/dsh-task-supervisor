@@ -6,12 +6,17 @@ from datetime import datetime
 import json
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
+
 
 def summarize(events, labels=None):
     labels = labels or {}
     histories = {}
     fault_pauses = set()
-    for event in events:
+    for stored in events:
+        event = control_event(stored)
         if event.get('type') != 'extension/record':
             continue
         data = event['data']

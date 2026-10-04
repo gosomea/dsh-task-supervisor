@@ -1,3 +1,5 @@
+import { appendControlRecord, controlEvent } from '../../src/session-records.ts'
+import { installNativePresets } from './native-presets.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import * as FsTools from '@deepseek-ai/dsh-tool-fs'
@@ -110,9 +112,15 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
+  await installNativePresets(ctx)
   if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
     maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
+  if (supervisor) ctx.on('agent/created', async ({ agent, source }) => {
+    const selected = ctx.sessionProjections.stateOf(agent.session, 'agentPreset')
+    if (selected?.startsWith('dsh-task-supervisor:')) await ctx.agentPresets.mount(agent.ctx, selected)
+    else if (source === 'startup' && ctx.agentPresets.composedPreset(agent.ctx) === undefined) { await ctx.agentPresets.select(agent, 'dsh-task-supervisor:standard'); await ctx.sessions.flush(agent.session) }
+  })
   ctx.llm.registerAdapter(['scripted'], adapter)
   return ctx
 }
@@ -160,7 +168,7 @@ it('keeps one task in the native Session and resumes only after a human command'
   contexts.splice(contexts.indexOf(first), 1)
 
   const withoutReader = await host(root, new ScriptedAdapter(), false)
-  await expect(withoutReader.agents.resume({ resumeSessionId: id })).rejects.toThrow('compatible "dsh-task-supervisor" extension reader')
+  await expect(withoutReader.agents.resume({ resumeSessionId: id, setup: agentCtx => withoutReader.agentPresets.mount(agentCtx, 'dsh-task-supervisor:standard').then(() => undefined) })).rejects.toThrow('Unknown agent preset')
   await withoutReader.fiber.dispose()
   contexts.splice(contexts.indexOf(withoutReader), 1)
 
@@ -327,7 +335,7 @@ it('blocks writes until a completed post-approval read-only model turn', async (
       read_only_turns_before_write: 1 } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  const events = agent.session.snapshotEvents()
+  const events = agent.session.snapshotEvents().map(controlEvent)
   expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'too-early-write'
     && event.data.message.isError === true)).toBe(true)
   expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'read-source'
@@ -394,7 +402,7 @@ it('continues after a passing progress review and records both reviewer decision
   const mainLog = await ctx.sessionPersistence.open(id, 'read')
   try {
     const persisted = await mainLog.read()
-    const decisions = persisted.events.flatMap(event => event.type === 'extension/record'
+    const decisions = persisted.events.map(controlEvent).flatMap(event => event.type === 'extension/record'
       && event.data.namespace === 'dsh-task-supervisor' ? [JSON.stringify(event.data.payload)] : [])
     expect(decisions.some(record => record.includes('"verdict":"pass"'))).toBe(true)
     expect(decisions.some(record => record.includes('"verdict":"needs-user"'))).toBe(true)
@@ -602,7 +610,7 @@ it('validates direct chat approval and rejects injected or stale authorization',
   for (const message of [...agent.inbox.nextStep, ...agent.inbox.nextTurn]) agent.inbox.remove(message.id)
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '批准' }] }))
   await agent.whenIdle()
-  const user = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!
+  const user = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!
   expect((await approve(user.seq, task.planVersion + 1)).isError).toBe(true)
   const before = adapter.requests
   expect((await approve(user.seq)).isError).toBe(false)
@@ -657,14 +665,14 @@ it('hands off exactly one continuation after task_approve runs inside the model 
       stages: [{ id: 'S1', title: '创建报告', criterionIds: ['C1'] }] } })
   const task = taskOf(ctx, agent)!
   approval = () => ({ task_id: task.id, plan_version: task.planVersion,
-    user_message_seq: agent.session.snapshotEvents().findLast(event => event.type === 'user/message'
+    user_message_seq: agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'user/message'
       && event.data.source.kind === 'user')!.seq })
   const before = adapter.requests
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '批准当前计划' }] }))
   await agent.whenIdle()
   expect(taskOf(ctx, agent)?.phase).toBe('active')
   expect(adapter.requests).toBe(before + 2)
-  const result = agent.session.snapshotEvents().find(event => event.type === 'tool/result'
+  const result = agent.session.snapshotEvents().map(controlEvent).find(event => event.type === 'tool/result'
     && event.data.message.source.callId === ToolCallId('live-approval'))
   expect(result).toBeDefined()
   expect(agent.inbox.nextTurn).toHaveLength(0)
@@ -682,7 +690,7 @@ it('pages full review evidence within its cutoff and rejects injected requiremen
   const { agent } = await ctx.agents.create({ sessionId: SessionId('evidence-main'), agentOptions: { provider: 'scripted', model: 'main' } })
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect project rules' }] }))
   await agent.whenIdle()
-  const events = agent.session.snapshotEvents()
+  const events = agent.session.snapshotEvents().map(controlEvent)
   const result = events.find(event => event.type === 'tool/result')!
   const user = events.find(event => event.type === 'user/message' && event.data.source.kind === 'user')!
   expect(() => validateProvenance([{ id: 'c1', text: 'a project rule', provenance: { kind: 'project', reference: 'AGENTS.md', sourceSeq: result.seq } }], events)).not.toThrow()
@@ -770,8 +778,8 @@ it.each(['activity', 'elapsed'] as const)('observes %s inside one turn without a
   expect(taskOf(ctx, agent)?.phase).toBe('active')
   expect(taskOf(ctx, agent)?.nodeRuns?.[0]?.status).toBe('pending')
   expect(taskOf(ctx, agent)?.lastReview?.finding).toBe('Productive progress; continue')
-  expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/start')).toHaveLength(2)
-  expect(agent.session.snapshotEvents().some(event => event.type === 'user/message'
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'turn/start')).toHaveLength(2)
+  expect(agent.session.snapshotEvents().map(controlEvent).some(event => event.type === 'user/message'
     && event.data.content.some(block => block.type === 'text' && block.text.includes('Continue in this same turn')))).toBe(true)
   expect(adapter.requests).toBe(6)
   clock.mockRestore()
@@ -800,7 +808,7 @@ it('disabling the supervisor during an observation prevents the old reviewer fro
   expect(taskOf(ctx, agent)?.lastReview).toBeNull()
   expect(agent.inbox.nextStep).toHaveLength(0)
   expect(agent.inbox.nextTurn).toHaveLength(0)
-  expect(agent.session.snapshotEvents().some(event => event.type === 'assistant/message'
+  expect(agent.session.snapshotEvents().map(controlEvent).some(event => event.type === 'assistant/message'
     && event.data.message.content.some(block => block.type === 'text' && block.text === 'must not execute'))).toBe(false)
 })
 
@@ -827,7 +835,7 @@ it.each(['image', 'text', 'stale'] as const)('admits native visual evidence only
   const { agent } = await ctx.agents.create({ sessionId: SessionId(`image-${mode}`), agentOptions: { provider: 'scripted', model: 'main' } })
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect this artifact' }, { type: 'image', attachment }] }))
   await agent.whenIdle()
-  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message')!.seq
+  const seq = agent.session.snapshotEvents().map(controlEvent).find(event => event.type === 'user/message')!.seq
   const task = { ...newTask('Review visual quality'), criteria: [{ id: 'v', text: 'Image composition is correct', evidenceKind: 'visual' as const }],
     stages: [{ id: 's', title: 'Visual check', criterionIds: ['v'] }],
     nodeRuns: [{ id: 's', status: 'reviewing' as const, attempt: 1, evidenceAfterSeq: mode === 'stale' ? seq + 1 : seq }] }
@@ -871,27 +879,27 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   await chat.whenIdle()
   expect(taskOf(ctx, main)).toEqual(before)
   expect(main.inbox.nextTurn).toHaveLength(0)
-  const questionSeq = chat.session.snapshotEvents().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+  const questionSeq = chat.session.snapshotEvents().map(controlEvent).find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
   const call = (id: string, userSeq: number, revision: number) => ctx.tools.execute({ agent: chat, signal,
     callId: ToolCallId(id), name: 'supervisor_control', arguments: { directive: 'pause', task_id: before.id, user_seq: userSeq, revision } })
   expect((await call('question-not-control', questionSeq, before.revision)).isError).toBe(true)
   chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '暂停任务' }] }))
   await chat.whenIdle()
-  const userSeq = [...chat.session.snapshotEvents()].reverse().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+  const userSeq = [...chat.session.snapshotEvents().map(controlEvent)].reverse().find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
   expect((await call('stale-control', userSeq, before.revision + 99)).isError).toBe(true)
   expect((await call('pause-control', userSeq, before.revision)).isError).toBe(false)
   expect(taskOf(ctx, main)?.phase).toBe('paused')
   const paused = taskOf(ctx, main)!
   expect((await call('duplicate', userSeq, before.revision)).isError).toBe(false)
   expect(taskOf(ctx, main)).toEqual(paused)
-  const commands = main.session.snapshotEvents().filter(e => e.type === 'command/run' && e.data.args?.trim().startsWith('pause'))
+  const commands = main.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'command/run' && e.data.args?.trim().startsWith('pause'))
   expect(commands).toHaveLength(1)
   await ctx.fiber.dispose(); contexts.splice(contexts.indexOf(ctx), 1)
   const resumed = await host(root, new ScriptedAdapter())
   const mainAgain = await resumed.agents.resume({ resumeSessionId: main.id, agentOptions: { provider: 'scripted', model: 'main' } })
   await resumed.commands.execute(mainAgain.agent, '/task consult', [], signal)
   const chatAgain = resumed.agents.get(chatId)!
-  expect(chatAgain.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(2)
+  expect(chatAgain.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(2)
   chatAgain.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '现在如何？' }] }))
   await chatAgain.whenIdle()
   expect(taskOf(resumed, mainAgain.agent)).toEqual(paused)
@@ -924,7 +932,7 @@ it('routes main-scoped consultation across tasks while legacy conversations rema
   expect((await ctx.commands.execute(chat, '/task pause', [], signal))?.result.kind).toBe('success')
   expect(taskOf(ctx, main)?.id).toBe(second.id)
   const legacy = await ctx.agents.create({ sessionId: SessionId(`task-chat-${main.id}-${first.id}`), agentOptions: { provider: 'scripted', model: 'main' } })
-  legacy.agent.session.append('extension/record', { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 1, kind: 'binding', recordId: 'legacy', payload: { mainSessionId: main.id, taskId: first.id } })
+  appendControlRecord(legacy.agent, { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 1, kind: 'binding', recordId: 'legacy', payload: { mainSessionId: main.id, taskId: first.id } })
   expect((await ctx.commands.execute(legacy.agent, '/task pause', [], signal))?.result.kind).toBe('error')
 })
 
@@ -939,7 +947,7 @@ async function proposalFixture() {
   const say = async (text: string) => {
     chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text }] }))
     await chat.whenIdle()
-    return chat.session.snapshotEvents().findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
+    return chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
   }
   const call = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ agent: chat, signal, name,
     callId: ToolCallId(`proposal-${chat.session.seq}`), arguments: args })
@@ -958,7 +966,7 @@ it('discusses without a task and saves a proposal without authorizing execution'
   expect(taskOf(ctx, main)).toBeNull()
   expect(main.inbox.nextTurn).toHaveLength(0)
   expect(draft.language).toBe('zh-CN')
-  const context = chat.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'task-consultation-context')
+  const context = chat.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message' && e.data.source.kind === 'task-consultation-context')
   expect(JSON.stringify(context)).toContain('Visible response language: zh-CN')
   expect((await call('supervisor_create_draft', { draft_id: draft.id, version: draft.version, user_seq: seq })).isError).toBe(true)
   expect(taskOf(ctx, main)).toBeNull()
@@ -976,9 +984,9 @@ it('requires subsequent exact-draft consent and deduplicates concurrent creation
   expect(taskOf(ctx, main)?.phase).toBe('planning')
   expect(taskOf(ctx, main)?.objective).toBe(draft.requirements)
   expect(draftOf(ctx, main)?.status).toBe('created')
-  const states = main.session.snapshotEvents().filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor' && e.data.kind === 'state')
+  const states = main.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor' && e.data.kind === 'state')
   expect(states.filter(e => e.type === 'extension/record' && (e.data.payload as { revision: number }).revision === 1)).toHaveLength(1)
-  expect(JSON.stringify(main.session.snapshotEvents())).toContain('sourceUserSeq')
+  expect(JSON.stringify(main.session.snapshotEvents().map(controlEvent))).toContain('sourceUserSeq')
 })
 
 it('keeps draft edits separate from an active task and rejects unresolved or stale promotion', async () => {
@@ -1036,7 +1044,7 @@ it('reconciles a committed task after promotion is interrupted without creating 
 it('binds direct creation to the mode selected before the direct user message', async () => {
   const { ctx, main, chat, signal, say, call } = await proposalFixture()
   let seq = await say('只读报告 Node 版本')
-  chat.session.append('extension/record', { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
+  appendControlRecord(chat, { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
     kind: 'input-mode', recordId: 'direct-choice', payload: { mode: 'direct' } })
   await ctx.sessions.flush(chat.session)
   expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
@@ -1126,7 +1134,7 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
   if (mode === 'empty') {
     scripts.main = [toolResponse('task_delegate_nodes', { node_ids: ['a', 'b'] }, 'batch-in-turn'), textResponse('must not retry after pause')]
     main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Execute approved nodes' }] }))
-    batch = main.whenIdle().then(() => ({ isError: main.session.snapshotEvents().some(e => e.type === 'tool/result'
+    batch = main.whenIdle().then(() => ({ isError: main.session.snapshotEvents().map(controlEvent).some(e => e.type === 'tool/result'
       && e.data.message.source.callId === 'batch-in-turn' && e.data.message.isError) }))
   } else batch = delegate()
   await Promise.race([bothEntered.promise, batch.then(result => { throw new Error(`batch ended before both workers entered: ${JSON.stringify(result)}`) })])
@@ -1166,7 +1174,7 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
   expect((await report()).isError).toBe(true)
   scripts.main = [toolResponse('bash', {}, 'integration'), textResponse('integrated')]
   main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Integrate outputs' }] })); await main.whenIdle()
-  const result = main.session.snapshotEvents().find(e => e.type === 'tool/result' && e.data.message.source.callId === 'integration')!
+  const result = main.session.snapshotEvents().map(controlEvent).find(e => e.type === 'tool/result' && e.data.message.source.callId === 'integration')!
   scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: result.seq, limit: 1 }, 'main-check'),
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'premature', evidence_seqs: [result.seq] }, 'no-worker'),
     toolResponse('read_task_worker', { node_id: 'a', from_seq: 0, limit: 30 }, 'worker-check'),
@@ -1218,7 +1226,7 @@ it.each(['text', 'unexpected-tool'])('preserves one native answer after a checkp
   expect(writes).toBe(0)
   expect(scripts.main).toHaveLength(1)
   expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
-  if (mode === 'text') expect(agent.session.snapshotEvents().some(e => e.type === 'assistant/message'
+  if (mode === 'text') expect(agent.session.snapshotEvents().map(controlEvent).some(e => e.type === 'assistant/message'
     && e.data.message.content.some(block => block.type === 'text' && block.text === '## 计划已就绪\n请批准后开始。'))).toBe(true)
   scripts.main = [textResponse('仍在等待批准')]
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '现在进度如何' }] }))
@@ -1268,7 +1276,7 @@ it('offers native completion tools immediately after the final stage review', as
   await agent.whenIdle()
   expect(mainRequests).toHaveLength(4)
   expect(mainRequests[2]?.tools?.some(tool => tool.name === 'task_request_completion')).toBe(true)
-  expect(agent.session.snapshotEvents().filter(event => event.type === 'assistant/message')
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'assistant/message')
     .flatMap(event => event.data.message.content)
     .some(block => block.type === 'text' && block.text.includes(rawCall))).toBe(false)
 })
@@ -1292,7 +1300,7 @@ it.each(['plan', 'stage', 'progress', 'completion'] as const)('retains the immut
   expect(await ctx.sessionPersistence.stat(SessionId(job.reviewerSessionId!))).toBeDefined()
   // Replay uses the same reader as cold UI state, independently of live projection memory.
   const { taskProjection } = await import('../../src/state.ts')
-  const replayed = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  const replayed = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
   expect(replayed.reviewJobs).toEqual(projection.reviewJobs)
 })
 
@@ -1327,7 +1335,7 @@ it.each(['missing', 'invalid'] as const)('repairs a %s decision once in the same
   const { agent } = await ctx.agents.create({ sessionId: SessionId('repair-main'), agentOptions: { provider: 'scripted', model: 'scripted' } })
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect the existing fixture' }] }))
   await agent.whenIdle()
-  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message')!.seq
+  const seq = agent.session.snapshotEvents().map(controlEvent).find(event => event.type === 'user/message')!.seq
   const cutoff = agent.session.seq - 1
   scripts.reviewer = [...mode === 'invalid' ? [toolResponse('task_review_decision', { verdict: 'pass', finding: 'Unsupported', evidence_seqs: [] }, 'invalid-decision')] : [], textResponse('Decision: pass'),
     toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'repair-read'),
@@ -1439,7 +1447,7 @@ it('cancels during the repair turn and disposes its single reviewer', async () =
   adapter.pauseModel = 'reviewer'
   ctx.on('agent/status', ({ agent: reviewer, status }) => {
     if (status === 'idle' && reviewer.id.startsWith('task-review-')
-      && reviewer.session.snapshotEvents().filter(event => event.type === 'turn/end').length === 1) adapter.pauseNext = true
+      && reviewer.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'turn/end').length === 1) adapter.pauseNext = true
   })
   const abort = new AbortController()
   const review = reviewStage(ctx, agent, newTask('Inspect'), 's', 'reported', abort.signal, { provider: 'scripted', model: 'reviewer' })
@@ -1509,13 +1517,13 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
     expect(proposed.isError).toBe(false)
     if (mode === 'declined') {
       const proposal = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.repairs[0]!
-      agent.session.append('extension/record', { namespace: 'dsh-task-supervisor-repair', schemaVersion: 1, kind: 'decline', recordId: 'decline',
+      appendControlRecord(agent, { namespace: 'dsh-task-supervisor-repair', schemaVersion: 1, kind: 'decline', recordId: 'decline',
         payload: { proposalId: proposal.id, taskId: task.id, taskRevision: task.revision, source: 'web-confirmation', confirmedAt: new Date().toISOString() } })
     }
   }
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '原目标中 value.txt 有缺陷，请修复 value.txt；不要扩大目标。' }] }))
   await agent.whenIdle()
-  const result = agent.session.snapshotEvents().find(e => e.type === 'tool/result' && e.data.message.source.callId === 'premature-repair')!
+  const result = agent.session.snapshotEvents().map(controlEvent).find(e => e.type === 'tool/result' && e.data.message.source.callId === 'premature-repair')!
   expect(result.type === 'tool/result' && result.data.message.isError).toBe(true)
   expect(JSON.stringify(result)).toContain('REPAIR_CONFIRMATION_REQUIRED')
   const read = await ctx.tools.execute({ agent, signal, callId: ToolCallId('diagnose'), name: 'read', arguments: { file_path: 'value.txt' } })
@@ -1531,7 +1539,7 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
   expect(executed).toBe(false)
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('accepted artifact')
   expect(taskOf(ctx, agent)?.phase).toBe('complete')
-  expect(agent.session.snapshotEvents().some(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toBe(false)
+  expect(agent.session.snapshotEvents().map(controlEvent).some(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toBe(false)
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '当前任务做了什么？' }] }))
   await agent.whenIdle()
   expect(taskOf(ctx, agent)?.phase).toBe('complete')
@@ -1600,7 +1608,6 @@ it('confirms the exact workspace, rejects changed artifacts and other active tas
   const ctx = await host(root, new ScriptedAdapter(), false)
   await ctx.plugin(LocalFileSystem, { cwd: workspace })
   ctx.sessionProjections.register(taskProjection)
-  ctx.agents.registerSessionControlReader(NAMESPACE, [10])
   let wakes = 0
   const repairs = installRepairs(ctx, async (agent, expected, next, _instruction, beforeCommit) => {
     await agent.runMaintenance(async () => {
@@ -1685,7 +1692,7 @@ it('uses the authenticated panel transport for proposal and exact click confirma
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('confirmed repair')
   expect((await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision })).status).toBe(200)
   await agent.whenIdle(); expect(adapter.requests).toBe(1)
-  expect(agent.session.snapshotEvents().filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toHaveLength(1)
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'extension/record' && e.data.namespace === 'dsh-task-supervisor-repair' && e.data.kind === 'confirm')).toHaveLength(1)
 })
 
 
@@ -1769,7 +1776,7 @@ it.skipIf(!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_C
   expect(job.verification?.phase).toBe('comparison')
   expect(job.verification?.checks[0]).toMatchObject({ exitCode: 1, changed: [], timedOut: false, cancelled: false })
   expect(job.verification?.observations[0]?.status).toBe('failed')
-  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
   expect(replay.reviewJobs).toEqual(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs)
   expect(await readFile(join(workspace, 'add.mjs'), 'utf8')).toBe('export const add = (a,b) => a-b')
 })
@@ -1840,10 +1847,10 @@ it('keeps run_code available for planning investigation and emits the exact task
   const input = '/task new 开发一个我的世界，先看看工作区'
   await ctx.commands.execute(agent, input, [], new AbortController().signal); await agent.whenIdle()
   expect(calls).toBe(1); expect(taskOf(ctx, agent)?.phase).toBe('planning')
-  const messages = agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.source.kind === 'user')
+  const messages = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'user/message' && event.data.source.kind === 'user')
   expect(messages).toHaveLength(1)
   expect(JSON.stringify(messages[0])).toContain(input)
-  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
   expect(replay.current?.objective).toBe('开发一个我的世界，先看看工作区')
 })
 
@@ -1890,7 +1897,7 @@ it('continues a native truncated planning turn once and stops at manual approval
   const task = taskOf(ctx, agent)!
   expect(task.phase).toBe('awaiting-approval'); expect(task.everApproved).toBe(false)
   expect(task.recovery?.noProgress).toBe(0)
-  const events = agent.session.snapshotEvents()
+  const events = agent.session.snapshotEvents().map(controlEvent)
   expect(events.filter(e => e.type === 'user/message' && e.data.id === task.recovery?.messageId)).toHaveLength(1)
   expect(events.some(e => e.type === 'turn/end' && e.data.reason.kind === 'max-tokens')).toBe(true)
   const requests = adapter.requests
@@ -1973,7 +1980,7 @@ it('independently observes tool investigation before a plan exists and preserves
   expect(task.planning).toMatchObject({ progress: true, noProgress: 0, nextAction: '提交入口实现与验收计划' })
   const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
   expect(jobs).toHaveLength(1); expect(jobs[0]).toMatchObject({ kind: 'planning', status: 'applied', input: { stages: [] } })
-  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
   expect(replay.current?.planning).toEqual(task.planning)
 })
 
@@ -2093,7 +2100,7 @@ it('records revocation and allows a user to opt in at manual approval without a 
   await agent.whenIdle()
   expect(results.filter(result => result?.result.kind === 'success')).toHaveLength(1)
   expect(taskOf(ctx, agent)?.phase).toBe('active')
-  expect(agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && (event.data.payload as Record<string, unknown>).phase === 'active')).toHaveLength(1)
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && (event.data.payload as Record<string, unknown>).phase === 'active')).toHaveLength(1)
 })
 
 it('persists revocation during formal plan review and never executes its late pass', async () => {
@@ -2116,7 +2123,7 @@ it('persists revocation during formal plan review and never executes its late pa
     const reader = await ctx.sessionPersistence.open(agent.id, 'read')
     try {
       const persisted = (await reader.read(0, 256)).events.find(event => event.seq === revoked.approvalPolicy!.grantSeq)
-      expect(persisted).toMatchObject({ type: 'extension/record', data: { namespace: NAMESPACE, kind: 'state',
+      expect(controlEvent(persisted!)).toMatchObject({ type: 'extension/record', data: { namespace: NAMESPACE, kind: 'state',
         payload: { approvalPolicy: { mode: 'manual', source: 'user-command' } } } })
     } finally { await reader.close() }
   } finally { adapter.release.resolve() }
@@ -2124,7 +2131,7 @@ it('persists revocation during formal plan review and never executes its late pa
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'planning', everApproved: false, approvalPolicy: { mode: 'manual' } })
   expect(taskOf(ctx, agent)?.lastApproval).toBeUndefined()
   expect(implementations).toBe(0)
-  expect(agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE
     && (event.data.payload as Record<string, unknown>).phase === 'active')).toHaveLength(0)
 })
 
@@ -2144,7 +2151,7 @@ it('runs a policy-approved native task through stage and whole-task acceptance w
   expect(implementations).toBe(1)
   expect(taskOf(ctx, agent)?.lastApproval?.source).toBe('policy')
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.map(job => job.kind)).toEqual(['plan', 'stage', 'completion'])
-  expect(agent.session.snapshotEvents().filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(1)
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(e => e.type === 'user/message' && e.data.source.kind === 'user')).toHaveLength(1)
 })
 
 it.each(['document', 'structured', 'wrong-product', 'mislabelled-static'] as const)('new independent protocol plans before deliverable reads and checks actual product: %s', async kind => {
@@ -2190,6 +2197,80 @@ it.each(['document', 'structured', 'wrong-product', 'mislabelled-static'] as con
   expect(job.verification?.checks).toEqual([]) // static requirements require no command runtime
   expect(inputs[0]).not.toContain('Use write_review_probe and run_review_check to reproduce behavior')
   expect(job.verification?.checkFindings).toEqual([result])
-  const replay = agent.session.snapshotEvents().reduce(taskProjection.apply, taskProjection.init())
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
   expect(replay.failure).toBeNull(); expect(replay.reviewJobs[0]?.decision?.checks).toEqual([result])
+})
+
+it('uses required native records without changing an ordinary preset, and retains admission after unload', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-stock-admission-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter, false)
+  const supervisor = await ctx.plugin(Supervisor, { automaticContinuation: false, planningSupervision: false })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('stock-admission'), agentOptions: { provider: 'scripted', model: 'scripted' },
+    setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined) })
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('standard')
+  await ctx.commands.execute(agent, '/task new Inspect the report', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('dsh-task-supervisor:standard')
+  const events = agent.session.snapshotEvents()
+  expect(events.some(e => e.type === 'extension/record')).toBe(false)
+  expect(events.some(e => e.type === 'agent/inbox/spliced' && e.data.inserted.some(m => m.source.kind === 'task-supervisor-record'))).toBe(true)
+  expect(events.some(e => e.ignorable)).toBe(false)
+  expect(events.some(e => e.type === 'user/message' && e.data.source.kind === 'task-supervisor-record')).toBe(false)
+  expect(agent.inbox.nextStep).toEqual([])
+  await ctx.sessions.flush(agent.session)
+  const nativeRead = await ctx.sessionPersistence.open(agent.id, 'read')
+  try { expect((await nativeRead.read()).events.some(e => e.type === 'system/message')).toBe(true) } finally { await nativeRead.close() }
+  const before = adapter.requests
+  await supervisor.dispose()
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Continue working' }] }))
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(before)
+  const result = await ctx.tools.execute({ callId: ToolCallId('missing-controller'), name: 'task_status', arguments: {}, agent, signal: new AbortController().signal })
+  expect(result.isError).toBe(true)
+})
+
+it('keeps a configured native preset unchanged when composing its supervised variant', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-stock-config-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const configured = { text: 'preserve deployment configuration' }
+  let observed: unknown
+  ctx.loader.builtins['configuration-probe'] = { apply(_ctx: Context, config: unknown) { observed = config } }
+  await ctx.loader.create({ name: 'cordis:agent-preset', config: { id: 'configured', plugins: [{ name: 'cordis:configuration-probe', config: configured }] } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('stock-configured'), agentOptions: { provider: 'scripted', model: 'scripted' },
+    setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'configured').then(() => undefined) })
+  await ctx.commands.execute(agent, '/task new Inspect configuration', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(observed).toEqual(configured)
+  expect((await ctx.agentPresets.resolve('configured')).broken).toBeUndefined()
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('dsh-task-supervisor:configured')
+})
+
+it('keeps native tool calls and results adjacent while persisting state inside a tool', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-stock-tool-pair-')); roots.push(root)
+  class StrictAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      const pending = new Set<string>()
+      for (const message of options.messages) {
+        if (message.role === 'tool') {
+          expect(pending.delete(message.source.callId)).toBe(true)
+          continue
+        }
+        expect(pending.size).toBe(0)
+        if (message.role === 'assistant') {
+          for (const block of message.content) if (block.type === 'tool-call') pending.add(block.id)
+        }
+        expect(JSON.stringify(message)).not.toContain('Supervisor internal record:')
+      }
+      expect(pending.size).toBe(0)
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new StrictAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'strict-plan'), textResponse('等待批准')] })
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('stock-tool-pair'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  expect(adapter.requests).toBe(2)
+  expect(agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.data).toMatchObject({ reason: { kind: 'completed' } })
 })

@@ -1,4 +1,5 @@
 /** Durable one-task state projected from the main DSH Session. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 
 import { validateGraph } from './graph.ts'
 import { randomUUID } from 'node:crypto'
@@ -48,16 +49,17 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   }
 }
 
-/** Rebuild the only authoritative task state from ordered extension records. */
+/** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 16,
+  stateVersion: 17,
   stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),
     archivedTasks: z.array(z.object({ task: taskSchema, reviews: z.array(reviewSchema), reworks: z.array(reworkRecordSchema), lastSeq: z.number().int().nonnegative() })) }),
   init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [], repairs: [], archivedTasks: [], currentSeq: 0 }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
+    event = controlEvent(event)
     if (state.failure !== null) return state
     const captured = captureRework(event, state.current)
     if (captured) return { ...state, pendingReworks: [...state.pendingReworks, captured].slice(-50) }
@@ -211,7 +213,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
 export function appendTask(ctx: Context, agent: Agent, next: TaskSnapshot): TaskSnapshot {
   const state = taskSchema.parse(next)
   const payload = taskJson(state)
-  agent.session.append('extension/record', {
+  appendControlRecord(agent, {
     namespace: NAMESPACE, schemaVersion: RECORD_VERSION, recordId: randomUUID(), kind: 'state', payload,
   })
   const committed = taskOf(ctx, agent)

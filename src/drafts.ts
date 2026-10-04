@@ -1,4 +1,5 @@
 /** Versioned proposals; promotion commits authoritative requirements to the main Session. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
@@ -17,6 +18,7 @@ export const draftSchema = z.object({
 export type TaskDraft = z.infer<typeof draftSchema>
 
 export function foldDraft(current: TaskDraft | null, event: SessionEvent): TaskDraft | null {
+  event = controlEvent(event)
   if (event.type !== 'extension/record' || event.data.namespace !== DRAFT_NAMESPACE) return current
   if (event.data.schemaVersion !== 1 || event.data.kind !== 'draft') throw new Error('unsupported task draft record')
   const next = draftSchema.parse(event.data.payload)
@@ -35,7 +37,7 @@ export function draftOf(ctx: Context, main: Agent): TaskDraft | null {
 
 export async function recordDraft(ctx: Context, main: Agent, draft: TaskDraft): Promise<TaskDraft> {
   const parsed = draftSchema.parse(draft)
-  main.session.append('extension/record', { namespace: DRAFT_NAMESPACE, schemaVersion: 1, kind: 'draft',
+  appendControlRecord(main, { namespace: DRAFT_NAMESPACE, schemaVersion: 1, kind: 'draft',
     recordId: `${draft.id}:${draft.version}`, payload: JSON.parse(JSON.stringify(parsed)) as JsonValue })
   if (!await ctx.sessions.flush(main.session)) throw new Error('draft is not durable')
   return parsed

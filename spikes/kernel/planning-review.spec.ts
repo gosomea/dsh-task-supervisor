@@ -1,3 +1,5 @@
+import { controlEvent } from '../../src/session-records.ts'
+import { installNativePresets } from './native-presets.ts'
 /** Native Session evidence and protocol checks; scripted responses do not establish review quality. */
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
@@ -51,11 +53,12 @@ async function fixture() {
   await ctx.plugin(SystemPrompt); await ctx.plugin(ToolRuntime); await ctx.plugin(Commands)
   await ctx.plugin(AgentRegistry); await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
+  await installNativePresets(ctx)
   const adapter = new ScriptedAdapter(); ctx.llm.registerAdapter(['scripted'], adapter)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-main'), agentOptions: { provider: 'scripted', model: 'main' } })
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '先调查原有入口，再拟定计划；尚未批准实施。' }] }))
   await agent.whenIdle()
-  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message')!.seq
+  const seq = agent.session.snapshotEvents().map(controlEvent).find(event => event.type === 'user/message')!.seq
   return { ctx, agent, adapter, seq, root, task: newTask('先调查原有入口，再拟定计划；尚未批准实施。') }
 }
 const planning = { facts: ['用户要求先调查入口'], unknowns: ['入口的实现尚未核实'], nextAction: '读取现有入口并提交草案', progress: false }
@@ -83,7 +86,7 @@ it.each(['pass', 'revise', 'needs-user'] as const)('records a %s planning decisi
   const result = await reviewStage(ctx, agent, task, 'planning', '尚无计划', new AbortController().signal, selected, 'planning', { verification })
   expect(result).toMatchObject({ verdict, planning, evidenceSeqs: [seq], cutoff })
   expect(task).toMatchObject({ phase: 'planning', everApproved: false, stages: [] })
-  const records = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  const records = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
   expect(records.length).toBeGreaterThan(0)
   expect(records.every(event => event.type === 'extension/record' && event.data.schemaVersion === 3)).toBe(true)
   let jobs: ReviewJob[] = []
@@ -113,7 +116,7 @@ it.each([
     toolResponse('task_review_decision', { verdict: 'pass', finding: '继续调查', evidence_seqs: [seq], ...value === undefined ? {} : { planning: value } })]
   await expect(reviewStage(ctx, agent, task, 'planning', 'raw summary', new AbortController().signal, selected, 'planning', { repairAttempts: 0 }))
     .rejects.toMatchObject({ fault: { code: 'decision-invalid' } })
-  expect(agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null)).every(job => job.decision === null)).toBe(true)
 })
 
@@ -134,7 +137,7 @@ it('repairs a missing planning summary once in the same Session and evidence cut
     toolResponse('task_review_decision', { verdict: 'pass', finding: '继续调查入口', evidence_seqs: [seq], planning })]
   const result = await reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning')
   expect(result).toMatchObject({ cutoff, planning })
-  const jobs = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  const jobs = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
   expect(new Set(jobs.map(job => job.reviewerSessionId)).size).toBe(1)
   expect(jobs.at(-1)).toMatchObject({ attempt: 2, status: 'submitted' })
@@ -153,7 +156,7 @@ it.each(['planning', 'plan', 'stage'] as const)('repairs an actual reasoning-onl
   adapter.scripts.reviewer = [truncatedResponse(), toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }),
     toolResponse('task_review_decision', { verdict: 'pass', finding: '证据核对完毕', evidence_seqs: [seq], ...kind === 'planning' ? { planning } : {} })]
   const decision = await reviewStage(ctx, agent, task, kind, '观察', new AbortController().signal, selected, kind)
-  const records = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  const records = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
   const repairs = records.filter(job => job.status === 'repairing')
   expect(repairs).toHaveLength(1)
@@ -199,7 +202,7 @@ it.each([0, 1, 2])('bounds truncated review repair to the configured %i extra at
   await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning', { repairAttempts }))
     .rejects.toMatchObject({ fault: { code: 'protocol-missing', attempt: repairAttempts + 1 } })
   expect(adapter.requests.filter(request => request.model === 'reviewer')).toHaveLength(repairAttempts + 1)
-  const jobs = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  const jobs = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
   expect(jobs.at(-1)).toMatchObject({ status: 'failed', attempt: repairAttempts + 1, repairLimit: repairAttempts })
   expect(jobs.at(-1)!.fault?.message).toContain('native reason max-tokens')
@@ -225,7 +228,7 @@ it.each(['blocked', 'aborted', 'error'] as const)('never repairs a native %s rev
   })
   await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning'))
     .rejects.toMatchObject({ fault: { attempt: 1 } })
-  const jobs = agent.session.snapshotEvents().filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+  const jobs = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
     .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
   expect(jobs.some(job => job.status === 'repairing')).toBe(false)
   expect(adapter.requests.filter(request => request.model === 'reviewer').length).toBeLessThanOrEqual(1)

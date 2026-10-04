@@ -1,4 +1,5 @@
 /** Repair proposal transport and click-only authorization over the native Session log. */
+import { appendControlRecord, controlEvent } from './session-records.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -19,7 +20,6 @@ export interface RepairController {
 
 export function installRepairs(ctx: Context, wake: (agent: Agent, expected: TaskSnapshot, next: () => TaskSnapshot,
   instruction: string, beforeCommit: () => Promise<void>) => Promise<void>, limits = { files: 10000, bytes: 256 * 1024 * 1024 }): RepairController {
-  ctx.agents.registerSessionControlReader(REPAIR_NAMESPACE, [1])
   const projection = (agent: Agent) => {
     const state = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
     if (!state || state.failure) throw new TaskActionError('TASK_STATE_UNAVAILABLE', state?.failure ?? 'Task projection unavailable.')
@@ -56,7 +56,7 @@ export function installRepairs(ctx: Context, wake: (agent: Agent, expected: Task
     return { live, selected }
   }
   const recordDecision = async (agent: Agent, repair: RepairProposal, kind: 'confirm' | 'decline') => {
-    agent.session.append('extension/record', { namespace: REPAIR_NAMESPACE, schemaVersion: 1, kind,
+    appendControlRecord(agent, { namespace: REPAIR_NAMESPACE, schemaVersion: 1, kind,
       recordId: randomUUID(), payload: { proposalId: repair.id, taskId: repair.taskId, taskRevision: repair.taskRevision,
         source: 'web-confirmation', confirmedAt: new Date().toISOString() } })
     await flush(agent)
@@ -66,7 +66,7 @@ export function installRepairs(ctx: Context, wake: (agent: Agent, expected: Task
       const selected = target(agent, input.taskId, input.taskRevision)
       const affectedNodeIds = repairImpact(selected, input.rootNodeIds)
       const evidenceSeqs = [...new Set(input.evidenceSeqs)]
-      const events = agent.session.snapshotEvents()
+      const events = agent.session.snapshotEvents().map(controlEvent)
       if (evidenceSeqs.some(seq => !events.some(e => e.seq === seq && ['tool/result', 'assistant/message', 'user/message'].includes(e.type)))) {
         throw new TaskActionError('REPAIR_EVIDENCE_INVALID', 'Use real main Session assistant-message, user-message, or tool-result references.')
       }
@@ -80,7 +80,7 @@ export function installRepairs(ctx: Context, wake: (agent: Agent, expected: Task
       if (existing) return existing
       const next = repairProposalSchema.parse({ id: randomUUID(), ...input, evidenceSeqs, affectedNodeIds,
         artifact: identity, proposedAt: new Date().toISOString(), proposedSeq: agent.session.seq, status: 'pending' })
-      agent.session.append('extension/record', { namespace: REPAIR_NAMESPACE, schemaVersion: 1, kind: 'proposal',
+      appendControlRecord(agent, { namespace: REPAIR_NAMESPACE, schemaVersion: 1, kind: 'proposal',
         recordId: next.id, payload: next as unknown as JsonValue })
       await flush(agent)
       return next

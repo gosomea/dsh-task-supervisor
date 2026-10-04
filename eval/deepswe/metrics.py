@@ -6,6 +6,10 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from session_records import control_event
 import re
 import subprocess
 
@@ -56,7 +60,8 @@ def collect(sessions, projections, main_id):
             break
         linked |= following
     jobs = {}
-    for event in sessions[main_id]:
+    for stored in sessions[main_id]:
+        event = control_event(stored)
         if event.get('type') == 'extension/record' and event['data'].get('namespace') == 'dsh-task-supervisor-review':
             job = event['data']['payload']
             if job.get('mainSessionId') != main_id:

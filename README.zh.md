@@ -1,22 +1,34 @@
+---
+description: "为 DSH Web profile 添加持久任务、计划审查与督导对话。"
+kind: "package-bundle"
+---
+
 # DSH 长任务督导
 
-**0.1.0 开发预览。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
+## 概述
 
-原型目前需要一项小范围 DSH 宿主扩展，支持持久的 `extension/record` 事件及读取器准入。扩展位于隔离 DSH 工作树，尚未合入标准 DSH。安装前请先看[实现状态](docs/implementation.zh.md)。
+**0.1.1 开发预览。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
+
+## 安装前提
+
+本版本可安装到未经修改的公开 DSH，采用原生 Session 记录和 Agent preset 实现持久化与执行准入，无需 Host 补丁或自行构建。已验证版本及迁移限制见[安装验收](docs/native-install.zh.md)。
+
+## 规划监督
 
 规划监督默认开启（`planningSupervision`；`maxPlanningWithoutProgress: 2`）。尚无正式计划时，在原生步骤边界复用已有活动观察阈值；正常规划轮结束而未提交计划，或恢复后再次截断，也会请求独立规划审查。带证据的事实、未决问题和下一步绑定要求版本；通过只允许继续规划。用户决定、内部恢复耗尽和连续独立判定的无进展分别以不同原因暂停。关闭 `automaticContinuation` 不开新轮；关闭 `observeLongTurns` 不在轮内观察，`planningSupervision: false` 则完全关闭规划审查。
 
 ## 安装与版本范围
 
-`0.1.0` 面向具有上述宿主扩展的隔离 DSH 实例。构建该实例的 Host 与 Client，使用独立 `DSH_HOME` 和 profile，再安装发布包：
+使用 Node 24 和官方 DSH `0.2.0-rc.2`，沿用 Web profile 与现有模型配置。将 bundle 加入该 profile 后启动 DSH：
 
 ```sh
-dsh plugin add dsh-task-supervisor@0.1.0
+dsh plugin --profile web add dsh-task-supervisor@0.1.1
+dsh web
 ```
 
-npm 包包含预构建的 Host、Web 客户端、检查网关和 bundle patch。安装不会为标准 DSH 自动添加宿主扩展。审查默认采用主 Session 日志；独立产物检查需要显式配置，并且尚不支持独立浏览器观察。
+npm 包包含预构建的 Host 插件、Web 客户端、检查网关和 bundle patch。在空白 Session 第一轮模型对话前运行 `/task new <目标>`，DSH 会选择当前 preset 的 Supervisor 变体。需要先讨论要求时，在发送第一条消息前选择 Supervisor 模式。普通模式保留 Goal 和 Plan；Supervisor 模式只有一个任务控制器。已经开始的普通 Session 不能更换原生 preset，请新建督导 Session。
 
-独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制，详见[版本说明](https://github.com/gosomea/dsh-task-supervisor/blob/main/docs/releases/0.1.0.zh.md)。
+独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制。默认审查主 Session 日志；独立产物检查需要显式配置，独立浏览器观察尚不可用。详见[实现状态](docs/implementation.zh.md)。
 
 ## 当前流程
 
@@ -45,17 +57,17 @@ npm 包包含预构建的 Host、Web 客户端、检查网关和 bundle patch。
 
 ## 开发与隔离验证
 
-使用 Node 24 和包含 `extension/record` 宿主接缝的隔离 DSH checkout。日常 DSH checkout 与 profile 不需要修改。测试脚本通过 `DSH_SOURCE` 定位该工作树：
+使用 Node 24 和已安装依赖、未经修改的 DSH 源码 checkout 进行源码测试。下列命令只读取该 checkout，不构建或修改它；`DSH_SOURCE` 指定路径：
 
 ```sh
 pnpm install
 pnpm run build
-DSH_SOURCE=/absolute/path/to/isolated-deepseek-harness node spikes/kernel/typecheck.mjs
-DSH_SOURCE=/absolute/path/to/isolated-deepseek-harness node spikes/kernel/run.mjs
+DSH_SOURCE=/absolute/path/to/deepseek-harness node spikes/kernel/typecheck.mjs
+DSH_SOURCE=/absolute/path/to/deepseek-harness node spikes/kernel/run.mjs
 pnpm pack --dry-run
 ```
 
-Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `DSH_HOME` 初始化 Web profile，再用 DSH 的 `plugin add` 安装 `link:/absolute/path/to/dsh-task-supervisor`。bundle patch 注册宿主插件，包清单注册 Web 客户端。[实现状态](docs/implementation.zh.md)列出已验证层级和当前限制。
+安装验收使用官方 npm DSH 和登记的独立 `DSH_HOME`，通过 `dsh plugin --profile web add /absolute/path/to/package.tgz` 安装打包产物。无需构建源码 Host／Client、手动链接 SDK 或私有事件读取器 API。原生组件作为 peer dependency 由 DSH 提供，插件不会用另一个版本替换 Host 组件。
 
 ## 设计与评测
 
@@ -77,8 +89,14 @@ Web 冒烟测试需先构建隔离 checkout 的 Host 与 Client，以单独的 `
 | [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |
 | [内核技术试验](docs/host-spike.zh.md) | 最初的能力调研。 |
 
-当前原型每个 Session 同时只执行一个任务，结束后可连续创建后续任务。五任务并行队列、`/task plan` 快捷入口、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。原生 Goal 和 Plan 保留自己的命令；建议用专门的受督导 Session，避免两个续行控制器同时管理同一任务。
+当前原型每个 Session 同时只执行一个任务，结束后可连续创建后续任务。五任务并行队列、`/task plan` 快捷入口、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。原生 Goal 和 Plan 在普通模式中保留；生成的 Supervisor preset 只在督导 Session 中停用它们的工作流行。profile preset 编辑在重启 Host 后的新 Supervisor 组合中生效。
 
 [English](README.md)
 
-持久督导问询复用原生 Session 和压缩后端。在采用根作用域工具的专用隔离 Web profile 中，需要启用原生 `compaction-basic` 与 `command-compact` 行；Web 默认把它们移到 Agent preset，裸根 Session 不会自动获得它们。先确认命令菜单提供 `/compact`，并以持久 `command/done` 和 `compaction/summary` 为成功依据；把 `/compact` 当普通消息发送不构成压缩。使用 preset 的宿主应在相应作用域提供同一原生能力，不能同时挂载两份压缩后端。
+## 模型体验
+
+主 Agent 通过 `/task` 与任务工具工作，原始输入和模型回答保持原生展示；审查者使用有界证据与受限检查工具。单独创建审查 Session 不代表已经独立运行或观察产物；面板显示实际生效的验证模式。督导问询与压缩继承原生 preset 的能力，无需另外挂载根作用域压缩后端。
+
+## 当前限制
+
+0.1.0 私有扩展日志不能直接在公开 DSH 中恢复，请保留原宿主并新建 0.1.1 Session。本次不迁移或重写历史日志。已开始的普通 Session 不能转换为 Supervisor；新建时先选模式。同一 Session 的后续任务保留此前历史。独立浏览器与检查目录自动恢复尚未实现，安装验收不证明长程性能优于 Goal／Plan。

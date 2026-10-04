@@ -7,6 +7,19 @@ def event(job):
 
 
 class AuditTests(unittest.TestCase):
+    def test_native_carrier_is_counted_once_and_matches_legacy(self):
+        job = {'id': 'native', 'kind': 'stage', 'runtimeId': 'run', 'status': 'applied',
+               'reviewerSessionId': 'review-native', 'decision': {'verdict': 'pass'},
+               'attemptStartedAt': '2026-10-04T00:00:00+00:00',
+               'finishedAt': '2026-10-04T00:00:01+00:00'}
+        record = {**event(job)['data'], 'kind': 'job', 'recordId': 'native', 'schemaVersion': 5}
+        source = {'kind': 'task-supervisor-record', 'record': record, 'queued': True}
+        queued = {'type': 'agent/inbox/spliced', 'data': {'inserted': [{'source': source}]}}
+        surface = {'type': 'user/message', 'data': {'source': source}}
+        self.assertEqual(summarize([queued, surface]), summarize([event(job)]))
+        direct = {'type': 'user/message', 'data': {'source': {**source, 'queued': False}}}
+        self.assertEqual(summarize([direct]), summarize([event(job)]))
+
     def test_recovery_and_faults_are_separate_from_decisions(self):
         base = {'id': 'a', 'kind': 'progress', 'runtimeId': 'first', 'reviewerSessionId': 'review-a',
                 'attemptStartedAt': '2026-09-28T00:00:00+00:00', 'status': 'started'}
