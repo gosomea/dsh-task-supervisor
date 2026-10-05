@@ -9,7 +9,7 @@ kind: "package-bundle"
 
 **给 DSH 的长任务加上计划审查、进度追踪和完成验收。** 主 Agent 负责规划与执行，Supervisor 持久保存任务状态，并在规划、阶段和完成检查点启动独立审查 Session。你可以从主会话的小 DAG 看进度，在侧栏查看计划、审查依据并与督导对话。
 
-[English](README.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [反馈问题](https://github.com/gosomea/dsh-task-supervisor/issues)
+[English](README.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [反馈问题](https://github.com/gosomea/dsh-task-supervisor/issues) · [社区交流](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
 
 **0.1.1 开发预览。** 使用独立的 `/task` 工作流，与 DSH 原生 Goal 和 Plan 共存；任务状态与续行由确定性的控制器管理，审查者提供判断。默认审查主 Session 日志；独立产物读取和隔离命令检查需要显式配置。
 

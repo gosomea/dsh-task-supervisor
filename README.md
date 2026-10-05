@@ -9,7 +9,7 @@ kind: "package-bundle"
 
 **Add plan review, progress tracking and completion checks to long DSH tasks.** The main Agent plans and executes. Supervisor persists task state and starts a separate review Session at planning, stage and completion checkpoints. Follow progress in the main conversation’s compact DAG, then inspect plans, evidence and consultation in the sidebar.
 
-[简体中文](README.zh.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [Report an issue](https://github.com/gosomea/dsh-task-supervisor/issues)
+[简体中文](README.zh.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [Report an issue](https://github.com/gosomea/dsh-task-supervisor/issues) · [Community](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
 
 **0.1.1 development preview.** Its independent `/task` workflow coexists with native DSH Goal and Plan. A deterministic controller owns task state and continuation; reviewers provide decisions. Default review reads the main Session log. Independent artifact reads and isolated command checks require explicit configuration.
 
