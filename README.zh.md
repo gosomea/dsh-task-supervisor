@@ -7,15 +7,26 @@ kind: "package-bundle"
 
 ## 概述
 
-**0.1.1 开发预览。** 本项目在 DSH Goal 和 Plan 旁提供独立的 `/task` 工作流。主 Agent 在原生 Session 中规划和执行；确定性的控制层拥有任务状态与续行权，每次进展、阶段和完成检查都启动新的只读审查 Agent。审查者提出建议，不能直接改工作区或任务状态。
+**给 DSH 的长任务加上计划审查、进度追踪和完成验收。** 主 Agent 负责规划与执行，Supervisor 持久保存任务状态，并在规划、阶段和完成检查点启动独立审查 Session。你可以从主会话的小 DAG 看进度，在侧栏查看计划、审查依据并与督导对话。
+
+[English](README.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [反馈问题](https://github.com/gosomea/dsh-task-supervisor/issues)
+
+**0.1.1 开发预览。** 使用独立的 `/task` 工作流，与 DSH 原生 Goal 和 Plan 共存；任务状态与续行由确定性的控制器管理，审查者提供判断。默认审查主 Session 日志；独立产物读取和隔离命令检查需要显式配置。
 
 ## 安装前提
 
 本版本可安装到未经修改的公开 DSH，采用原生 Session 记录和 Agent preset 实现持久化与执行准入，无需 Host 补丁或自行构建。已验证版本及迁移限制见[安装验收](docs/native-install.zh.md)。
 
-## 规划监督
+## 可以用它做什么
 
-规划监督默认开启（`planningSupervision`；`maxPlanningWithoutProgress: 2`）。尚无正式计划时，在原生步骤边界复用已有活动观察阈值；正常规划轮结束而未提交计划，或恢复后再次截断，也会请求独立规划审查。带证据的事实、未决问题和下一步绑定要求版本；通过只允许继续规划。用户决定、内部恢复耗尽和连续独立判定的无进展分别以不同原因暂停。关闭 `automaticContinuation` 不开新轮；关闭 `observeLongTurns` 不在轮内观察，`planningSupervision: false` 则完全关闭规划审查。
+- **计划先审查再执行**：核对原始要求的覆盖情况，默认由用户批准，也可明确预授权审查通过后执行。
+- **看清进度和返工**：DAG 展示节点状态、参与 Agent 和尝试次数，保留返工原因与受影响的依赖节点。
+- **随时询问督导**：在侧栏讨论目标、询问当前进展，或明确暂停、恢复和关闭督导。
+- **完成之后仍可修复**：先展示影响范围，经用户点击确认，回到原任务与 DAG，保留此前验收记录。
+
+![主会话 DAG 与侧栏返工详情](docs/assets/rework-attempt-details.png)
+
+*此前隔离验收的界面示例，展示“已通过 → 新尝试返工”的记录与依赖影响。*
 
 ## 安装与版本范围
 
@@ -29,6 +40,10 @@ dsh web
 npm 包包含预构建的 Host 插件、Web 客户端、检查网关和 bundle patch。在空白 Session 第一轮模型对话前运行 `/task new <目标>`，DSH 会选择当前 preset 的 Supervisor 变体。需要先讨论要求时，在发送第一条消息前选择 Supervisor 模式。普通模式保留 Goal 和 Plan；Supervisor 模式只有一个任务控制器。已经开始的普通 Session 不能更换原生 preset，请新建督导 Session。
 
 独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制。默认审查主 Session 日志；独立产物检查需要显式配置，独立浏览器观察尚不可用。详见[实现状态](docs/implementation.zh.md)。
+
+## 规划监督
+
+规划监督默认开启（`planningSupervision`；`maxPlanningWithoutProgress: 2`）。尚无正式计划时，在原生步骤边界复用已有活动观察阈值；正常规划轮结束而未提交计划，或恢复后再次截断，也会请求独立规划审查。带证据的事实、未决问题和下一步绑定要求版本；通过只允许继续规划。用户决定、内部恢复耗尽和连续独立判定的无进展分别以不同原因暂停。关闭 `automaticContinuation` 不开新轮；关闭 `observeLongTurns` 不在轮内观察，`planningSupervision: false` 则完全关闭规划审查。
 
 ## 当前流程
 

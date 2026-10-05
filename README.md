@@ -7,15 +7,26 @@ kind: "package-bundle"
 
 ## Summary
 
-**0.1.1 development preview.** This project provides an independent `/task` workflow beside DSH Goal and Plan. The main Agent plans and executes in its normal Session; a deterministic controller owns task state and continuation, and a fresh read-only Agent reviews progress, stages, and completion. The reviewer may recommend a decision but cannot change workspace files or mutate the task directly.
+**Add plan review, progress tracking and completion checks to long DSH tasks.** The main Agent plans and executes. Supervisor persists task state and starts a separate review Session at planning, stage and completion checkpoints. Follow progress in the main conversation’s compact DAG, then inspect plans, evidence and consultation in the sidebar.
+
+[简体中文](README.zh.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [Report an issue](https://github.com/gosomea/dsh-task-supervisor/issues)
+
+**0.1.1 development preview.** Its independent `/task` workflow coexists with native DSH Goal and Plan. A deterministic controller owns task state and continuation; reviewers provide decisions. Default review reads the main Session log. Independent artifact reads and isolated command checks require explicit configuration.
 
 ## Installation requirements
 
 This version installs into unmodified public DSH. It uses native Session records and Agent presets for persistence and execution admission; no Host patch or custom build is required. See [installation validation](docs/native-install.md) for verified versions and migration limits.
 
-## Planning supervision
+## What you can do
 
-Planning supervision is enabled by default (`planningSupervision`; `maxPlanningWithoutProgress: 2`). Before a submitted plan exists, native step boundaries use the existing activity observation thresholds; a completed planning turn without a submission, or a second truncation after recovery, also requests an independent planning review. Its evidence-linked facts, unknowns and next action stay bound to the requirements version. A pass only continues planning. `needs-user`, exhausted internal recovery and repeated independently judged lack of progress pause with distinct reasons. Disabling `automaticContinuation` prevents new rounds; disabling `observeLongTurns` suppresses in-turn observation, while `planningSupervision: false` suppresses planning reviews entirely.
+- **Review plans before execution**: check coverage of the original requirements. User approval is the default; explicit preauthorization can admit execution after a passing review.
+- **Track progress and rework**: the DAG shows node states, participating Agents and attempt counts, with reasons and affected dependencies retained.
+- **Consult the Supervisor**: discuss objectives or ask about progress in the sidebar, and explicitly pause, resume or close supervision.
+- **Repair completed work**: inspect the proposed impact and confirm a return to the original task and DAG, retaining earlier acceptance records.
+
+![Main conversation DAG and sidebar rework details](docs/assets/rework-attempt-details.png)
+
+*An earlier isolated validation example showing a passed node entering a new rework attempt and its dependency impact.*
 
 ## Installation and version scope
 
@@ -29,6 +40,10 @@ dsh web
 The npm package contains the built Host plugin, Web client, check gateway and bundle patch. In a blank Session, run `/task new <objective>` before its first model turn; DSH selects a Supervisor variant of its current preset. To discuss requirements first, select the Supervisor mode before sending the first message. Ordinary modes retain Goal and Plan; Supervisor mode has one task controller. A started ordinary Session cannot change its native preset: create a new Session for supervision.
 
 If an independent command modifies the captured artifact tree, its evidence is invalid and subsequent checks are rejected; automatic check-directory recovery has not passed validation. This version retains that limitation. Default review uses main-Session logs; independent artifact checks need explicit configuration and independent browser observation is unavailable. See [implementation status](docs/implementation.md).
+
+## Planning supervision
+
+Planning supervision is enabled by default (`planningSupervision`; `maxPlanningWithoutProgress: 2`). Before a submitted plan exists, native step boundaries use the existing activity observation thresholds; a completed planning turn without a submission, or a second truncation after recovery, also requests an independent planning review. Its evidence-linked facts, unknowns and next action stay bound to the requirements version. A pass only continues planning. `needs-user`, exhausted internal recovery and repeated independently judged lack of progress pause with distinct reasons. Disabling `automaticContinuation` prevents new rounds; disabling `observeLongTurns` suppresses in-turn observation, while `planningSupervision: false` suppresses planning reviews entirely.
 
 ## Current workflow
 
