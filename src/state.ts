@@ -23,7 +23,10 @@ import { REVIEW_NAMESPACE, reviewJobSchema, foldReviewJobs, type ReviewJob } fro
 import { taskSchema, reviewSchema, type TaskSnapshot, type TaskStage, type TaskCriterion } from './state-schema.ts'
 import { REPAIR_NAMESPACE, repairProposalSchema, foldRepairs, reopenTask, type RepairProposal } from './repairs.ts'
 
+export const entrySchema = z.object({ active: z.boolean(), mainSessionId: z.string().min(1) }).strict()
+
 export interface TaskProjection {
+  entry: z.infer<typeof entrySchema> | null
   current: TaskSnapshot | null
   failure: string | null
   reviews: z.infer<typeof reviewSchema>[]
@@ -52,12 +55,12 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 17,
-  stateSchema: z.object({ current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
+  stateVersion: 18,
+  stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),
     archivedTasks: z.array(z.object({ task: taskSchema, reviews: z.array(reviewSchema), reworks: z.array(reworkRecordSchema), lastSeq: z.number().int().nonnegative() })) }),
-  init: (): TaskProjection => ({ current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [], repairs: [], archivedTasks: [], currentSeq: 0 }),
+  init: (): TaskProjection => ({ entry: null, current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [], repairs: [], archivedTasks: [], currentSeq: 0 }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
     event = controlEvent(event)
     if (state.failure !== null) return state
@@ -72,6 +75,10 @@ export const taskProjection = {
     }
     if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE, REPAIR_NAMESPACE].includes(event.data.namespace)) return state
     try {
+      if (event.data.namespace === NAMESPACE && event.data.kind === 'entry') {
+        if (event.data.schemaVersion !== 1) throw new Error('unsupported task entry record')
+        return { ...state, entry: entrySchema.parse(event.data.payload) }
+      }
       if (event.data.namespace === REPAIR_NAMESPACE) return { ...state, repairs: foldRepairs(state.repairs, event) }
       if (event.data.namespace === DRAFT_NAMESPACE) return { ...state, draft: foldDraft(state.draft, event) }
       if (event.data.namespace === REVIEW_NAMESPACE) return { ...state, reviewJobs: foldReviewJobs(state.reviewJobs, event) }
@@ -109,7 +116,7 @@ export const taskProjection = {
         && item.cutoff === review.cutoff && item.reviewerSessionId === review.reviewerSessionId)
       const archivedTasks = state.archivedTasks.filter(entry => entry.task.id !== next.id && entry.task.id !== previous?.id)
       if (previous && previous.id !== next.id) archivedTasks.push({ task: previous, reviews: state.reviews, reworks: state.reworks, lastSeq: state.currentSeq })
-      return { ...state, current: next, currentSeq: event.seq, archivedTasks, failure: null,
+      return { ...state, entry: null, current: next, currentSeq: event.seq, archivedTasks, failure: null,
         repairs: state.repairs.map(p => p.id === next.reopenedFromProposalId && p.status === 'confirmed' ? { ...p, status: 'applied' } : p),
         reviews: fresh ? [...reviews, review].slice(-50) : reviews,
         reworks: previous?.id === next.id ? state.reworks : archived?.reworks ?? [],

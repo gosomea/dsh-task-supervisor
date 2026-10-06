@@ -6,6 +6,7 @@ import type { TaskDraft } from '../drafts.ts'
 import type { ReworkRecord } from '../rework-records.ts'
 
 export interface PanelState {
+  entryActive?: boolean
   task: TaskSnapshot | null
   live: boolean
   armed: boolean

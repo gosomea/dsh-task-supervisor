@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-06",
+  "baseCommit": "bc0bccb623977a66a82ab84a332bd8f1e020d303",
+  "sourceSha256": {
+    "src/index.ts": "e5574f2e4aaecc1de5a09f2a05b760cfa58fb1813c9b6c94b7ad4d37e92824c1",
+    "src/state.ts": "744e31b67e5a3482642d9144dca335bad00a84d9434b73cb2ebf13d4fc77b61a",
+    "src/standard-host.ts": "9f728d481d8707e6ff409a30052a9b345819b712a4091a798e119cd98fc8dda5",
+    "src/panel-api.ts": "e81faf43fa5dc9f5e538ebd0c47317c774f718adfb2854cdf97dc2a5a24fb338",
+    "src/client/index.tsx": "687949dfa8b8c86d8eb4305d26601b265e7fa916d8a60f053d43bccfff99933f",
+    "src/client/task-store.ts": "20d596481bc4a81c31fa9c83dbe809c230d379825c7f5b67e34efea0d2629e09",
+    "spikes/kernel/supervisor.spec.ts": "e42672b1d25312b9ec457d68fd62a98a8c0fa58db6a31dd314ec01afaf7396b1"
+  },
+  "checks": {
+    "kernel": {
+      "files": 23,
+      "passed": 357,
+      "skipped": 13,
+      "total": 370
+    },
+    "hostStrictTypes": "passed",
+    "clientStrictTypes": "passed",
+    "build": "passed",
+    "packageFiles": 11,
+    "packageSha256": "985c275ee4fcfc9f3dd83a922e56d38c35e21548346067c8bb05be113b339cb9",
+    "installedIndexMatches": "verified before launch"
+  },
+  "newRegressions": [
+    "Direct objective, multiline original user bubble, no execution grant, no replacement of unfinished Task.",
+    "Bare entry persists and restores; next real human message creates before the first model request.",
+    "Internal messages cannot create; canceled entry restores ordinary flow; malformed controls are not objectives.",
+    "Admission remains after hot unload while entry is pending.",
+    "Rejected human steps do not create Tasks."
+  ],
+  "officialHost": {
+    "version": "0.2.0-rc.2",
+    "preset": "standard",
+    "caseSessionId": "session-d38dc28a-03b1-44e3-89a6-f246d3ac404b",
+    "taskId": "4dbe1c3a-1330-45ab-bfc0-81a5c93abe72",
+    "bareEntryCreatesNoTask": true,
+    "cancelEntryCreatesNoTask": true,
+    "directCommandPreservedAsUserMessage": true,
+    "phase": "awaiting-approval",
+    "approvalCount": 0,
+    "executionAuthorized": false,
+    "planReview": {
+      "sessionId": "task-review-9fc7b07e-f6d2-4109-86ef-e9eea817003a",
+      "status": "applied",
+      "verdict": "pass",
+      "cutoff": 39
+    },
+    "workspaceUnchanged": true,
+    "sessions": [
+      {
+        "sessionId": "session-d38dc28a-03b1-44e3-89a6-f246d3ac404b",
+        "logSha256": "2e8ba08c76de27f4062477e31470d06b2a2b39c9c4274d4ca52a0237637accb1",
+        "eventCount": 59,
+        "reportedUsage": {
+          "inputTokens": 10573,
+          "outputTokens": 1342,
+          "totalTokens": 31627,
+          "cacheReadTokens": 19712
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ],
+        "toolErrors": []
+      },
+      {
+        "sessionId": "task-review-9fc7b07e-f6d2-4109-86ef-e9eea817003a",
+        "logSha256": "fc2a436dc38c32c4fc70c57a73dcd7f016f55f4e36ecc9caddd88a2a701423be",
+        "eventCount": 54,
+        "reportedUsage": {
+          "inputTokens": 11912,
+          "outputTokens": 5965,
+          "totalTokens": 65621,
+          "cacheReadTokens": 47744
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ],
+        "toolErrors": [
+          14,
+          35,
+          40
+        ]
+      }
+    ],
+    "allSessionsReportedUsage": {
+      "inputTokens": 22485,
+      "outputTokens": 7307,
+      "totalTokens": 97248,
+      "cacheReadTokens": 67456
+    }
+  },
+  "limits": [
+    "A planning-entry smoke test, not an execution or long-horizon evaluation.",
+    "Review uses log evidence; independent product runs are zero.",
+    "Client entry indicator was typechecked and built; visual browser acceptance not run in this change.",
+    "npm publication and daily port 3080 remain unchanged."
+  ]
+}

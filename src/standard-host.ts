@@ -2,7 +2,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
-import { taskSchema, NAMESPACE } from './state.ts'
+import { entrySchema, taskSchema, NAMESPACE } from './state.ts'
 import { controlEvent } from './session-records.ts'
 
 const PREFIX = 'dsh-task-supervisor:'
@@ -43,11 +43,18 @@ const gate = {
 
 /** Read the last task state even after its projection provider unloads. */
 function protectsSession(agent: Agent): boolean {
-  const record = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'extension/record'
+  const records = agent.session.snapshotEvents().map(controlEvent)
+  const state = records.findLast(event => event.type === 'extension/record'
     && event.data.namespace === NAMESPACE && event.data.kind === 'state')
-  if (record?.type !== 'extension/record') return false
-  const task = taskSchema.safeParse(record.data.payload)
-  return !task.success || task.data.phase !== 'cleared'
+  if (state?.type === 'extension/record') {
+    const task = taskSchema.safeParse(state.data.payload)
+    if (!task.success || task.data.phase !== 'cleared') return true
+  }
+  const record = records.findLast(event => event.type === 'extension/record'
+    && event.data.namespace === NAMESPACE && ['state', 'entry'].includes(event.data.kind))
+  if (record?.type !== 'extension/record' || record.data.kind !== 'entry') return false
+  const entry = entrySchema.safeParse(record.data.payload)
+  return !entry.success || entry.data.active && entry.data.mainSessionId === agent.id
 }
 
 /** Attach task admission to the live Agent without changing its native preset.

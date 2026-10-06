@@ -6,7 +6,7 @@ Supervisor creates and manages Tasks in native DSH modes without adding mode-pic
 
 ## Create a task
 
-Run `/task new <objective>` even after an ordinary Session has started, or explicitly ask the main Agent to create a Task. The Agent reads the latest human message seq with `task_status`, then calls `task_create`. The tool binds that real message, retains original requirements and returns the actual Task ID. Plugin messages, invented sequences and stale human messages cannot authorize creation. Repeating the same source and objective creates no duplicate; changed requirements use the formal edit path.
+Run `/task <objective>` to create and start planning, even after an ordinary Session has started. Bare `/task` persists an entry waiting for the next human message, creating before that message's first model request; it does not start an empty task. `/task off` cancels entry. An unfinished task keeps its identity and execution state on bare `/task`; `/task status` always inspects. `/task new <objective>` remains an alias. Alternatively, explicitly ask the main Agent to create a Task. The Agent reads the latest human message seq with `task_status`, then calls `task_create`. The tool binds that real message, retains original requirements and returns the actual Task ID. Plugin messages, invented sequences and stale human messages cannot authorize creation. Repeating the same source and objective creates no duplicate; changed requirements use the formal edit path.
 
 Creation does not approve implementation. The main Agent inspects the workspace, submits Task criteria and a DAG, and waits for approval after independent plan review passes. Ordinary questions do not automatically create Tasks; Todo, planning skills, native Goal and Plan do not establish a Task either. The sidebar shows supervision as not enabled when no Task exists; main Agent answers keep native rendering.
 
@@ -24,6 +24,6 @@ Cold startup without the plugin has no such gate. The current public Host offers
 
 ## Validation
 
-Controller regressions cover natural-language creation, duplicate calls, original-message binding, native Goal/Plan coexistence, pause and completion authority, hot unload, restart and native configuration preservation. See the [validation record](native-task-checks.json) for real-model and official-installation evidence. This change modifies no DSH main loop, native sandbox or daily user profile and establishes no long-horizon advantage.
+Controller regressions cover natural-language creation, duplicate calls, original-message binding, native Goal/Plan coexistence, pause and completion authority, hot unload, restart and native configuration preservation. See the [validation record](native-task-checks.json) for real-model and official-installation evidence; [command-entry checks](task-entry-checks.json) cover the direct and bare command workflow. This change modifies no DSH main loop, native sandbox or daily user profile and establishes no long-horizon advantage.
 
 [简体中文](native-task.zh.md)

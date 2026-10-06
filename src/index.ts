@@ -1,6 +1,6 @@
 /** Native DSH task controller: durable state, human commands, and model tools. */
 import { installStandardHost } from './standard-host.ts'
-import { controlEvent } from './session-records.ts'
+import { appendControlRecord, controlEvent } from './session-records.ts'
 
 import type { Context } from '@deepseek-ai/cordis'
 import { installClosingResponse, CLOSING_MESSAGE } from './closing-response.ts'
@@ -99,7 +99,7 @@ function toolAgent(exec: ToolRunContext): Agent {
 }
 
 function reply(title: string, task: TaskSnapshot | null, armed: boolean): CommandResult {
-  if (task === null) return { kind: 'success', text: `${title}\nNo supervised task. Use /task new <objective>.` }
+  if (task === null) return { kind: 'success', text: `${title}\nNo supervised task. Use /task <objective>.` }
   return { kind: 'success', text: [
     title,
     `Task: ${task.id}`,
@@ -199,7 +199,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   /** A Task owns continuation; native Goal remains a durable planning record. */
   function ownContinuation(agent: Agent): void {
     const task = taskOf(ctx, agent)
-    if (task && task.phase !== 'cleared') {
+    if (task && task.phase !== 'cleared' || entryActive(agent)) {
       agent.ctx.get('goals')?.disarm(agent)
     }
   }
@@ -331,16 +331,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
   const creations = new WeakMap<Agent, Promise<TaskSnapshot>>()
-  async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }): Promise<TaskSnapshot> {
+  async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }, inTurn = false): Promise<TaskSnapshot> {
     const previous = creations.get(agent)
     const pending = (async () => {
       if (previous) await previous.catch(() => undefined)
-      return createTaskOnce(agent, objective, creationId, commandInput, source)
+      return createTaskOnce(agent, objective, creationId, commandInput, source, inTurn)
     })()
     creations.set(agent, pending)
     try { return await pending } finally { if (creations.get(agent) === pending) creations.delete(agent) }
   }
-  async function createTaskOnce(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }): Promise<TaskSnapshot> {
+  async function createTaskOnce(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }, inTurn = false): Promise<TaskSnapshot> {
     await bindSupervisedSession(agent)
     if (effectiveVerification === 'independent' && config.requiredVerification) await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, config.requiredVerification, AbortSignal.timeout(reviewerPolicy.deadlineMs))
     if (source) {
@@ -360,12 +360,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       }
     }
     if (disposed) throw new Error('Supervisor is unloaded')
+    if (inTurn && !entryActive(agent)) throw new Error('Task planning entry was canceled during admission')
     const task = current(agent)
     if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
     let next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
     const grant = () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } }
-    if (ctx.agents.currentInitiator() === agent && agent.status === 'running') {
+    if (inTurn || ctx.agents.currentInitiator() === agent && agent.status === 'running') {
       // Already executing in this Agent: maintenance would wait for its own turn.
       appendTask(ctx, agent, grant())
       ownContinuation(agent)
@@ -380,6 +381,32 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     return next
   }
 
+  function entryActive(agent: Agent): boolean {
+    const entry = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.entry
+    return entry?.active === true && entry.mainSessionId === agent.id
+  }
+  async function setEntry(agent: Agent, active: boolean): Promise<void> {
+    await bindSupervisedSession(agent)
+    appendControlRecord(agent, { namespace: NAMESPACE, schemaVersion: 1, kind: 'entry',
+      recordId: `entry:${agent.id}:${agent.session.seq}`, payload: { active, mainSessionId: agent.id } })
+    ownContinuation(agent)
+    await flush(agent)
+  }
+  // Bare /task waits for the next real human message; internal followups cannot create it.
+  ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
+    if (!entryActive(agent)) return next()
+    const human = messages.findLast(message => message.source.kind === 'user'
+      && message.content.some(block => block.type === 'text' && block.text.trim()))
+    if (!human) return next()
+    const decision = await next()
+    if (decision.kind === 'reject' || !entryActive(agent)) return decision
+    signal.throwIfAborted()
+    const objective = human.content.filter(block => block.type === 'text').map(block => block.text).join('\n').trim()
+    await createTask(agent, objective, `entry:${agent.id}:${human.id}`, undefined, undefined, true)
+    signal.throwIfAborted()
+    return decision
+  })
+
   const repairs = installRepairs(ctx, commitAndWake, repairLimits)
   const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
   installPanelApi(ctx, agent => ({ reviewVerification: effectiveVerification, armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
@@ -392,7 +419,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   ctx.on('agent/created', async ({ agent, source }) => {
     const task = taskOf(ctx, agent)
-    if (task === null) return
+    if (task === null && !entryActive(agent)) return
     await bindSupervisedSession(agent)
     ownContinuation(agent)
     const life = runtime(agent)
@@ -693,8 +720,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   ctx.commands.register({
     name: 'task',
-    description: 'Create, inspect, approve, pause, or resume a supervised task',
-    input: { hint: '[new <objective>|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|clear|off|on]' },
+    description: 'Enter Task planning, plan an objective, or control the current task',
+    input: { hint: '[<objective>|status|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|clear|off|on]' },
     async handler({ agent, rawInput, signal }) {
       const binding = consultationBinding(agent)
       if (binding) {
@@ -720,12 +747,28 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const life = runtime(agent)
       try {
         if (input === 'consult') return { kind: 'success', text: `Supervisor Session: ${(await consultation.open(agent)).id}` }
-        if (input === '') return reply('Supervisor', task, life.armed)
-        if (input.startsWith('new ')) {
-          const next = await createTask(agent, input.slice(4), undefined, `/task${rawInput}`)
+        if (input === '') {
+          if (task && !['complete', 'cleared'].includes(task.phase)) return reply('当前任务督导', task, life.armed)
+          if (task && !task.enabled) throw new Error('督导已关闭；先运行 /task on，再进入新任务规划。')
+          await setEntry(agent, true)
+          return { kind: 'success', text: '已进入任务规划。下一条消息作为任务目标；也可以直接输入 /task <目标>。提交计划后等待批准，不会自动实施。' }
+        }
+        if (input === 'status') return reply('Supervisor', task, life.armed)
+        if (['off', 'clear'].includes(input) && (!task || ['complete', 'cleared'].includes(task.phase)) && entryActive(agent)) {
+          await setEntry(agent, false)
+          if (!task) return { kind: 'success', text: '已退出任务规划入口。' }
+        }
+        const controls = new Set(['new', 'status', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'edit', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
+        const verb = input.split(/\s/u)[0]!
+        if (!controls.has(verb)) {
+          const next = await createTask(agent, input, undefined, `/task${rawInput}`)
           return reply('Task created', next, life.armed)
         }
-        if (task === null) throw new Error('no task exists; use /task new <objective>')
+        if (/^new\s/u.test(input)) {
+          const next = await createTask(agent, input.slice(3).trim(), undefined, `/task${rawInput}`)
+          return reply('Task created', next, life.armed)
+        }
+        if (task === null) throw new Error('no task exists; use /task <objective>')
         if (input === 'retry-review') {
           await retryReview(agent, task, signal)
           return reply('审查恢复完成；检查结果后批准计划或手动恢复任务。', current(agent), false)
@@ -840,7 +883,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const task = !args.task_id || args.task_id === live?.id ? live : state?.archivedTasks.find(entry => entry.task.id === args.task_id)?.task ?? null
       const latestUser = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')
       const source = latestUser?.type === 'user/message' ? { seq: latestUser.seq, text: latestUser.data.content.filter(block => block.type === 'text').map(block => block.text).join('\n') } : null
-      return task === null ? { task: null, supervision: 'not-enabled', latestUserMessage: source, availableActions: ['task_create'] } : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+      return task === null ? { task: null, supervision: entryActive(agent) ? 'awaiting-objective' : 'not-enabled', latestUserMessage: source, availableActions: ['task_create'] } : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
         currentTaskId: live?.id ?? null,
         latestUserMessage: source,
         continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',

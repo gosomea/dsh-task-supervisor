@@ -68,6 +68,7 @@ function InlineTask({ sessionId, open }: PanelProps & { open: (params?: TaskNavi
     }
     previous.current = { id: task?.id ?? null, phase: task?.phase ?? null }
   }, [state, task?.id, task?.phase, open])
+  if (state?.entryActive) return <div className="dsh-task-actions"><span>任务规划 · 等待输入目标</span><Button size="sm" variant="toolbar" onClick={() => open({ view: 'details' })}>查看详情</Button></div>
   if (!task || task.phase === 'cleared') return null
   return <TaskOverview key={task.id} sessionId={sessionId} task={task} state={state} error={error}
     actions={state.actions.length ? <Actions sessionId={sessionId} /> : null} open={open} />
@@ -246,7 +247,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>任务已暂停，已保存审查现场。重试只恢复审查；后续执行仍需明确恢复。</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
       {state?.reviewVerification && <p className="dsh-task-muted">续行控制：Supervisor · 原生 Goal／Plan 可用于规划，不代替任务批准与验收。<br />验收模式：{state.reviewVerification === 'independent' ? '独立产物验证' : '日志证据审查'} · 计划与进展采用日志审查</p>}
       {reviewJob && <ReviewInspection job={reviewJob} />}
-      {!task ? <p>未启用任务督导。模式选择不会创建任务；你可以在主会话中明确要求创建 Task，或在督导对话中整理草案。</p> : <>
+      {state?.entryActive ? <p>已进入任务规划。下一条主会话消息将作为任务目标；提交计划后等待批准。使用 /task off 取消。</p> : !task ? <p>未启用任务督导。输入 /task &lt;目标&gt; 开始规划，或在督导对话中整理草案。</p> : <>
         <section className="dsh-task-section"><h3>任务目标</h3><Disclosure title={headline(task.objective, 72)}><p className="dsh-task-objective">{task.objective}</p></Disclosure></section>
         <section className="dsh-task-section"><h3>执行计划 · {task.stages.length} 个节点</h3>
           <TaskGraph task={task} reworks={state.reworks} selected={stage?.id} select={setSelected} label={id => nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />

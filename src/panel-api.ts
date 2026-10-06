@@ -65,7 +65,7 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[]; reviewVerification?: 'log' | 'independent' }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
   const details = (agent: Agent) => {
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
-    return { draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [] }
+    return { entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [] }
   }
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
@@ -115,7 +115,7 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           const projected = await coldState(ctx, sessionId, request.signal)
           if (projected === null) return response({ error: 'Session not found' }, 404)
           if (projected.failure !== null) return response({ error: projected.failure }, 409)
-          return response({ task: projected.current, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks, repairs: projected.repairs })
+          return response({ task: projected.current, entryActive: projected.entry?.active === true && projected.entry.mainSessionId === sessionId, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks, repairs: projected.repairs })
         }
         if (agent === undefined) return response({ error: 'Open the Session before using controls' }, 409)
         let body: unknown
