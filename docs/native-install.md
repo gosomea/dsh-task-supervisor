@@ -2,6 +2,8 @@
 
 ## Summary
 
+This page retains the 0.1.1 release installation validation. See [task supervision in native modes](native-task.md) for the current source workflow and boundaries after removing separate modes.
+
 `0.1.1` uses public DSH persistent Inbox events and Agent presets without private Host event or reader extensions. Installation was verified with official npm `@deepseek-ai/dsh@0.2.0-rc.2`, Node 24.19.0 and macOS; kernel source tests use unmodified `0.1.7-alpha.2` source. Earlier versions and other platforms remain unverified.
 
 ## Install and start

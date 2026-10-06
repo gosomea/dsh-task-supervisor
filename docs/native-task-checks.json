@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-06",
+  "releaseStatus": "unreleased-source-change; published npm 0.1.1 unchanged",
+  "baseCommit": "0152135c5bf3e7e410efd02ea6eac1d9860439f6",
+  "sourceSha256": {
+    "src/index.ts": "4e1bd8b2a5505b5c8fbc4e140899cc9b5ceee18c6bbc3e8637708c3b88418c79",
+    "src/standard-host.ts": "8c82a154772d6fc2d0eab30823fc4bb4b80aa0aa5077d87e0a3dd3266fc1f66c",
+    "src/client/index.tsx": "0761c3496c7767af9fdbc85f0fdc4b63df21e90054e29bed6579390f14a45107",
+    "spikes/kernel/supervisor.spec.ts": "6272350335e2aa65ca960d625ac17360b235fb1fcac2366896c5f34bbb5df791"
+  },
+  "checks": {
+    "kernel": {
+      "files": 23,
+      "passed": 352,
+      "skipped": 13,
+      "total": 365,
+      "dockerChecks": "skipped"
+    },
+    "hostStrictTypes": "passed",
+    "clientStrictTypes": "passed",
+    "build": "passed",
+    "diffWhitespace": "passed",
+    "package": {
+      "fileCount": 11,
+      "sha256": "1ecb6728b0c00c7685ceb121574e2d6759c21696ca0ce5ef4bea8e68551d0bb9",
+      "installedLibMatches": true
+    }
+  },
+  "officialHost": {
+    "package": "@deepseek-ai/dsh",
+    "version": "0.2.0-rc.2",
+    "node": "24.19.0",
+    "platform": "darwin-arm64",
+    "installation": "supported dsh plugin add; local tarball; offline; ignore-scripts",
+    "nativeRoster": [
+      "standard",
+      "ptc",
+      "minimal",
+      "cordis"
+    ],
+    "browserModePicker": [
+      "标准模式",
+      "PTC 模式",
+      "极简模式",
+      "创造模式"
+    ],
+    "taskDetailPaneVisualAcceptance": "not verified in this run"
+  },
+  "fullLifecycle": {
+    "packageSha256": "d28441d76845c9aadba6b33171cbde22c1f423a0eb011776f9e65bb2ea70317c",
+    "artifactScope": "Full lifecycle preceded final source/cancellation revalidation and running-status guard; final source has kernel and restore-smoke evidence.",
+    "sessionId": "session-80991e72-1fc6-4e6d-88f7-43e9004bac64",
+    "taskId": "40f2fba0-2050-4b9a-af7c-878d30117952",
+    "preset": "standard",
+    "creationRequestId": "main-task:session-80991e72-1fc6-4e6d-88f7-43e9004bac64:22",
+    "phase": "complete",
+    "approvalCommands": 1,
+    "originalInputSha256": "00a90ba79d3049486c7e32aecc55d481c10c250fcd1ba9692608cb5fb5c8a503",
+    "workspaceUnchanged": true,
+    "result": 20,
+    "reviewVerification": "log",
+    "independentProductRuns": 0,
+    "reviews": [
+      {
+        "kind": "plan",
+        "sessionId": "task-review-d7e0ecaf-f5e2-407d-83e1-523e777c3d97",
+        "status": "applied",
+        "verdict": "pass",
+        "elapsedMs": 143115,
+        "cutoff": 43
+      },
+      {
+        "kind": "stage",
+        "sessionId": "task-review-1c2b522d-f7b4-4294-88f3-80999ea3f005",
+        "status": "applied",
+        "verdict": "pass",
+        "elapsedMs": 87550,
+        "cutoff": 109
+      },
+      {
+        "kind": "completion",
+        "sessionId": "task-review-517df85b-8cbf-45db-9d73-6f898d986b6f",
+        "status": "applied",
+        "verdict": "pass",
+        "elapsedMs": 145968,
+        "cutoff": 133
+      }
+    ],
+    "sessions": [
+      {
+        "sessionId": "session-80991e72-1fc6-4e6d-88f7-43e9004bac64",
+        "eventCount": 160,
+        "evidenceThroughSeq": 158,
+        "retainedLogSha256": "a3b70ed8230fead107cbf27554bba3a7c2dff5c24bee5e034026f1dc8936d361",
+        "toolCalls": 12,
+        "toolErrorSeqs": [],
+        "reportedUsage": {
+          "inputTokens": 50195,
+          "outputTokens": 4648,
+          "totalTokens": 182203,
+          "cacheReadTokens": 127360
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ]
+      },
+      {
+        "sessionId": "task-review-d7e0ecaf-f5e2-407d-83e1-523e777c3d97",
+        "eventCount": 65,
+        "evidenceThroughSeq": 63,
+        "retainedLogSha256": "e3e2492dad1ee87764bb849b4ddaf9f0a0336b177db32f39c023f214f9c9fbaf",
+        "toolCalls": 14,
+        "toolErrorSeqs": [],
+        "reportedUsage": {
+          "inputTokens": 13749,
+          "outputTokens": 24071,
+          "totalTokens": 100668,
+          "cacheReadTokens": 62848
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ]
+      },
+      {
+        "sessionId": "task-review-1c2b522d-f7b4-4294-88f3-80999ea3f005",
+        "eventCount": 129,
+        "evidenceThroughSeq": 127,
+        "retainedLogSha256": "cdf675995378c76a08833b5f8ccd48426084b40b2405857518f148e2e8944368",
+        "toolCalls": 34,
+        "toolErrorSeqs": [
+          25,
+          73,
+          111
+        ],
+        "reportedUsage": {
+          "inputTokens": 37211,
+          "outputTokens": 13667,
+          "totalTokens": 389054,
+          "cacheReadTokens": 338176
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ]
+      },
+      {
+        "sessionId": "task-review-517df85b-8cbf-45db-9d73-6f898d986b6f",
+        "eventCount": 134,
+        "evidenceThroughSeq": 132,
+        "retainedLogSha256": "98e344a91b6561954897289235169a180a1587e0ed463b62fcd076b6eb6f1298",
+        "toolCalls": 35,
+        "toolErrorSeqs": [
+          18,
+          49,
+          51,
+          107
+        ],
+        "reportedUsage": {
+          "inputTokens": 45321,
+          "outputTokens": 21865,
+          "totalTokens": 478834,
+          "cacheReadTokens": 411648
+        },
+        "requestRoutes": [
+          [
+            "deepseek-codebuddy",
+            "deepseek-v4.1-flash"
+          ]
+        ]
+      }
+    ],
+    "allSessionsReportedUsage": {
+      "cacheReadTokens": 940032,
+      "inputTokens": 146476,
+      "outputTokens": 64251,
+      "totalTokens": 1150759
+    }
+  },
+  "finalArtifactRestore": {
+    "sameTaskId": true,
+    "phase": "complete",
+    "armed": false,
+    "toolCalls": [
+      "task_status"
+    ],
+    "extraApprovals": 0,
+    "extraTasks": 0,
+    "usage": {
+      "inputTokens": 21257,
+      "outputTokens": 96,
+      "totalTokens": 42601,
+      "cacheReadTokens": 21248
+    },
+    "nativeRosterUnchanged": true
+  },
+  "limits": [
+    "Log-only review does not establish independent artifact verification.",
+    "This small arithmetic case is a workflow check, not a long-horizon superiority evaluation.",
+    "A completely absent plugin at cold startup cannot install admission on a native preset through the current public Host.",
+    "Old dedicated-preset Sessions require legacyPresets: true; logs are not rewritten.",
+    "Daily port 3080 and its process are unchanged; npm publication is not part of this round."
+  ]
+}

@@ -37,7 +37,7 @@ dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-npm 包包含预构建的 Host 插件、Web 客户端、检查网关和 bundle patch。在空白 Session 第一轮模型对话前运行 `/task new <目标>`，DSH 会选择当前 preset 的 Supervisor 变体。需要先讨论要求时，在发送第一条消息前选择 Supervisor 模式。普通模式保留 Goal 和 Plan；Supervisor 模式只有一个任务控制器。已经开始的普通 Session 不能更换原生 preset，请新建督导 Session。
+npm 0.1.1 包包含预构建的 Host 插件、Web 客户端、检查网关和 bundle patch，仍使用专用 Supervisor preset。当前开发源码已改为原生模式内创建 Task，并保留 Goal／Plan 工具；这轮尚未发布。自然语言创建、续行协调及旧 Session 恢复见[原生模式中的任务督导](docs/native-task.zh.md)。
 
 独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制。默认审查主 Session 日志；独立产物检查需要显式配置，独立浏览器观察尚不可用。详见[实现状态](docs/implementation.zh.md)。
 

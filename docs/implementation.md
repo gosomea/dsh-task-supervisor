@@ -1,5 +1,7 @@
 # Implementation status
 
+**2026-10-06: development source retains native modes.** Human-message-bound `task_create` is available; native Goal/Plan remain and Supervisor owns Task continuation and acceptance. This change is not yet published; see [task supervision in native modes](native-task.md) for workflow, compatibility and validation.
+
 **2026-10-04: 0.1.1 standard installation.** Native persistent records and preset admission are implemented; projection cache is 17. [Installation validation](native-install.md) owns current evidence and limits; earlier version counts below retain historical scope.
 
 **Updated: 2026-09-30.** [Generic independent review enhancement](review-quality.md) steps 0–3 are implemented and separately committed. Current task records are version 14, projection cache 16 and review records 5; legacy records remain readable without invented independent evidence. [Real-model fixtures](../eval/independent-verification/generic-quality-20260930/README.md) verify static read-only acceptance, passing independent data recomputation and rejection of incorrect data, while retaining the first static review timeout. A complete static task finishes through the native controller; official Kea reward is 0 after a formal-plan protocol fault, timeout and empty-patch sealing, with subsequent repairs and full-task validation recorded separately. Earlier version scopes remain below.
@@ -84,7 +86,7 @@ The Host entry point is [`src/index.ts`](../src/index.ts). It registers `/task`,
 
 Task records persist in native `agent/inbox/spliced` events in the main DSH Session. A plugin-attributed internal message is inserted and canceled in one synchronous call; its payload stays in the durable log without entering model conversation. `src/session-records.ts` supplies a read-only normalized fold view. It writes no new event type, impersonates no human input and uses no `ignorable` flag. Reviews, drafts, repairs and consultation bindings share this carrier with original seqs and timestamps.
 
-`src/standard-host.ts` derives Supervisor variants from native preset declarations, preserves configuration and disables Goal/Plan workflow rows only in the variant. `/task new` selects it in a blank Session; a started ordinary Session needs a new Session. The durable native preset identity prevents cold restore when the plugin is missing; a retained scope gate denies steps and tools after hot unload. Existing 0.1.0 `extension/record` logs still require their original Host: a legacy fold reader does not extend the public DSH decoder. See [installation validation](native-install.md) for versions and evidence.
+`src/standard-host.ts` attaches Agent-owned admission without changing native presets; `task_create` binds a real human message and planning still waits for Task approval. Optional public Goal service disarms native continuation; Goal/Plan/Todo remain usable without replacing Task acceptance. No new modes are registered by default; old 0.1.1 presets use explicit compatibility configuration. Hot unload and restart with the plugin retain admission; cold plugin absence does not guarantee rejection. See [task supervision in native modes](native-task.md). Private 0.1.0 logs still use their original Host.
 
 ## Control behavior
 

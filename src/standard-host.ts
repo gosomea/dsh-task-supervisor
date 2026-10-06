@@ -2,11 +2,11 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
+import { taskSchema, NAMESPACE } from './state.ts'
 import { controlEvent } from './session-records.ts'
 
 const PREFIX = 'dsh-task-supervisor:'
 const GATE = 'dsh-task-supervisor-session'
-const competingDrivers = new Set(['@deepseek-ai/dsh-goal-round-driver', '@deepseek-ai/dsh-command-goal', '@deepseek-ai/dsh-tool-goal', '@deepseek-ai/dsh-plan-mode'])
 
 declare module '@deepseek-ai/cordis' {
   interface Context { supervisorAdmission: SupervisorAdmission }
@@ -31,30 +31,47 @@ const gate = {
         return { kind: 'reject' as const }
       }
       if (ctx.get('supervisorAdmission')?.available) return next()
-      const controlled = agent.session.snapshotEvents().map(controlEvent).some(e => e.type === 'extension/record'
-        && e.data.namespace.startsWith('dsh-task-supervisor'))
+      const controlled = protectsSession(agent)
       return controlled ? { kind: 'reject' as const } : next()
     })
     ctx.tools.guard(exec => {
-      if (exec.agent && !ctx.get('supervisorAdmission')?.available) return 'Supervisor is unavailable; restore the plugin before executing this Session.'
+      if (exec.agent && protectsSession(exec.agent) && !ctx.get('supervisorAdmission')?.available) return 'Supervisor is unavailable; restore the plugin before executing this Session.'
       return undefined
     })
   },
 }
 
-/** Copy deployment-owned preset rows, retaining configuration and disabling a competing round driver. */
-function supervisedRows(rows: PresetDefinition['plugins']): PresetDefinition['plugins'] {
-  return rows.map(row => ({ ...row,
-    ...competingDrivers.has(row.name) ? { disabled: true } : {},
-    ...row.group ? { config: supervisedRows(row.config as PresetDefinition['plugins']) } : {} }))
+/** Read the last task state even after its projection provider unloads. */
+function protectsSession(agent: Agent): boolean {
+  const record = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'extension/record'
+    && event.data.namespace === NAMESPACE && event.data.kind === 'state')
+  if (record?.type !== 'extension/record') return false
+  const task = taskSchema.safeParse(record.data.payload)
+  return !task.success || task.data.phase !== 'cleared'
 }
 
-/** Install native preset declarations and bind new Sessions before their first turn.
- * @param ctx The root Supervisor fiber; owns definitions and the admission capability.
- * @returns An async binder used before a task can acquire execution ownership.
+/** Attach task admission to the live Agent without changing its native preset.
+ * @param ctx Supervisor lifetime, owning the availability service.
+ * @param legacyPresets Whether to expose 0.1.1 compatibility presets for old Sessions.
+ * @returns Admission installer called before Task creation.
  */
-export async function installStandardHost(ctx: Context): Promise<(agent: Agent) => Promise<void>> {
+export async function installStandardHost(ctx: Context, legacyPresets = false): Promise<(agent: Agent) => Promise<void>> {
   new SupervisorAdmission(ctx)
+  if (legacyPresets) await installLegacyPresets(ctx)
+  const installed = new WeakMap<Agent, Promise<void>>()
+  return async agent => {
+    if (!ctx.get('supervisorAdmission')?.available) throw new Error('Supervisor is unloaded.')
+    const previous = installed.get(agent)
+    if (previous) return previous
+    // Agent-owned: retain admission if Supervisor hot-unloads; retire with the Agent.
+    const pending = Promise.resolve(agent.ctx.plugin(gate)).then(() => undefined)
+    installed.set(agent, pending)
+    try { await pending } catch (error) { installed.delete(agent); throw error }
+  }
+}
+
+/** Register old identities only for deployments explicitly restoring 0.1.1 Sessions. */
+async function installLegacyPresets(ctx: Context): Promise<void> {
   const registering = new Map<string, Promise<void>>()
   const disposers: (() => Promise<void>)[] = []
   let stopped = false
@@ -79,9 +96,11 @@ export async function installStandardHost(ctx: Context): Promise<(agent: Agent) 
         if (previous !== undefined && previous !== gate) throw new Error('Supervisor preset gate is already owned by another plugin.')
         loader.builtins[GATE] = gate
         ctx.effect(() => () => { if (loader.builtins[GATE] === gate) delete loader.builtins[GATE] })
-        const rows = supervisedRows(definition.plugins)
+        const rows = definition.plugins
         const owner = ctx.extend({ baseUrl: entry.context.baseUrl })
-        const dispose = await owner.agentPresets.register({ id, name: `Supervisor · ${definition.name ?? base}`,
+        const ownerPresets = owner.get('agentPresets')
+        if (!ownerPresets) throw new Error('Legacy preset registry unloaded during registration.')
+        const dispose = await ownerPresets.register({ id, name: `Supervisor · ${definition.name ?? base}`,
           plugins: [...rows, { name: `cordis:${GATE}` }] })
         disposers.push(dispose)
       })()
@@ -98,20 +117,4 @@ export async function installStandardHost(ctx: Context): Promise<(agent: Agent) 
     const definition: PresetDefinition = entry.options.config
     if (!definition.id.startsWith(PREFIX)) await prepare(definition.id)
   }
-  const bind = async (agent: Agent): Promise<void> => {
-    const current = presets.composedPreset(agent.ctx)
-    if (current?.startsWith(PREFIX)) {
-      const resolved = await presets.resolve(current)
-      if (resolved.broken) throw new Error(`Supervisor preset cannot load: ${resolved.broken}`)
-      return
-    }
-    const id = await prepare(current ?? presets.defaultId)
-    const resolved = await presets.resolve(id)
-    if (resolved.broken) throw new Error(`Supervisor preset cannot load: ${resolved.broken}`)
-    const boundary = ctx.sessionProjections.stateOf(agent.session, 'turnBoundary')
-    if (boundary && (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0)) throw new Error('此会话已开始，DSH 不允许改换 Agent preset。请在新的会话中先运行 /task new，或选择 Supervisor 模式后开始讨论。')
-    await presets.select(agent, id)
-    if (!await ctx.sessions.flush(agent.session)) throw new Error('Supervisor preset selection is not durable.')
-  }
-  return bind
 }

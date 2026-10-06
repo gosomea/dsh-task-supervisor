@@ -71,10 +71,10 @@ Supervisor 使用独立命令命名空间，暂定 `/task`。用户可从创建�
 
 实现使用 DSH 通用插件注册与 effect 清理、持久 session event 与 projection、Agent 生命周期钩子和客户端扩展点。Supervisor 拥有自己的命令、模型工具、状态服务、投影、续行驱动器和右侧面板。安装时不覆盖 `/goal`、`/plan`，不接管原生 `get_goal`、`create_goal`、`update_goal`、`exit_plan_mode`，不要求卸载 Goal 或 Plan，也不读写它们的私有状态。模型工具的确切名称与 schema 待定；主 Agent 的完成操作只能提交验收申请。
 
-同一 DSH 安装可以同时具备原生工作流和 Supervisor。首版支持在专用 Agent preset 和新的督导会话中运行；该 preset 组合通用执行工具与督导自己的任务工具，避免主 Agent 在受督导轮次中又启用另一套任务控制。单个会话同时由两个控制器续行不属于支持场景。已有原生任务需要先由用户停止其续行，或换一个会话开始督导任务；插件不自动接管旧任务。工具可见范围和 preset 准入方式必须在隔离宿主验证，不能仅凭命令不同就声称两套流程可以安全混跑。
+同一原生会话可保留 Goal／Plan 工具并创建 Supervisor Task。Task 存在时通过公开 GoalService.disarm 解除原生自动续行，Supervisor 独占续行与最终验收；Goal 状态和历史保留，Plan 批准不代表 Task 批准。当前入口是 `/task new` 或绑定用户消息的 `task_create`，不更换 preset。恢复边界及旧专用模式兼容见[原生模式中的任务督导](native-task.zh.md)。
 
 关闭 Supervisor 只停止它拥有的工作，不自动启动原生 Goal 或 Plan。宿主依赖限于 DSH 通用能力；Goal 与 Plan 可作为行为和源码参考，不能成为督导运行的必需服务。安装组合、模型工具可见性和客户端加载需要证明原生插件可保留、独立使用，且 Supervisor 也可在未挂载原生 Goal 与 Plan 服务时运行。参考 [DSH 架构](../../../deepseek-harness/docs/architecture.zh.md)；[Jev 验证原型](../../dsh-jev-verifier/README.md)提供可选择移植的经验。
 
 ## Dev Note
 
-待定实现问题：确切的 DSH 事件类型与投影结构、带类型的计划更新入口、已定义的准入及取消与 fork 行为在宿主中的映射、独立命令命名与附件处理、客户端渲染、审批传输、并发追加时的安全会话读取，以及专用 preset 组合和工具可见范围。须对照当前 DSH 源码和隔离测试解决后，才能作为已实现行为描述。
+待定实现问题：确切的 DSH 事件类型与投影结构、带类型的计划更新入口、已定义的准入及取消与 fork 行为在宿主中的映射、独立命令命名与附件处理、客户端渲染、审批传输、并发追加时的安全会话读取，以及原生工具共存和续行协调。须对照当前 DSH 源码和隔离测试解决后，才能作为已实现行为描述。

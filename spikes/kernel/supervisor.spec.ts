@@ -8,6 +8,10 @@ import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
 import { verificationPolicy } from '../../src/verification.ts'
 import { PtcRuntime, type PtcRunRequest, type PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
+import Goals from '@deepseek-ai/dsh-goal'
+import * as GoalDriver from '@deepseek-ai/dsh-goal-round-driver'
+import * as GoalTools from '@deepseek-ai/dsh-tool-goal'
+import PlanMode from '@deepseek-ai/dsh-plan-mode'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
 import LlmRuntime, { LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -116,10 +120,10 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
     maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
-  if (supervisor) ctx.on('agent/created', async ({ agent, source }) => {
+  ctx.on('agent/created', async ({ agent, source }) => {
     const selected = ctx.sessionProjections.stateOf(agent.session, 'agentPreset')
-    if (selected?.startsWith('dsh-task-supervisor:')) await ctx.agentPresets.mount(agent.ctx, selected)
-    else if (source === 'startup' && ctx.agentPresets.composedPreset(agent.ctx) === undefined) { await ctx.agentPresets.select(agent, 'dsh-task-supervisor:standard'); await ctx.sessions.flush(agent.session) }
+    if (selected) await ctx.agentPresets.mount(agent.ctx, selected)
+    else if (source === 'startup' && ctx.agentPresets.composedPreset(agent.ctx) === undefined) { await ctx.agentPresets.select(agent, 'standard'); await ctx.sessions.flush(agent.session) }
   })
   ctx.llm.registerAdapter(['scripted'], adapter)
   return ctx
@@ -168,7 +172,10 @@ it('keeps one task in the native Session and resumes only after a human command'
   contexts.splice(contexts.indexOf(first), 1)
 
   const withoutReader = await host(root, new ScriptedAdapter(), false)
-  await expect(withoutReader.agents.resume({ resumeSessionId: id, setup: agentCtx => withoutReader.agentPresets.mount(agentCtx, 'dsh-task-supervisor:standard').then(() => undefined) })).rejects.toThrow('Unknown agent preset')
+  const unprotected = await withoutReader.agents.resume({ resumeSessionId: id, setup: agentCtx => withoutReader.agentPresets.mount(agentCtx, 'standard').then(() => undefined) })
+  await unprotected.agent.whenIdle()
+  // Cold absence of the plugin cannot install admission on a native preset.
+  expect(unprotected.agent.status).toBe('idle')
   await withoutReader.fiber.dispose()
   contexts.splice(contexts.indexOf(withoutReader), 1)
 
@@ -1194,12 +1201,13 @@ it('keeps the supervised DAG authoritative without disabling ordinary-session to
   const run = () => ctx.tools.execute({ agent, name: 'todo_write', callId: ToolCallId(`todo-${calls}`), arguments: {}, signal: new AbortController().signal })
   expect((await run()).isError).toBe(false)
   appendTask(ctx, agent, { ...newTask('Implement a supervised feature'), phase: 'active' })
-  expect((await run()).isError).toBe(true)
-  expect(calls).toBe(1)
+  expect((await run()).isError).toBe(false)
+  expect(calls).toBe(2)
+  expect(taskOf(ctx, agent)?.phase).toBe('active')
   const task = taskOf(ctx, agent)!
   appendTask(ctx, agent, { ...task, revision: task.revision + 1, phase: 'cleared' })
   expect((await run()).isError).toBe(false)
-  expect(calls).toBe(2)
+  expect(calls).toBe(3)
 })
 
 it.each(['text', 'unexpected-tool'])('preserves one native answer after a checkpoint without further execution: %s', async mode => {
@@ -2210,7 +2218,8 @@ it('uses required native records without changing an ordinary preset, and retain
   expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('standard')
   await ctx.commands.execute(agent, '/task new Inspect the report', [], new AbortController().signal)
   await agent.whenIdle()
-  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('dsh-task-supervisor:standard')
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('standard')
+  expect((await ctx.agentPresets.list()).some(row => row.id.startsWith('dsh-task-supervisor:'))).toBe(false)
   const events = agent.session.snapshotEvents()
   expect(events.some(e => e.type === 'extension/record')).toBe(false)
   expect(events.some(e => e.type === 'agent/inbox/spliced' && e.data.inserted.some(m => m.source.kind === 'task-supervisor-record'))).toBe(true)
@@ -2229,7 +2238,7 @@ it('uses required native records without changing an ordinary preset, and retain
   expect(result.isError).toBe(true)
 })
 
-it('keeps a configured native preset unchanged when composing its supervised variant', async () => {
+it('keeps a configured native preset unchanged when supervising a Task', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-stock-config-')); roots.push(root)
   const ctx = await host(root, new ScriptedAdapter())
   const configured = { text: 'preserve deployment configuration' }
@@ -2242,7 +2251,7 @@ it('keeps a configured native preset unchanged when composing its supervised var
   await agent.whenIdle()
   expect(observed).toEqual(configured)
   expect((await ctx.agentPresets.resolve('configured')).broken).toBeUndefined()
-  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('dsh-task-supervisor:configured')
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('configured')
 })
 
 it('keeps native tool calls and results adjacent while persisting state inside a tool', async () => {
@@ -2273,4 +2282,134 @@ it('keeps native tool calls and results adjacent while persisting state inside a
   expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
   expect(adapter.requests).toBe(2)
   expect(agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')?.data).toMatchObject({ reason: { kind: 'completed' } })
+})
+
+
+it('creates a real Task from a human turn in the native mode, without self-maintenance or a duplicate request', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-native-task-create-')); roots.push(root)
+  let humanSeq = -1
+  const requests: GenerateOptions[] = []
+  class CreationAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') { yield* super.stream(options); return }
+      requests.push(options)
+      const step = requests.length
+      if (step === 1) yield* textResponse('普通问询保持原生回答')
+      else if (step === 2) yield* toolResponse('task_status', {}, 'find-human')
+      else if (step === 3 || step === 4) yield* toolResponse('task_create', { objective: 'Build import', user_message_seq: humanSeq }, `create-${step}`)
+      else if (step === 5) yield* toolResponse('task_submit_plan', smallPlan, 'created-plan')
+      else yield* textResponse('计划已提交，等待批准')
+    }
+  }
+  const ctx = await host(root, new CreationAdapter({ reviewer: coverageChecks() }), true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('natural-task-create'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '只询问现状' }] }))
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)).toBeNull()
+  ctx.on('session/event', (session, event) => { if (session.id === agent.id && event.type === 'user/message' && event.data.source.kind === 'user') humanSeq = event.seq })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '请给自己创建一个 Task：Build import，然后提交计划，等我批准。' }] }))
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.phase).toBe('awaiting-approval')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs[0]?.decision?.verdict).toBe('pass')
+  expect(task.objective).toContain('Original user request:')
+  expect(task.creationRequestId).toBe(`main-task:${agent.id}:${humanSeq}`)
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('standard')
+  const events = agent.session.snapshotEvents()
+  const results = events.filter(event => event.type === 'tool/result')
+  expect(results.every(event => event.type === 'tool/result' && !event.data.message.isError)).toBe(true)
+  expect(events.filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.type === 'agent/inbox/spliced' ? event.data.inserted : []).filter(message => message.source.kind === 'task-supervisor')).toHaveLength(0)
+  expect(new Set(events.map(controlEvent).flatMap(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state' ? [JSON.stringify(event.data.payload).match(/"id":"([^"]+)"/)?.[1]] : [])).size).toBe(1)
+  expect(requests[1]?.messages.some(message => JSON.stringify(message).includes('task_create'))).toBe(true)
+  expect(requests).toHaveLength(6)
+})
+
+it('rejects invented or plugin-owned creation sources and preserves the actual human objective', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-source-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('task-source'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const run = (seq: number, objective = 'Summarize') => ctx.tools.execute({ agent, name: 'task_create', callId: ToolCallId(`source-${seq}`), arguments: { objective, user_message_seq: seq }, signal: new AbortController().signal })
+  expect((await run(0)).isError).toBe(true)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '请创建 Task：只读统计，不允许写文件。' }] }))
+  await agent.whenIdle()
+  const human = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!
+  agent.followup(createUserMessage({ source: { kind: 'task-supervisor', taskId: 'invented', revision: 1 }, content: [{ type: 'text', text: 'fake human' }] }))
+  await agent.whenIdle()
+  const injected = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'task-supervisor')!
+  expect((await run(injected.seq)).isError).toBe(true)
+  expect((await run(human.seq)).isError).toBe(false)
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.objective).toContain('只读统计，不允许写文件')
+  expect((await run(human.seq, 'Changed request')).isError).toBe(true)
+})
+
+it('keeps native Goal and Plan available while Supervisor alone owns continuation and acceptance', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-native-goal-plan-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  await ctx.plugin(Goals)
+  await ctx.plugin(GoalDriver)
+  await ctx.plugin(GoalTools)
+  await ctx.plugin(PlanMode, { section: 'Plan before implementing.' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('native-goal-plan'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  expect((await ctx.commands.execute(agent, '/task new Build import', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  const revision = taskOf(ctx, agent)!.revision
+  const goal = ctx.goals.create(agent, { objective: 'Organize import implementation' })
+  expect(ctx.goals.get(agent)?.activation).toBe('disarmed')
+  expect(ctx.goals.get(agent)?.phase).toBe('active')
+  await ctx.sessions.flush(agent.session)
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(1)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.source.kind === 'goal' && event.data.source.round > 0)).toHaveLength(0)
+  ctx.planMode.set(agent, true)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '请继续规划，暂不执行。' }] }))
+  await agent.whenIdle()
+  expect(ctx.sessionProjections.stateOf(agent.session, 'plan')?.active).toBe(true)
+  ctx.planMode.set(agent, false)
+  ctx.goals.complete(agent, { id: goal.id, revision: ctx.goals.get(agent)!.revision })
+  expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  expect(taskOf(ctx, agent)?.revision).toBe(revision)
+  await ctx.commands.execute(agent, '/task pause', [], signal)
+  const pausedRequests = adapter.requests
+  const next = ctx.goals.create(agent, { objective: 'Another native goal', maxGoalRounds: 2 })
+  expect(next.phase).toBe('active')
+  expect(ctx.goals.get(agent)?.activation).toBe('disarmed')
+  await ctx.sessions.flush(agent.session)
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(pausedRequests)
+  expect(taskOf(ctx, agent)?.phase).toBe('paused')
+  await ctx.commands.execute(agent, '/task clear', [], signal)
+  ctx.goals.resume(agent, { id: next.id, revision: ctx.goals.get(agent)!.revision })
+  await vi.waitFor(() => expect(adapter.requests).toBeGreaterThan(pausedRequests))
+  ctx.goals.disarm(agent)
+  await agent.whenIdle()
+})
+
+
+it('restores old preset identities only with explicit legacy compatibility', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-legacy-task-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter(), true, undefined, false, 3, false, [], { legacyPresets: true })
+  expect((await ctx.agentPresets.list()).some(row => row.id === 'dsh-task-supervisor:standard')).toBe(true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('legacy-task'), agentOptions: { provider: 'scripted', model: 'scripted' }, setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'dsh-task-supervisor:standard').then(() => undefined) })
+  expect((await ctx.commands.execute(agent, '/task new Inspect the retained legacy task', [], new AbortController().signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('dsh-task-supervisor:standard')
+  expect(taskOf(ctx, agent)?.phase).toBe('planning')
+})
+
+
+it('serializes concurrent creation calls from one human request without a second wakeup', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-create-overlap-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('task-create-overlap'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Create a Task to inspect the input.' }] }))
+  await agent.whenIdle()
+  const requests = adapter.requests
+  const user = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!
+  const result = await Promise.all(['a', 'b'].map(id => ctx.tools.execute({ agent, name: 'task_create', callId: ToolCallId(`parallel-create-${id}`), arguments: { objective: 'Inspect the input', user_message_seq: user.seq }, signal: new AbortController().signal })))
+  expect(result.every(item => !item.isError)).toBe(true)
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(requests + 1)
+  expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state')).toHaveLength(1)
 })

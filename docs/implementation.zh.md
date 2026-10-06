@@ -1,5 +1,7 @@
 # 实现状态
 
+**2026-10-06：当前源码保留原生模式。** 新增绑定用户消息的 `task_create`，原生 Goal／Plan 保留，Supervisor 独占 Task 续行与验收。这轮尚未发布；流程、兼容与验证见[原生模式中的任务督导](native-task.zh.md)。
+
 **2026-10-04：0.1.1 普通安装适配。** 原生持久记录与 preset 准入已实现，投影缓存为 17。当前安装验收与限制以[安装验收](native-install.zh.md)为准；下方早期版本测试保留历史范围。
 
 **更新：2026-09-30。** [通用独立审查增强](review-quality.zh.md)步骤 0–3 已实现并分别提交。当前任务记录 14、投影缓存 16、审查记录 5；旧记录继续读取且不补造独立证据。[真实模型夹具](../eval/independent-verification/generic-quality-20260930/README.zh.md)验证了只读静态验收、正确数据复算通过和错误数据退回，并保留首次静态审查超时。完整静态任务已通过原生控制器完成；Kea 官方回归 reward 为 0，正式计划协议故障导致超时、空补丁封口，后续修复与完整任务验收另存。下文保留早期版本的历史范围。
@@ -84,7 +86,7 @@ A 的独立验收范围是记录与分类；补交、恢复按钮和草案随后
 
 任务记录保存在主 DSH Session 的原生 `agent/inbox/spliced` 事件中。带插件来源的内部消息在同一同步调用内插入并取消交付，payload 保留在持久日志，不进入模型对话。`src/session-records.ts` 为状态投影提供只读归一化视图；不写新事件类型，不伪造用户指令，不标记 `ignorable`。审查、草案、修复和督导绑定复用这一载体，原 seq 与时间保持不变。
 
-`src/standard-host.ts` 从原生 preset 声明生成 Supervisor 变体并保留配置，只在该变体中停用 Goal／Plan 工作流行。空白 Session 可由 `/task new` 选择；已开始的普通 Session 必须新建。原生 preset 身份持久化后，缺插件的冷恢复无法加载该模式；热卸载保留的原生作用域门禁拒绝下一步与工具执行。0.1.0 的 `extension/record` 日志仍需原宿主；旧记录读取支持不等同于公开 DSH 解码器支持。完整版本和证据见[安装验收](native-install.zh.md)。
+`src/standard-host.ts` 将门禁挂到 Agent 作用域，不改变原生 preset；`task_create` 绑定真实用户消息，规划后等待 Task 批准。可选公开 Goal 服务解除原生自动续行，Goal／Plan／Todo 继续可用但不代替 Task 验收。默认无新模式；旧 0.1.1 preset 使用显式兼容配置。热卸载和装有插件的重启有门禁，插件冷缺失不保证拒绝。详见[原生模式中的任务督导](native-task.zh.md)。0.1.0 旧扩展日志仍用原 Host。
 
 ## 控制行为
 

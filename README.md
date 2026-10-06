@@ -37,7 +37,7 @@ dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-The npm package contains the built Host plugin, Web client, check gateway and bundle patch. In a blank Session, run `/task new <objective>` before its first model turn; DSH selects a Supervisor variant of its current preset. To discuss requirements first, select the Supervisor mode before sending the first message. Ordinary modes retain Goal and Plan; Supervisor mode has one task controller. A started ordinary Session cannot change its native preset: create a new Session for supervision.
+The npm 0.1.1 package includes the built Host plugin, Web client, check gateway and bundle patch and still uses dedicated Supervisor presets. Development source now creates Tasks in native modes and retains Goal/Plan tools; this change is not yet published. See [task supervision in native modes](docs/native-task.md) for natural-language creation, continuation ownership and old Session recovery.
 
 If an independent command modifies the captured artifact tree, its evidence is invalid and subsequent checks are rejected; automatic check-directory recovery has not passed validation. This version retains that limitation. Default review uses main-Session logs; independent artifact checks need explicit configuration and independent browser observation is unavailable. See [implementation status](docs/implementation.md).
 

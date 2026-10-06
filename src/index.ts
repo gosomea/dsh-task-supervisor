@@ -13,6 +13,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { z } from 'zod'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-goal'
 import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
 import { policyApproval } from './execution-policy.ts'
@@ -36,7 +37,7 @@ import {
 } from './state.ts'
 
 export const name = 'task-supervisor'
-export const inject = ['agentPresets', 'loader', 'agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt', 'llm']
+export const inject = ['agents', 'commands', 'sessions', 'sessionProjections', 'sessionPersistence', 'tools', 'systemPrompt', 'llm']
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -50,6 +51,8 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Deployment policy for supervised tasks, review and optional independent checks. */
 export interface Config {
+  /** Opt-in restore of Sessions created with 0.1.1 Supervisor preset identities. */
+  legacyPresets?: boolean
   repairMaxFiles?: number
   repairMaxBytes?: number
   maxParallelNodes?: number
@@ -164,7 +167,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.planCoverageReview !== undefined && typeof config.planCoverageReview !== 'boolean') {
     throw new TypeError('planCoverageReview must be a boolean')
   }
-  const bindSupervisedSession = await installStandardHost(ctx)
+  if (config.legacyPresets !== undefined && typeof config.legacyPresets !== 'boolean') throw new TypeError('legacyPresets must be a boolean')
+  const bindSupervisedSession = await installStandardHost(ctx, config.legacyPresets === true)
   const lifetimes = new WeakMap<Agent, Runtime>()
   const knownAgents = new Set<Agent>()
   const reviewAbort = new Map<Agent, AbortController>()
@@ -192,7 +196,21 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     }
   }
 
+  /** A Task owns continuation; native Goal remains a durable planning record. */
+  function ownContinuation(agent: Agent): void {
+    const task = taskOf(ctx, agent)
+    if (task && task.phase !== 'cleared') {
+      agent.ctx.get('goals')?.disarm(agent)
+    }
+  }
+  ctx.on('goal/changed', ({ agent }) => ownContinuation(agent))
+  ctx.on('goal/activation-changed', ({ sessionId, goal }) => {
+    const agent = ctx.agents.get(sessionId)
+    if (agent && goal?.activation === 'armed') ownContinuation(agent)
+  })
+
   function withdrawOwned(agent: Agent): void {
+    ownContinuation(agent)
     delegation.cancel(agent)
     const life = runtime(agent)
     life.armed = false
@@ -247,6 +265,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       signal.throwIfAborted()
       if (current(agent)?.id !== expected?.id || current(agent)?.revision !== expected?.revision) throw new Error('task changed during admission')
       const committed = appendTask(ctx, agent, typeof next === 'function' ? next() : next)
+      ownContinuation(agent)
       await flush(agent)
       signal.throwIfAborted()
       const persisted = current(agent)
@@ -288,6 +307,14 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   ctx.sessionProjections.register(taskProjection)
+  ctx.systemPrompt.section({ name: 'task-supervisor:entry', order: 2449, interpolate: false,
+    text: ({ agent }) => {
+      if (!agent || consultationBinding(agent)) return ''
+      const task = taskOf(ctx, agent)
+      if (!task || task.phase === 'cleared' || task.phase === 'complete') return 'Supervisor is available but selecting a native mode does not create a supervised task. When the user explicitly asks to create a supervised task, call task_status to read the latest human message and its seq, then task_create with the objective and user_message_seq. Do not substitute a Todo list, planning skill, native Goal or Plan for Task creation. For ordinary questions, keep the native workflow. Creating a Task does not approve implementation; submit its plan and wait for Task approval.'
+      return 'Supervisor owns automatic continuation and final acceptance for this Task. Native Goal, Plan and Todo may organize work, but they do not replace the Task DAG, its approval or independent review. Native Goal automatic rounds are disarmed while this Task is retained. Native Goal completion and native Plan approval do not complete or approve this Task. Report completed nodes with task_report_stage and request final acceptance with task_request_completion.'
+    },
+  })
   ctx.systemPrompt.section({ name: 'task-supervisor:planning', order: 2451, interpolate: false,
     text: context => {
       const task = context.agent ? taskOf(ctx, context.agent) : null
@@ -303,23 +330,53 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     },
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
-  async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string): Promise<TaskSnapshot> {
+  const creations = new WeakMap<Agent, Promise<TaskSnapshot>>()
+  async function createTask(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }): Promise<TaskSnapshot> {
+    const previous = creations.get(agent)
+    const pending = (async () => {
+      if (previous) await previous.catch(() => undefined)
+      return createTaskOnce(agent, objective, creationId, commandInput, source)
+    })()
+    creations.set(agent, pending)
+    try { return await pending } finally { if (creations.get(agent) === pending) creations.delete(agent) }
+  }
+  async function createTaskOnce(agent: Agent, objective: string, creationId?: string, commandInput?: string, source?: { seq: number; signal: AbortSignal }): Promise<TaskSnapshot> {
     await bindSupervisedSession(agent)
     if (effectiveVerification === 'independent' && config.requiredVerification) await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, config.requiredVerification, AbortSignal.timeout(reviewerPolicy.deadlineMs))
+    if (source) {
+      source.signal.throwIfAborted()
+      const latest = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')
+      if (latest?.seq !== source.seq) throw new Error('human creation source changed during admission')
+    }
     if (creationId) {
-      for (const event of agent.session.snapshotEvents().map(controlEvent)) {
+      for (const event of agent.session.snapshotEvents().map(controlEvent).reverse()) {
         if (event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state') {
           const parsed = taskSchema.safeParse(event.data.payload)
-          if (parsed.success && parsed.data.creationRequestId === creationId) return parsed.data
+          if (parsed.success && parsed.data.creationRequestId === creationId) {
+            if (parsed.data.objective !== objective) throw new Error('creation source already binds a different objective')
+            return parsed.data
+          }
         }
       }
     }
+    if (disposed) throw new Error('Supervisor is unloaded')
     const task = current(agent)
     if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
     let next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
-    await commitAndWake(agent, task, () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } },
-      'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.', undefined, commandInput)
+    const grant = () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } }
+    if (ctx.agents.currentInitiator() === agent && agent.status === 'running') {
+      // Already executing in this Agent: maintenance would wait for its own turn.
+      appendTask(ctx, agent, grant())
+      ownContinuation(agent)
+      await flush(agent)
+      if (disposed || current(agent)?.id !== next.id || current(agent)?.revision !== next.revision) throw new Error('task changed during creation')
+      runtime(agent).armed = true
+      runtime(agent).ownedTurn = true
+    } else {
+      await commitAndWake(agent, task, grant,
+        'Plan the objective above. Inspect the workspace using available read tools. Submit acceptance criteria and stages with task_submit_plan. Attribute each criterion to the user objective, a cited project rule, or a necessary implementation choice. Existing fixtures are not requirements; exclude unrelated tests and optional enhancements. Do not modify files before approval.', undefined, commandInput)
+    }
     return next
   }
 
@@ -336,6 +393,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.on('agent/created', async ({ agent, source }) => {
     const task = taskOf(ctx, agent)
     if (task === null) return
+    await bindSupervisedSession(agent)
+    ownContinuation(agent)
     const life = runtime(agent)
     life.armed = false
     life.ownedTurn = false
@@ -443,6 +502,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
     const task = taskOf(ctx, agent)
     if (task === null) return next()
+    ownContinuation(agent)
     const owned = messages.some(message => message.source.kind === 'task-supervisor')
     const life = runtime(agent)
     if (owned) {
@@ -614,14 +674,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (exec.agent === undefined) return undefined
     const task = taskOf(ctx, exec.agent)
     if (task === null || task.phase === 'cleared') return undefined
-    if (exec.name === 'task_status') return undefined
+    if (exec.name === 'task_status' || exec.name === 'task_create' && task.phase === 'complete' && task.enabled) return undefined
     if (task.phase === 'complete') {
       // A completed task has no execution grant, including before the model
       // proposes repair or after the user declines it. Generic executors can write.
       if (!['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return 'REPAIR_CONFIRMATION_REQUIRED: This task is complete. Inspect with read tools, propose repair and wait for the user to confirm the impact, or explicitly create and approve a new task before implementing. Generic execution tools cannot establish read-only diagnosis.'
       return undefined
     }
-    if (exec.name === 'todo_write') return 'This supervised task tracks progress in its DAG. Use task_status and task_report_stage rather than a second todo checklist.'
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
       return 'Supervisor is stopped or awaiting review'
     }
@@ -779,8 +838,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const live = current(agent)
       const state = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
       const task = !args.task_id || args.task_id === live?.id ? live : state?.archivedTasks.find(entry => entry.task.id === args.task_id)?.task ?? null
-      return task === null ? null : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
+      const latestUser = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')
+      const source = latestUser?.type === 'user/message' ? { seq: latestUser.seq, text: latestUser.data.content.filter(block => block.type === 'text').map(block => block.text).join('\n') } : null
+      return task === null ? { task: null, supervision: 'not-enabled', latestUserMessage: source, availableActions: ['task_create'] } : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
         currentTaskId: live?.id ?? null,
+        latestUserMessage: source,
+        continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',
         reviewVerification: effectiveVerification,
         availableActions: task.phase === 'complete' ? ['task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
@@ -789,6 +852,21 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         historicalTasks: state?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [],
         readyNodeIds: readyNodes(task),
         approvalUserMessageSeq: approvalMessage(toolAgent(exec).session.snapshotEvents().map(controlEvent), task) }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
+    name: 'task_create', description: 'Create a Supervisor Task only from an explicit human request. Read task_status for latestUserMessage.seq first. Bind the original human message, preserve its requirements, and return the real Task ID. Native Goal/Plan and Todo do not create this Task. Creation does not authorize implementation.',
+    parameters: { objective: { type: 'string', required: true }, user_message_seq: { type: 'integer', required: true } }, output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec)
+      const latest = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')
+      if (!latest || latest.type !== 'user/message' || latest.seq !== args.user_message_seq) throw new Error('Task creation requires the latest original human user/message seq; runtime and skill messages are not authorization.')
+      if (!args.objective.trim()) throw new Error('Task objective is required')
+      const original = latest.data.content.filter(block => block.type === 'text').map(block => block.text).join('\n')
+      const objective = args.objective.trim() === original.trim() ? original.trim() : `${args.objective.trim()}\n\nOriginal user request:\n${original}`
+      const task = await createTask(agent, objective, `main-task:${agent.id}:${latest.seq}`, undefined, { seq: latest.seq, signal: exec.signal })
+      return { ...taskJson(task) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>, executionAuthorized: false, nextAction: 'Inspect requirements and workspace, submit the plan with task_submit_plan, then wait for Task approval.' }
     },
   }))
 
