@@ -9,25 +9,28 @@ import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore, type PanelState } from './task-store.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 import { executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Menu, Modal, IconEllipsisOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
 import { TaskOverview, type TaskNavigation } from './inline-task.tsx'
 import { RepairPanel } from './repair-panel.tsx'
 import { AttemptDetails } from './attempt-details.tsx'
 import { ReviewInspection } from './review-inspection.tsx'
 import { CSS } from './styles.ts'
+import { draftDefinition, type DraftCard } from './draft-events.ts'
+import { zh, en, type SupervisorTranslate } from './locales.ts'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
 declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
   interface SidebarRightTabParamsMap { 'task-supervisor': TaskNavigation }
 }
 interface PanelProps { sessionId: string }
-interface TailProps extends PanelProps { turn: { data: { get(key: 'task-supervisor-milestones'): readonly Milestone[] | undefined } } }
+interface TailProps extends PanelProps { turn: { data: { get(key: 'task-supervisor-milestones'): readonly Milestone[] | undefined; get(key: 'task-supervisor-drafts'): readonly DraftCard[] | undefined } } }
 interface ClientContext {
+  locale: { register(namespace: string, dictionaries: { zh: typeof zh; en: typeof en }): () => void; bind(namespace: string): SupervisorTranslate }
   sidebarRight: { openTab(kind: string, options?: { params: TaskNavigation }): void }
   sessions: ISessions
   effect(factory: () => (() => void) | void, label?: string): void
-  uiConversation: { events: { register(definition: typeof milestoneDefinition): () => void } }
+  uiConversation: { events: { register(definition: typeof milestoneDefinition | typeof draftDefinition): () => void } }
   sidebarRightTabs: {
     register(definition: { id: string; kind: string; priority: 'extension'; title: () => string;
       guide: Array<{ id: string; order: number; title: () => string; description: () => string }> }): () => void
@@ -42,7 +45,7 @@ interface ClientContext {
   }
 }
 
-export const inject = ['sessions', 'slots', 'sidebarRightTabs', 'sidebarRight', 'uiSession', 'uiConversation']
+export const inject = ['sessions', 'slots', 'sidebarRightTabs', 'sidebarRight', 'uiSession', 'uiConversation', 'locale']
 const ACTION_LABEL: Record<string, string> = { 'auto-approve-on': '审查通过后自动执行', 'auto-approve-off': '改为手动批准', approve: '批准计划', pause: '暂停', resume: '恢复任务', 'retry-review': '重试审查',
   off: '关闭督导', on: '重新启用督导' }
 const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementation: '实现选择' }
@@ -122,8 +125,8 @@ function ReviewLog({ sessionId, reviewerSessionId }: { sessionId: string; review
     {error && <p role="alert">{error}</p>}{records.map(record => <Disclosure key={record.seq} title={`seq ${record.seq} · ${record.type}`}>
       <pre className="dsh-task-log-record">{JSON.stringify(record, null, 2)}</pre></Disclosure>)}</section>
 }
-function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
-  navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode
+function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
+  navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode; t: SupervisorTranslate
 }): ReactNode {
   const { state, error, busy, store } = useTask(sessionId)
   const [tab, setTab] = useState<'details' | 'consultation'>('details')
@@ -132,8 +135,8 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
   const [historySelection, setHistorySelection] = useState<string | null>(null)
   const [historyBusy, setHistoryBusy] = useState(false)
   const [historyError, setHistoryError] = useState('')
-  const [mode, setMode] = useState<'discussion' | 'direct'>('discussion')
-  const [modeBusy, setModeBusy] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [consultation, setConsultation] = useState<string | null>(null)
   const [consultError, setConsultError] = useState('')
   const [opening, setOpening] = useState(false)
@@ -165,7 +168,6 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       setShowHistory(false); setHistorySelection(null); setTab('details'); setSelected(null)
     }
   }, [showHistory, historySelection, task?.id, task?.phase])
-  const canCreate = state?.live && (!task || task.phase === 'complete' || task.phase === 'cleared')
   const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情"><h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
           <p className="dsh-task-review">{review.finding}</p><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
   function openConsultation() {
@@ -176,7 +178,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'consult' }) })
       .then(async response => { const body = await response.json() as { consultationSessionId?: string; consultationMode?: 'discussion' | 'direct'; error?: string }
         if (!response.ok || !body.consultationSessionId) throw new Error(body.error ?? '无法打开督导对话')
-        setConsultation(body.consultationSessionId); setMode(body.consultationMode ?? 'discussion')
+        setConsultation(body.consultationSessionId)
       }).catch(error => setConsultError(String(error))).finally(() => setOpening(false))
   }
   function openHistory() {
@@ -188,17 +190,6 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
         setHistoryEntries(body.entries)
       }).catch(error => setHistoryError(String(error))).finally(() => setHistoryBusy(false))
   }
-  async function changeMode(next: 'discussion' | 'direct') {
-    if (modeBusy) return
-    setModeBusy(true); setConsultError('')
-    try {
-      const response = await fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'consult-mode', mode: next }) })
-      const body = await response.json() as { consultationMode?: 'discussion' | 'direct'; error?: string }
-      if (!response.ok || !body.consultationMode) throw new Error(body.error ?? '无法切换输入方式')
-      setMode(body.consultationMode)
-    } catch (error) { setConsultError(String(error)) } finally { setModeBusy(false) }
-  }
   useEffect(() => {
     if (state?.live && !task) openConsultation()
   }, [state?.live, task?.id])
@@ -208,16 +199,21 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
     if (historyBody.current) historyBody.current.scrollTop = 0
   }
   return <div className="dsh-task-panel">
-    <header className="dsh-task-panel-header"><div className="dsh-task-panel-heading"><h2>任务督导</h2>
-      <Button size="sm" variant="toolbar" onClick={() => showHistory ? closeHistory() : openHistory()}>
-        {showHistory ? '返回当前任务' : '历史任务'}</Button></div>
-      <div className="dsh-task-status"><span>{showHistory ? '已结束的任务' : state ? taskStatus(state) : '正在读取…'}</span>
-        <span>{showHistory ? `${historyEntries?.length ?? 0} 项` : task ? `计划 v${task.planVersion} · ${progress(task)}` : ''}</span></div>
-      {!showHistory && <div className="dsh-task-tabs" role="tablist" aria-label="督导视图">
-        <button type="button" role="tab" id={`task-details-tab-${sessionId}`} aria-controls={`task-details-${sessionId}`} aria-selected={tab === 'details'} onClick={() => setTab('details')}>任务详情</button>
-        <button type="button" role="tab" id={`task-chat-tab-${sessionId}`} aria-controls={`task-chat-${sessionId}`} aria-selected={tab === 'consultation'} onClick={openConsultation}>督导对话</button>
-      </div>}
+    <header className="dsh-task-panel-header">
+      <div className="dsh-task-panel-navigation">
+        {showHistory ? <Button size="sm" variant="toolbar" onClick={closeHistory}>{t('back')}</Button> : <div className="dsh-task-tabs" role="tablist" aria-label="督导视图">
+          <button type="button" role="tab" id={`task-chat-tab-${sessionId}`} aria-controls={`task-chat-${sessionId}`} aria-selected={tab === 'consultation'} onClick={openConsultation}>{t('chat')}</button>
+          <button type="button" role="tab" id={`task-details-tab-${sessionId}`} aria-controls={`task-details-${sessionId}`} aria-selected={tab === 'details'} onClick={() => setTab('details')}>{t('details')}</button>
+        </div>}
+        <Menu open={menuOpen} align="end" portal autoFocus onClose={() => setMenuOpen(false)}
+          anchor={<Button size="sm" variant="toolbar" aria-label={t('more')} aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><IconEllipsisOutlineRegular /></Button>}
+          items={[{ id: 'history', label: t('history') }, { id: 'help', label: t('help') }]}
+          onSelect={id => { setMenuOpen(false); if (id === 'history') openHistory(); else setHelpOpen(true) }} />
+      </div>
+      <div className="dsh-task-status" role="status"><span>{showHistory ? t('ended') : state?.entryActive ? t('waiting') : state ? task ? `${taskStatus(state)}${task.stages.length ? ` · ${progress(task)}` : ''}` : t('idle') : t('reading')}</span>
+        {showHistory && <span>{historyEntries?.length ?? 0}</span>}</div>
     </header>
+    <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title={t('help')} closeLabel={t('close')}><p>{t('helpText')}</p></Modal>
     {showHistory && <div ref={historyBody} className="dsh-task-body dsh-task-history" aria-label="历史任务">
       {historicalTask ? <><Button size="sm" variant="toolbar" onClick={() => selectHistory(null)}>返回历史列表</Button>
         <HistoricalDetails key={historicalTask.task.id} entry={historicalTask} sessionId={sessionId} /></> : <>
@@ -239,7 +235,7 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
       {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} /></div>}
       {reviewId && (reviewSection ?? <p role="status">这次审查已超出当前历史窗口，请从原生会话日志查看原始记录。</p>)}
-      {task && <section className="dsh-task-section"><h3>执行批准</h3><p>{task.approvalPolicy?.mode === 'after-review' && task.approvalPolicy.mainSessionId === sessionId && task.approvalPolicy.requirementsVersion === task.requirementsVersion ? '按你的设置：计划通过独立审查后自动执行' : '手动批准计划后执行'}</p>{task.approvalPolicy && <small className="dsh-task-meta">来源：{task.approvalPolicy.source === 'profile' ? 'DSH profile 设置' : '用户任务设置'} · 授权事件 seq {task.approvalPolicy.grantSeq}</small>}{task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <p>本计划按预授权自动批准 · 授权 seq {task.lastApproval.authorizationSeq} · 审查作业 {task.lastApproval.reviewJobId}</p>}</section>}
+      {task && <section className="dsh-task-section"><p className="dsh-task-meta">计划 v{task.planVersion} · 要求 v{task.requirementsVersion}</p><h3>执行批准</h3><p>{task.approvalPolicy?.mode === 'after-review' && task.approvalPolicy.mainSessionId === sessionId && task.approvalPolicy.requirementsVersion === task.requirementsVersion ? '按你的设置：计划通过独立审查后自动执行' : '手动批准计划后执行'}</p>{task.approvalPolicy && <small className="dsh-task-meta">来源：{task.approvalPolicy.source === 'profile' ? 'DSH profile 设置' : '用户任务设置'} · 授权事件 seq {task.approvalPolicy.grantSeq}</small>}{task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <p>本计划按预授权自动批准 · 授权 seq {task.lastApproval.authorizationSeq} · 审查作业 {task.lastApproval.reviewJobId}</p>}</section>}
       {task?.planning && task.planning.requirementsVersion === task.requirementsVersion && <section className="dsh-task-section"><h3>规划进展 · Supervisor</h3><p>{task.planning.nextAction}</p><Disclosure title={`已确认 ${task.planning.facts.length} 项 · 待核对 ${task.planning.unknowns.length} 项`}><h4>已确认事实</h4><ul>{task.planning.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul><h4>未决问题</h4><ul>{task.planning.unknowns.map((question, i) => <li key={i}>{question}</li>)}</ul><p className="dsh-task-meta">要求 v{task.planning.requirementsVersion} · 截至 seq {task.planning.cutoff} · 证据 {task.planning.evidenceSeqs.join(', ')} · 连续无进展 {task.planning.noProgress} 次</p></Disclosure></section>}
       {task?.pauseReason === 'planning-stalled' && <p role="status">独立规划检查未发现新的相关进展，已暂停。检查未决问题后可手动恢复。</p>}
       {task?.recovery && <section className="dsh-task-section"><Disclosure title="生成截断后的续行记录"><p>原回合 {task.recovery.turn} · 结束事件 seq {task.recovery.endSeq} · 连续无进展 {task.recovery.noProgress} 次</p><p className="dsh-task-review">{task.recovery.instruction}</p></Disclosure></section>}
@@ -268,15 +264,9 @@ function TaskPanel({ sessionId, navigation, renderConsult }: PanelProps & {
       </>}
     </div>
     <div className="dsh-task-chat-body" role="tabpanel" id={`task-chat-${sessionId}`} aria-labelledby={`task-chat-tab-${sessionId}`} hidden={showHistory || tab !== 'consultation'}>
-      <div className="dsh-task-conversation-toolbar"><span>讨论对象：{state?.draft && state.draft.status !== 'created' ? '新任务草案' : task ? '当前任务 / 新任务筹备' : '新任务'}</span>
-        <div role="group" aria-label="发送方式"><Button size="sm" variant={mode === 'discussion' ? 'outline' : 'ghost'} disabled={modeBusy || !state?.live} aria-pressed={mode === 'discussion'} onClick={() => { void changeMode('discussion') }}>讨论</Button>
-          <Button size="sm" variant={mode === 'direct' ? 'outline' : 'ghost'} disabled={modeBusy || !state?.live} aria-pressed={mode === 'direct'} onClick={() => { void changeMode('direct') }}>直接建任务</Button></div>
-        <small>{mode === 'direct' ? '下一条完整目标将直接交给主 Agent 规划；执行前仍需批准计划。' : '先讨论或润色要求；普通消息不会创建任务。'}</small></div>
-      {state?.draft && state.draft.status !== 'created' && <section className="dsh-task-draft" aria-label="任务草案"><div className="dsh-task-panel-heading"><strong>{state.draft.title}</strong><small>草案 v{state.draft.version}</small></div>
-        <Disclosure title="查看完整要求"><p className="dsh-task-objective">{state.draft.requirements}</p></Disclosure>
-        {state.draft.questions.length > 0 && <Disclosure title={`待确认 · ${state.draft.questions.length} 项`}><ul>{state.draft.questions.map((item, index) => <li key={index}>{item}</li>)}</ul></Disclosure>}
-        <div className="dsh-task-draft-actions"><Button size="sm" variant="primary" disabled={!canCreate || busy || state.draft.questions.length > 0}
-          onClick={() => { if (state.draft) void store.promote(state.draft.id, state.draft.version) }}>创建任务</Button><small>{!canCreate ? '草案已保存，当前任务结束后可创建。' : '在对话中描述需要修改的内容即可修订草案。'}</small></div></section>}
+      {state?.draft && state.draft.status !== 'created' && <button type="button" className="dsh-task-draft-link"
+        onClick={() => document.getElementById(`task-draft-${sessionId}-${state.draft!.id}-${state.draft!.version}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}>
+        {t('currentDraft')} · {headline(state.draft.title, 40)}</button>}
       {consultError && <p role="alert" className="dsh-task-error">{consultError}</p>}
       {consultation ? renderConsult(consultation) : <div className="dsh-task-empty"><p>{opening ? '正在连接督导对话…' : '了解当前进度，或明确提出暂停、恢复等操作。普通问询不会打断任务。'}</p>
         {!opening && <Button size="sm" variant="toolbar" disabled={!state?.live} onClick={openConsultation}>打开督导对话</Button>}
@@ -298,18 +288,41 @@ function ReviewNotes({ turn, open }: TailProps & { open: (params?: TaskNavigatio
     <Button size="sm" onClick={() => open(item.kind === 'rework' ? { nodeId: item.nodeId! } : { reviewerSessionId: item.reviewerSessionId! })}>{item.kind === 'rework' ? '查看返工' : '查看审查'}</Button>
   </section>)}</>
 }
+function DraftProposal({ draft, sessionId, t }: { draft: DraftCard; sessionId: string; t: SupervisorTranslate }) {
+  const { state, busy, error, store } = useTask(draft.mainSessionId)
+  if (sessionId !== draft.sourceSessionId) return null
+  const current = state?.draft
+  const latest = current?.id === draft.id && current.version === draft.version && current.status === 'draft'
+  const created = current?.id === draft.id && current.status === 'created'
+  const available = latest && state?.live && (!state.task || ['complete', 'cleared'].includes(state.task.phase))
+  return <section id={`task-draft-${draft.mainSessionId}-${draft.id}-${draft.version}`} className="dsh-task-draft" aria-label={t('draft')}>
+    <strong>{draft.title}</strong>
+    <Disclosure title={t('requirements')}><p className="dsh-task-objective">{draft.requirements}</p></Disclosure>
+    {draft.questions.length > 0 && <Disclosure title={`${t('questions')} · ${draft.questions.length}`}><ul>{draft.questions.map((question, index) => <li key={index}>{question}</li>)}</ul></Disclosure>}
+    <div className="dsh-task-draft-actions">{latest ? <><Button size="sm" variant="primary" disabled={!available || busy || draft.questions.length > 0}
+      onClick={() => { void store.promote(draft.id, draft.version) }}>{t('create')}</Button>
+      {(!available || draft.questions.length > 0) && <small>{t(!available ? 'blocked' : 'unresolved')}</small>}</> : <small>{t(created ? 'created' : 'older')}</small>}</div>
+    {error && <p role="alert">{error}</p>}
+  </section>
+}
+function DraftNotes({ sessionId, turn, t }: TailProps & { t: SupervisorTranslate }) {
+  return <>{turn.data.get('task-supervisor-drafts')?.map(draft => <DraftProposal key={`${draft.id}:${draft.version}`} draft={draft} sessionId={sessionId} t={t} />)}</>
+}
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.locale.register('task-supervisor', { zh, en }))
+  const t = ctx.locale.bind('task-supervisor')
   const open = (params: TaskNavigation = {}) => ctx.sidebarRight.openTab('task-supervisor', { params })
   const Panel = (props: ConsultationPanelProps) => {
     const { tab } = props.useTabInfo()
-    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation}
+    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation} t={t}
       renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
   }
   const Inline = (props: PanelProps) => <InlineTask {...props} open={open} />
-  const Notes = (props: TailProps) => <ReviewNotes {...props} open={open} />
+  const Notes = (props: TailProps) => <><ReviewNotes {...props} open={open} /><DraftNotes {...props} t={t} /></>
   ctx.effect(() => ctx.slots.inject('task-supervisor.consultation', () => ctx.slots.register({ name: 'task-supervisor.consultation' }, ConsultationConversation)))
   ctx.effect(() => ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: `${PANEL_ID}/current` }, Inline)))
   ctx.effect(() => ctx.uiConversation.events.register(milestoneDefinition), 'task-supervisor:milestones')
+  ctx.effect(() => ctx.uiConversation.events.register(draftDefinition), 'task-supervisor:drafts')
   ctx.effect(() => { const style = document.createElement('style'); style.dataset.pluginCss = 'dsh-task-supervisor'; style.textContent = CSS + GRAPH_CSS
     document.head.append(style); return () => { style.remove() } })
   ctx.effect(() => ctx.sidebarRightTabs.register({ id: PANEL_ID, kind: 'task-supervisor', priority: 'extension', title: () => '任务督导',

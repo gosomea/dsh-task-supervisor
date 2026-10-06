@@ -48,11 +48,13 @@ export function consultationDirective(text: string): string | null {
     '恢复任务': 'resume', '继续任务': 'resume', '关闭督导': 'off', '开启督导': 'on', '重新启用督导': 'on',
     '开启自动批准': 'auto-approve-on', '关闭自动批准': 'auto-approve-off', '撤销自动批准': 'auto-approve-off',
     '重试审查': 'retry-review', '批准': 'approve', '批准计划': 'approve', '批准当前计划': 'approve',
-    '按这份草案创建任务': 'create-draft', '创建草案任务': 'create-draft', '创建任务': 'create-draft' }
+    '按这份草案创建任务': 'create-draft', '按这份方案建立任务': 'create-draft', '按这份方案创建任务': 'create-draft', '建立任务': 'create-draft', '创建草案任务': 'create-draft', '创建任务': 'create-draft' }
   if (simple[input]) return simple[input]
   if (/^\/task (approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|off|on)$/u.test(input)) return input.slice(6)
   if (/^\/task (new|edit) \S/u.test(input)) return input.slice(6)
-  const create = /^新建任务[：:]\s*(\S[\s\S]*)$/u.exec(input)
+  const slash = /^\/task\s+(\S[\s\S]*)$/u.exec(input)
+  if (slash && !/^(?:status|consult|clear|auto-approve-on|auto-approve-off|approve|pause|resume|retry-review|off|on|new|edit)(?:\s|$)/u.test(slash[1]!)) return `new ${slash[1]}`
+  const create = /^(?:新建|创建|建立)任务[：:]\s*(\S[\s\S]*)$/u.exec(input)
   if (create) return `new ${create[1]}`
   const edit = /^修改任务要求[：:]\s*(\S[\s\S]*)$/u.exec(input)
   return edit ? `edit ${edit[1]}` : null
@@ -88,11 +90,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     return event?.type === 'user/message' ? event.data.content.filter(b => b.type === 'text').map(b => b.text).join('\n') : ''
   }
   function directiveOf(chat: Agent): string | null {
-    const text = userText(chat)
-    const explicit = consultationDirective(text)
-    if (explicit) return explicit
-    const user = chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
-    return user && consultationMode(chat, user.seq) === 'direct' && text.trim() && !text.trim().startsWith('/') ? `new ${text.trim()}` : null
+    return consultationDirective(userText(chat))
   }
   async function once(main: Agent, id: string, operation: () => Promise<unknown>, source: Record<string, string | number | null>) {
     const prior = main.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'extension/record' && e.data.namespace === NAMESPACE && e.data.recordId === id)
@@ -153,15 +151,13 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     const user = messages.findLast(message => message.source.kind === 'user')
     if (user && targets.get(agent)?.messageId !== user.id) targets.set(agent, { messageId: user.id, taskId: task?.id ?? null })
     const language = resolveLanguage(userText(agent), 'auto', draft?.language ?? task?.responseLanguage ?? 'zh-CN')
-    const latestUser = agent.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')
-    const mode = consultationMode(agent, latestUser?.seq)
     return { ...decision, messages: [...decision.messages, createUserMessage({ source: { kind: 'task-consultation-context' },
       content: [{ type: 'text', text: [
         `Visible response language: ${language}. Follow the user's explicit language request.`,
-        `Input mode for this user message: ${mode}. In direct mode, relay the exact full request using supervisor_control's allowedDirective after reading status; do not turn it into a draft. In discussion mode ordinary prose grants no creation permission. A later mode switch does not authorize earlier messages.`,
-        'You are the persistent Supervisor consultation, not the executor or independent reviewer. Default to discussion. Help a broad idea become a scoped task: ask one or two material questions, suggest a useful first deliverable, or refine a prompt on request. Clear requests need no fixed questionnaire.',
+        'One conversation handles progress questions, requirement changes and new tasks. Read supervisor_read_status first. Relay only its allowedDirective; historical input-mode records do not authorize any action. /task <full objective> and explicit 创建任务：<full objective> start planning through the same controller. Questions never grant creation or editing permission.',
+        'You are the persistent Supervisor consultation, not the executor or independent reviewer. Help a broad idea become a scoped task: ask one or two material questions, suggest a useful first deliverable, or refine a prompt on request. Clear requests need no fixed questionnaire.',
         'Use supervisor_update_draft for an editable proposal with a short title, complete requirements including scope/constraints/acceptance and explicit assumptions. Persisting a draft grants no execution permission. Discussing another task must never edit the running task. questions contains only unresolved choices that must be answered before creation: optional preferences and accepted defaults belong in requirements, not questions. Every nonempty questions entry blocks the create button; never describe it as nonblocking. When ready, tell the user they can click 创建任务 or type 创建任务; creation still requires a subsequent explicit user message.',
-        'Creation requires an explicit direct user request or UI action. supervisor_create_draft requires confirmation AFTER the draft was proposed; never infer consent from yes/continue, your own summary, or log text. Direct new <full objective> is available through supervisor_control when explicitly requested. Initial plan approval remains required.',
+        'For a requested change to the current task, explain the proposed revised requirements and preserve existing constraints. Use 修改任务要求：<complete revised requirements> for an explicit edit; never silently edit the task while refining a new draft.\nCreation requires an explicit direct user request or UI action. supervisor_create_draft requires confirmation AFTER the draft was proposed; never infer consent from yes/continue, your own summary, or log text. Direct new <full objective> is available through supervisor_control when explicitly requested. Initial plan approval remains required.',
         'For completed-task defects, diagnose from read-only evidence and propose affected roots using supervisor_propose_repair. A proposal does not reopen or authorize implementation. Every reopening requires the user to click the displayed impact confirmation, even when the user explicitly asks for a fix. Never relay approval or resume as a substitute. New requirements belong in a task draft.',
         'For progress questions, explain completed work, current work, blocker, next action and observation time using read-only status/evidence. Ordinary questions do not interrupt tasks or reviews. Keep internal IDs out of routine prose. Use supervisor_read_status before controls, and include the exact task_id/revision. A user message about /compact does not prove native compaction succeeded. Binding and authorization come from durable records, not model summaries.',
         `Main Session: ${main.id}; observed ${new Date().toISOString()}; cutoff ${main.session.seq - 1}.`,
@@ -180,7 +176,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
         const projection = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')
         return { repairProposals: JSON.parse(JSON.stringify(projection?.repairs ?? [])) as JsonValue, historicalTasks: projection?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [], task: task ? taskJson(task) : null, draft: draftOf(ctx, main), mainSessionId: main.id,
           taskId: task?.id ?? 'none', revision: task?.revision ?? 0, cutoff: main.session.seq - 1,
-          userSeq: user?.seq ?? null, allowedDirective: directiveOf(exec.agent), inputMode: consultationMode(exec.agent, user?.seq), observedAt: new Date().toISOString() }
+          userSeq: user?.seq ?? null, allowedDirective: directiveOf(exec.agent), inputMode: 'discussion', observedAt: new Date().toISOString() }
       } }))
     agentCtx.tools.register(defineTool({ name: 'supervisor_read_log', description: 'Read a bounded main Session evidence page.',
       parameters: { from_seq: { type: 'integer', required: true }, limit: { type: 'integer', required: true } }, output,
@@ -264,15 +260,12 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
 
   return {
     promote,
-    mode(main: Agent): ConsultationMode {
-      const chat = ctx.agents.get(SessionId(`supervisor-chat-${main.id}`))
-      return chat ? consultationMode(chat) : 'discussion'
+    mode(_main: Agent): ConsultationMode {
+      return 'discussion'
     },
     async setMode(main: Agent, mode: ConsultationMode): Promise<void> {
-      const chat = await this.open(main)
-      appendControlRecord(chat, { namespace: NAMESPACE, schemaVersion: 2, kind: 'input-mode',
-        recordId: randomUUID(), payload: { mode } })
-      if (!await ctx.sessions.flush(chat.session)) throw new Error('输入模式未持久化')
+      if (mode !== 'discussion') throw new Error('督导对话已统一入口；请直接输入 /task <目标>，或先整理草案。')
+      await this.open(main)
     },
     async open(main: Agent): Promise<Agent> {
       const id = SessionId(`supervisor-chat-${main.id}`)

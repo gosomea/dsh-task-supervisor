@@ -1048,7 +1048,7 @@ it('reconciles a committed task after promotion is interrupted without creating 
   expect(main.inbox.nextTurn).toHaveLength(0)
 })
 
-it('binds direct creation to the mode selected before the direct user message', async () => {
+it('ignores legacy direct mode and binds creation to the latest explicit user request', async () => {
   const { ctx, main, chat, signal, say, call } = await proposalFixture()
   let seq = await say('只读报告 Node 版本')
   appendControlRecord(chat, { namespace: 'dsh-task-supervisor-consultation', schemaVersion: 2,
@@ -1057,6 +1057,9 @@ it('binds direct creation to the mode selected before the direct user message', 
   expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
     directive: 'new 只读报告 Node 版本' })).isError).toBe(true)
   seq = await say('只读报告 Node 版本')
+  expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
+    directive: 'new 只读报告 Node 版本' })).isError).toBe(true)
+  seq = await say('/task 只读报告 Node 版本')
   expect((await call('supervisor_control', { task_id: 'none', revision: 0, user_seq: seq,
     directive: 'new 只读报告 Node 版本' })).isError).toBe(false)
   await main.whenIdle()

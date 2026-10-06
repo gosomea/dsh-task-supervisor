@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-07",
+  "baseCommit": "ac1a75fa8fabd04d3e4de40861427026844b85ac",
+  "scope": "Compact Supervisor conversation navigation and proposal placement; explicit action routing without input modes.",
+  "checks": [
+    {
+      "command": "node spikes/kernel/run.mjs spikes/kernel/consultation-ui.spec.ts spikes/kernel/supervisor.spec.ts",
+      "passed": 122,
+      "skipped": 1,
+      "note": "Before adding the recorded replay case."
+    },
+    {
+      "command": "node spikes/kernel/run.mjs spikes/kernel/rework.spec.ts spikes/kernel/task-store.spec.ts",
+      "passed": 10,
+      "skipped": 0
+    },
+    {
+      "command": "node spikes/kernel/run.mjs spikes/kernel/consultation-ui.spec.ts",
+      "passed": 13,
+      "skipped": 0,
+      "note": "Includes the added native-event replay; twelve cases overlap the first run."
+    },
+    {
+      "command": "node spikes/kernel/typecheck.mjs",
+      "host": "passed",
+      "client": "passed"
+    },
+    {
+      "command": "pnpm run build",
+      "result": "passed"
+    },
+    {
+      "command": "pnpm pack",
+      "result": "passed",
+      "files": 11
+    }
+  ],
+  "distinctTestCases": {
+    "passed": 133,
+    "skipped": 1
+  },
+  "isolated": {
+    "registryKey": "supervisor-standard-install-20261004",
+    "host": "official npm DSH 0.2.0-rc.2",
+    "profile": "native-task",
+    "port": 53389,
+    "actualRequestRoute": {
+      "consultation": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      },
+      "main": {
+        "provider": "deepseek-codebuddy",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    "draftSavedWithoutTask": true,
+    "ordinaryQuestionPreservedDraft": true,
+    "draftVersionAfterQuestion": 1,
+    "explicitConfirmationCreatedTask": true,
+    "planReview": "pass",
+    "finalPhase": "awaiting-approval",
+    "implementationApproved": false
+  },
+  "daily": {
+    "port": 3080,
+    "profile": "web-rc2",
+    "artifactSha256": "d1a101a9f8bba70e1aca097ef1e127b4910a689757d0508cad25b1f8577fdb4f",
+    "otherDependenciesAndProfilePatchUnchanged": true,
+    "idleSessionsBeforeDeployment": 497,
+    "browserChecks": [
+      "compact header",
+      "native overflow menu",
+      "help modal open and close",
+      "draft rendered in native turn",
+      "requirements disclosure expand and collapse",
+      "create button creates task",
+      "created proposal becomes read-only"
+    ],
+    "draftStatus": "created",
+    "planReview": "pass",
+    "finalPhase": "awaiting-approval",
+    "implementationApproved": false
+  },
+  "limitations": [
+    "This run uses log-based plan review; it does not validate independent artifact execution.",
+    "Browser access to isolated port 53389 was blocked. UI checks used the idle daily 3080 instance after deployment.",
+    "New header/menu/proposal copy has zh/en dictionaries; legacy detail views retain existing copy.",
+    "No npm release was published."
+  ],
+  "privacy": "Only sanitized test fixture events and aggregate evidence are committed; private raw logs, credentials and authentication URLs stay outside the repository."
+}

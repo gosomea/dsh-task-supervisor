@@ -104,7 +104,7 @@ For installation acceptance, use official npm DSH in a registered isolated `DSH_
 | [Reviewer model](docs/review-model.md) | DSH profile model policy. |
 | [Kernel experiment](docs/host-spike.md) | Initial capability investigation. |
 
-The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Native Goal and Plan remain available in ordinary modes; the generated Supervisor preset disables their workflow rows only in supervised Sessions. A profile preset edit takes effect in new Supervisor composition after a Host restart.
+The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Current development source retains native presets and Goal/Plan tools; Supervisor owns continuation while a Task executes. npm 0.1.1 uses the older dedicated presets, which require explicit `legacyPresets` support for old Session recovery.
 
 [简体中文](README.zh.md)
 
@@ -114,4 +114,10 @@ The main Agent uses `/task` and task tools; original inputs and model answers re
 
 ## Known Limitations and Deferred Work
 
-Private 0.1.0 extension logs cannot restore directly in public DSH: retain their original Host and start a fresh 0.1.1 Session. This release migrates or rewrites no historical log. A started ordinary Session cannot become supervised; select the mode before starting a new Session. Successive tasks retain prior history. Independent browser checks and automatic check-directory recovery remain unavailable; installation acceptance does not establish long-horizon superiority over Goal/Plan.
+Private 0.1.0 extension logs cannot restore directly in public DSH: retain their original Host and start a fresh 0.1.1 Session. This release migrates or rewrites no historical log. npm 0.1.1 still requires selecting its dedicated mode for a new Session; current development source can create a Task in a native Session through `/task`. Successive tasks retain prior history. Independent browser checks and automatic check-directory recovery remain unavailable; installation acceptance does not establish long-horizon superiority over Goal/Plan.
+
+## Supervisor conversation layout
+
+The sidebar header contains Chat / Details and current status. Task history and help use the native overflow menu. One conversation handles questions, drafts, explicit creation and requirement edits; no Discussion / Direct creation switch remains. Historical input-mode records are retained but no longer turn ordinary messages into tasks.
+
+Drafts appear below their logged Supervisor replies. Expand requirements and create the current draft; older versions remain read-only. `/task <objective>` or an explicit creation directive starts planning. Questions leave task state unchanged. Initial plan approval and impact confirmation for completed-task repair still apply. See [layout and validation](docs/consultation-layout.md).
