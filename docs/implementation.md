@@ -1,5 +1,7 @@
 # Implementation status
 
+2026-10-07: Plan, node and whole-task reviews are durably submitted and run by the controller. Normal outer PTC settlement no longer cancels review. Review deadlines, user stops and restart recovery remain distinct. Current task record 15, review record 6 and projection cache 19; see [review-job lifetime](review-queue.md) for validation and scope.
+
 2026-10-07: Completed PTC Tasks expose direct read/control tools without changing the preset; next-task planning restores its presentation. See [completed PTC tool access](completed-ptc-controls.md).
 
 **2026-10-06: development source retains native modes.** Human-message-bound `task_create` is available; native Goal/Plan remain and Supervisor owns Task continuation and acceptance. This change is not yet published; see [task supervision in native modes](native-task.md) for workflow, compatibility and validation.

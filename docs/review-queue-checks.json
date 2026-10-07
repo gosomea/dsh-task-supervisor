@@ -1,0 +1,145 @@
+{
+  "date": "2026-10-07",
+  "baselineCommit": "b2b34c81e06929eb9517a270182c6af53cb68f3d",
+  "scope": "Supervisor plugin only; DSH main loop, native sandbox and PTC default unchanged",
+  "kernel": {
+    "files": 6,
+    "passed": 211,
+    "skipped": 1,
+    "skipReason": "Existing independent Docker execution fixture requires optional administrator configuration",
+    "hostStrictTypecheck": true,
+    "clientStrictTypecheck": true,
+    "build": true
+  },
+  "longReview": {
+    "controlledNativeAgentFixture": true,
+    "scriptedAdapter": true,
+    "reviewHeldMilliseconds": 125000,
+    "testDurationMilliseconds": 125180,
+    "ptcDefaultMilliseconds": 120000,
+    "outerSettlementReason": "run_code settled",
+    "reviewSignalRemainedLive": true,
+    "appliedExactlyOnce": true
+  },
+  "realModel": {
+    "sessionId": "session-a4d6301d-6da3-4a6c-a53f-eed75a0a3186",
+    "taskId": "fdec4715-02d6-4a10-a690-1be1720b50fc",
+    "preset": "ptc",
+    "verificationMode": "log",
+    "approvalCount": 1,
+    "phase": "complete",
+    "mainToolErrors": 0,
+    "inputUnchanged": true,
+    "models": [
+      [
+        "deepseek-codebuddy",
+        "deepseek-v4.1-flash"
+      ]
+    ],
+    "jobs": [
+      {
+        "jobId": "8c07326c-1d30-413f-98de-a7f8225c0d90",
+        "kind": "plan",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-0245af28-0cab-44bb-8ab4-b4500ab1adcf",
+        "cutoff": 36,
+        "model": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "durationSeconds": 78.12
+      },
+      {
+        "jobId": "93e7a061-8d79-4fe8-a7a0-f1740d7fc54f",
+        "kind": "stage",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-dd2a7c1a-fa75-497a-a7dd-e64d2db1d110",
+        "cutoff": 111,
+        "model": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "durationSeconds": 69.29
+      },
+      {
+        "jobId": "b0c4092d-ba86-46f4-aba8-c107be33bef9",
+        "kind": "completion",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-43e996b4-de34-4e7c-9b01-e5aaeb67a4ba",
+        "cutoff": 137,
+        "model": {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        },
+        "durationSeconds": 98.8
+      }
+    ],
+    "reviewerProtocolErrors": [
+      {
+        "kind": "plan",
+        "reviewerToolErrors": 1
+      },
+      {
+        "kind": "stage",
+        "reviewerToolErrors": 2
+      },
+      {
+        "kind": "completion",
+        "reviewerToolErrors": 2
+      }
+    ],
+    "explicitPtcTimeoutOverrides": 0
+  },
+  "historicalTimeoutRecovery": {
+    "sessionId": "session-816b3431-2517-4e7d-b104-aa59d3d6eafe",
+    "originalCode": "cancelled",
+    "recoveredCode": "timeout",
+    "retryable": true,
+    "phase": "paused",
+    "armed": false,
+    "agentRerun": false,
+    "originalEventsRewritten": false
+  },
+  "artifacts": {
+    "realModelRunSHA256": "be494641b31ba87783091ceafb53ff49b5b92cba70d6424076c45e2eb1acf286",
+    "finalSHA256": "afcd5f3693d38595b5b1f1912960d50c5f053a54991151b469421a4bce07f8ec",
+    "finalInstallRestartPreservesThreeAppliedJobs": true,
+    "finalPackedRuntimeMatchesInstalled": true,
+    "note": "Real positive run precedes final coordinator-failure/cancellation, saved-decision recovery and cache-version checks; final behavior checks use final source and final artifact restore."
+  },
+  "dailyDeployment": {
+    "port": 3080,
+    "profile": "web-rc2",
+    "previousPid": 1428,
+    "pid": 6323,
+    "sessionsBefore": 521,
+    "sessionsAfter": 521,
+    "sameSessionIds": true,
+    "runningBefore": 0,
+    "runningAfter": 0,
+    "otherDependenciesUnchanged": true,
+    "bundleListUnchanged": true,
+    "cordisFilesUnchanged": true
+  },
+  "limits": [
+    "Live model fixture uses log verification, not new independent artifact checks.",
+    "No npm publication."
+  ],
+  "sourceFilesSha256": {
+    "src/index.ts": "ef965955cba3fd448958971a51cc6c535f88c085977895f6e909de38f4b942c8",
+    "src/review-queue.ts": "909c7791c48f799e34652f0a4c0c9898bb73dc73ceae371a2952df9ba78be528",
+    "src/reviewer.ts": "dbfe08c03beaf06a5c7433b5917c9058ad174d4486919a365fc10733e4705e88",
+    "src/state.ts": "61f7f7275c7c247e976b3e79dfb24a05645dce182d979b0bdc0fe133d17d830c",
+    "src/review-transport-recovery.ts": "854fcb4d9a0d052612d82449c48449d43ccb13fddf753bf291cc39194a568c19"
+  },
+  "savedDecisionRecovery": {
+    "manualOnly": true,
+    "sameJobAndReviewerSession": true,
+    "noDuplicateModelRequests": true,
+    "changedArtifactsRejected": true,
+    "unchangedArtifactsAccepted": true
+  }
+}

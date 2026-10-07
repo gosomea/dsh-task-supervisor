@@ -39,6 +39,8 @@ The three configurable tiers remain record only, automatic reminder, and pause f
 
 ## Pause and timeout
 
+Tools durably submit plan, node and whole-task reviews; Supervisor runs them after the current turn settles. See [review-job lifetime](review-queue.md). A review deadline is an internal fault, never automatic permission to continue, approve or complete.
+
 Stage review normally holds the next continuation or stage transition, not an arbitrary tool call. The user may continue the proposed next step, accept advice and return the task to replanning, or stop. An automatic reminder is delivered through a logged main-agent instruction. Corrective continuation must change the next step or supply useful missing evidence; repeatedly delivering the same reminder is not progress.
 
 For ordinary review prompts configured with a timeout, keep the agreed default: timeout permits the held next step and records automatic continuation. The exact duration remains open. Immediately before continuation, recheck task revision, supervisor enablement, execution permission, and newer user input. A stale timeout never revives an edited, stopped, or cleared task.

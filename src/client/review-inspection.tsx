@@ -3,6 +3,7 @@ import type { ReviewJob } from '../review-records.ts'
 import { Disclosure } from './disclosure.tsx'
 
 export function inspectionPhase(job: ReviewJob): string {
+  if (job.status === 'queued') return '已提交 · 等待控制器'
   if (job.decision) return '裁决'
   if (!job.verification) return '日志审查'
   if (job.verification.phase === 'comparison') return '对照汇报'

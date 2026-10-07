@@ -30,3 +30,5 @@ One completion inquiry successfully read state and the file, but additionally at
 The subsequent case explicitly uses native-supported `timeoutMs: 600000` for review calls, without changing Host, profile, model route, inputs or acceptance criteria. A success proves the target flow under that budget; the default-budget interruption is not a pass. Follow-up work must coordinate durable reviews with the outer program budget and distinguish human cancellation from outer timeouts, with the appropriate recovery action.
 
 [简体中文](completed-ptc-controls.zh.md)
+
+The subsequent [review-job lifetime fix](review-queue.md) returns immediately after durable submission and runs review in the controller while retaining the native PTC budget. The failure record remains; only log-proven transport timeouts become eligible for manual retry.

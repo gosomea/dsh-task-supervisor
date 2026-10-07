@@ -1,5 +1,8 @@
 /** Native DSH task controller: durable state, human commands, and model tools. */
 import { installStandardHost } from './standard-host.ts'
+import { confirmedPtcTimeout } from './review-transport-recovery.ts'
+import { installReviewQueue } from './review-queue.ts'
+import { randomUUID } from 'node:crypto'
 import { installTaskToolPresentation } from './task-tool-presentation.ts'
 import { appendControlRecord, controlEvent } from './session-records.ts'
 
@@ -25,8 +28,8 @@ import { changedAttempts } from './rework-records.ts'
 import { installRepairs } from './repair-runtime.ts'
 import { taskExecutionError } from './repairs.ts'
 import { validateProvenance } from './provenance.ts'
-import { faultFrom, recordReview } from './review-records.ts'
-import { reviewStage, reviewPolicy, type ReviewerModel } from './reviewer.ts'
+import { faultFrom, recordReview, ReviewFailure } from './review-records.ts'
+import { createReviewJob, reviewerOptions, reviewStage, savedReviewDecision, reviewPolicy, type ReviewerModel } from './reviewer.ts'
 import { prepareCapabilities, type VerificationNeeds, type VerificationCapability } from './review-capabilities.ts'
 import { verificationPolicy, type VerificationConfig } from './verification.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
@@ -94,7 +97,9 @@ const planInput = z.object({
   read_only_turns_before_write: z.number().int().min(0).max(10).optional(),
 }).strict()
 
-function toolAgent(exec: ToolRunContext): Agent {
+type ReviewExecution = Pick<ToolRunContext, 'agent' | 'signal' | 'concludeTurn'>
+
+function toolAgent(exec: Pick<ToolRunContext, 'agent'>): Agent {
   if (exec.agent === undefined) throw new Error('Supervisor tools require a live Agent')
   return exec.agent
 }
@@ -210,12 +215,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (agent && goal?.activation === 'armed') ownContinuation(agent)
   })
 
-  function withdrawOwned(agent: Agent): void {
+  function withdrawOwned(agent: Agent, cancellation = new Error('Supervisor state changed')): void {
     ownContinuation(agent)
     delegation.cancel(agent)
     const life = runtime(agent)
     life.armed = false
-    reviewAbort.get(agent)?.abort(new Error('Supervisor state changed'))
+    reviewAbort.get(agent)?.abort(cancellation)
     for (const message of [...agent.inbox.nextStep, ...agent.inbox.nextTurn]) {
       if ((message.source.kind === 'task-supervisor' || message.source.kind === 'task-supervisor-record')) agent.inbox.remove(message.id)
     }
@@ -420,7 +425,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true
-    for (const agent of knownAgents) withdrawOwned(agent)
+    for (const agent of knownAgents) withdrawOwned(agent, new Error('Supervisor unloaded'))
     knownAgents.clear()
   })
 
@@ -429,6 +434,15 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (task === null && !entryActive(agent)) return
     await bindSupervisedSession(agent)
     ownContinuation(agent)
+    const failed = task?.reviewFault?.jobId ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs
+      .find(job => job.id === task.reviewFault!.jobId) : undefined
+    if (task?.phase === 'paused' && task.pauseReason === 'review-fault' && failed && confirmedPtcTimeout(agent.session.snapshotEvents(), failed)) {
+      const fault = { ...failed.fault!, code: 'timeout' as const, retryable: true,
+        message: `PTC transport timeout confirmed by its recorded dispatch and result; original cancellation: ${failed.fault!.message}` }
+      await recordReview(ctx, agent, { ...failed, revision: failed.revision + 1, fault })
+      appendTask(ctx, agent, { ...task, revision: task.revision + 1, reviewFault: fault })
+      await flush(agent)
+    }
     const life = runtime(agent)
     life.armed = false
     life.ownedTurn = false
@@ -454,6 +468,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     return policyApproval(task, agent.id, agent.session.snapshotEvents().map(controlEvent), job)
   }
 
+  function boundReview(agent: Agent, task: TaskSnapshot) {
+    return task.pendingReview?.jobId ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs
+      .find(job => job.id === task.pendingReview!.jobId) : undefined
+  }
+
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === jobId)
     if (job && job.status === 'submitted') await recordReview(ctx, agent, { ...job, revision: job.revision + 1, status })
@@ -465,7 +484,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const fault = faultFrom(error)
     if (!fault) throw error
     const paused: TaskSnapshot = { ...latest, revision: latest.revision + 1,
-      phase: 'paused', pauseReason: 'review-fault', reviewFault: fault }
+      phase: 'paused', pauseReason: fault.code === 'cancelled' && fault.cancelSource === 'user' ? 'user'
+        : fault.code === 'cancelled' && fault.cancelSource === 'unload' ? 'restart' : 'review-fault', reviewFault: fault }
     appendTask(ctx, agent, paused)
     runtime(agent).armed = false
     await flush(agent)
@@ -540,7 +560,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const owned = messages.some(message => message.source.kind === 'task-supervisor')
     const life = runtime(agent)
     if (owned) {
-      if (!life.armed || !task.enabled || (task.phase !== 'active' && task.phase !== 'planning')
+      const summary = closeWithResponse.isPending(agent, task.revision)
+      if (!summary && (!life.armed || (task.phase !== 'active' && task.phase !== 'planning')) || !task.enabled
         || messages.some(message => message.source.kind === 'task-supervisor'
           && (message.source.taskId !== task.id || message.source.revision !== task.revision))) return { kind: 'reject' }
       life.ownedTurn = true
@@ -622,6 +643,69 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       }
     })
   }
+
+  const queuedReviews = installReviewQueue(ctx, {
+    current,
+    pendingInput: hasPending,
+    async admitted(agent, task) {
+      const pending = task.pendingReview!
+      pending.jobId = randomUUID()
+      const parsed = pending.kind === 'plan' ? planInput.parse(JSON.parse(pending.evidence)) : undefined
+      const input = parsed ? { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite: parsed.read_only_turns_before_write ?? 0 } : task
+      const job = { ...createReviewJob(agent, input, pending.stageId, parsed ? JSON.stringify(parsed.stages) : pending.evidence,
+        pending.kind as 'plan' | 'stage' | 'completion', selectedReviewPolicy, 'queued', pending.jobId),
+        owner: 'controller' as const, model: reviewerOptions(ctx, agent, config.reviewerModel).model }
+      await recordReview(ctx, agent, job)
+      runtime(agent).armed = false
+      appendTask(ctx, agent, task)
+      await flush(agent)
+      return task
+    },
+    async failed(agent, expected, error) {
+      const latest = current(agent)
+      if (latest?.id === expected.id && latest.revision === expected.revision && latest.enabled && latest.phase === 'reviewing' && latest.pendingReview?.jobId === expected.pendingReview?.jobId) {
+        const job = boundReview(agent, latest)
+        if (!job) throw error
+        const fault = job.fault ?? { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId,
+          code: 'internal' as const, message: String(error), retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+        if (!job.fault) await recordReview(ctx, agent, { ...job, revision: job.revision + 1, status: 'failed', fault, finishedAt: new Date().toISOString() })
+        await pauseForReviewFailure(agent, latest, new ReviewFailure(fault, { cause: error }))
+      }
+    },
+    async interrupted(agent, task) {
+      appendTask(ctx, agent, { ...task, revision: task.revision + 1, phase: 'paused', pauseReason: 'user' })
+      runtime(agent).armed = false
+      await flush(agent)
+    },
+    async run(agent, task, signal) {
+      const pending = task.pendingReview!
+      const exec: ReviewExecution = { agent, signal, concludeTurn() {} }
+      const result = pending.kind === 'plan'
+        ? await submitPlan(JSON.parse(pending.evidence), exec)
+        : await settleReview(agent, task, pending.stageId, pending.evidence, pending.kind as 'stage' | 'completion', exec)
+      const latest = current(agent)
+      if (!latest || latest.id !== task.id || latest.phase === 'paused') return
+      if (signal.aborted || hasPending(agent)) {
+        runtime(agent).armed = false
+        if (latest.phase === 'active' || latest.phase === 'planning') {
+          appendTask(ctx, agent, { ...latest, revision: latest.revision + 1, phase: 'paused', pauseReason: 'user' })
+          await flush(agent)
+        }
+        return
+      }
+      // A maintenance result is not a tool result in the already finished PTC turn.
+      // Deliver the next permitted response through the durable native Inbox.
+      const completeNext = pending.kind === 'stage' && latest.phase === 'active'
+        && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
+      const revisePlan = pending.kind === 'plan' && latest.phase === 'planning' && config.automaticContinuation !== false
+      if (revisePlan) runtime(agent).armed = true
+      if (!completeNext && !revisePlan) closeWithResponse(agent, latest.revision, true)
+      agent.followup(inputFor(latest, `Supervisor review result: ${JSON.stringify(result)}\n${completeNext
+        ? 'All nodes passed. Inspect the current whole deliverable and call task_request_completion with concrete evidence; the task is not complete yet.'
+        : revisePlan ? 'Revise the proposed plan under this finding and the original user requirements, then submit it for another review. Implementation is not approved.' : CLOSING_MESSAGE}`))
+      await flush(agent)
+    },
+  })
 
   function onIdle(agent: Agent): void {
     const life = runtime(agent)
@@ -786,6 +870,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           const revoking = input === 'auto-approve-off'
           if (!task.enabled || !['planning', 'awaiting-approval', ...revoking ? ['reviewing'] : []].includes(task.phase) || task.everApproved || !revoking && reviewAbort.has(agent)) throw new Error('执行批准设置仅在首次规划或等待批准时修改；审查期间仍可撤销自动批准。')
           const configured = appendTask(ctx, agent, { ...task, revision: task.revision + 1,
+            ...revoking && task.phase === 'reviewing' && task.pendingReview?.kind === 'plan' ? { phase: 'planning' as const, pendingReview: null } : {},
             approvalPolicy: { mode: input === 'auto-approve-on' ? 'after-review' : 'manual', source: 'user-command',
               mainSessionId: agent.id, requirementsVersion: task.requirementsVersion, grantSeq: agent.session.seq } })
           await flush(agent)
@@ -828,6 +913,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           return reply('Supervisor on; use /task resume to continue', next, false)
         }
         if (input === 'resume') {
+          if (task.pauseReason !== 'review-fault' && task.pendingReview?.jobId && boundReview(agent, task)?.owner === 'controller' && !life.armed && !reviewAbort.has(agent)) {
+            await retryReview(agent, task, signal, true)
+            return reply('原审查已恢复；检查结果后批准计划或手动恢复实施。', current(agent), false)
+          }
           if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请使用 /task retry-review，或编辑任务要求。')
           if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
             throw new Error('this task cannot resume in its current state')
@@ -843,7 +932,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             reviewFault: null, pauseReason: null, ...task.recovery ? { recovery: { ...task.recovery, noProgress: 0 } } : {} }
           await commitAndWake(agent, task, next,
             interruptedReview !== null
-              ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${interruptedReview.kind === 'planning' ? 'task_submit_plan' : interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
+              ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${['planning', 'plan'].includes(interruptedReview.kind) ? 'task_submit_plan' : interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
               : next.phase === 'planning' ? `Resume planning: ${next.objective}. Submit the plan with task_submit_plan.`
                 : executionPrompt(agent, next,
                   'Resume the approved task. Check the current workspace before repeating any uncertain effects.'))
@@ -963,7 +1052,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }))
 
   ctx.tools.register(defineTool({
-    name: 'task_submit_plan', description: 'Submit or replace a pending DAG plan. Preserve requested node counts. dependsOn requires reviewed acceptance, not worker completion: integration checks needed to accept a worker belong inside its node, never in a blocked successor. Objective criteria use provenance {kind: user, reference: objective}.',
+    name: 'task_submit_plan', description: 'Submit or replace a pending DAG plan for controller review. A queued receipt is not review acceptance; end this turn after submission. Preserve requested node counts. dependsOn requires reviewed acceptance, not worker completion: integration checks needed to accept a worker belong inside its node, never in a blocked successor. Objective criteria use provenance {kind: user, reference: objective}.',
     parameters: {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
@@ -989,95 +1078,102 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         description: 'Number of completed read-only model turns required after approval before any write. Use at least 1 when the objective requires a separate read-only turn before writing.' },
     },
     output: textOutput,
-    async execute(args, exec) {
-      const agent = toolAgent(exec)
-      const task = current(agent)
-      if (task === null || (task.phase !== 'planning' && task.phase !== 'awaiting-approval')) {
-        throw new Error('task is not planning or awaiting approval')
-      }
-      const parsed = planInput.parse(args)
-      validatePlan(parsed.criteria, parsed.stages)
-      validateProvenance(parsed.criteria, agent.session.snapshotEvents().map(controlEvent))
-      const readOnlyTurnsBeforeWrite = parsed.read_only_turns_before_write ?? 0
-      if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
-        throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')
-      }
-      let planDecision: Awaited<ReturnType<typeof reviewStage>> | undefined
-      if (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review') {
-        const abort = new AbortController()
-        reviewAbort.set(agent, abort)
-        try {
-          planDecision = await reviewStage(ctx, agent,
-            { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
-            'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
-            config.reviewerModel, 'plan', selectedReviewPolicy)
-        } catch (error) {
-          await pauseForReviewFailure(agent, task, error)
-          exec.concludeTurn()
-          throw error
-        } finally {
-          reviewAbort.delete(agent)
-        }
-        const latest = current(agent)
-        if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || hasPending(agent)) {
-          await finishReviewRecord(agent, planDecision.jobId, 'stale')
-          throw new Error('plan review became stale after a task change')
-        }
-        if (planDecision.verdict !== 'pass') {
-          appendTask(ctx, agent, { ...task, revision: task.revision + 1,
-            phase: planDecision.verdict === 'needs-user' ? 'paused' : 'planning',
-            pauseReason: planDecision.verdict === 'needs-user' ? 'decision' : null, reviewFault: null,
-            lastReview: { jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff,
-              verdict: planDecision.verdict, finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
-              reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } })
-          await finishReviewRecord(agent, planDecision.jobId, 'applied')
-          await flush(agent)
-          if (planDecision.verdict === 'needs-user') { runtime(agent).armed = false; exec.concludeTurn() }
-          return { verdict: planDecision.verdict, finding: planDecision.finding,
-            reviewerSessionId: planDecision.reviewerSessionId,
-            message: 'Revise the acceptance criteria and ordered stages, then resubmit the plan.' }
-        }
-      }
-      const next: TaskSnapshot = { ...task, revision: task.revision + 1,
-        planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages,
-        nodeRuns: parsed.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending', evidenceAfterSeq: agent.session.seq })), stageIndex: 0,
-        readOnlyTurnsBeforeWrite, readOnlyGateStartSeq: task.everApproved ? agent.session.seq : null,
-        roundsSinceReview: 0,
-        phase: task.everApproved ? 'active' : 'awaiting-approval',
-        approvedPlanVersion: task.everApproved ? task.planVersion + 1 : null,
-        lastReview: planDecision === undefined ? task.lastReview : {
-          jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
-          finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
-          reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
-      let settled = appendTask(ctx, agent, withRuns(next, runsOf(next)))
-      if (planDecision) await finishReviewRecord(agent, planDecision.jobId, 'applied')
-      await flush(agent)
-      exec.signal.throwIfAborted()
-      const authorization = approvalFor(agent, settled)
-      if (authorization && !disposed && current(agent)?.id === settled.id && current(agent)?.revision === settled.revision && runtime(agent).armed && !hasPending(agent)) {
-        await verifyBeforeApproval(agent, settled, exec.signal)
-        settled = appendTask(ctx, agent, { ...approvedTask(settled, agent.session.seq),
-          lastApproval: { planVersion: settled.planVersion, userMessageSeq: null, ...authorization } })
-        await flush(agent)
-      }
-      if (disposed || current(agent)?.id !== settled.id || current(agent)?.revision !== settled.revision || hasPending(agent)) { runtime(agent).armed = false; throw new Error('task changed during plan admission') }
-      if (settled.phase === 'active') runtime(agent).armed = !authorization || config.automaticContinuation !== false
-      closeWithResponse(agent, settled.revision)
-      return { phase: settled.phase, planVersion: settled.planVersion,
-        ...authorization && settled.lastApproval?.source === 'policy' ? { approvalSource: 'policy', authorizationSeq: authorization.authorizationSeq, reviewJobId: authorization.reviewJobId } : {},
-        reviewVerification: effectiveVerification,
-        ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
-          finding: planDecision.finding },
-        message: settled.phase === 'awaiting-approval'
-          ? `${planDecision ? 'The independent plan review passed. ' : ''}The user has not approved execution. Tell the user the plan is waiting for approval; do not claim no further decision is needed. ${CLOSING_MESSAGE}`
-          : `${authorization && settled.lastApproval?.source === 'policy' ? 'Execution approved under the user task policy after independent plan review. ' : ''}${CLOSING_MESSAGE}` }
-    },
+    execute: (args, exec) => submitPlan(args, exec, true),
   }))
 
-  async function retryReview(agent: Agent, expected: TaskSnapshot, commandSignal: AbortSignal): Promise<void> {
-    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === expected.reviewFault?.jobId)
-    if (!job || job.status !== 'failed' || !expected.enabled || expected.phase !== 'paused'
-      || expected.pauseReason !== 'review-fault' || !job.fault?.retryable) throw new Error('no retryable review fault')
+  async function submitPlan(args: unknown, exec: ReviewExecution, admit = false) {
+    const agent = toolAgent(exec)
+    const task = current(agent)
+    if (task === null || (task.phase !== 'planning' && task.phase !== 'awaiting-approval' && !(task.phase === 'reviewing' && task.pendingReview?.kind === 'plan'))) {
+      throw new Error('task is not planning or awaiting approval')
+    }
+    const parsed = planInput.parse(args)
+    validatePlan(parsed.criteria, parsed.stages)
+    validateProvenance(parsed.criteria, agent.session.snapshotEvents().map(controlEvent))
+    const readOnlyTurnsBeforeWrite = parsed.read_only_turns_before_write ?? 0
+    if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
+      throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')
+    }
+    if (admit && (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review')) return queuedReviews.enqueue(agent, task, { kind: 'plan', stageId: 'plan', evidence: JSON.stringify(parsed) }, exec)
+    let planDecision: Awaited<ReturnType<typeof reviewStage>> | undefined
+    if (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review') {
+      const abort = new AbortController()
+      reviewAbort.set(agent, abort)
+      try {
+        planDecision = await reviewStage(ctx, agent,
+          { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
+          'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
+          config.reviewerModel, 'plan', selectedReviewPolicy, boundReview(agent, task))
+      } catch (error) {
+        await pauseForReviewFailure(agent, task, error)
+        exec.concludeTurn()
+        throw error
+      } finally {
+        reviewAbort.delete(agent)
+      }
+      const latest = current(agent)
+      if (latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || hasPending(agent)) {
+        await finishReviewRecord(agent, planDecision.jobId, 'stale')
+        throw new Error('plan review became stale after a task change')
+      }
+      if (planDecision.verdict !== 'pass') {
+        appendTask(ctx, agent, { ...task, revision: task.revision + 1,
+          phase: planDecision.verdict === 'needs-user' ? 'paused' : 'planning',
+          pauseReason: planDecision.verdict === 'needs-user' ? 'decision' : null, reviewFault: null, pendingReview: null,
+          lastReview: { jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff,
+            verdict: planDecision.verdict, finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
+            reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } })
+        await finishReviewRecord(agent, planDecision.jobId, 'applied')
+        await flush(agent)
+        if (planDecision.verdict === 'needs-user') { runtime(agent).armed = false; exec.concludeTurn() }
+        return { verdict: planDecision.verdict, finding: planDecision.finding,
+          reviewerSessionId: planDecision.reviewerSessionId,
+          message: 'Revise the acceptance criteria and ordered stages, then resubmit the plan.' }
+      }
+    }
+    const next: TaskSnapshot = { ...task, revision: task.revision + 1,
+      planVersion: task.planVersion + 1, criteria: parsed.criteria, stages: parsed.stages,
+      nodeRuns: parsed.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'pending', evidenceAfterSeq: agent.session.seq })), stageIndex: 0,
+      readOnlyTurnsBeforeWrite, readOnlyGateStartSeq: task.everApproved ? agent.session.seq : null,
+      roundsSinceReview: 0, pendingReview: null,
+      phase: task.everApproved ? 'active' : 'awaiting-approval',
+      approvedPlanVersion: task.everApproved ? task.planVersion + 1 : null,
+      lastReview: planDecision === undefined ? task.lastReview : {
+        jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
+        finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
+        reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
+    let settled = appendTask(ctx, agent, withRuns(next, runsOf(next)))
+    if (planDecision) await finishReviewRecord(agent, planDecision.jobId, 'applied')
+    await flush(agent)
+    exec.signal.throwIfAborted()
+    const authorization = approvalFor(agent, settled)
+    if (authorization && !disposed && current(agent)?.id === settled.id && current(agent)?.revision === settled.revision && (runtime(agent).armed || boundReview(agent, task)?.owner === 'controller') && !hasPending(agent)) {
+      await verifyBeforeApproval(agent, settled, exec.signal)
+      settled = appendTask(ctx, agent, { ...approvedTask(settled, agent.session.seq),
+        lastApproval: { planVersion: settled.planVersion, userMessageSeq: null, ...authorization } })
+      await flush(agent)
+    }
+    if (disposed || current(agent)?.id !== settled.id || current(agent)?.revision !== settled.revision || hasPending(agent)) { runtime(agent).armed = false; throw new Error('task changed during plan admission') }
+    if (settled.phase === 'active') runtime(agent).armed = !authorization || config.automaticContinuation !== false
+    closeWithResponse(agent, settled.revision)
+    return { phase: settled.phase, planVersion: settled.planVersion,
+      ...authorization && settled.lastApproval?.source === 'policy' ? { approvalSource: 'policy', authorizationSeq: authorization.authorizationSeq, reviewJobId: authorization.reviewJobId } : {},
+      reviewVerification: effectiveVerification,
+      ...planDecision === undefined ? {} : { reviewerSessionId: planDecision.reviewerSessionId,
+        finding: planDecision.finding },
+      message: settled.phase === 'awaiting-approval'
+        ? `${planDecision ? 'The independent plan review passed. ' : ''}The user has not approved execution. Tell the user the plan is waiting for approval; do not claim no further decision is needed. ${CLOSING_MESSAGE}`
+        : `${authorization && settled.lastApproval?.source === 'policy' ? 'Execution approved under the user task policy after independent plan review. ' : ''}${CLOSING_MESSAGE}` }
+  }
+
+  async function retryReview(agent: Agent, expected: TaskSnapshot, commandSignal: AbortSignal, interrupted = false): Promise<void> {
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === (expected.pendingReview?.jobId ?? expected.reviewFault?.jobId))
+    const stopped = interrupted && job?.owner === 'controller' && expected.pendingReview?.jobId === job.id
+      && (job.status === 'queued' || job.status === 'started' || job.status === 'submitted' || job.status === 'failed' && job.fault?.code === 'cancelled'
+        && ['user', 'restart'].includes(expected.pauseReason ?? ''))
+    if (!job || !expected.enabled || reviewAbort.has(agent)
+      || !(stopped && ['paused', 'reviewing'].includes(expected.phase)
+        || job.status === 'failed' && expected.phase === 'paused' && expected.pauseReason === 'review-fault' && job.fault?.retryable)) throw new Error('no retryable review fault')
     if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
@@ -1091,8 +1187,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       reviewAbort.set(agent, abort)
       const signal = AbortSignal.any([commandSignal, maintenanceSignal, abort.signal])
       try {
-        const decision = await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
-          config.reviewerModel, job.kind, selectedReviewPolicy, job)
+        const decision = job.status === 'submitted'
+          ? await savedReviewDecision(ctx, agent, job, selectedReviewPolicy, signal)
+          : await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
+            config.reviewerModel, job.kind, selectedReviewPolicy, job, true)
         const actual = current(agent)
         if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled || hasPending(agent)) {
           await finishReviewRecord(agent, decision.jobId, 'stale')
@@ -1134,17 +1232,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   async function settleReview(agent: Agent, task: TaskSnapshot, stageId: string,
-    evidence: string, kind: 'stage' | 'completion', exec: ToolRunContext) {
+    evidence: string, kind: 'stage' | 'completion', exec: ReviewExecution) {
     runtime(agent).armed = false
-    const reviewing: TaskSnapshot = { ...task, revision: task.revision + 1, phase: 'reviewing',
-      pendingReview: { kind, stageId, evidence } }
-    appendTask(ctx, agent, reviewing)
-    await flush(agent)
+    const reviewing: TaskSnapshot = task.pendingReview?.jobId ? task : { ...task, revision: task.revision + 1, phase: 'reviewing',
+      pendingReview: { ...task.pendingReview, kind, stageId, evidence } }
+    if (reviewing !== task) { appendTask(ctx, agent, reviewing); await flush(agent) }
     const abort = new AbortController()
     reviewAbort.set(agent, abort)
     const signal = AbortSignal.any([exec.signal, abort.signal])
     try {
-      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, selectedReviewPolicy)
+      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, selectedReviewPolicy, boundReview(agent, reviewing))
       signal.throwIfAborted()
       const latest = current(agent)
       if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision || latest.phase !== 'reviewing') {
@@ -1215,7 +1312,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   ctx.tools.register(defineTool({
     name: 'task_report_stage',
-    description: 'Submit evidence for the current plan stage; an independent reviewer checks it.',
+    description: 'Submit to the Supervisor controller and end this turn. A queued receipt does not mean the review passed. Submit evidence for the current plan stage; an independent reviewer checks it.',
     parameters: {
       stage_id: { type: 'string', required: true },
       attempt: { type: 'integer', description: 'Current node attempt from task_status. Required after rework; initial attempt is 1.' },
@@ -1231,7 +1328,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         throw new Error('report the current stage with concrete evidence')
       }
       requireIntegration(agent, stage.id, config.integrationTools ?? ['bash', 'read_image'], ctx)
-      return settleReview(agent, reviewNode(task, stage.id, args.attempt), stage.id, args.evidence, 'stage', exec)
+      return queuedReviews.enqueue(agent, reviewNode(task, stage.id, args.attempt), { kind: 'stage', stageId: stage.id, evidence: args.evidence }, exec)
     },
   }))
 
@@ -1254,7 +1351,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   ctx.tools.register(defineTool({
     name: 'task_request_completion',
-    description: 'Ask an independent reviewer to assess final completion after every plan stage passes.',
+    description: 'Submit to the Supervisor controller and end this turn. A queued receipt does not mean the review passed. Ask an independent reviewer to assess final completion after every plan stage passes.',
     parameters: {
       evidence: { type: 'string', required: true,
         description: 'Concrete evidence that every acceptance criterion is satisfied.' },
@@ -1267,7 +1364,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (task.stages.length === 0 || acceptedNodes(task).length !== task.stages.length || !args.evidence.trim()) {
         throw new Error('every stage must pass before requesting final completion')
       }
-      return settleReview(agent, task, 'completion', args.evidence, 'completion', exec)
+      return queuedReviews.enqueue(agent, task, { kind: 'completion', stageId: 'completion', evidence: args.evidence }, exec)
     },
   }))
 }

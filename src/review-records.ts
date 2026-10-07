@@ -10,7 +10,7 @@ import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
-export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5]
+export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
@@ -21,7 +21,8 @@ export const reviewJobSchema = z.object({
   planVersion: z.number().int().nonnegative(), stageId: z.string().min(1), nodeAttempt: z.number().int().positive().nullable(),
   kind: z.enum(['planning', 'plan', 'stage', 'progress', 'completion']), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(), model: z.object({ provider: z.string(), model: z.string(), reasoningEffort: z.string().optional() }).nullable(),
-  runtimeId: z.string().uuid(), status: z.enum(['repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
+  runtimeId: z.string().uuid(), owner: z.literal('controller').optional(),
+  status: z.enum(['queued', 'repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
   attempt: z.number().int().positive(), repairLimit: z.number().int().nonnegative(),
   deadlineAt: z.string().optional(),
   attemptStartedAt: z.string().optional(), observationSettings: observationSettingsSchema.optional(),
@@ -55,7 +56,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -65,7 +66,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (event.type !== 'extension/record' || event.data.namespace !== REVIEW_NAMESPACE) return [...jobs]
   if (!REVIEW_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'job') throw new Error('unsupported review record')
   const job = reviewJobSchema.parse(event.data.payload)
-  if (job.kind === 'planning' && ![3, 4, 5].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
+  if (job.kind === 'planning' && ![3, 4, 5, 6].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
@@ -76,7 +77,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || previous.verification && JSON.stringify(job.verification?.snapshot) !== JSON.stringify(previous.verification.snapshot)
     || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
     || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
-    || job.checkProtocol !== previous.checkProtocol
+    || job.owner !== previous.owner || job.checkProtocol !== previous.checkProtocol
     || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')

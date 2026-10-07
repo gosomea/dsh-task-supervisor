@@ -26,10 +26,13 @@ import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import * as Supervisor from '../../src/index.ts'
 import { draftOf, recordDraft } from '../../src/drafts.ts'
-import { reviewStage } from '../../src/reviewer.ts'
+import { createReviewJob, reviewStage, savedReviewDecision } from '../../src/reviewer.ts'
+import { captureSnapshot } from '../../src/artifact-snapshot.ts'
 import { validateProvenance } from '../../src/provenance.ts'
 import { installRepairs } from '../../src/repair-runtime.ts'
 import { artifactIdentity } from '../../src/artifact-identity.ts'
+import { recordReview } from '../../src/review-records.ts'
+import { confirmedPtcTimeout } from '../../src/review-transport-recovery.ts'
 import { appendTask, taskOf, newTask, taskProjection, NAMESPACE } from '../../src/state.ts'
 
 class ScriptedAdapter extends LlmAdapter {
@@ -101,6 +104,13 @@ afterEach(async () => {
   }
 })
 
+/** Legacy cases inspect final states; explicit handoff tests below inspect admission separately. */
+async function executeSettled(ctx: Context, input: Parameters<Context['tools']['execute']>[0]) {
+  const result = await ctx.tools.execute(input)
+  if (['task_submit_plan', 'task_report_stage', 'task_request_completion'].includes(input.name)) await input.agent?.whenIdle()
+  return result
+}
+
 async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   reviewerModel?: { provider: string; model: string }, automaticContinuation = false,
   maxAutomaticRoundsWithoutReport = 3, planCoverageReview = false,
@@ -147,14 +157,14 @@ it('keeps one task in the native Session and resumes only after a human command'
   await agent.whenIdle()
   expect(taskOf(first, agent)?.phase).toBe('planning')
 
-  const denied = await first.tools.execute({
+  const denied = await executeSettled(first, {
     callId: ToolCallId('blocked-write'), name: 'unsafe_write', arguments: {}, agent, signal,
   })
   // Planning does not override native permissions or blanket-disable general tools.
   expect(denied.isError).toBe(false)
   expect(unsafeCalls).toBe(1)
 
-  const plan = await first.tools.execute({
+  const plan = await executeSettled(first, {
     callId: ToolCallId('submit-plan'), name: 'task_submit_plan', agent, signal,
     arguments: {
       criteria: [{ id: 'c1', text: 'Import is persisted', provenance: { kind: 'user', reference: 'objective' } }],
@@ -200,7 +210,7 @@ it('replaces an unapproved plan before the human approves it', async () => {
   expect((await ctx.commands.execute(agent, '/task new Fix addition', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
   const submit = (callId: string, stages: { id: string; title: string; criterionIds: string[] }[]) =>
-    ctx.tools.execute({ callId: ToolCallId(callId), name: 'task_submit_plan', agent, signal,
+    executeSettled(ctx, { callId: ToolCallId(callId), name: 'task_submit_plan', agent, signal,
       arguments: { criteria: [{ id: 'c1', text: 'Tests pass', provenance: { kind: 'user', reference: 'objective' } }], stages } })
   expect((await submit('first-plan', [
     { id: 's1', title: 'Change code', criterionIds: ['c1'] },
@@ -229,7 +239,7 @@ it('accepts a goal edit while an approved model turn is still running', async ()
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('live-edit-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('live-edit-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'count report exists', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
   adapter.pauseNext = true
@@ -258,7 +268,7 @@ it('invalidates an in-flight stage review when the user edits the objective', as
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Make count report', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('review-edit-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('review-edit-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'count report exists', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Make report', criterionIds: ['c1'] }] } })).isError).toBe(false)
   adapter.pauseNext = true
@@ -296,13 +306,13 @@ it('holds a plan with omitted objective constraints until independent coverage r
     '/task new Read input.csv in one completed read-only turn; write report.json in a later turn', [], signal))?.result.kind)
     .toBe('success')
   await agent.whenIdle()
-  const submit = (id: string, criteria: import('../../src/state.ts').TaskCriterion[]) => ctx.tools.execute({
+  const submit = (id: string, criteria: import('../../src/state.ts').TaskCriterion[]) => executeSettled(ctx, {
     callId: ToolCallId(id), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: criteria.map(c => ({ ...c, provenance: { kind: 'user', reference: 'objective' } })), stages: [{ id: 's1', title: 'Read then write', criterionIds: criteria.map(c => c.id) }] },
   })
   const rejected = await submit('missing-order', [{ id: 'c1', text: 'report.json exists', provenance: { kind: 'user', reference: 'objective' } }])
   expect(rejected.isError).toBe(false)
-  expect(rejected.content.some(block => block.type === 'text' && block.text.includes('"verdict":"revise"'))).toBe(true)
+  expect(rejected.content.some(block => block.type === 'text' && block.text.includes('"queued":true'))).toBe(true)
   expect(taskOf(ctx, agent)?.phase).toBe('planning')
   expect(taskOf(ctx, agent)?.planVersion).toBe(0)
   const accepted = await submit('with-order', [
@@ -336,7 +346,7 @@ it('blocks writes until a completed post-approval read-only model turn', async (
   expect((await ctx.commands.execute(agent, '/task new Read input.csv in one turn before writing', [], signal))?.result.kind)
     .toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('gate-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('gate-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Read-only turn precedes write', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Read then write', criterionIds: ['c1'] }],
       read_only_turns_before_write: 1 } })).isError).toBe(false)
@@ -348,7 +358,7 @@ it('blocks writes until a completed post-approval read-only model turn', async (
   expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'read-source'
     && event.data.message.isError !== true)).toBe(true)
   expect(writes).toBe(0)
-  const allowed = await ctx.tools.execute({ callId: ToolCallId('after-read-turn'),
+  const allowed = await executeSettled(ctx, { callId: ToolCallId('after-read-turn'),
     name: 'unsafe_write', agent, signal, arguments: {} })
   expect(allowed.isError).toBe(false)
   expect(writes).toBe(1)
@@ -368,7 +378,7 @@ it('automatically continues approved work and requests a progress decision at th
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('drive-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('drive-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -399,7 +409,7 @@ it('continues after a passing progress review and records both reviewer decision
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('progress-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('progress-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -428,7 +438,7 @@ it('requires manual recovery of an interrupted review and retains its evidence',
   const signal = new AbortController().signal
   expect((await first.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await first.tools.execute({ callId: ToolCallId('interrupted-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(first, { callId: ToolCallId('interrupted-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await first.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -465,7 +475,7 @@ it('turns the Supervisor off without discarding human input or silently rearming
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Build endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('off-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('off-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Endpoint works', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -511,7 +521,7 @@ it('forked active tasks retain history but do not inherit execution authority', 
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('fork-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('fork-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Fixture inspected', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Inspect', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
@@ -538,9 +548,9 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'premature',
       evidence_seqs: [0] }, 'judge-before-reading'),
     toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'read-stage'),
-    toolResponse('task_review_decision', { verdict: 'pass', finding: 'stage supported', evidence_seqs: [0] }, 'judge-stage'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'stage supported', evidence_seqs: [0] }, 'judge-stage'), textResponse('节点审查通过'),
     toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'read-final'),
-    toolResponse('task_review_decision', { verdict: 'pass', finding: 'all criteria supported', evidence_seqs: [0] }, 'judge-final'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'all criteria supported', evidence_seqs: [0] }, 'judge-final'), textResponse('整体审查通过'),
   ] })
   const ctx = await host(root, adapter)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('review-main'),
@@ -549,16 +559,16 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new Build import endpoint', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: 'Endpoint persists imports', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: 'Implement endpoint', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
 
-  const early = await ctx.tools.execute({ callId: ToolCallId('early'), name: 'task_request_completion', agent, signal,
+  const early = await executeSettled(ctx, { callId: ToolCallId('early'), name: 'task_request_completion', agent, signal,
     arguments: { evidence: 'too early' } })
   expect(early.isError).toBe(true)
-  const stage = await ctx.tools.execute({ callId: ToolCallId('stage'), name: 'task_report_stage', agent, signal,
+  const stage = await executeSettled(ctx, { callId: ToolCallId('stage'), name: 'task_report_stage', agent, signal,
     arguments: { stage_id: 's1', evidence: 'Endpoint and persistence fixture passed' } })
   expect(stage.isError).toBe(false)
   const afterStage = taskOf(ctx, agent)
@@ -582,12 +592,12 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
     await reviewerLog.close()
   }
 
-  const final = await ctx.tools.execute({ callId: ToolCallId('final'), name: 'task_request_completion', agent, signal,
+  const final = await executeSettled(ctx, { callId: ToolCallId('final'), name: 'task_request_completion', agent, signal,
     arguments: { evidence: 'All accepted stages and criteria remain satisfied' } })
   expect(final.isError).toBe(false)
   expect(taskOf(ctx, agent)?.phase).toBe('complete')
   expect(taskOf(ctx, agent)?.lastReview?.stageId).toBe('completion')
-  expect(adapter.requests).toBe(7)
+  await vi.waitFor(() => expect(adapter.requests).toBe(9))
 })
 
 it('validates direct chat approval and rejects injected or stale authorization', async () => {
@@ -600,11 +610,11 @@ it('validates direct chat approval and rejects injected or stale authorization',
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new 制作一个场景', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ callId: ToolCallId('chat-plan'), name: 'task_submit_plan', agent, signal,
+  await executeSettled(ctx, { callId: ToolCallId('chat-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'C1', text: '场景可运行', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 'S1', title: '实现场景', description: '构建并验证', criterionIds: ['C1'] }] } })
   const task = taskOf(ctx, agent)!
-  const approve = (seq: number, version = task.planVersion) => ctx.tools.execute({
+  const approve = (seq: number, version = task.planVersion) => executeSettled(ctx, {
     callId: ToolCallId(`approval-${seq}-${version}`), name: 'task_approve', agent, signal,
     arguments: { task_id: task.id, plan_version: version, user_message_seq: seq } })
   expect((await approve(0)).isError).toBe(true)
@@ -667,7 +677,7 @@ it('hands off exactly one continuation after task_approve runs inside the model 
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new 创建报告', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
+  await executeSettled(ctx, { callId: ToolCallId('plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'C1', text: '报告可读', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 'S1', title: '创建报告', criterionIds: ['C1'] }] } })
   const task = taskOf(ctx, agent)!
@@ -740,7 +750,7 @@ it('reviews independent DAG branches out of order without releasing an unfinishe
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Build two branches', [], signal)
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('dag-plan'), agent, signal, arguments: {
+  expect((await executeSettled(ctx, { name: 'task_submit_plan', callId: ToolCallId('dag-plan'), agent, signal, arguments: {
     criteria: [{ id: 'c', text: 'Integrated', provenance: { kind: 'user', reference: 'objective' } }],
     stages: [{ id: 'a', title: 'A', criterionIds: ['c'], dependsOn: [] },
       { id: 'b', title: 'B', criterionIds: ['c'], dependsOn: [] },
@@ -748,14 +758,14 @@ it('reviews independent DAG branches out of order without releasing an unfinishe
   } })).isError).toBe(false)
   await ctx.commands.execute(agent, '/task approve', [], signal)
   await agent.whenIdle()
-  const report = (id: string, attempt = 1) => ctx.tools.execute({ name: 'task_report_stage', callId: ToolCallId(`report-${id}-${attempt}`), agent, signal,
+  const report = (id: string, attempt = 1) => executeSettled(ctx, { name: 'task_report_stage', callId: ToolCallId(`report-${id}-${attempt}`), agent, signal,
     arguments: { stage_id: id, attempt, evidence: 'executed checks' } })
   expect((await report('j')).isError).toBe(true)
   expect((await report('b')).isError).toBe(false)
   expect(taskOf(ctx, agent)?.stageIndex).toBe(0)
   expect((await report('a')).isError).toBe(false)
   expect(taskOf(ctx, agent)?.stageIndex).toBe(2)
-  expect((await ctx.tools.execute({ name: 'task_rework_node', callId: ToolCallId('rework-a'), agent, signal,
+  expect((await executeSettled(ctx, { name: 'task_rework_node', callId: ToolCallId('rework-a'), agent, signal,
     arguments: { stage_id: 'a', reason: 'A interface changed' } })).isError).toBe(false)
   expect((await report('a', 1)).isError).toBe(true)
   expect(taskOf(ctx, agent)?.nodeRuns?.map(run => [run.id, run.attempt, run.status]))
@@ -777,7 +787,7 @@ it.each(['activity', 'elapsed'] as const)('observes %s inside one turn without a
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Inspect modules', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('observe-plan'), agent, signal,
+  await executeSettled(ctx, { name: 'task_submit_plan', callId: ToolCallId('observe-plan'), agent, signal,
     arguments: { criteria: [{ id: 'c', text: 'Modules inspected', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
   await ctx.commands.execute(agent, '/task approve', [], signal)
@@ -803,7 +813,7 @@ it('disabling the supervisor during an observation prevents the old reviewer fro
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Inspect modules', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ name: 'task_submit_plan', callId: ToolCallId('off-plan'), agent, signal,
+  await executeSettled(ctx, { name: 'task_submit_plan', callId: ToolCallId('off-plan'), agent, signal,
     arguments: { criteria: [{ id: 'c', text: 'Done', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
   adapter.pauseNext = true
   await ctx.commands.execute(agent, '/task approve', [], signal)
@@ -887,7 +897,7 @@ it('keeps native consultation questions read-only, deduplicates explicit control
   expect(taskOf(ctx, main)).toEqual(before)
   expect(main.inbox.nextTurn).toHaveLength(0)
   const questionSeq = chat.session.snapshotEvents().map(controlEvent).find(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
-  const call = (id: string, userSeq: number, revision: number) => ctx.tools.execute({ agent: chat, signal,
+  const call = (id: string, userSeq: number, revision: number) => executeSettled(ctx, { agent: chat, signal,
     callId: ToolCallId(id), name: 'supervisor_control', arguments: { directive: 'pause', task_id: before.id, user_seq: userSeq, revision } })
   expect((await call('question-not-control', questionSeq, before.revision)).isError).toBe(true)
   chat.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '暂停任务' }] }))
@@ -956,7 +966,7 @@ async function proposalFixture() {
     await chat.whenIdle()
     return chat.session.snapshotEvents().map(controlEvent).findLast(e => e.type === 'user/message' && e.data.source.kind === 'user')!.seq
   }
-  const call = (name: string, args: Record<string, unknown>) => ctx.tools.execute({ agent: chat, signal, name,
+  const call = (name: string, args: Record<string, unknown>) => executeSettled(ctx, { agent: chat, signal, name,
     callId: ToolCallId(`proposal-${chat.session.seq}`), arguments: args })
   const save = async (questions: string[] = []) => {
     const seq = await say('我想开发我的世界，先做一个可运行的小原型')
@@ -1027,7 +1037,7 @@ it('restores proposals after restart but rejects replayed user authorization', a
   const chatAgain = next.agents.get(chat.id)!
   expect(draftOf(next, mainAgain)).toEqual(draft)
   expect(taskOf(next, mainAgain)).toBeNull()
-  expect((await next.tools.execute({ agent: chatAgain, signal: new AbortController().signal, callId: ToolCallId('old-consent'),
+  expect((await executeSettled(next, { agent: chatAgain, signal: new AbortController().signal, callId: ToolCallId('old-consent'),
     name: 'supervisor_create_draft', arguments: { draft_id: draft.id, version: draft.version, user_seq: seq } })).isError).toBe(true)
   expect(taskOf(next, mainAgain)).toBeNull()
   // A fresh message is necessary even though the previous direct consent survives in the log.
@@ -1080,14 +1090,14 @@ it.each(['current', 'required-only'] as const)('records progress policy and pres
   const { agent } = await ctx.agents.create({ sessionId: SessionId(`policy-${mode}`), agentOptions: { provider: 'scripted', model: 'main' } })
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new 检查模块', [], signal); await agent.whenIdle()
-  await ctx.tools.execute({ agent, signal, callId: ToolCallId('plan'), name: 'task_submit_plan', arguments: {
+  await executeSettled(ctx, { agent, signal, callId: ToolCallId('plan'), name: 'task_submit_plan', arguments: {
     criteria: [{ id: 'c', text: '检查模块', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 's', title: '检查模块', criterionIds: ['c'] }] } })
   await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
   if (mode === 'current') {
     expect(taskOf(ctx, agent)?.pauseReason).toBe('decision')
   } else {
     expect(taskOf(ctx, agent)?.phase).toBe('active')
-    await ctx.tools.execute({ agent, signal, callId: ToolCallId('report'), name: 'task_report_stage', arguments: { stage_id: 's', evidence: '模块已检查' } })
+    await executeSettled(ctx, { agent, signal, callId: ToolCallId('report'), name: 'task_report_stage', arguments: { stage_id: 's', evidence: '模块已检查' } })
     expect(taskOf(ctx, agent)?.lastReview?.verdict).toBe('pass')
   }
   const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
@@ -1136,7 +1146,7 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
     ] }
   appendTask(ctx, main, task)
   await ctx.commands.execute(main, '/task resume', [], signal); await main.whenIdle()
-  const delegate = () => ctx.tools.execute({ agent: main, signal, callId: ToolCallId('delegate'), name: 'task_delegate_nodes', arguments: { node_ids: ['a', 'b'] } })
+  const delegate = () => executeSettled(ctx, { agent: main, signal, callId: ToolCallId('delegate'), name: 'task_delegate_nodes', arguments: { node_ids: ['a', 'b'] } })
   expect((await delegate()).isError).toBe(true)
   const latest = taskOf(ctx, main)!
   appendTask(ctx, main, { ...latest, revision: latest.revision + 1, stages: latest.stages.map(stage => stage.id === 'b' ? { ...stage, writePaths: ['b.txt'] } : stage) })
@@ -1180,7 +1190,7 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
   try { const events = (await workerLog.read()).events
     expect(events.find(e => e.type === 'tool/result' && e.data.message.source.callId === 'foreign')).toMatchObject({ data: { message: { isError: true } } })
   } finally { await workerLog.close() }
-  const report = () => ctx.tools.execute({ agent: main, signal, callId: ToolCallId('report-a'), name: 'task_report_stage', arguments: { stage_id: 'a', attempt: 1, evidence: 'A and B integration passed in main Session' } })
+  const report = () => executeSettled(ctx, { agent: main, signal, callId: ToolCallId('report-a'), name: 'task_report_stage', arguments: { stage_id: 'a', attempt: 1, evidence: 'A and B integration passed in main Session' } })
   expect((await report()).isError).toBe(true)
   scripts.main = [toolResponse('bash', {}, 'integration'), textResponse('integrated')]
   main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Integrate outputs' }] })); await main.whenIdle()
@@ -1201,7 +1211,7 @@ it('keeps the supervised DAG authoritative without disabling ordinary-session to
   let calls = 0
   ctx.tools.register(defineContentToolFixture({ name: 'todo_write', description: 'native checklist fixture', parameters: {},
     execute: async () => { calls++; return [{ type: 'text', text: 'updated' }] } }))
-  const run = () => ctx.tools.execute({ agent, name: 'todo_write', callId: ToolCallId(`todo-${calls}`), arguments: {}, signal: new AbortController().signal })
+  const run = () => executeSettled(ctx, { agent, name: 'todo_write', callId: ToolCallId(`todo-${calls}`), arguments: {}, signal: new AbortController().signal })
   expect((await run()).isError).toBe(false)
   appendTask(ctx, agent, { ...newTask('Implement a supervised feature'), phase: 'active' })
   expect((await run()).isError).toBe(false)
@@ -1279,13 +1289,13 @@ it('offers native completion tools immediately after the final stage review', as
   const signal = new AbortController().signal
   expect((await ctx.commands.execute(agent, '/task new 创建并验证目标文件', [], signal))?.result.kind).toBe('success')
   await agent.whenIdle()
-  expect((await ctx.tools.execute({ callId: ToolCallId('submit-final-stage-plan'), name: 'task_submit_plan', agent, signal,
+  expect((await executeSettled(ctx, { callId: ToolCallId('submit-final-stage-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c1', text: '目标文件已验证', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's1', title: '创建并验证', criterionIds: ['c1'] }] } })).isError).toBe(false)
   expect((await ctx.commands.execute(agent, '/task approve', [], signal))?.result.kind).toBe('success')
   await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('complete'), { timeout: 10000 })
   await agent.whenIdle()
-  expect(mainRequests).toHaveLength(4)
+  await vi.waitFor(() => expect(mainRequests).toHaveLength(4))
   expect(mainRequests[2]?.tools?.some(tool => tool.name === 'task_request_completion')).toBe(true)
   expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'assistant/message')
     .flatMap(event => event.data.message.content)
@@ -1323,17 +1333,17 @@ it.each([false, true])('pauses a failed review without inventing a user decision
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal)
   await agent.whenIdle()
-  const result = await ctx.tools.execute({ callId: ToolCallId('fault-plan'), name: 'task_submit_plan', agent, signal,
+  const result = await executeSettled(ctx, { callId: ToolCallId('fault-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c', text: 'Inspect the fixture', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
   if (!plan) {
     expect(result.isError).toBe(false)
     await ctx.commands.execute(agent, '/task approve', [], signal)
     await agent.whenIdle()
-    const report = await ctx.tools.execute({ callId: ToolCallId('fault-report'), name: 'task_report_stage', agent, signal,
+    const report = await executeSettled(ctx, { callId: ToolCallId('fault-report'), name: 'task_report_stage', agent, signal,
       arguments: { stage_id: 's', evidence: 'The fixture was inspected' } })
-    expect(report.isError).toBe(true)
-  } else expect(result.isError).toBe(true)
+    expect(report.isError).toBe(false)
+  } else expect(result.isError).toBe(false)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'review-fault', lastReview: null,
     reviewFault: { code: 'protocol-missing', reviewerSessionId: expect.stringMatching(/^task-review-/u) } })
 })
@@ -1394,7 +1404,7 @@ it('recovers the failed plan review manually without silently approving or wakin
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Inspect the fixture', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ callId: ToolCallId('manual-plan'), name: 'task_submit_plan', agent, signal,
+  await executeSettled(ctx, { callId: ToolCallId('manual-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c', text: 'Inspect the fixture', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 's', title: 'Inspect', criterionIds: ['c'] }] } })
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
@@ -1479,14 +1489,14 @@ it('records explicit main-node starts, rejecting stale attempts and blocked depe
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new 实现两项独立模块并集成', [], signal)
   await agent.whenIdle()
-  await ctx.tools.execute({ callId: ToolCallId('start-plan'), name: 'task_submit_plan', agent, signal,
+  await executeSettled(ctx, { callId: ToolCallId('start-plan'), name: 'task_submit_plan', agent, signal,
     arguments: { criteria: [{ id: 'c', text: '模块可集成', provenance: { kind: 'user', reference: 'objective' } }],
       stages: [{ id: 'a', title: '模块 A', criterionIds: ['c'], dependsOn: [] },
         { id: 'b', title: '模块 B', criterionIds: ['c'], dependsOn: [] },
         { id: 'join', title: '集成', criterionIds: ['c'], dependsOn: ['a', 'b'] }] } })
   await ctx.commands.execute(agent, '/task approve', [], signal)
   await agent.whenIdle()
-  const start = (id: string, attempt = 1) => ctx.tools.execute({ callId: ToolCallId(`start-${id}-${attempt}`),
+  const start = (id: string, attempt = 1) => executeSettled(ctx, { callId: ToolCallId(`start-${id}-${attempt}`),
     name: 'task_start_node', agent, signal, arguments: { stage_id: id, attempt } })
   expect((await start('join')).isError).toBe(true)
   expect((await start('a', 2)).isError).toBe(true)
@@ -1499,7 +1509,7 @@ it('records explicit main-node starts, rejecting stale attempts and blocked depe
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '当前进度如何？' }] }))
   await agent.whenIdle()
   expect(taskOf(ctx, agent)?.revision).toBe(started.revision)
-  await ctx.tools.execute({ callId: ToolCallId('reopen-a'), name: 'task_rework_node', agent, signal,
+  await executeSettled(ctx, { callId: ToolCallId('reopen-a'), name: 'task_rework_node', agent, signal,
     arguments: { stage_id: 'a', reason: '修正边界条件' } })
   expect((await start('a')).isError).toBe(true)
   expect((await start('a', 2)).isError).toBe(false)
@@ -1523,7 +1533,7 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
   appendTask(ctx, agent, task)
   const signal = new AbortController().signal
   if (mode === 'pending' || mode === 'declined') {
-    const proposed = await ctx.tools.execute({ agent, signal, callId: ToolCallId('propose'), name: 'task_propose_repair',
+    const proposed = await executeSettled(ctx, { agent, signal, callId: ToolCallId('propose'), name: 'task_propose_repair',
       arguments: { task_id: task.id, task_revision: task.revision, title: '缺陷', reason: '原目标中的错误', root_node_ids: ['n'], evidence_seqs: [] } })
     expect(proposed.isError).toBe(false)
     if (mode === 'declined') {
@@ -1537,16 +1547,16 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
   const result = agent.session.snapshotEvents().map(controlEvent).find(e => e.type === 'tool/result' && e.data.message.source.callId === 'premature-repair')!
   expect(result.type === 'tool/result' && result.data.message.isError).toBe(true)
   expect(JSON.stringify(result)).toContain('REPAIR_CONFIRMATION_REQUIRED')
-  const read = await ctx.tools.execute({ agent, signal, callId: ToolCallId('diagnose'), name: 'read', arguments: { file_path: 'value.txt' } })
+  const read = await executeSettled(ctx, { agent, signal, callId: ToolCallId('diagnose'), name: 'read', arguments: { file_path: 'value.txt' } })
   expect(read.isError).toBe(false)
   expect(JSON.stringify(read)).toContain('accepted artifact')
-  const edit = await ctx.tools.execute({ agent, signal, callId: ToolCallId('edit'), name: 'edit',
+  const edit = await executeSettled(ctx, { agent, signal, callId: ToolCallId('edit'), name: 'edit',
     arguments: { file_path: 'value.txt', old_string: 'accepted artifact', new_string: 'changed' } })
   expect(edit.isError).toBe(true)
   let executed = false
   agent.ctx.tools.register(defineContentToolFixture({ name: 'generic_executor', description: 'arbitrary execution fixture', parameters: {},
     async execute() { executed = true; return [{ type: 'text', text: 'executed' }] } }))
-  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('execute'), name: 'generic_executor', arguments: {} })).isError).toBe(true)
+  expect((await executeSettled(ctx, { agent, signal, callId: ToolCallId('execute'), name: 'generic_executor', arguments: {} })).isError).toBe(true)
   expect(executed).toBe(false)
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('accepted artifact')
   expect(taskOf(ctx, agent)?.phase).toBe('complete')
@@ -1563,7 +1573,7 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
     await reopened.agent.ctx.plugin(FsTools, {})
     expect(taskOf(restored, reopened.agent)?.phase).toBe('complete')
     expect(restored.sessionProjections.stateOf(reopened.agent.session, 'taskSupervisor')!.repairs[0]?.status).toBe('declined')
-    const denied = await restored.tools.execute({ agent: reopened.agent, signal, callId: ToolCallId('restored-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'after restart' } })
+    const denied = await executeSettled(restored, { agent: reopened.agent, signal, callId: ToolCallId('restored-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'after restart' } })
     expect(denied.isError).toBe(true)
     expect(JSON.stringify(denied)).toContain('REPAIR_CONFIRMATION_REQUIRED')
     expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('accepted artifact')
@@ -1574,11 +1584,11 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
     const next = taskOf(ctx, agent)!
     expect(next).toMatchObject({ phase: 'planning', objective: '明确的新目标' })
     expect(next.id).not.toBe(task.id)
-    await ctx.tools.execute({ agent, signal, callId: ToolCallId('new-plan'), name: 'task_submit_plan', arguments: {
+    await executeSettled(ctx, { agent, signal, callId: ToolCallId('new-plan'), name: 'task_submit_plan', arguments: {
       criteria: [{ id: 'new-c', text: '新值' }], stages: [{ id: 'new-n', title: '新实现', criterionIds: ['new-c'] }],
     } })
     await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
-    expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('new-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'new approved scope' } })).isError).toBe(false)
+    expect((await executeSettled(ctx, { agent, signal, callId: ToolCallId('new-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'new approved scope' } })).isError).toBe(false)
     expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('new approved scope')
   }
 })
@@ -1619,8 +1629,8 @@ it('exposes completed PTC controls before the first request, creates the next ta
   expect(calls[0]).not.toContain('write'); expect(calls[0]).not.toContain('edit')
   expect(taskOf(ctx, agent)?.id).toBe(previous.id)
   const signal = new AbortController().signal
-  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('opaque'), name: 'run_code', arguments: { code: 'arbitrary mutation', description: 'must not execute' } })).isError).toBe(true)
-  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('write-after-completion'), name: 'write', arguments: { file_path: 'answer.txt', content: 'changed' } })).isError).toBe(true)
+  expect((await executeSettled(ctx, { agent, signal, callId: ToolCallId('opaque'), name: 'run_code', arguments: { code: 'arbitrary mutation', description: 'must not execute' } })).isError).toBe(true)
+  expect((await executeSettled(ctx, { agent, signal, callId: ToolCallId('write-after-completion'), name: 'write', arguments: { file_path: 'answer.txt', content: 'changed' } })).isError).toBe(true)
   expect(runs).toBe(0); expect(await readFile(join(workspace, 'answer.txt'), 'utf8')).toBe('accepted')
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '创建一个新任务：提交已完成的产物；先规划等待批准' }] }))
   await agent.whenIdle()
@@ -1656,7 +1666,7 @@ it('exposes direct reads for a post-approval PTC read-only turn and restores PTC
   const task = { ...newTask('勘察后实施'), phase: 'active' as const, readOnlyTurnsBeforeWrite: 1, readOnlyGateStartSeq: agent.session.seq }
   appendTask(ctx, agent, task)
   const signal = new AbortController().signal
-  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('gate-write'), name: 'write', arguments: { file_path: 'input.txt', content: 'changed' } })).isError).toBe(true)
+  expect((await executeSettled(ctx, { agent, signal, callId: ToolCallId('gate-write'), name: 'write', arguments: { file_path: 'input.txt', content: 'changed' } })).isError).toBe(true)
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '只读勘察然后结束此轮' }] }))
   await agent.whenIdle()
   expect(requests[0]).toContain('read'); expect(requests[0]).not.toContain('run_code')
@@ -1711,18 +1721,18 @@ it('records a model repair proposal without execution authority and prevents wri
     nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' as const }] }
   appendTask(ctx, agent, task)
   const signal = new AbortController().signal
-  const propose = await ctx.tools.execute({ agent, signal, callId: ToolCallId('proposal'), name: 'task_propose_repair',
+  const propose = await executeSettled(ctx, { agent, signal, callId: ToolCallId('proposal'), name: 'task_propose_repair',
     arguments: { task_id: task.id, task_revision: task.revision, title: '值不正确', reason: '用户报告值不正确', root_node_ids: ['n'], evidence_seqs: [] } })
   expect(propose.isError, JSON.stringify(propose)).toBe(false)
   expect(taskOf(ctx, agent)?.phase).toBe('complete')
   expect(adapter.requests).toBe(0)
   expect(ctx.tools.get('task_reopen', agent)).toBeUndefined()
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.repairs).toHaveLength(1)
-  const write = await ctx.tools.execute({ agent, signal, callId: ToolCallId('premature-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'changed' } })
+  const write = await executeSettled(ctx, { agent, signal, callId: ToolCallId('premature-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'changed' } })
   expect(write.isError).toBe(true)
   expect(JSON.stringify(write)).toContain('REPAIR_CONFIRMATION_REQUIRED')
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('original')
-  const status = await ctx.tools.execute({ agent, signal, callId: ToolCallId('status'), name: 'task_status', arguments: {} })
+  const status = await executeSettled(ctx, { agent, signal, callId: ToolCallId('status'), name: 'task_status', arguments: {} })
   expect(status.isError).toBe(false)
   expect(JSON.stringify(status)).toContain('TASK_COMPLETED')
 })
@@ -1771,7 +1781,7 @@ it('confirms the exact workspace, rejects changed artifacts and other active tas
   const reopened = await restored.agents.resume({ resumeSessionId: agent.id })
   expect(taskOf(restored, reopened.agent)?.acceptanceCycle).toBe(2)
   expect(restored.sessionProjections.stateOf(reopened.agent.session, 'taskSupervisor')?.repairs.at(-1)?.status).toBe('applied')
-  const status = await restored.tools.execute({ agent: reopened.agent, signal, callId: ToolCallId('restart-status'), name: 'task_status', arguments: {} })
+  const status = await executeSettled(restored, { agent: reopened.agent, signal, callId: ToolCallId('restart-status'), name: 'task_status', arguments: {} })
   expect(JSON.stringify(status)).toContain('AWAITING_MANUAL_RESUME')
 })
 
@@ -1814,7 +1824,7 @@ it('uses the authenticated panel transport for proposal and exact click confirma
   expect(clicked.status).toBe(200); await agent.whenIdle()
   expect(taskOf(ctx, agent)).toMatchObject({ id: task.id, phase: 'active', acceptanceCycle: 2 })
   expect(adapter.requests).toBe(1)
-  expect((await ctx.tools.execute({ agent, signal: new AbortController().signal, callId: ToolCallId('confirmed-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'confirmed repair' } })).isError).toBe(false)
+  expect((await executeSettled(ctx, { agent, signal: new AbortController().signal, callId: ToolCallId('confirmed-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'confirmed repair' } })).isError).toBe(false)
   expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('confirmed repair')
   expect((await send({ action: 'confirm-repair', proposalId: id, taskId: task.id, revision: task.revision })).status).toBe(200)
   await agent.whenIdle(); expect(adapter.requests).toBe(1)
@@ -1843,7 +1853,7 @@ it('lets the persistent consultation propose repair without turning the proposal
   const chat = ctx.agents.get(SessionId(`supervisor-chat-${agent.id}`))!
   expect(chat).toBeDefined()
   const before = adapter.requests
-  const proposed = await ctx.tools.execute({ agent: chat, signal, callId: ToolCallId('chat-proposal'), name: 'supervisor_propose_repair', arguments: {
+  const proposed = await executeSettled(ctx, { agent: chat, signal, callId: ToolCallId('chat-proposal'), name: 'supervisor_propose_repair', arguments: {
     task_id: task.id, revision: task.revision, title: '用户报告缺陷', reason: '请核实原目标中的错误', root_node_ids: ['n'], evidence_seqs: [],
   } })
   expect(proposed.isError, JSON.stringify(proposed)).toBe(false)
@@ -2168,7 +2178,7 @@ it('admits an explicit post-approval read turn with native default read tools', 
   const ctx = await host(root, new ScriptedAdapter(), true, undefined, false, 3, false, null)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('default-read-gate'), agentOptions: { provider: 'scripted', model: 'scripted' } })
   await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
-  const result = await ctx.tools.execute({ callId: ToolCallId('default-gate-plan'), name: 'task_submit_plan', agent, signal: new AbortController().signal,
+  const result = await executeSettled(ctx, { callId: ToolCallId('default-gate-plan'), name: 'task_submit_plan', agent, signal: new AbortController().signal,
     arguments: { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }], read_only_turns_before_write: 1 } })
   expect(result.isError).toBe(false)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', readOnlyTurnsBeforeWrite: 1 })
@@ -2180,12 +2190,280 @@ function coverageChecks(verdict = 'pass'): StreamChunk[][] {
     toolResponse('task_review_decision', { verdict, finding: '计划覆盖当前要求', evidence_seqs: [0] }, 'coverage-decision')]
 }
 
+const handoffCases = process.env.DSH_LONG_REVIEW_TEST === '1' ? ['long-plan'] as const : ['plan', 'stage', 'completion'] as const
+it.each(handoffCases)('hands a %s review off before PTC settles, preserves its identity and blocks implementation', async scenario => {
+  const kind = scenario === 'long-plan' ? 'plan' : scenario
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-handoff-')); roots.push(root)
+  const tool = kind === 'plan' ? 'task_submit_plan' : kind === 'stage' ? 'task_report_stage' : 'task_request_completion'
+  const args = kind === 'plan' ? smallPlan : kind === 'stage' ? { stage_id: 'n', evidence: 'actual output checked' } : { evidence: 'whole deliverable checked' }
+  let reviewerSignal: AbortSignal | undefined, transportSignal: AbortSignal | undefined
+  class Adapter extends PausingAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') reviewerSignal = options.signal
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ main: [textResponse('ready'), toolResponse('run_code', {
+    code: `return await tools.${tool}(${JSON.stringify(args)})`, description: '提交独立审查',
+  }, 'handoff-root'), textResponse('审查结果已收到')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, kind === 'plan', [], {})
+  class Runtime extends PtcRuntime {
+    readonly language = 'typescript'; readonly isolation = 'controlled fixture'
+    resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: root, timeoutMs: request.timeoutMs ?? 120000 } }
+    async run(request: PtcRunSpec) {
+      expect(request.timeoutMs).toBe(120000)
+      transportSignal = request.signal
+      const value = await request.bindings.find(binding => binding.global === 'tools')!.functions[tool]!(args)
+      expect(value).toMatchObject({ queued: true, phase: 'reviewing', jobId: expect.any(String) })
+      const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+      expect(job).toMatchObject({ id: (value as { jobId: string }).jobId, status: 'queued', owner: 'controller', attempt: 1,
+        reviewerSessionId: expect.stringMatching(/^task-review-/) })
+      expect(ctx.agents.get(SessionId(job.reviewerSessionId!))).toBeUndefined()
+      return { logs: [], value }
+    }
+  }
+  await ctx.plugin(Runtime)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`handoff-${kind}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  if (kind !== 'plan') {
+    await executeSettled(ctx, { agent, signal, callId: ToolCallId('setup-plan'), name: 'task_submit_plan', arguments: smallPlan })
+    await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+    await agent.whenIdle()
+    if (kind === 'completion') {
+      const task = taskOf(ctx, agent)!
+      appendTask(ctx, agent, { ...task, revision: task.revision + 1, stageIndex: 1,
+        nodeRuns: [{ id: 'n', attempt: 1, status: 'passed' }] })
+    }
+  }
+  agent.ctx.tools.presentAs('ptc')
+  adapter.pauseModel = 'reviewer'; adapter.pauseNext = true
+  if (kind === 'plan') agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '提交计划等待批准' }] }))
+  else await ctx.commands.execute(agent, '/task approve', [], signal)
+  try {
+    await adapter.entered.promise
+    expect(transportSignal?.aborted).toBe(true)
+    expect(transportSignal?.reason).toBe('run_code settled')
+    expect(reviewerSignal?.aborted).toBe(false)
+    const events = agent.session.snapshotEvents().map(controlEvent)
+    expect(events.some(event => event.type === 'tool/result' && event.data.message.source.callId === 'handoff-root'
+      && !event.data.message.isError)).toBe(true)
+    expect(events.findLast(event => event.type === 'turn/end')?.data.reason.kind).toBe('completed')
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+    expect(job).toMatchObject({ status: 'started', attempt: 1 })
+    expect(taskOf(ctx, agent)?.pendingReview).toMatchObject({ jobId: job.id, cutoff: job.cutoff })
+    const oldFault = { ...job, status: 'failed' as const, fault: { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, code: 'cancelled' as const, message: 'run_code settled', retryable: false, attempt: 1, errorSeq: null, outcomeKnown: false } }
+    expect(confirmedPtcTimeout(events, oldFault)).toBe(false)
+    const timeoutEvents = events.map(event => event.type === 'tool/result' && event.data.message.source.callId === 'handoff-root'
+      ? { ...event, data: { ...event.data, message: { ...event.data.message, isError: true, content: [{ type: 'text' as const, text: 'Error: code run failed (timeout): execution deadline reached (120000ms)' }] } } } : event)
+    expect(confirmedPtcTimeout(timeoutEvents, oldFault)).toBe(true)
+    expect(confirmedPtcTimeout(timeoutEvents, { ...oldFault, fault: { ...oldFault.fault, message: 'user cancelled' } })).toBe(false)
+    expect(confirmedPtcTimeout(timeoutEvents, { ...oldFault, evidence: 'different submission' })).toBe(kind === 'plan')
+    if (scenario === 'long-plan') {
+      const started = Date.now()
+      await new Promise(resolve => setTimeout(resolve, 125000))
+      expect(Date.now() - started).toBeGreaterThan(120000)
+      expect(reviewerSignal?.aborted).toBe(false)
+      expect(taskOf(ctx, agent)?.phase).toBe('reviewing')
+      expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(1)
+    }
+    expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('premature-node'), name: 'task_start_node', arguments: { stage_id: 'n', attempt: 1 } })).isError).toBe(true)
+  } finally { adapter.release.resolve() }
+  await agent.whenIdle()
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe(kind === 'plan' ? 'awaiting-approval' : kind === 'stage' ? 'active' : 'complete'))
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1); expect(jobs[0]).toMatchObject({ status: 'applied', attempt: 1 })
+}, 150000)
+
+it.each(['pause', 'off'] as const)('user %s cancels controller review without automatic retry or execution', async command => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-stop-')); roots.push(root)
+  const adapter = new PausingAdapter({ main: [textResponse('ready')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`review-stop-${command}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  adapter.pauseModel = 'reviewer'; adapter.pauseNext = true
+  const submitted = await ctx.tools.execute({ agent, signal, callId: ToolCallId('stop-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  expect(submitted.isError).toBe(false)
+  try {
+    await adapter.entered.promise
+    const stopped = await ctx.commands.execute(agent, `/task ${command}`, [], signal)
+    expect(stopped?.result.kind).toBe('success')
+  } finally { adapter.release.resolve() }
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task).toMatchObject({ everApproved: false, pauseReason: 'user', enabled: command !== 'off' })
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1); expect(jobs[0]?.fault).toMatchObject({ code: 'cancelled', retryable: false })
+  expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toEqual([])
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
+  expect(taskOf(ctx, agent)?.revision).toBe(task.revision)
+})
+
+it('controller deadline is retryable on the same job and reviewer Session without approving execution', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-deadline-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    first = true
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer' && this.first) {
+        this.first = false
+        await new Promise<void>(resolve => { if (options.signal?.aborted) resolve(); else options.signal?.addEventListener('abort', () => resolve(), { once: true }) })
+      }
+      yield* super.stream(options)
+    }
+  }
+  const ctx = await host(root, new Adapter({ reviewer: [textResponse('interrupted'), ...coverageChecks()] }), true,
+    { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewDeadlineMs: 500 })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('review-deadline'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  const result = await ctx.tools.execute({ agent, signal, callId: ToolCallId('deadline-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  expect(result.isError).toBe(false)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.reviewFault).toMatchObject({ code: 'timeout', retryable: true }), { timeout: 5000 })
+  await agent.whenIdle()
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('success')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(1)
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({
+    id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, nodeAttempt: job.nodeAttempt, status: 'applied', attempt: 2 })
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
+})
+
+it('a user stop between durable submission and handoff keeps the queued job for manual recovery', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-before-stop-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ main: [toolResponse('task_submit_plan', smallPlan, 'before-stop-plan')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  ctx.on('tools/result', exec => {
+    if (exec.agent?.id === 'review-before-stop' && exec.name === 'task_submit_plan') exec.agent.cancel({ kind: 'user' })
+    return undefined
+  })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('review-before-stop'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' }))
+  await agent.whenIdle()
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job).toMatchObject({ owner: 'controller', status: 'queued', attempt: 1 })
+  expect(adapter.requests).toBe(1)
+  expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toHaveLength(0)
+  expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ id: job.id, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, status: 'applied', attempt: 2 })
+})
+
+it('a controller plan revision continues planning with tools but does not approve implementation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-revise-')); roots.push(root)
+  const main: GenerateOptions[] = []
+  class Adapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'main') main.push(options)
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ main: [toolResponse('task_submit_plan', smallPlan, 'first-plan'), toolResponse('task_submit_plan', smallPlan, 'fixed-plan'), textResponse('等待批准')],
+    reviewer: [...coverageChecks('revise'), ...coverageChecks()] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('review-plan-revise'), agentOptions: { provider: 'scripted', model: 'main' } })
+  await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
+  expect(main).toHaveLength(3)
+  expect(main[1]?.tools?.some(tool => tool.name === 'task_submit_plan')).toBe(true)
+  expect(main[2]?.tools ?? []).toEqual([])
+  expect(taskOf(ctx, agent)?.everApproved).toBe(false)
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.map(job => job.decision?.verdict)).toEqual(['revise', 'pass'])
+})
+
+it.each(['queued', 'started', 'submitted'] as const)('restart retains a %s controller job without dispatch and requires manual recovery', async status => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-restart-')); roots.push(root)
+  const id = SessionId(`review-restart-${status}`), signal = new AbortController().signal
+  const first = await host(root, new ScriptedAdapter())
+  const { agent } = await first.agents.create({ sessionId: id, agentOptions: { provider: 'scripted', model: 'main' } })
+  await first.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  await executeSettled(first, { agent, signal, callId: ToolCallId('restart-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  const task = taskOf(first, agent)!
+  const pending = { ...task, revision: task.revision + 1, phase: 'reviewing' as const,
+    pendingReview: { kind: 'plan' as const, stageId: 'plan', evidence: JSON.stringify(smallPlan), cutoff: agent.session.seq - 1, jobId: '' } }
+  const job = { ...createReviewJob(agent, pending, 'plan', JSON.stringify(smallPlan.stages), 'plan', {}, status === 'submitted' ? 'started' : status), status,
+    ...status === 'submitted' ? { decision: { verdict: 'pass' as const, finding: '已持久化的有效裁决', evidenceSeqs: [0], imageSeqs: [], decisionSeq: 0 } } : {}, owner: 'controller' as const,
+    model: { provider: 'scripted', model: 'reviewer' }, deadlineAt: new Date(0).toISOString() }
+  pending.pendingReview.jobId = job.id
+  await recordReview(first, agent, job); appendTask(first, agent, pending); await first.sessions.flush(agent.session)
+  await first.fiber.dispose(); contexts.splice(contexts.indexOf(first), 1)
+  const adapter = new ScriptedAdapter({ reviewer: coverageChecks() })
+  const second = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const resumed = (await second.agents.resume({ resumeSessionId: id, agentOptions: { provider: 'scripted', model: 'main' } })).agent
+  await resumed.whenIdle()
+  expect(adapter.requests).toBe(0)
+  expect(taskOf(second, resumed)?.pendingReview?.jobId).toBe(job.id)
+  expect((await second.commands.execute(resumed, '/task resume', [], signal))?.result.kind).toBe('success')
+  expect(taskOf(second, resumed)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
+  const jobs = second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1)
+  expect(jobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, status: 'applied', attempt: status === 'submitted' ? 1 : 2 })
+  expect(adapter.requests).toBe(status === 'submitted' ? 0 : 2)
+})
+
+it('does not apply a saved decision to changed artifacts or dispatch another model request', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-saved-review-artifacts-')); roots.push(root)
+  const workspace = join(root, 'workspace'); await mkdir(workspace)
+  await writeFile(join(workspace, 'result.txt'), '20\n')
+  const policy = verificationPolicy({ storageRoot: join(root, 'snapshots') })
+  await mkdir(policy.storage)
+  const signal = new AbortController().signal
+  const snapshot = await captureSnapshot(workspace, policy.storage, policy.limits, signal)
+  const adapter = new ScriptedAdapter()
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('saved-artifacts'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = newTask('Verify result')
+  const job = { ...createReviewJob(agent, task, 'completion', 'result ready', 'completion'), status: 'submitted' as const,
+    model: { provider: 'scripted', model: 'reviewer' }, decision: { verdict: 'pass' as const, finding: 'verified result', evidenceSeqs: [0], imageSeqs: [], decisionSeq: 0 },
+    verification: { snapshot, phase: 'comparison' as const, observations: [], checks: [], readFiles: [], readChecks: [] } }
+  await recordReview(ctx, agent, job)
+  expect((await savedReviewDecision(ctx, agent, job, { verification: policy }, signal)).verdict).toBe('pass')
+  await writeFile(join(workspace, 'result.txt'), '21\n')
+  await expect(savedReviewDecision(ctx, agent, job, { verification: policy }, signal)).rejects.toMatchObject({ fault: { code: 'stale' } })
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ status: 'failed', fault: { code: 'stale', retryable: true } })
+  expect(adapter.requests).toBe(0)
+})
+
+it('unload aborts a running controller review and a restarted Host does not dispatch it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-unload-')); roots.push(root)
+  class Adapter extends PausingAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') options.signal?.addEventListener('abort', () => this.release.resolve(), { once: true })
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ reviewer: coverageChecks() })
+  const first = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const { agent } = await first.agents.create({ sessionId: SessionId('review-unload'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await first.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  adapter.pauseNext = true; adapter.pauseModel = 'reviewer'
+  await first.tools.execute({ agent, signal, callId: ToolCallId('unload-submit'), name: 'task_submit_plan', arguments: smallPlan })
+  await adapter.entered.promise
+  const job = first.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  await first.fiber.dispose(); contexts.splice(contexts.indexOf(first), 1)
+  const after = new ScriptedAdapter({ reviewer: coverageChecks() })
+  const second = await host(root, after, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const resumed = (await second.agents.resume({ resumeSessionId: agent.id, agentOptions: { provider: 'scripted', model: 'main' } })).agent
+  await resumed.whenIdle()
+  expect(after.requests).toBe(0)
+  expect(taskOf(second, resumed)?.pendingReview?.jobId).toBe(job.id)
+  expect(taskOf(second, resumed)?.everApproved).toBe(false)
+  expect((await second.commands.execute(resumed, '/task resume', [], signal))?.result.kind).toBe('success')
+  expect(second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, status: 'applied', attempt: 2 })
+})
+
 it.each(['pass', 'revise', 'needs-user', 'fault'])('applies profile preauthorization only after a valid formal plan %s', async verdict => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-policy-plan-')); roots.push(root)
   const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'policy-plan'), textResponse('计划结果')], reviewer: verdict === 'fault' ? [textResponse('漏交决定')] : coverageChecks(verdict) })
   const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, [], { executionApproval: 'after-review' })
   const { agent } = await ctx.agents.create({ sessionId: SessionId(`policy-${verdict}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
   await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).not.toBe('reviewing'))
   const task = taskOf(ctx, agent)!
   expect(task.phase).toBe(verdict === 'pass' ? 'active' : verdict === 'revise' ? 'planning' : 'paused')
   expect(task.everApproved).toBe(verdict === 'pass')
@@ -2195,7 +2473,7 @@ it.each(['pass', 'revise', 'needs-user', 'fault'])('applies profile preauthoriza
     expect(task.approvedPlanVersion).toBe(task.planVersion)
     // Global continuation is off: the policy grants approval, not an implicit new execution round.
     expect((await ctx.commands.execute(agent, '/task', [], new AbortController().signal))?.result.text).toContain('(waiting)')
-    const unauthorized = await ctx.tools.execute({ callId: ToolCallId('policy-is-not-direct-user'), name: 'task_approve', arguments: {}, agent, signal: new AbortController().signal })
+    const unauthorized = await executeSettled(ctx, { callId: ToolCallId('policy-is-not-direct-user'), name: 'task_approve', arguments: {}, agent, signal: new AbortController().signal })
     expect(unauthorized.isError).toBe(true)
   } else expect(task.lastApproval).toBeUndefined()
 })
@@ -2218,7 +2496,7 @@ it('records revocation and allows a user to opt in at manual approval without a 
   const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('policy-choice'), agentOptions: { provider: 'scripted', model: 'scripted' } })
   await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
-  expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
   await ctx.commands.execute(agent, '/task auto-approve-off', [], new AbortController().signal)
   expect(taskOf(ctx, agent)?.approvalPolicy).toMatchObject({ mode: 'manual', source: 'user-command' })
   const rev = taskOf(ctx, agent)!.revision, id = taskOf(ctx, agent)!.id
@@ -2352,7 +2630,7 @@ it('uses required native records without changing an ordinary preset, and retain
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Continue working' }] }))
   await agent.whenIdle()
   expect(adapter.requests).toBe(before)
-  const result = await ctx.tools.execute({ callId: ToolCallId('missing-controller'), name: 'task_status', arguments: {}, agent, signal: new AbortController().signal })
+  const result = await executeSettled(ctx, { callId: ToolCallId('missing-controller'), name: 'task_status', arguments: {}, agent, signal: new AbortController().signal })
   expect(result.isError).toBe(true)
 })
 
@@ -2427,26 +2705,28 @@ it('creates a real Task from a human turn in the native mode, without self-maint
   ctx.on('session/event', (session, event) => { if (session.id === agent.id && event.type === 'user/message' && event.data.source.kind === 'user') humanSeq = event.seq })
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '请给自己创建一个 Task：Build import，然后提交计划，等我批准。' }] }))
   await agent.whenIdle()
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
   const task = taskOf(ctx, agent)!
   expect(task.phase).toBe('awaiting-approval')
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs[0]?.decision?.verdict).toBe('pass')
   expect(task.objective).toContain('Original user request:')
   expect(task.creationRequestId).toBe(`main-task:${agent.id}:${humanSeq}`)
   expect(ctx.agentPresets.composedPreset(agent.ctx)).toBe('standard')
+  await vi.waitFor(() => expect(requests).toHaveLength(6))
+  await agent.whenIdle()
   const events = agent.session.snapshotEvents()
   const results = events.filter(event => event.type === 'tool/result')
   expect(results.every(event => event.type === 'tool/result' && !event.data.message.isError)).toBe(true)
-  expect(events.filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.type === 'agent/inbox/spliced' ? event.data.inserted : []).filter(message => message.source.kind === 'task-supervisor')).toHaveLength(0)
+  expect(events.filter(event => event.type === 'agent/inbox/spliced').flatMap(event => event.type === 'agent/inbox/spliced' ? event.data.inserted : []).filter(message => message.source.kind === 'task-supervisor')).toHaveLength(1)
   expect(new Set(events.map(controlEvent).flatMap(event => event.type === 'extension/record' && event.data.namespace === NAMESPACE && event.data.kind === 'state' ? [JSON.stringify(event.data.payload).match(/"id":"([^"]+)"/)?.[1]] : [])).size).toBe(1)
   expect(requests[1]?.messages.some(message => JSON.stringify(message).includes('task_create'))).toBe(true)
-  expect(requests).toHaveLength(6)
 })
 
 it('rejects invented or plugin-owned creation sources and preserves the actual human objective', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-task-source-')); roots.push(root)
   const ctx = await host(root, new ScriptedAdapter())
   const { agent } = await ctx.agents.create({ sessionId: SessionId('task-source'), agentOptions: { provider: 'scripted', model: 'scripted' } })
-  const run = (seq: number, objective = 'Summarize') => ctx.tools.execute({ agent, name: 'task_create', callId: ToolCallId(`source-${seq}`), arguments: { objective, user_message_seq: seq }, signal: new AbortController().signal })
+  const run = (seq: number, objective = 'Summarize') => executeSettled(ctx, { agent, name: 'task_create', callId: ToolCallId(`source-${seq}`), arguments: { objective, user_message_seq: seq }, signal: new AbortController().signal })
   expect((await run(0)).isError).toBe(true)
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '请创建 Task：只读统计，不允许写文件。' }] }))
   await agent.whenIdle()
@@ -2525,7 +2805,7 @@ it('serializes concurrent creation calls from one human request without a second
   await agent.whenIdle()
   const requests = adapter.requests
   const user = agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!
-  const result = await Promise.all(['a', 'b'].map(id => ctx.tools.execute({ agent, name: 'task_create', callId: ToolCallId(`parallel-create-${id}`), arguments: { objective: 'Inspect the input', user_message_seq: user.seq }, signal: new AbortController().signal })))
+  const result = await Promise.all(['a', 'b'].map(id => executeSettled(ctx, { agent, name: 'task_create', callId: ToolCallId(`parallel-create-${id}`), arguments: { objective: 'Inspect the input', user_message_seq: user.seq }, signal: new AbortController().signal })))
   expect(result.every(item => !item.isError)).toBe(true)
   await agent.whenIdle()
   expect(adapter.requests).toBe(requests + 1)

@@ -144,29 +144,67 @@ function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
   return [...failures.values()].slice(-8)
 }
 
-/** Every attempt has an identity before creating the read-only reviewer. */
-export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
-  evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
-  kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob): Promise<ReviewDecision> {
+/** Reserve an immutable review identity before handing work off from a tool. */
+export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string, evidence: string,
+  kind: ReviewJob['kind'], policy: ReviewPolicy = {}, status: 'queued' | 'started' = 'started', id?: string): ReviewJob {
   const verification = (kind === 'stage' || kind === 'completion') ? policy.verification : undefined
   const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
-  signal = AbortSignal.any([signal, AbortSignal.timeout(limits.deadlineMs)])
-  const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
-    ...previous.verification ? { verification: structuredClone(previous.verification) } : {},
-    status: 'started', fault: null, decision: null, finishedAt: null, trigger: 'manual-retry',
-    attempt: previous.attempt + 1, repairLimit: limits.repairAttempts, runtimeId: randomUUID(),
-    attemptStartedAt: new Date().toISOString(),
-    deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString() } : { id: randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
+  return { id: id ?? randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: kind === 'planning' ? null : runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
-    kind, cutoff: main.session.seq - 1, reviewerSessionId: `task-review-${randomUUID()}`,
-    model: null, runtimeId: randomUUID(), status: 'started', attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
+    kind, cutoff: task.pendingReview?.cutoff ?? main.session.seq - 1, reviewerSessionId: `task-review-${randomUUID()}`,
+    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
     startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
     ...policy.verificationMode ? { verificationMode: verification ? 'independent' : 'log' } : {},
     ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {},
     ...verification && policy.checkProtocol ? { checkProtocol: policy.checkProtocol } : {} }
+
+}
+
+/** Recover a durable decision without another model request; recheck its artifact binding. */
+export async function savedReviewDecision(ctx: Context, main: Agent, job: ReviewJob,
+  policy: ReviewPolicy, signal: AbortSignal): Promise<ReviewDecision> {
+  if (job.status !== 'submitted' || !job.decision || !job.model || !job.reviewerSessionId) throw new Error('no durable review decision')
+  signal.throwIfAborted()
+  if (job.verification && (!policy.verification || !await snapshotFresh(job.verification.snapshot, policy.verification.limits, signal))) {
+    const fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId,
+      code: 'stale' as const, message: 'The saved review cannot accept changed or unverifiable artifacts.', retryable: true,
+      attempt: job.attempt, errorSeq: null, outcomeKnown: true }
+    await recordReview(ctx, main, { ...job, revision: job.revision + 1, status: 'failed', fault })
+    throw new ReviewFailure(fault)
+  }
+  const model: ReviewerModel = { provider: job.model.provider, model: job.model.model,
+    ...job.model.reasoningEffort === undefined ? {} : { reasoningEffort: job.model.reasoningEffort } }
+  const decision = job.decision
+  return { verdict: decision.verdict, finding: decision.finding, evidenceSeqs: decision.evidenceSeqs,
+    imageSeqs: decision.imageSeqs, jobId: job.id, cutoff: job.cutoff, model, reviewerSessionId: job.reviewerSessionId,
+    ...decision.checks === undefined ? {} : { checks: decision.checks },
+    ...decision.criteria === undefined ? {} : { criteria: decision.criteria },
+    ...decision.planning === undefined ? {} : { planning: decision.planning },
+    ...decision.requiredCapabilities === undefined ? {} : { requiredCapabilities: decision.requiredCapabilities },
+    ...decision.programs === undefined ? {} : { programs: decision.programs } }
+}
+
+/** Every attempt has an identity before creating the read-only reviewer. */
+export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
+  evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
+  kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob, recovery = false): Promise<ReviewDecision> {
+  const verification = (kind === 'stage' || kind === 'completion') ? policy.verification : undefined
+  const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
+  signal = AbortSignal.any([signal, AbortSignal.timeout(limits.deadlineMs)])
+  const queued = previous?.status === 'queued' && !recovery
+  const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
+    ...previous.verification ? { verification: structuredClone(previous.verification) } : {},
+    status: 'started', fault: null, decision: null, finishedAt: null,
+    trigger: queued ? previous.trigger : 'manual-retry',
+    attempt: previous.attempt + (queued ? 0 : 1), repairLimit: limits.repairAttempts,
+    runtimeId: queued ? previous.runtimeId : randomUUID(),
+    attemptStartedAt: new Date().toISOString(),
+    deadlineAt: queued ? previous.deadlineAt : new Date(Date.now() + limits.deadlineMs).toISOString() }
+    : createReviewJob(main, task, stageId, evidence, kind, policy)
+  if (queued && job.deadlineAt) signal = AbortSignal.any([signal, AbortSignal.timeout(Math.max(0, Date.parse(job.deadlineAt) - Date.now()))])
   await recordReview(ctx, main, job)
   try {
     signal.throwIfAborted()
@@ -181,8 +219,9 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
     const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job, verification)
     return { ...decision, jobId: job.id }
   } catch (error) {
-    const fault = error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
+    const fault = !signal.aborted && error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
       reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? signal.reason instanceof Error && signal.reason.name === 'TimeoutError' ? 'timeout' as const : 'cancelled' as const : 'internal' as const,
+      ...signal.aborted && signal.reason?.name !== 'TimeoutError' ? { cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' } : {},
       message: String(error), retryable: !signal.aborted || signal.reason?.name === 'TimeoutError', attempt: job.attempt, errorSeq: null, outcomeKnown: false }
     await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
     throw new ReviewFailure(fault, { cause: error })

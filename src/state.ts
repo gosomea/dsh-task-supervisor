@@ -13,8 +13,8 @@ import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
   type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 14
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+export const RECORD_VERSION = 15
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
@@ -55,7 +55,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 18,
+  stateVersion: 19,
   stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),
@@ -198,9 +198,9 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     everApproved: state.everApproved,
     enabled: state.enabled,
     phase: state.phase,
-    ...state.reviewFault === undefined ? {} : { reviewFault: state.reviewFault === null ? null : { ...state.reviewFault } },
+    ...state.reviewFault === undefined ? {} : { reviewFault: state.reviewFault === null ? null : JSON.parse(JSON.stringify(state.reviewFault)) as JsonValue },
     ...state.pauseReason === undefined ? {} : { pauseReason: state.pauseReason },
-    pendingReview: state.pendingReview === null ? null : { ...state.pendingReview },
+    pendingReview: state.pendingReview === null ? null : { kind: state.pendingReview.kind, stageId: state.pendingReview.stageId, evidence: state.pendingReview.evidence, ...state.pendingReview.cutoff === undefined ? {} : { cutoff: state.pendingReview.cutoff }, ...state.pendingReview.jobId === undefined ? {} : { jobId: state.pendingReview.jobId } },
     lastReview: state.lastReview === null ? null : {
       ...state.lastReview.jobId === undefined ? {} : { jobId: state.lastReview.jobId },
       stageId: state.lastReview.stageId, cutoff: state.lastReview.cutoff,

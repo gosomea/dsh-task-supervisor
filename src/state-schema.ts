@@ -35,7 +35,9 @@ export const reviewSchema = z.object({
     reasoningEffort: z.string().optional() }).strict().optional(),
 }).strict()
 const pendingReviewSchema = z.object({
-  kind: z.enum(['planning', 'stage', 'progress', 'completion']),
+  kind: z.enum(['planning', 'plan', 'stage', 'progress', 'completion']),
+  cutoff: z.number().int().min(-1).optional(),
+  jobId: z.string().uuid().optional(),
   stageId: z.string().min(1),
   evidence: z.string().min(1),
 }).strict()
@@ -47,6 +49,7 @@ export const planningSummarySchema = z.object({
 }).strict()
 
 export const reviewFaultSchema = z.object({
+  cancelSource: z.enum(['user', 'unload', 'other']).optional(),
   jobId: z.string().uuid(), stageId: z.string(), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(),
   code: z.enum(['protocol-missing', 'decision-invalid', 'provider', 'evidence-read', 'timeout', 'cancelled', 'stale', 'internal', 'snapshot', 'check-infrastructure']),
