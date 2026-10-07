@@ -15,12 +15,25 @@ export function taskStatus(state: PanelState): string {
   if (!task.enabled) return '督导已关闭'
   if (task.phase === 'paused' && task.pauseReason === 'review-fault') return '审查故障 · 等待恢复'
   if (task.phase === 'paused' && task.pauseReason === 'decision') return '等待用户决策'
-  if (state.reviewing) return '独立审查中'
+  if (state.reviewing) {
+    const kind = state.reviewJobs?.findLast(job => job.taskId === task.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))?.kind
+    return kind ? { plan: '计划审查中', planning: '规划进展审查中', stage: '节点审查中', completion: '整体验收中', progress: '进展审查中' }[kind] : '审查中'
+  }
   if (!state.armed && ['active', 'planning', 'reviewing'].includes(task.phase)) return '等待手动恢复'
   return task.acceptanceCycle && task.acceptanceCycle > 1 ? `${PHASE[task.phase]} · 第 ${task.acceptanceCycle} 轮验收` : PHASE[task.phase]
 }
 export function progress(task: TaskSnapshot): string {
-  return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过` : '正在准备计划'
+  return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过` : task.pendingReview?.kind === 'plan' ? '计划已提交' : '正在准备计划'
+}
+/** A proposal is a preview, never an approved task or an execution grant. */
+export function displayedPlan(state: PanelState) {
+  const task = state.task
+  if (!task) return null
+  const proposal = state.reviewJobs?.findLast(job => job.taskId === task.id && job.kind === 'plan'
+    && job.planVersion === task.planVersion && job.input.requirementsVersion === task.requirementsVersion && job.input.stages.length)
+  if (!proposal || !['planning', 'reviewing'].includes(task.phase) || task.pendingReview && task.pendingReview.kind !== 'plan') return { task, proposal: false, label: '' }
+  return { task: { ...task, stages: proposal.input.stages, criteria: proposal.input.criteria, nodeRuns: [] }, proposal: true,
+    label: proposal.decision?.verdict === 'revise' ? '待修订计划' : '待审计划' }
 }
 export function headline(text: string, limit = 60): string {
   const first = text.trim().split('\n')[0]?.replace(/^#{1,6}\s*/u, '').replace(/\*\*/gu, '') ?? ''

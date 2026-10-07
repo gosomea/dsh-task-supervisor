@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-connection'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { draftOf } from './drafts.ts'
 import { evidenceRecord } from './evidence.ts'
+import { reviewActivity } from './review-activity.ts'
 import type { RepairController } from './repair-runtime.ts'
 import type { ConsultationMode } from './consultation.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
@@ -65,7 +66,10 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[]; reviewVerification?: 'log' | 'independent' }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
   const details = (agent: Agent) => {
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
-    return { entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [] }
+    const active = projection?.reviewJobs.findLast(job => job.taskId === projection.current?.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
+    const reviewer = active?.reviewerSessionId ? ctx.agents.get(SessionId(active.reviewerSessionId)) : undefined
+    return { entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [],
+      reviewActivity: active ? reviewActivity(active, reviewer?.session.snapshotEvents() ?? [], reviewer?.status === 'running') : null }
   }
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({

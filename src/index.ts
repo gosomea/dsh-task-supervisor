@@ -496,6 +496,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const life = runtime(agent)
     const planning = task.phase === 'planning'
     const ending = agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')
+    if (atIdle && life.observation && (ending?.seq ?? -1) < life.observation.seq) return null
     if (atIdle && planning && task.planning && (ending?.seq ?? -1) <= task.planning.cutoff) return null
     if ((planning ? config.planningSupervision === false : progressReviewMode === 'required-only')
       || (!atIdle && config.observeLongTurns === false) || !life.armed || !task.enabled || !['planning', 'active'].includes(task.phase)
@@ -698,6 +699,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const completeNext = pending.kind === 'stage' && latest.phase === 'active'
         && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
       const revisePlan = pending.kind === 'plan' && latest.phase === 'planning' && config.automaticContinuation !== false
+      const node = latest.stages[latest.stageIndex]
+      // A formal checkpoint covers earlier work. Reviewer time is not main-Agent activity.
+      runtime(agent).observation = { key: latest.phase === 'planning' ? `${latest.id}:planning:${latest.requirementsVersion}`
+        : `${latest.id}:${latest.planVersion}:${node?.id}:${runsOf(latest).find(run => run.id === node?.id)?.attempt}`,
+        seq: agent.session.seq, time: Date.now() }
       if (revisePlan) runtime(agent).armed = true
       if (!completeNext && !revisePlan) closeWithResponse(agent, latest.revision, true)
       agent.followup(inputFor(latest, `Supervisor review result: ${JSON.stringify(result)}\n${completeNext

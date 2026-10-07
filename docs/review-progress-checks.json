@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-07",
+  "baselineCommit": "e1bd2557fd8dee33d0151bdf39d2b616f7a50796",
+  "scope": "Supervisor plugin only; observation boundary, read-only progress and plan preview",
+  "kernel": {
+    "files": 6,
+    "passed": 213,
+    "skipped": 1,
+    "skipReason": "Existing Docker execution fixture needs optional administrator configuration",
+    "focusedAfterFixtureCleanup": 3,
+    "negativeControlWithoutObservationResetFails": true,
+    "hostStrictTypecheck": true,
+    "clientStrictTypecheck": true,
+    "build": true
+  },
+  "controlledNativeReview": {
+    "proposalPreview": true,
+    "proposalCannotApprove": true,
+    "mismatchedRequirementsRejected": true,
+    "measuredReads": 1,
+    "GETDispatches": 0
+  },
+  "realModel": {
+    "sessionId": "session-94dc6b3e-8b68-422a-bde5-b38f7d99b69f",
+    "reviewerSessionId": "task-review-ad027823-6c42-4d54-bb2b-2320c81d35b4",
+    "jobId": "0a6dc1e3-dd71-4521-901f-13b8d4dee4e8",
+    "cutoff": 42,
+    "preset": "ptc",
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "verificationMode": "log",
+    "phase": "awaiting-approval",
+    "nodes": 2,
+    "durationSeconds": 61.971,
+    "toolCalls": 13,
+    "successfulEvidenceReads": 11,
+    "toolErrors": 1,
+    "verdict": "pass",
+    "approved": false,
+    "inputUnchanged": true
+  },
+  "browser": {
+    "port": 3080,
+    "actualUserSession": "session-403cc21d-d6d0-4f82-a0df-bf2c72b41226",
+    "sixNodeDAGVisibleInBothSurfaces": true,
+    "approvalWaitExplicit": true,
+    "intermediateLiveReviewCaptured": false,
+    "userThenApproved": true
+  },
+  "deployment": {
+    "dailyPort": 3080,
+    "profile": "web-rc2",
+    "retainedSessionCount": 535,
+    "installedOnlyWhenIdle": true,
+    "otherDependenciesUnchanged": true,
+    "bundleListUnchanged": true,
+    "cordisFilesUnchanged": true,
+    "sha256": "c47e14989636ba8518f83e7efe4ff26180219dfcb0754e62a350f28095d25ae9",
+    "packageEntries": 11,
+    "nativeHostUnmodified": true
+  },
+  "limits": [
+    "Read counts are activity, not requirement coverage or independent artifact verification",
+    "No browser intermediate live-review screenshot; native Host regression covers activity payload",
+    "Cold history reads do not activate execution controls",
+    "No formal benchmark, completion rerun or new independent-runner claim"
+  ]
+}

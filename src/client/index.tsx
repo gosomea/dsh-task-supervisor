@@ -8,7 +8,8 @@ import type { PropsRuntime, PropsRenderFactories } from '@deepseek-ai/dsh-client
 import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore, type PanelState } from './task-store.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
-import { executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
+import { displayedPlan, executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
+import { ReviewProgress } from './review-progress.tsx'
 import { Button, Menu, Modal, IconEllipsisOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
 import { TaskOverview, type TaskNavigation } from './inline-task.tsx'
@@ -107,19 +108,21 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
   </>
 }
 /** Read retained records through the Host; no reviewer Agent or writable composer is opened. */
-function ReviewLog({ sessionId, reviewerSessionId }: { sessionId: string; reviewerSessionId: string }) {
+function ReviewLog({ sessionId, reviewerSessionId, active = false }: { sessionId: string; reviewerSessionId: string; active?: boolean }) {
   const [records, setRecords] = useState<Array<{ seq: number; type: string; data: unknown }>>([])
   const [error, setError] = useState('')
   useEffect(() => {
-    const abort = new AbortController(); setError(''); setRecords([])
-    void fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}&view=review-log&reviewerSessionId=${encodeURIComponent(reviewerSessionId)}`,
+    const abort = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined; setError(''); setRecords([])
+    const load = () => fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}&view=review-log&reviewerSessionId=${encodeURIComponent(reviewerSessionId)}`,
       { signal: abort.signal, cache: 'no-store' }).then(async response => {
         const body = await response.json() as { events?: typeof records; error?: string }
         if (!response.ok || !body.events) throw new Error(body.error ?? '无法读取审查原始记录')
-        if (!abort.signal.aborted) setRecords(body.events)
+        if (!abort.signal.aborted) { setRecords(body.events); setError('') }
       }).catch(error => { if (!abort.signal.aborted) setError(String(error)) })
-    return () => abort.abort()
-  }, [sessionId, reviewerSessionId])
+        .finally(() => { if (active && !abort.signal.aborted) timer = setTimeout(() => { void load() }, 2000) })
+    void load()
+    return () => { abort.abort(); clearTimeout(timer) }
+  }, [sessionId, reviewerSessionId, active])
   return <section className="dsh-task-section" aria-label="只读审查原始记录"><h3>原始审查记录 · 只读</h3>
     <p className="dsh-task-meta">{reviewerSessionId} · 最近 100 条记录，长文本按证据协议截断</p>
     {error && <p role="alert">{error}</p>}{records.map(record => <Disclosure key={record.seq} title={`seq ${record.seq} · ${record.type}`}>
@@ -158,8 +161,10 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
     }
     previousTaskId.current = task?.id ?? null
   }, [task?.id])
-  const index = Math.max(0, task?.stages.findIndex(item => item.id === selected) ?? -1)
-  const stage = task?.stages[selected === null ? task.stageIndex : index]
+  const plan = state ? displayedPlan(state) : null
+  const graphTask = plan?.task ?? task
+  const index = Math.max(0, graphTask?.stages.findIndex(item => item.id === selected) ?? -1)
+  const stage = graphTask?.stages[selected === null ? graphTask.stageIndex : index]
   const review = reviewId ? state?.reviews?.find(item => item.reviewerSessionId === reviewId) : task?.lastReview
   const reviewJob = state?.reviewJobs?.filter(item => item.taskId === task?.id).findLast(item => reviewId ? item.reviewerSessionId === reviewId : true)
   const historicalTask = historyEntries?.find(entry => entry.task.id === historySelection)
@@ -233,8 +238,10 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
       {error && <p role="alert" className="dsh-task-error">{error}</p>}
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
-      {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} /></div>}
-      {reviewId && (reviewSection ?? <p role="status">这次审查已超出当前历史窗口，请从原生会话日志查看原始记录。</p>)}
+      {state && <ReviewProgress state={state} />}
+      {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} active={state?.reviewing === true && state.reviewActivity?.sessionId === reviewId} /></div>}
+      {!reviewId && state?.reviewing && reviewJob?.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(reviewJob.reviewerSessionId!)}>查看实时审查记录</Button>}
+      {reviewId && reviewSection}
       {task && <section className="dsh-task-section"><p className="dsh-task-meta">计划 v{task.planVersion} · 要求 v{task.requirementsVersion}</p><h3>执行批准</h3><p>{task.approvalPolicy?.mode === 'after-review' && task.approvalPolicy.mainSessionId === sessionId && task.approvalPolicy.requirementsVersion === task.requirementsVersion ? '按你的设置：计划通过独立审查后自动执行' : '手动批准计划后执行'}</p>{task.approvalPolicy && <small className="dsh-task-meta">来源：{task.approvalPolicy.source === 'profile' ? 'DSH profile 设置' : '用户任务设置'} · 授权事件 seq {task.approvalPolicy.grantSeq}</small>}{task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <p>本计划按预授权自动批准 · 授权 seq {task.lastApproval.authorizationSeq} · 审查作业 {task.lastApproval.reviewJobId}</p>}</section>}
       {task?.planning && task.planning.requirementsVersion === task.requirementsVersion && <section className="dsh-task-section"><h3>规划进展 · Supervisor</h3><p>{task.planning.nextAction}</p><Disclosure title={`已确认 ${task.planning.facts.length} 项 · 待核对 ${task.planning.unknowns.length} 项`}><h4>已确认事实</h4><ul>{task.planning.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul><h4>未决问题</h4><ul>{task.planning.unknowns.map((question, i) => <li key={i}>{question}</li>)}</ul><p className="dsh-task-meta">要求 v{task.planning.requirementsVersion} · 截至 seq {task.planning.cutoff} · 证据 {task.planning.evidenceSeqs.join(', ')} · 连续无进展 {task.planning.noProgress} 次</p></Disclosure></section>}
       {task?.pauseReason === 'planning-stalled' && <p role="status">独立规划检查未发现新的相关进展，已暂停。检查未决问题后可手动恢复。</p>}
@@ -245,16 +252,16 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
       {reviewJob && <ReviewInspection job={reviewJob} />}
       {state?.entryActive ? <p>已进入任务规划。下一条主会话消息将作为任务目标；提交计划后等待批准。使用 /task off 取消。</p> : !task ? <p>未启用任务督导。输入 /task &lt;目标&gt; 开始规划，或在督导对话中整理草案。</p> : <>
         <section className="dsh-task-section"><h3>任务目标</h3><Disclosure title={headline(task.objective, 72)}><p className="dsh-task-objective">{task.objective}</p></Disclosure></section>
-        <section className="dsh-task-section"><h3>执行计划 · {task.stages.length} 个节点</h3>
-          <TaskGraph task={task} reworks={state.reworks} selected={stage?.id} select={setSelected} label={id => nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />
+        <section className="dsh-task-section"><h3>{plan?.proposal ? `${plan.label} · 尚未批准执行` : '执行计划'} · {graphTask!.stages.length} 个节点</h3>
+          {graphTask!.stages.length ? <TaskGraph task={graphTask!} reworks={state.reworks} selected={stage?.id} select={setSelected} label={id => plan?.proposal ? plan.label : nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} /> : <p className="dsh-task-muted">主 Agent 正在准备计划，尚未提交节点。</p>}
         </section>
-        {stage && <section className="dsh-task-section dsh-task-card"><h3>节点详情 · {nodeLabel(task, stage.id, state)}</h3><h4>{stage.title}</h4><p className="dsh-task-muted">执行者：{executorLabel(task, sessionId, stage.id)}</p>
-          <AttemptDetails task={task} nodeId={stage.id} state={state} />
+        {stage && <section className="dsh-task-section dsh-task-card"><h3>节点详情 · {plan?.proposal ? plan.label : nodeLabel(task, stage.id, state)}</h3><h4>{stage.title}</h4><p className="dsh-task-muted">{plan?.proposal ? '拟由主 Agent 执行 · 尚未开始' : `执行者：${executorLabel(task, sessionId, stage.id)}`}</p>
+          {!plan?.proposal && <AttemptDetails task={task} nodeId={stage.id} state={state} />}
           <p className="dsh-task-review">{stage.description ?? '暂无补充说明。'}</p>
-          <Disclosure title={`验收标准 · ${stage.criterionIds.length} 项`}><ul>{task.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
+          <Disclosure title={`验收标准 · ${stage.criterionIds.length} 项`}><ul>{graphTask!.criteria.filter(item => stage.criterionIds.includes(item.id)).map(item => <li key={item.id}>{item.text}<br /><small>{item.provenance
             ? `${SOURCE_LABEL[item.provenance.kind]} · ${item.provenance.reference === 'objective' ? '任务目标' : item.provenance.reference}` : '历史计划 · 来源未标注'}</small></li>)}</ul></Disclosure>
           <Disclosure title="执行与证据标识"><p className="dsh-task-meta">{stage.id}<br />执行 Session：{runsOf(task).find(run => run.id === stage.id)?.sessionId ?? sessionId}<br />尝试 {runsOf(task).find(run => run.id === stage.id)?.attempt ?? 1}</p>
-            <p>依赖：{dependencies(task.stages, task.stages.indexOf(stage)).join('、') || '无依赖'}</p><p>写入范围：{stage.writePaths?.join('、') || '主 Agent 执行'}</p></Disclosure>
+            <p>依赖：{dependencies(graphTask!.stages, graphTask!.stages.indexOf(stage)).join('、') || '无依赖'}</p><p>写入范围：{stage.writePaths?.join('、') || '主 Agent 执行'}</p></Disclosure>
         </section>}
         <RepairPanel key={task.id} task={task} state={state} busy={busy} store={store} />
         {!reviewId && reviewSection}

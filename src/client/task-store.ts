@@ -4,6 +4,7 @@ import type { ReviewJob } from '../review-records.ts'
 import type { TaskSnapshot } from '../state-schema.ts'
 import type { TaskDraft } from '../drafts.ts'
 import type { ReworkRecord } from '../rework-records.ts'
+import type { ReviewActivity } from '../review-activity.ts'
 
 export interface PanelState {
   entryActive?: boolean
@@ -16,6 +17,7 @@ export interface PanelState {
   draft?: TaskDraft | null
   consultationMode?: 'discussion' | 'direct'
   reviewJobs?: ReviewJob[]
+  reviewActivity?: ReviewActivity | null
   reviews?: NonNullable<TaskSnapshot['lastReview']>[]
   repairs?: RepairProposal[]
   reworks?: ReworkRecord[]

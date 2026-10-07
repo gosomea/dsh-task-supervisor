@@ -28,6 +28,7 @@ import * as Supervisor from '../../src/index.ts'
 import { draftOf, recordDraft } from '../../src/drafts.ts'
 import { createReviewJob, reviewStage, savedReviewDecision } from '../../src/reviewer.ts'
 import { captureSnapshot } from '../../src/artifact-snapshot.ts'
+import { displayedPlan, progress, taskStatus } from '../../src/client/presentation.ts'
 import { validateProvenance } from '../../src/provenance.ts'
 import { installRepairs } from '../../src/repair-runtime.ts'
 import { artifactIdentity } from '../../src/artifact-identity.ts'
@@ -2352,18 +2353,19 @@ it('a user stop between durable submission and handoff keeps the queued job for 
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ id: job.id, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, status: 'applied', attempt: 2 })
 })
 
-it('a controller plan revision continues planning with tools but does not approve implementation', async () => {
+it.each([false, true])('a controller plan revision continues planning before another observation (planning supervision=%s)', async planningSupervision => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-review-revise-')); roots.push(root)
   const main: GenerateOptions[] = []
   class Adapter extends ScriptedAdapter {
     override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
       if (options.model === 'main') main.push(options)
+      if (options.model === 'reviewer' && planningSupervision) await new Promise(resolve => setTimeout(resolve, 20))
       yield* super.stream(options)
     }
   }
   const adapter = new Adapter({ main: [toolResponse('task_submit_plan', smallPlan, 'first-plan'), toolResponse('task_submit_plan', smallPlan, 'fixed-plan'), textResponse('等待批准')],
     reviewer: [...coverageChecks('revise'), ...coverageChecks()] })
-  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true, [], { planningSupervision, observationIntervalMs: 1 })
   const { agent } = await ctx.agents.create({ sessionId: SessionId('review-plan-revise'), agentOptions: { provider: 'scripted', model: 'main' } })
   await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal)
   await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
@@ -2373,6 +2375,48 @@ it('a controller plan revision continues planning with tools but does not approv
   expect(main[2]?.tools ?? []).toEqual([])
   expect(taskOf(ctx, agent)?.everApproved).toBe(false)
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.map(job => job.decision?.verdict)).toEqual(['revise', 'pass'])
+})
+
+it('exposes measured reviewer activity and a proposal preview without granting execution or dispatching on read', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-progress-')); roots.push(root)
+  let entered = false
+  const release = Promise.withResolvers<void>()
+  class Adapter extends ScriptedAdapter {
+    reviewSteps = 0
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer' && ++this.reviewSteps === 2) { entered = true; await release.promise }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  let route: ((request: Request) => Promise<Response>) | undefined
+  ctx.provide('connection', { fetch: { register(definition: { fetch: typeof route }) { route = definition.fetch; return () => { route = undefined } } } } as unknown as Context['connection'])
+  await vi.waitFor(() => expect(route).toBeDefined())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('progress-http'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('progress-submit'), name: 'task_submit_plan', arguments: smallPlan })
+  try {
+    await vi.waitFor(() => expect(entered).toBe(true))
+    const count = adapter.requests
+    const state = await (await route!(new Request(`http://localhost/api/task-supervisor?sessionId=${agent.id}`))).json()
+    expect(state.reviewActivity).toMatchObject({ jobId: state.reviewJobs[0].id, running: true, reads: 1, errors: 0, toolCalls: 1 })
+    expect(state.reviewActivity.lastSeq).toBeGreaterThan(0)
+    expect(state.reviewActivity.lastActivityAt).toBeGreaterThan(0)
+    expect(taskStatus(state)).toBe('计划审查中'); expect(progress(state.task)).toBe('计划已提交')
+    expect(displayedPlan(state)).toMatchObject({ proposal: true, label: '待审计划', task: { stages: [{ id: 'n' }] } })
+    expect(state.task.stages).toEqual([]); expect(state.actions).not.toContain('approve')
+    const changed = structuredClone(state); changed.task.requirementsVersion++
+    expect(displayedPlan(changed)?.proposal).toBe(false)
+    expect(adapter.requests).toBe(count)
+  } finally { release.resolve() }
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
+  const settled = await (await route!(new Request(`http://localhost/api/task-supervisor?sessionId=${agent.id}`))).json()
+  expect(settled.reviewActivity).toBeNull(); expect(settled.reviewing).toBe(false)
+  expect(displayedPlan(settled)?.proposal).toBe(false)
+  expect(settled.actions).toContain('approve')
 })
 
 it.each(['queued', 'started', 'submitted'] as const)('restart retains a %s controller job without dispatch and requires manual recovery', async status => {
