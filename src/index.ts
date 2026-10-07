@@ -1,5 +1,6 @@
 /** Native DSH task controller: durable state, human commands, and model tools. */
 import { installStandardHost } from './standard-host.ts'
+import { installTaskToolPresentation } from './task-tool-presentation.ts'
 import { appendControlRecord, controlEvent } from './session-records.ts'
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -248,7 +249,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const remaining = readOnlyGateRemaining(agent, task)
     return remaining === 0 ? instruction
       : `${instruction} Before any write, complete ${remaining} read-only model turn(s). `
-        + 'Use read/glob/grep to inspect the workspace, then end this turn without writing. '
+        + 'Call the directly supplied read/glob/grep tools to inspect the workspace, then end this turn without writing; do not wrap them in run_code. '
         + 'An aborted turn does not count; Supervisor will continue after a completed read-only turn.'
   }
 
@@ -307,6 +308,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   ctx.sessionProjections.register(taskProjection)
+  installTaskToolPresentation(ctx, agent => {
+    const task = taskOf(ctx, agent)
+    return task?.phase === 'complete' || task?.phase === 'active' && readOnlyGateRemaining(agent, task) > 0
+  })
   ctx.systemPrompt.section({ name: 'task-supervisor:entry', order: 2449, interpolate: false,
     text: ({ agent }) => {
       if (!agent || consultationBinding(agent)) return ''
@@ -326,7 +331,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     text: ({ agent }) => {
       if (agent === undefined) return ''
       const task = taskOf(ctx, agent)
-      return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task) + (task.phase === 'complete' ? '\nThe task is complete. Ordinary diagnosis is read-only. For defects in the original objective, call task_propose_repair with affected roots and evidence, then stop and wait for the user to click the impact confirmation. Never repair files or call task_rework_node before confirmation. New scope belongs in a new task draft. Prior completion remains historical acceptance, not repair authorization.' : '')
+      return task === null || !task.enabled || task.phase === 'cleared' ? '' : languagePolicy(task) + (task.phase === 'complete' ? '\nThe task is complete. Ordinary diagnosis is read-only. Task controls and reading tools are directly callable through their supplied schemas even with a PTC preset; do not wrap them in run_code, which cannot run an arbitrary program in this state. Read task_status directly, then pass latestUserMessage.seq as user_message_seq to task_create for an explicit new task request. For defects in the original objective, call task_propose_repair with affected roots and evidence, then stop and wait for the user to click the impact confirmation. Never repair files or call task_rework_node before confirmation. Prior completion remains historical acceptance, not repair authorization.' : '')
     },
   })
   const delegation = installDelegation(ctx, agent => runtime(agent).armed, config.maxParallelNodes)
@@ -705,7 +710,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (task.phase === 'complete') {
       // A completed task has no execution grant, including before the model
       // proposes repair or after the user declines it. Generic executors can write.
-      if (!['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return 'REPAIR_CONFIRMATION_REQUIRED: This task is complete. Inspect with read tools, propose repair and wait for the user to confirm the impact, or explicitly create and approve a new task before implementing. Generic execution tools cannot establish read-only diagnosis.'
+      if (!['task_propose_repair', 'read', 'glob', 'grep', 'read_image'].includes(exec.name)) return exec.name === 'run_code'
+        ? 'TASK_COMPLETED_TRANSPORT_BLOCKED: Call task_status, task_create, task_propose_repair or read/glob/grep/read_image directly through their supplied schemas, not through run_code. task_create requires latestUserMessage.seq from task_status. Arbitrary program execution cannot establish read-only diagnosis. Use /task <objective> for explicit new-task planning.'
+        : 'REPAIR_CONFIRMATION_REQUIRED: This task is complete. Use the directly supplied read tools for diagnosis; for an original-objective defect propose repair and wait for impact confirmation. An explicit new task can be created with task_create after reading task_status. Generic executors cannot establish read-only diagnosis.'
       return undefined
     }
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
@@ -888,7 +895,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         latestUserMessage: source,
         continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',
         reviewVerification: effectiveVerification,
-        availableActions: task.phase === 'complete' ? ['task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
+        availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
         executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
         repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),

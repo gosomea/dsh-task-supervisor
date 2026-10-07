@@ -104,14 +104,14 @@ afterEach(async () => {
 async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   reviewerModel?: { provider: string; model: string }, automaticContinuation = false,
   maxAutomaticRoundsWithoutReport = 3, planCoverageReview = false,
-  planningReadTools: string[] | null = [], extra: Supervisor.Config = {}): Promise<Context> {
+  planningReadTools: string[] | null = [], extra: Supervisor.Config = {}, presentation: 'native' | 'ptc' = 'native'): Promise<Context> {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(SessionStore)
   await ctx.plugin(SessionProjections)
   await ctx.plugin(SystemPrompt)
-  await ctx.plugin(ToolRuntime)
+  await ctx.plugin(ToolRuntime, { mode: presentation })
   await ctx.plugin(Commands)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
@@ -1581,6 +1581,120 @@ it.each(['absent', 'pending', 'declined', 'disabled'] as const)('protects comple
     expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('new-write'), name: 'write', arguments: { file_path: 'value.txt', content: 'new approved scope' } })).isError).toBe(false)
     expect(await readFile(join(workspace, 'value.txt'), 'utf8')).toBe('new approved scope')
   }
+})
+
+it('exposes completed PTC controls before the first request, creates the next task from its human seq and restores PTC', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-completed-ptc-')); roots.push(root)
+  const workspace = join(root, 'workspace'); await mkdir(workspace); await writeFile(join(workspace, 'answer.txt'), 'accepted')
+  const calls: string[][] = []
+  let step = 0, latestHuman = () => 0
+  class CompletedAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      calls.push(options.tools?.map(tool => tool.name) ?? [])
+      const response = step === 0 ? toolResponse('read', { file_path: 'answer.txt' }, 'completed-read')
+        : step === 1 || step === 3 ? toolResponse('task_status', {}, `completed-status-${step}`)
+          : step === 4 ? toolResponse('task_create', { objective: '提交已完成的产物；先规划等待批准', user_message_seq: latestHuman() }, 'completed-create')
+            : textResponse('状态已核对，等待批准')
+      step++
+      yield* response
+    }
+  }
+  const ctx = await host(root, new CompletedAdapter(), true, undefined, false, 3, false, [], {}, 'ptc')
+  let runs = 0
+  class UnusedRuntime extends PtcRuntime {
+    readonly language = 'typescript'; readonly isolation = 'controlled fixture'
+    resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: workspace, timeoutMs: 1000 } }
+    async run() { runs++; return { logs: [] } }
+  }
+  await ctx.plugin(UnusedRuntime); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('completed-ptc'), meta: { cwd: workspace },
+    agentOptions: { provider: 'scripted', model: 'scripted' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+  const previous = { ...newTask('读取已完成的产物'), phase: 'complete' as const, criteria: [{ id: 'c', text: 'accepted' }],
+    stages: [{ id: 'n', title: '读取', criterionIds: ['c'] }] }
+  appendTask(ctx, agent, previous)
+  latestHuman = () => agent.session.snapshotEvents().findLast(event => event.type === 'user/message' && event.data.source.kind === 'user')!.seq
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '完成任务后请只读查看 answer.txt 并报告任务状态，不要修复或创建任务' }] }))
+  await agent.whenIdle()
+  expect(calls[0]).toContain('read'); expect(calls[0]).toContain('task_status'); expect(calls[0]).not.toContain('run_code')
+  expect(taskOf(ctx, agent)?.id).toBe(previous.id)
+  const signal = new AbortController().signal
+  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('opaque'), name: 'run_code', arguments: { code: 'arbitrary mutation', description: 'must not execute' } })).isError).toBe(true)
+  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('write-after-completion'), name: 'write', arguments: { file_path: 'answer.txt', content: 'changed' } })).isError).toBe(true)
+  expect(runs).toBe(0); expect(await readFile(join(workspace, 'answer.txt'), 'utf8')).toBe('accepted')
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '创建一个新任务：提交已完成的产物；先规划等待批准' }] }))
+  await agent.whenIdle()
+  const next = taskOf(ctx, agent)!
+  expect(next.id).not.toBe(previous.id); expect(next.phase).toBe('planning'); expect(next.approvedPlanVersion).toBeNull()
+  expect(next.creationRequestId).toBe(`main-task:${agent.id}:${latestHuman()}`)
+  expect(calls[3]).toContain('task_create'); expect(calls[5]).toEqual(['run_code'])
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.archivedTasks[0]?.task.id).toBe(previous.id)
+  const failures = agent.session.snapshotEvents().filter(event => event.type === 'tool/result' && event.data.message.isError)
+  expect(failures).toHaveLength(0)
+})
+
+it('exposes direct reads for a post-approval PTC read-only turn and restores PTC afterward', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-ptc-read-gate-')); roots.push(root)
+  const workspace = join(root, 'workspace'); await mkdir(workspace); await writeFile(join(workspace, 'input.txt'), 'read-only input')
+  const requests: string[][] = []; let step = 0
+  class ReadAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      requests.push(options.tools?.map(tool => tool.name) ?? [])
+      yield* step++ === 0 ? toolResponse('read', { file_path: 'input.txt' }, 'gate-direct-read') : textResponse('勘察完成')
+    }
+  }
+  const ctx = await host(root, new ReadAdapter(), true, undefined, false, 3, false, ['read'], {}, 'ptc')
+  let runs = 0
+  class Runtime extends PtcRuntime {
+    readonly language = 'typescript'; readonly isolation = 'controlled fixture'
+    resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: workspace, timeoutMs: 1000 } }
+    async run() { runs++; return { logs: [] } }
+  }
+  await ctx.plugin(Runtime); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('ptc-read-gate'), meta: { cwd: workspace },
+    agentOptions: { provider: 'scripted', model: 'scripted' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+  const task = { ...newTask('勘察后实施'), phase: 'active' as const, readOnlyTurnsBeforeWrite: 1, readOnlyGateStartSeq: agent.session.seq }
+  appendTask(ctx, agent, task)
+  const signal = new AbortController().signal
+  expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('gate-write'), name: 'write', arguments: { file_path: 'input.txt', content: 'changed' } })).isError).toBe(true)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '只读勘察然后结束此轮' }] }))
+  await agent.whenIdle()
+  expect(requests[0]).toContain('read'); expect(requests[0]).not.toContain('run_code')
+  expect(runs).toBe(0); expect(await readFile(join(workspace, 'input.txt'), 'utf8')).toBe('read-only input')
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '查看下一轮工具呈现' }] }))
+  await agent.whenIdle()
+  expect(requests[2]).toEqual(['run_code'])
+  expect(agent.session.snapshotEvents().filter(e => e.type === 'tool/result' && e.data.message.isError)).toHaveLength(0)
+})
+
+it('restores completed PTC direct controls on resume without changing another Agent presentation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-completed-ptc-resume-')); roots.push(root)
+  const attach = async (ctx: Context) => {
+    class Runtime extends PtcRuntime {
+      readonly language = 'typescript'; readonly isolation = 'controlled fixture'
+      resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: root, timeoutMs: 1000 } }
+      async run() { return { logs: [] } }
+    }
+    await ctx.plugin(Runtime)
+  }
+  const ctx = await host(root, new ScriptedAdapter(), true, undefined, false, 3, false, [], {}, 'ptc'); await attach(ctx)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('completed-ptc-resume'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  appendTask(ctx, agent, { ...newTask('保留完成历史'), phase: 'complete' }); await ctx.sessions.flush(agent.session)
+  await ctx.fiber.dispose()
+  const observed: string[][] = []
+  class ResumedAdapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> { observed.push(options.tools?.map(tool => tool.name) ?? []); yield* textResponse('仅查询') }
+  }
+  const restored = await host(root, new ResumedAdapter(), true, undefined, false, 3, false, [], {}, 'ptc'); await attach(restored)
+  const resumed = (await restored.agents.resume({ resumeSessionId: agent.id, agentOptions: { provider: 'scripted', model: 'scripted' } })).agent
+  resumed.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '只问进度' }] })); await resumed.whenIdle()
+  expect(observed[0]).toContain('task_status'); expect(observed[0]).not.toContain('run_code')
+  const other = (await restored.agents.create({ sessionId: SessionId('uncontrolled-ptc'), agentOptions: { provider: 'scripted', model: 'scripted' } })).agent
+  other.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '普通会话' }] })); await other.whenIdle()
+  expect(observed[1]).toEqual(['run_code'])
+  const completed = taskOf(restored, resumed)!
+  appendTask(restored, resumed, { ...completed, revision: completed.revision + 1, phase: 'cleared' })
+  resumed.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '已退出督导' }] })); await resumed.whenIdle()
+  expect(observed[2]).toEqual(['run_code'])
 })
 
 it('records a model repair proposal without execution authority and prevents writes while waiting for the click', async () => {
