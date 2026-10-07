@@ -310,7 +310,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.sessionProjections.register(taskProjection)
   installTaskToolPresentation(ctx, agent => {
     const task = taskOf(ctx, agent)
-    return task?.phase === 'complete' || task?.phase === 'active' && readOnlyGateRemaining(agent, task) > 0
+    if (task?.phase === 'complete') return ['task_status', 'task_create', 'task_propose_repair', 'read', 'glob', 'grep', 'read_image']
+    if (task?.phase === 'active' && readOnlyGateRemaining(agent, task) > 0) return ['task_status', 'task_approve', ...gateReadTools]
+    return undefined
   })
   ctx.systemPrompt.section({ name: 'task-supervisor:entry', order: 2449, interpolate: false,
     text: ({ agent }) => {

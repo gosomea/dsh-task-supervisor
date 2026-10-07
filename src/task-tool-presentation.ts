@@ -5,19 +5,30 @@ import { NAMESPACE } from './state.ts'
 import { controlEvent } from './session-records.ts'
 
 /** Temporarily expose direct schemas; disposal restores the native preset's presentation. */
-export function installTaskToolPresentation(ctx: Context, requiresDirectTools: (agent: Agent) => boolean): void {
-  const presentations = new Map<Agent, () => void>()
+export function installTaskToolPresentation(ctx: Context, directTools: (agent: Agent) => readonly string[] | undefined): void {
+  const presentations = new Map<Agent, { key: string; dispose: () => void }>()
   function restore(agent: Agent) {
-    const dispose = presentations.get(agent)
+    const entry = presentations.get(agent)
     presentations.delete(agent)
-    dispose?.()
+    entry?.dispose()
   }
   function sync(agent: Agent) {
-    if (!requiresDirectTools(agent)) { restore(agent); return }
-    if (presentations.has(agent) || !ctx.tools.get('run_code', agent)) return
-    // Public, Agent-scoped presentation only. The completed-task guard still
-    // rejects writes and generic executors; preset identity and permissions stay intact.
-    presentations.set(agent, agent.ctx.tools.presentAs('native'))
+    const allow = directTools(agent)
+    if (allow === undefined) { restore(agent); return }
+    const key = allow.join(',')
+    if (presentations.get(agent)?.key === key) return
+    restore(agent)
+    if (!ctx.tools.get('run_code', agent)) return
+    const disposePresentation = agent.ctx.tools.presentAs('native')
+    let disposeMask: (() => void) | undefined
+    try {
+      disposeMask = agent.ctx.tools.restrict({ allow: allow.filter(name => ctx.tools.get(name, agent) !== undefined) })
+    } catch (error) {
+      // Public masks cannot name Agent-local tools. Admission guards still
+      // protect such custom compositions; do not fail the Agent lifecycle.
+      ctx.logger.warn(`Task tool presentation mask unavailable for ${agent.id}: ${String(error)}`)
+    }
+    presentations.set(agent, { key, dispose: () => { disposeMask?.(); disposePresentation() } })
   }
   ctx.on('agent/status', ({ agent }) => sync(agent))
   ctx.on('agent/created', ({ agent }) => { sync(agent); return undefined })
@@ -29,7 +40,7 @@ export function installTaskToolPresentation(ctx: Context, requiresDirectTools: (
     if (agent) sync(agent)
   })
   ctx.effect(() => async () => {
-    const disposers = [...presentations.values()]
+    const disposers = [...presentations.values()].map(entry => entry.dispose)
     presentations.clear()
     await Promise.all(disposers.map(dispose => dispose()))
   })

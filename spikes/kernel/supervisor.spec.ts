@@ -1606,9 +1606,9 @@ it('exposes completed PTC controls before the first request, creates the next ta
     resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: workspace, timeoutMs: 1000 } }
     async run() { runs++; return { logs: [] } }
   }
-  await ctx.plugin(UnusedRuntime); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  await ctx.plugin(UnusedRuntime); await ctx.plugin(LocalFileSystem, { cwd: workspace }); await ctx.plugin(FsTools, {})
   const { agent } = await ctx.agents.create({ sessionId: SessionId('completed-ptc'), meta: { cwd: workspace },
-    agentOptions: { provider: 'scripted', model: 'scripted' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
   const previous = { ...newTask('读取已完成的产物'), phase: 'complete' as const, criteria: [{ id: 'c', text: 'accepted' }],
     stages: [{ id: 'n', title: '读取', criterionIds: ['c'] }] }
   appendTask(ctx, agent, previous)
@@ -1616,6 +1616,7 @@ it('exposes completed PTC controls before the first request, creates the next ta
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '完成任务后请只读查看 answer.txt 并报告任务状态，不要修复或创建任务' }] }))
   await agent.whenIdle()
   expect(calls[0]).toContain('read'); expect(calls[0]).toContain('task_status'); expect(calls[0]).not.toContain('run_code')
+  expect(calls[0]).not.toContain('write'); expect(calls[0]).not.toContain('edit')
   expect(taskOf(ctx, agent)?.id).toBe(previous.id)
   const signal = new AbortController().signal
   expect((await ctx.tools.execute({ agent, signal, callId: ToolCallId('opaque'), name: 'run_code', arguments: { code: 'arbitrary mutation', description: 'must not execute' } })).isError).toBe(true)
@@ -1649,9 +1650,9 @@ it('exposes direct reads for a post-approval PTC read-only turn and restores PTC
     resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: workspace, timeoutMs: 1000 } }
     async run() { runs++; return { logs: [] } }
   }
-  await ctx.plugin(Runtime); await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  await ctx.plugin(Runtime); await ctx.plugin(LocalFileSystem, { cwd: workspace }); await ctx.plugin(FsTools, {})
   const { agent } = await ctx.agents.create({ sessionId: SessionId('ptc-read-gate'), meta: { cwd: workspace },
-    agentOptions: { provider: 'scripted', model: 'scripted' }, async setup(agentCtx) { await agentCtx.plugin(FsTools, {}) } })
+    agentOptions: { provider: 'scripted', model: 'scripted' } })
   const task = { ...newTask('勘察后实施'), phase: 'active' as const, readOnlyTurnsBeforeWrite: 1, readOnlyGateStartSeq: agent.session.seq }
   appendTask(ctx, agent, task)
   const signal = new AbortController().signal
