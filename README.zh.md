@@ -1,78 +1,207 @@
 ---
-description: "为 DSH Web profile 添加持久任务、计划审查与督导对话。"
+description: "为 DSH Web profile 添加持久任务、DAG 进度、检查点审查和督导对话。"
 kind: "package-bundle"
 ---
 
 # DSH 长任务督导
 
+[English](README.md) | 中文
+
+[npm](https://www.npmjs.com/package/dsh-task-supervisor) · [反馈问题](https://github.com/gosomea/dsh-task-supervisor/issues) · [社区交流](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
+
 ## 概述
 
-**给 DSH 的长任务加上计划审查、进度追踪和完成验收。** 主 Agent 负责规划与执行，Supervisor 持久保存任务状态，并在规划、阶段和完成检查点启动独立审查 Session。你可以从主会话的小 DAG 看进度，在侧栏查看计划、审查依据并与督导对话。
+用 `/task` 把目标变成可跟踪、可暂停、可返工的任务，查看 DAG 进度，并在计划、执行和完成检查点取得审查意见。主 Agent 规划和交付；Supervisor 保存状态、调度审查，并根据有效裁决继续、暂停或结束任务。你可以在督导对话中整理要求、询问进度和明确修改任务。默认审查依据主会话日志；直接读取产物与隔离运行检查需要配置，审查通过也不能保证没有遗漏。
 
-[English](README.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [反馈问题](https://github.com/gosomea/dsh-task-supervisor/issues) · [社区交流](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
+## 目录
 
-**0.1.1 开发预览。** 使用独立的 `/task` 工作流，与 DSH 原生 Goal 和 Plan 共存；任务状态与续行由确定性的控制器管理，审查者提供判断。默认审查主 Session 日志；独立产物读取和隔离命令检查需要显式配置。
+- [开始使用](#get-started)
+- [项目架构与职责](#architecture-and-responsibilities)
+- [一个 Task 的完整流程](#the-complete-task-lifecycle)
+- [审查者何时介入检查什么](#when-reviewers-intervene-and-what-they-check)
+- [审查依据与独立验证](#evidence-and-independent-verification)
+- [续行暂停与恢复](#continuation-pause-and-recovery)
+- [理解实现与开发](#understand-the-implementation-and-develop)
+- [进一步阅读](#further-exploration)
+- [模型体验](#model-experience)
+- [当前限制与后续工作](#known-limitations-and-deferred-work)
 
-## 安装前提
+-----
 
-本版本可安装到未经修改的公开 DSH，采用原生 Session 记录和 Agent preset 实现持久化与执行准入，无需 Host 补丁或自行构建。已验证版本及迁移限制见[安装验收](docs/native-install.zh.md)。
+<a id="get-started"></a>
+## 开始使用
 
-## 可以用它做什么
+下文描述当前开发源码。npm **0.1.1** 是较早的预览版，仍使用专用 Supervisor preset，未包含本文全部增强；当前源码在原生模式中创建 Task。安装与版本边界见[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
 
-- **计划先审查再执行**：核对原始要求的覆盖情况，默认由用户批准，也可明确预授权审查通过后执行。
-- **看清进度和返工**：DAG 展示节点状态、参与 Agent 和尝试次数，保留返工原因与受影响的依赖节点。
-- **随时询问督导**：在侧栏讨论目标、询问当前进展，或明确暂停、恢复和关闭督导。
-- **完成之后仍可修复**：先展示影响范围，经用户点击确认，回到原任务与 DAG，保留此前验收记录。
+### 安装到 Web profile
 
-![主会话 DAG 与侧栏返工详情](docs/assets/rework-attempt-details.png)
-
-*此前隔离验收的界面示例，展示“已通过 → 新尝试返工”的记录与依赖影响。*
-
-## 安装与版本范围
-
-使用 Node 24 和官方 DSH `0.2.0-rc.2`，沿用 Web profile 与现有模型配置。将 bundle 加入该 profile 后启动 DSH：
+已验证 Node 24 和官方 DSH `0.2.0-rc.2`，无需修改 Host 或原生沙箱。沿用该 profile 的模型配置；安装公开包：
 
 ```sh
 dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-npm 0.1.1 包包含预构建的 Host 插件、Web 客户端、检查网关和 bundle patch，仍使用专用 Supervisor preset。当前开发源码已改为原生模式内创建 Task，并保留 Goal／Plan 工具；这轮尚未发布。自然语言创建、续行协调及旧 Session 恢复见[原生模式中的任务督导](docs/native-task.zh.md)。
+测试当前源码时，先按下方开发命令构建与打包，再使用 `dsh plugin --profile web add /absolute/path/to/package.tgz` 安装到隔离 profile。插件包含 Host、Web 客户端和可选检查网关；原生 DSH 组件由宿主提供。
 
-独立命令检查若修改捕获的产物树，本次证据失效，后续检查会被拒绝；自动恢复检查目录尚未验收。本版本保留该限制。默认审查主 Session 日志；独立产物检查需要显式配置，独立浏览器观察尚不可用。详见[实现状态](docs/implementation.zh.md)。
+### 建立与批准任务
 
-## 规划监督
+在主会话输入 `/task <目标>` 即开始规划。单独 `/task` 等待下一条消息作为目标；已有未结束任务时查看当前状态，不恢复执行。`/task new <目标>` 是兼容别名。自然语言“创建一个任务……”也可由主 Agent 调用任务工具进入相同流程。
 
-规划监督默认开启（`planningSupervision`；`maxPlanningWithoutProgress: 2`）。尚无正式计划时，在原生步骤边界复用已有活动观察阈值；正常规划轮结束而未提交计划，或恢复后再次截断，也会请求独立规划审查。带证据的事实、未决问题和下一步绑定要求版本；通过只允许继续规划。用户决定、内部恢复耗尽和连续独立判定的无进展分别以不同原因暂停。关闭 `automaticContinuation` 不开新轮；关闭 `observeLongTurns` 不在轮内观察，`planningSupervision: false` 则完全关闭规划审查。
+计划审查通过后，默认等待 `/task approve`、符合批准语义的主会话回复或侧栏的“批准计划”。也可明确设置审查通过后自动执行。批准只授权实施，任务仍须经过节点审查与整体验收。
 
-## 当前流程
+主会话显示紧凑 DAG、参与 Agent、当前进度和简短审查通知。点击节点或“查看详情”打开完整侧栏；“对话”用于问询和整理要求，“详情”展示计划、节点、审查与任务操作。历史任务在更多菜单中只读查看。
 
-1. `/task <目标>` 创建受督导任务并开始规划。单独 `/task` 等待下一条用户消息作为目标，不调用模型；`/task off` 取消入口。`/task new <目标>` 保留为兼容别名。
-2. `/task status` 查看状态；已有未结束任务时，单独 `/task` 也查看当前任务，不恢复执行。提交计划时先由独立审查者检查原始目标的覆盖情况；遗漏要求会退回修订。初始计划通过审查后，默认等待 `/task approve` 或右侧面板的**批准计划**按钮；明确 `after-review` 预授权后自动准入执行。规划阶段沿用 DSH 原生工具权限，可通过 `run_code`、文件和命令工具勘察工作区；提示主 Agent 在批准前不实施交付物。`/task <目标>` 的原始命令按原生用户消息记录并展示。
-3. 获批后，控制层准入后续轮次。主 Agent 用 `task_report_stage` 汇报阶段证据；新的审查者分页读取主 Session 的有界日志，返回通过、修订或需要用户决策。
-4. 达到可配置的未汇报轮次后，进展审查决定继续、纠偏或暂停请用户处理。所有阶段通过后，`task_request_completion` 启动独立的最终审查；只有最终审查通过才能记为完成。
-5. `/task pause`、`/task off`、`/task on`、`/task resume`、`/task edit <目标>`、`/task clear` 控制生命周期。计划、阶段和完成检查点分别显示主 Agent 提交和 Supervisor 的独立审查，附事件序号及审查 Session 身份。两方的后续内容可分别展开。右侧面板显示状态和对应按钮，包括明确的**关闭督导**按钮。宿主重启后恢复任务，但等待用户手动继续。
-6. 已完成任务发现原目标缺陷时，通过 `task_propose_repair` 或督导对话提出影响范围，每次由用户在侧栏点击确认后回到同一任务与原 DAG。未确认不实施；历史验收保留，受影响节点重新审查。详见[完成后修复协议](docs/completed-task-repair.zh.md)与[验收记录](docs/completed-task-repair-validation.zh.md)。
+![主会话 DAG 与侧栏返工详情](docs/assets/rework-attempt-details.png)
 
-主 Session 和当前任务的督导对话均可输入 `/task` 命令；侧栏中的命令转交主 Session 的同一控制器。督导对话中的普通问题不改变任务，明确输入“暂停任务”“恢复任务”或任务完成后的“新建任务：完整目标”才会转交控制。新任务或暂停状态出现时，主会话打开侧栏的“任务详情”；旧任务的督导对话保留为历史，不能操作新任务。督导对话的输入框固定在侧栏底部，任务按钮位于“任务详情”Tab。
+*此前隔离验收的界面示例：保留“已通过 → 新尝试返工”的原因及依赖影响。*
 
-同一个主 Session 可在任务完成后继续创建下一项。侧栏更多菜单中的“历史任务”从原生 Session 记录按需读取已完成或已清除的任务，保留目标、计划、节点和审查记录的只读视图；督导对话整理草案并通过同一任务控制器创建。主 Session 的小 DAG 只跟随当前任务。完成状态直接显示结果，不再主动提供“清除任务”按钮；需要主动取消未完成任务时仍可使用 `/task clear`。
+-----
 
-任务若要求批准后先完成只读模型轮次，计划可设置 `read_only_turns_before_write`（0–10）。控制层在足够数量的已完成只读轮次出现前阻止写入；中断轮次不计入。该门禁针对这类明确的动作顺序约束，不会自动把任意自然语言时序要求编译成规则。
+<a id="architecture-and-responsibilities"></a>
+## 项目架构与职责
 
-主 Agent 在实施节点前用 `task_start_node` 登记节点与尝试编号；普通问询不产生开始记录。返工以成功的 `task_rework_node` 调用为依据，主会话保留返工通知，DAG 展示“待返工／返工中”及尝试次数。节点详情保留原因、此前通过的审查及受影响的依赖节点；旧会话可从原生工具日志重建这些记录。已通过的旧尝试不代表新尝试通过。记录缺失时只展示已知状态，不推测主 Agent 正在执行哪个节点。
+Supervisor 包含确定性的控制器和模型审查者。控制器持有任务状态与续行许可；审查者根据证据提供裁决。督导对话是面向用户的问询 Session，不等同于自动检查点审查。
 
-审查模型默认跟随主 Agent 当前有效的 DSH 路由。也可通过 `reviewerModel` 指定当前 profile 可用的提供方、模型和推理等级。每次审查记录实际模型、审查 Session ID、证据 seq 和主 Session 截止点。
+```mermaid
+flowchart TD
+  U["用户 / User"] --> M["主 Agent / Main Agent"]
+  U -->|"批准、暂停 / Controls"| C["Supervisor 控制器 / Controller"]
+  M -->|"计划、报告、完成申请 / Submissions"| C
+  C -->|"绑定版本与证据 / Bound review job"| R["审查者 / Reviewer"]
+  R -->|"裁决与引用 / Decision and evidence"| C
+  C -->|"续行、暂停、完成 / Continue, pause, complete"| M
+  M --> L["DSH 原生 Session 日志 / Session logs"]
+  C --> L
+  R --> L
+```
 
-默认按主 Session 日志审查。新配置显式设定 `reviewVerification: independent` 并提供 `independentVerification.storageRoot`，启用要求驱动的检查方案与两阶段产物验收；只需读取的要求不必配置命令运行器，需要复算或行为验证时才配置容器与工具链。仅保留旧 `independentVerification` 配置时仍采用旧协议，不补造历史检查方案。独立浏览器检查尚不可用。配置见[实现状态](docs/implementation.zh.md#独立产物检查与两阶段审查)，当前真实模型验收见[通用审查记录](eval/independent-verification/generic-quality-20260930/README.zh.md)。
+| 角色或组件 | 实际负责什么 | 权限与边界 |
+| --- | --- | --- |
+| 用户 | 提供目标、约束、批准和必要决定。 | 首次执行默认手动批准；完成后返工每次点击确认影响。 |
+| 主 Agent | 勘察、提出计划、实施、集成、汇报与申请完成。 | 可以提出完成，不能自行把 Task 标为已验收。 |
+| Supervisor 控制器 | 保存任务与 DAG，准入执行轮次，启动审查，应用有效裁决，停止与恢复自有工作。 | 根据身份、版本、许可和证据有效性执行状态转换，不凭模型文字直接放行。 |
+| 检查点审查者 | 检查该作业范围内的原始要求与证据，提出通过、修订或需要用户处理。 | 通常每个检查点新建独立原生 Session；同一作业补交或恢复保留其身份，不实施主工作区。 |
+| 委派 Worker（可选） | 在 DAG 就绪节点的确切文件范围内执行子任务。 | 主 Agent 负责集成复验；Worker 报告不等于节点通过。 |
+| 督导对话 | 整理目标、形成草案、解释进度，转交明确控制指令。 | 普通问询不暂停任务；控制指令交给同一个控制器核验。 |
+| DSH Session 与投影 | 保存用户消息、执行记录、控制记录及审查关联，重建界面状态。 | 原生日志是事实来源；投影可重建，不另外维护需人工同步的任务历史。 |
 
-生成达到单次输出上限时，`truncationRecovery` 默认开启，在当前任务准入有效且原生工具与队列已结清后恢复规划或执行。`automaticContinuation: false` 关闭自动新轮次；`maxRecoveryWithoutProgress` 默认 2，连续恢复没有新的可核实工具产出会暂停等待手动恢复。恢复消息、原回合、证据和计数保存在主 Session；暂停、关闭及重启不会自动恢复。
+当前源码保留主 Session 的原生 preset 和 Goal／Plan 工具。Task 存在时 Supervisor 通过公开 GoalService 解除原生 Goal 自动续行；原生 Plan/Todo 仍可组织工作，但不代替 Task 批准或验收。Supervisor 不充当通用 Team Lead；主 Agent 和 Worker 负责实施。
 
-`planningSupervision` 默认 `true`，在提交前检查计划形成。`executionApproval` 默认 `manual`；可在 profile 选择 `after-review`，或首次批准前用 `/task auto-approve-on`，预授权正式计划通过独立审查后执行。`/task auto-approve-off` 撤销此项，审查进行中也可撤销。编辑要求会清除批准和预授权。[验收记录](docs/planning-supervision-validation.zh.md)区分确定性检查和真实模型探针。
+-----
 
-## 开发与隔离验证
+<a id="the-complete-task-lifecycle"></a>
+## 一个 Task 的完整流程
 
-使用 Node 24 和已安装依赖、未经修改的 DSH 源码 checkout 进行源码测试。下列命令只读取该 checkout，不构建或修改它；`DSH_SOURCE` 指定路径：
+任务可跨多个模型轮次。图中的“审查”是提交之后由控制器接手的正式检查点；规划和执行期间还会按下节条件进行进展观察。
+
+```mermaid
+flowchart TD
+  A["建立目标 / Create task"] --> B["勘察与规划 / Plan"]
+  B --> C["计划覆盖审查 / Plan review"]
+  C -->|"修订 / Revise"| B
+  C -->|"通过 / Pass"| D["执行批准 / Approval"]
+  D --> E["实施就绪节点 / Execute ready node"]
+  E --> F["节点验收 / Node review"]
+  F -->|"补做 / Revise"| E
+  F -->|"还有节点 / More nodes"| E
+  F -->|"全部通过 / All passed"| G["整体验收 / Completion review"]
+  G -->|"补做 / Revise"| E
+  G -->|"通过 / Pass"| H["完成 / Complete"]
+  H --> I["发现原目标缺陷 / Repair proposal"]
+  I -->|"用户确认影响 / Confirm impact"| E
+```
+
+1. **建立要求。** 用户直接创建任务，或在督导对话中把宽泛想法整理成草案后建立。控制器绑定主 Session、任务 ID 与要求版本；原始用户要求始终是验收依据。
+2. **勘察与形成计划。** 主 Agent 使用原生工具了解输入和工作区，提出验收标准与 DAG。规划阶段沿用原生权限，提示先勘察再批准实施，不把所有读取或 `run_code` 一概禁用。Supervisor 此时可审查规划进展，发现未知条件、重复活动或停滞。
+3. **提交计划。** `task_submit_plan` 保存作业、待审计划、要求版本、证据截止点与审查 Session 身份，立即返回已提交并结束本轮。控制器在工具调用收敛后启动计划覆盖审查；需要修订则把具体发现交回主 Agent，通过后进入初始执行批准。
+4. **准入实施。** 默认等用户批准；明确预授权才可在计划审查通过后自动执行。独立验证模式先检查已声明的必要能力和工具链。编辑要求会撤销原批准与预授权，重新规划；未改变要求的后续计划修订仍须审查，不无条件重复首次批准。
+5. **实施 DAG 节点。** 前置节点必须审查通过，后继才就绪。主 Agent 用 `task_start_node` 登记当前尝试后实施，或在不冲突的文件范围委派 Worker。主 Agent 完成集成与复验后用 `task_report_stage` 提交节点证据；执行期间 Supervisor 可检查进展或在轮次结束后续行。
+6. **节点验收与返工。** 节点审查通过才计入 DAG 并释放依赖；修订意见要求补做，不能接受该节点。已通过节点发现缺陷时，`task_rework_node` 重开目标和依赖后代的新尝试，保留无关分支与旧审查；重新提交须绑定当前尝试。
+7. **检查整体交付。** 全部节点通过后，主 Agent 还须用 `task_request_completion` 提交当前整体结果。完成审查检查原始要求、各部分关系与必要证据；只有有效通过裁决才能将 Task 标为完成。补做返回实施，需要用户或内部故障则暂停。
+8. **完成后继续使用。** 同一 Session 可创建下一项任务，旧任务进入历史。发现原目标缺陷时，先提出修复原因、根节点和影响范围，每次等用户点击确认后回到原 Task/DAG；旧完成记录保留，受影响节点和整体结果重新验收。
+
+“审查已提交”不等于“审查通过”；原生对话中的一轮“已完成”也不等于 Task 完成。审查期间主 Agent 等待交接，界面显示作业种类、耗时、证据读取、最近活动、截止时间和下一步；待审 DAG 明确标为尚未批准。证据读取次数是活动指标，不是完成百分比或覆盖证明。
+
+-----
+
+<a id="when-reviewers-intervene-and-what-they-check"></a>
+## 审查者何时介入检查什么
+
+以下是同一审查引擎的五类作业，不是五个常驻 Agent。各作业绑定固定的要求、计划、节点尝试和证据截止点；表中的通过含义各不相同。
+
+| 作业与阶段 | 何时触发 | 审查者实际检查什么 | 裁决交给控制器后 |
+| --- | --- | --- | --- |
+| `planning`：计划形成中 | 尚无提交计划的正常规划轮结束；规划活动达到观察阈值，或截断恢复后仍需检查规划。 | 从已记录勘察中区分已确认事实与未知问题，判断是否产生相关新进展，给出具体下一输出。 | 通过或修订仅允许继续规划；需要用户或连续无进展则暂停，不授权实施。 |
+| `plan`：计划已提交 | 主 Agent 提交初始计划或修订计划；默认开启覆盖审查。 | 对照原始要求，核对标准来源、覆盖与可执行性、控制器归一化依赖边、验证顺序和所需能力；避免下游承担前驱验收而死锁。 | 通过进入有效批准路径；遗漏或弱化要求退回修订；缺用户决定则暂停。 |
+| `progress`：正在实施 | 执行活动达到观察阈值，或未经节点报告的自动续行累计达到配置门槛。 | 查看就绪和执行中节点的实际产出、工具错误、重复行为与目标偏移，判断继续、纠偏或求助。 | 通过只表示继续当前工作，不接受节点；修订交付纠偏意见；需要用户则暂停。 |
+| `stage`：节点提交验收 | 主 Agent 对当前节点尝试提交证据；委派节点须已有主会话集成复验。 | 核对节点对应要求、操作约束与证据；必要时读取子日志和集成记录，独立模式检查当前产物。 | 通过接受本次尝试并释放依赖；修订要求补做；需要用户则暂停。 |
+| `completion`：申请关闭任务 | 所有节点通过后，主 Agent 申请完成。 | 核对原始目标全部必要要求与组合交付物，不能只汇总节点通过或接受主 Agent 总结。 | 有效通过才能完成；修订继续补做；未验证且需用户解决时暂停。 |
+
+默认在原生安全步骤边界观察：累计 **24 个工具结果**、有工具活动且距上次观察 **5 分钟**，或连续 **3 次工具错误**，任一达到即可触发检查。没有新工具结果不会仅因墙钟时间触发；时间长也不自动判定跑偏。执行轮次另有 `maxAutomaticRoundsWithoutReport: 3` 兜底。正式裁决后重置观察窗口，不把审查耗时立即算成下一次主 Agent 进展检查。
+
+`planningSupervision` 控制规划审查；`observeLongTurns` 控制轮内观察；`progressReviewMode: required-only` 跳过执行进展审查，保留计划、节点和完成检查点。上述阈值可配置，并非永久监视每次操作。生成达到输出上限时，控制器可按已确认上下文恢复下一轮；这项截断恢复本身不是审查通过。
+
+-----
+
+<a id="evidence-and-independent-verification"></a>
+## 审查依据与独立验证
+
+独立 Session 隔离审查上下文，不能单独证明审查者运行或观察过产物。界面显示实际生效模式；计划与进展作业使用日志审查，节点及整体验收按配置选择验证方式。
+
+| 模式 | 审查者能做什么 | 结论边界 |
+| --- | --- | --- |
+| `reviewVerification: log`（默认） | 分页读取截止点内的用户要求、工具调用与结果、主汇报、子任务集成记录，以及可用的原生图片证据。 | 能核对已记录行为和证据，不能声称审查者自行执行了产品；看不到的行为明确未验证。 |
+| `reviewVerification: independent` | 捕获包含适用未提交、未跟踪文件的产物快照，直接读取产物，并按要求使用已配置的隔离命令运行器。 | 仅支持实际具备的能力；仅读取可不配运行器，计算或行为需要执行时须具备相应环境；独立浏览器观察当前不可用。 |
+
+显式选择 `independent` 并提供 `independentVerification.storageRoot` 才启用下述通用协议；需要运行检查时另配容器与工具链。仅保留旧 `independentVerification` 配置的 Session 使用兼容协议，不补造历史检查方案。独立模式的节点与完成审查按以下顺序展开：
+
+1. **制定检查。** 先读完整原始要求、必要输入和约束，列出产物及可用能力。用 `task_review_check_plan` 保存要求来源、要确认的事实、方法、预期和覆盖；区分明确要求与推导假设，再展开交付物内容。
+2. **独立检查。** 按要求选择读取、复算或执行，不按“代码／文档任务”套固定清单。核对现有测试的断言和操作路径是否支持要求；保存实际检查、失败、未验证、覆盖与局限。
+3. **对照汇报。** 用 `task_review_observations` 持久保存独立发现后，才开放主 Agent 汇报、主执行日志与历史审查结论。调查差异，可追加检查，保留先前发现。
+4. **提交裁决。** `task_review_decision` 引用本作业实际读取或运行的证据。控制器复核身份、版本及产物新鲜度后应用；文件存在、退出码零、测试数量多都不能单独证明要求满足。
+
+必要能力缺失不能静默降级为通过。已知需求可在模型投递前准备，规划确定的需求在实施批准前检查。完整配置及能力范围见[独立产物检查](docs/implementation.zh.md)，协议与真实模型证据见[通用审查增强](docs/review-quality.zh.md)。
+
+-----
+
+<a id="continuation-pause-and-recovery"></a>
+## 续行暂停与恢复
+
+控制器在原生活动收敛后检查当前任务、许可、版本及待处理用户输入，再决定下一轮。续行消息包含当前目标、DAG/尝试、已记录进展和下一动作；不是仅发一句“继续”。提交计划、节点或完成审查后，工具结束本轮，控制器独立运行作业，外层 PTC 正常结束不取消已交接审查。
+
+| 看到的状态或情况 | 含义与下一步 |
+| --- | --- |
+| 等待批准 | 计划已审查通过，尚无实施许可；批准当前计划，或先修改要求。 |
+| 审查中 | 主 Agent 等待作业裁决；可看实时只读记录。审查活动数不代表验收百分比。 |
+| 需要用户决定 | 审查发现必须由用户解决的条件；补充决定后手动恢复，不能用等待超时视为批准。 |
+| 内部故障或审查超时 | 审查没有有效完成；保留作业、Session、错误和重试信息。`/task retry-review` 核对原作业后恢复审查，不自动批准或恢复此前暂停的实施。 |
+| 规划停滞或截断恢复无进展 | 默认连续两次对应的无进展计数后暂停，等待检查问题并手动恢复。 |
+| `/task pause`、`/task off` | 停止自有续行与在途审查，保留记录；`/task on` 只开启督导，`/task resume` 才明确恢复。 |
+| 编辑要求或产物变化 | 旧版本裁决不能验收新工作；要求用 `/task edit <目标>` 修订，相关产物须重新核对。 |
+| 宿主重启 | 状态从日志恢复，执行等待手动继续，不重复投递。只读打开页面不启动模型；冷 Session 的控制需通过主会话恢复。 |
+
+普通日志审查默认十分钟截止；独立检查使用其配置截止时间，默认三十分钟。协议缺失可在同一作业、Session 和截止点内有限补交，耗尽后按内部故障暂停。用户暂停、关闭、版本变化和宿主退出具有各自取消语义，不把所有取消都自动重试。详见[审查作业生命周期](docs/review-queue.zh.md)及[进度展示](docs/review-progress.zh.md)。
+
+-----
+
+<a id="understand-the-implementation-and-develop"></a>
+## 理解实现与开发
+
+本插件复用公开 DSH Session、Inbox、生命周期与客户端扩展；精确协议由源码和对应文档维护。以下模块划分便于定位控制、证据和展示的责任。
+
+<details>
+<summary>模块分工与开发入口</summary>
+
+| 代码 | 负责的部分 |
+| --- | --- |
+| [控制器](src/index.ts)、[审查队列](src/review-queue.ts) | 任务准入、原生续行、检查点交接和取消。 |
+| [任务状态](src/state.ts)、[DAG](src/graph.ts) | 事件投影、依赖就绪、节点尝试与返工传播。 |
+| [审查器](src/reviewer.ts)、[检查协议](src/verification.ts) | 绑定作业、证据访问、独立快照与检查、裁决及有限补交。 |
+| [督导对话](src/consultation.ts)、[完成后修复](src/repair-runtime.ts) | 草案和明确控制交付、影响提案与点击确认。 |
+| [面板接口](src/panel-api.ts)、[客户端](src/client/index.tsx) | 当前状态、只读历史/审查记录、主 DAG 与侧栏。 |
+
+使用 Node 24、已安装依赖和未经修改的 DSH 源码 checkout；以下测试读取 `DSH_SOURCE`，不构建或改写该 Host：
 
 ```sh
 pnpm install
@@ -82,42 +211,45 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness node spikes/kernel/run.mjs
 pnpm pack --dry-run
 ```
 
-安装验收使用官方 npm DSH 和登记的独立 `DSH_HOME`，通过 `dsh plugin --profile web add /absolute/path/to/package.tgz` 安装打包产物。无需构建源码 Host／Client、手动链接 SDK 或私有事件读取器 API。原生组件作为 peer dependency 由 DSH 提供，插件不会用另一个版本替换 Host 组件。
+真实安装与模型验证使用登记的隔离 `DSH_HOME` 和临时工作区，安装打包产物，保留失败证据。验证范围见[实现状态](docs/implementation.zh.md)；正式评测与开发回归分开。
 
-## 设计与评测
+</details>
 
-| 阅读 | 用途 |
-| --- | --- |
-| [实现状态](docs/implementation.zh.md) | 实际代码、安装前提、测试与限制。 |
-| [督导交互改进提案](docs/supervisor-experience-v2.zh.md) | 神社 Session 核对、响应语言、任务图、用户决策与持久侧问。 |
-| [督导对话与审查恢复方案](docs/10-plans/conversation-and-review-recovery/plans.zh.md) | 待实现：从讨论形成任务、有限协议补交、故障追踪和审查频率实验。 |
-| [V2 联合验收](docs/v2-integrated-validation.zh.md) | 第二、三批的真实模型、DAG、持续侧问、原生并行与失败修复记录。 |
-| [返工与执行状态验收](docs/rework-progress-validation.zh.md) | 主节点显式开始、此前通过、下游影响与旧日志恢复。 |
-| [独立验收与完成后返工方案](docs/10-plans/independent-verification/plans.zh.md) | 完成后修复、快照与两阶段独立运行已验收；独立浏览器与联合回归仍待开发。 |
-| [架构](docs/architecture.zh.md) | 职责与 DSH 集成设计。 |
-| [任务状态与控制](docs/task-lifecycle.zh.md) | 完整多任务生命周期提案。 |
-| [审查与介入](docs/review-policy.zh.md) | 审查时机与用户决策。 |
-| [规划监督与执行批准](.agents/notes/implemented/feature/2026-09-29-planning-supervision.zh.md) | 已实现：规划观察、上下文恢复、有限审查补交与明确执行预授权；链接包含证据与限制。 |
-| [评测设计与执行路线](docs/evaluation.zh.md) | 公开基准优先；统一数据集、对照组、指标、待办与开发结果入口。 |
-| [首个原型](docs/prototype.zh.md) | 验收条件与 Agent Team 比较。 |
-| [督导会话](docs/session-runtime.zh.md) | 持久控制与恢复设计。 |
-| [审查模型](docs/review-model.zh.md) | DSH profile 模型策略。 |
-| [内核技术试验](docs/host-spike.zh.md) | 最初的能力调研。 |
+-----
 
-当前原型每个 Session 同时只执行一个任务，结束后可连续创建后续任务。五任务并行队列、`/task plan` 快捷入口、用户可配置的决策超时以及正式长程对照评测仍属后续设计。开发试跑曾发现违反原始时序约束却被误判完成；[独立回归样例](eval/reliability-v1/README.zh.md)和真实模型恢复测试记录了修复后的证据。当前开发源码保留原生 preset 和 Goal／Plan 工具；Task 执行期间由 Supervisor 控制续行。npm 0.1.1 的专用 preset 属于旧行为，恢复旧 Session 时需显式启用 `legacyPresets`。
+<a id="further-exploration"></a>
+## 进一步阅读
 
-[English](README.md)
+以下页面分别维护实现、恢复、独立检查和评测，不把早期设计提案当作当前安装能力。
 
+- [实现状态](docs/implementation.zh.md)：有效配置、已验证行为与能力边界。
+- [原生任务](docs/native-task.zh.md)：preset、Goal/Plan 共存与旧 Session 恢复。
+- [完成后修复](docs/completed-task-repair.zh.md)：影响确认、原 DAG 和旧验收保留。
+- [通用审查增强](docs/review-quality.zh.md)：要求驱动的方法、证据覆盖与独立检查。
+- [审查作业生命周期](docs/review-queue.zh.md)：工具交接、截止、取消及同作业恢复。
+- [评测设计](docs/evaluation.zh.md)：公开基准、对照条件、指标与结果入口。
+
+<a id="model-experience"></a>
 ## 模型体验
 
-主 Agent 通过 `/task` 与任务工具工作，原始输入和模型回答保持原生展示；审查者使用有界证据与受限检查工具。单独创建审查 Session 不代表已经独立运行或观察产物；面板显示实际生效的验证模式。督导问询与压缩继承原生 preset 的能力，无需另外挂载根作用域压缩后端。
+主 Agent 接收任务上下文，通过任务工具提交计划、开始节点、报告和申请完成；原始用户消息与回答保持原生显示。审查者只获得作业准许的证据和工具，按当前要求引用实际检查结果。督导对话复用原生聊天和压缩能力，普通问题不干涉执行。
 
-## 当前限制
+审查模型默认跟随主 Agent 当前有效 DSH 路由，也可用 `reviewerModel` 从当前 profile 指定提供方、模型和推理等级。记录保留实际路由与 Session 身份。回复语言尽量跟随用户要求或显式语言配置；插件不能保证主模型内部思考语言。
 
-0.1.0 私有扩展日志不能直接在公开 DSH 中恢复，请保留原宿主并新建 0.1.1 Session。本次不迁移或重写历史日志。npm 0.1.1 仍需新建时先选专用模式；当前开发源码支持在原生 Session 中通过 `/task` 建立任务。同一 Session 的后续任务保留此前历史。独立浏览器与检查目录自动恢复尚未实现，安装验收不证明长程性能优于 Goal／Plan。
+<a id="known-limitations-and-deferred-work"></a>
+## 当前限制与后续工作
 
-## 督导对话界面
+当前源码每个主 Session 同时执行一个 Task，完成后可继续创建下一项。明确配置 `automaticContinuation: false` 不自动开启新轮；`executionApproval: after-review` 或 `/task auto-approve-on` 只预授权当前要求版本，编辑后失效。用户决策超时自动继续、多任务并行队列和 `/task plan` 入口尚未实现。
 
-侧栏顶部只显示“对话 / 详情”和当前状态。历史任务、使用帮助收在更多菜单中。问询、草案整理、明确创建和修改要求使用同一个对话入口，不再选择“讨论 / 直接建任务”。旧 Session 的输入模式记录保留，但不会把后续普通消息自动变成任务。
+独立浏览器观察和检查目录自动恢复尚不可用；检查命令改动捕获的产物树会使本次证据失效。受控 Worker 默认最多两个，只能写分配的确切文件，任意 shell 与最终集成由主 Agent 负责。这些约束不等于禁止主 Agent 使用原生工具。
 
-草案出现在对应督导回复下方，可展开要求并点击“建立任务”；此前版本只读。`/task <目标>` 或“创建任务：完整目标”直接进入规划；普通问询不改变任务。建立任务仍需初始计划批准，完成后的返工仍需影响确认。详见[督导对话简化与验收](docs/consultation-layout.zh.md)。
+0.1.0 私有扩展日志须保留原宿主，本版不改写其历史。npm 0.1.1 的旧专用 preset 恢复需显式启用 `legacyPresets`。插件未加载时公开 Host 无法安装本插件的准入保护，不能把卸载等同于受保护的暂停。独立审查仍可能遗漏；安装与开发回归不证明长程成功率优于 Goal、Plan 或 Agent Team。
+
+### Dev Note
+
+<details>
+<summary>维护者工作上下文（非规范）</summary>
+
+无。
+
+</details>

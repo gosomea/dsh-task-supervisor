@@ -1,0 +1,55 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write README.md
+/:
+  en: 7859eb3e2526e856
+  zh: aa47ef534408dc10
+/dsh-task-supervisor:
+  en: e4f2666144fc86a6
+  zh: 5aa4251ef6f2cda9
+/dsh-task-supervisor/summary:
+  en: 8d8b2100a4d1d169
+  zh: 50ceb96f60d9bba6
+/dsh-task-supervisor/table-of-contents:
+  en: d24e49fb2b858f44
+  zh: b7556146d0df45ca
+/dsh-task-supervisor/get-started:
+  en: 8e55a9096b819d74
+  zh: 0afe54e70eee9bf6
+/dsh-task-supervisor/get-started/install-into-a-web-profile:
+  en: e654527ceb81f60d
+  zh: 2e2c5ab97de2b23c
+/dsh-task-supervisor/get-started/create-and-approve-a-task:
+  en: bae6efb669f17958
+  zh: 2e5e533ccc185a2c
+/dsh-task-supervisor/architecture-and-responsibilities:
+  en: d1c47f34696b9c70
+  zh: de17d66088789329
+/dsh-task-supervisor/the-complete-task-lifecycle:
+  en: 54ca0b065e7014bc
+  zh: 2b99ab4ea70dd2ff
+/dsh-task-supervisor/when-reviewers-intervene-and-what-they-check:
+  en: 96995fa6943fd6ad
+  zh: b3ee8b617117db9e
+/dsh-task-supervisor/evidence-and-independent-verification:
+  en: b526f22c28296a71
+  zh: b6abd0c2fe87acff
+/dsh-task-supervisor/continuation-pause-and-recovery:
+  en: 07d0f79eee4e3f77
+  zh: d78ec03a42526ccf
+/dsh-task-supervisor/understand-the-implementation-and-develop:
+  en: ddbd23928a8c2ff6
+  zh: 8c0aeef1243f49ee
+/dsh-task-supervisor/further-exploration:
+  en: 21d876dfe8be1f5e
+  zh: d4bf5d8d13c2447b
+/dsh-task-supervisor/model-experience:
+  en: 3ac6bb1169bd4350
+  zh: e814e8bf91a83195
+/dsh-task-supervisor/known-limitations-and-deferred-work:
+  en: 0f77b496224080a2
+  zh: 4b1c547acd06e6dd
+/dsh-task-supervisor/known-limitations-and-deferred-work/dev-note:
+  en: 666d942a996abc16
+  zh: ccca5236d609a3fd

@@ -1,78 +1,207 @@
 ---
-description: "Add persistent tasks, plan reviews and Supervisor consultation to a DSH Web profile."
+description: "Add persistent tasks, DAG progress, checkpoint reviews and Supervisor consultation to a DSH Web profile."
 kind: "package-bundle"
 ---
 
 # DSH Task Supervisor
 
+English | [中文](README.zh.md)
+
+[npm](https://www.npmjs.com/package/dsh-task-supervisor) · [Report an issue](https://github.com/gosomea/dsh-task-supervisor/issues) · [Community](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
+
 ## Summary
 
-**Add plan review, progress tracking and completion checks to long DSH tasks.** The main Agent plans and executes. Supervisor persists task state and starts a separate review Session at planning, stage and completion checkpoints. Follow progress in the main conversation’s compact DAG, then inspect plans, evidence and consultation in the sidebar.
+Use `/task` to track, pause and rework a goal, follow its DAG, and obtain reviews during planning, execution and completion. The main Agent plans and delivers; Supervisor persists state, schedules reviews, and continues, pauses or closes the task under valid decisions. Discuss requirements, ask about progress and explicitly change tasks in consultation. Default review examines the main conversation log; direct artifact reads and isolated checks require configuration, and passing review does not guarantee that nothing was missed.
 
-[简体中文](README.zh.md) · [npm 0.1.1](https://www.npmjs.com/package/dsh-task-supervisor) · [Report an issue](https://github.com/gosomea/dsh-task-supervisor/issues) · [Community](https://github.com/deepseek-ai/deepseek-harness/discussions/8892)
+## Table of Contents
 
-**0.1.1 development preview.** Its independent `/task` workflow coexists with native DSH Goal and Plan. A deterministic controller owns task state and continuation; reviewers provide decisions. Default review reads the main Session log. Independent artifact reads and isolated command checks require explicit configuration.
+- [Get started](#get-started)
+- [Architecture and responsibilities](#architecture-and-responsibilities)
+- [The complete Task lifecycle](#the-complete-task-lifecycle)
+- [When reviewers intervene and what they check](#when-reviewers-intervene-and-what-they-check)
+- [Evidence and independent verification](#evidence-and-independent-verification)
+- [Continuation, pause and recovery](#continuation-pause-and-recovery)
+- [Understand the implementation and develop](#understand-the-implementation-and-develop)
+- [Further Exploration](#further-exploration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
-## Installation requirements
+-----
 
-This version installs into unmodified public DSH. It uses native Session records and Agent presets for persistence and execution admission; no Host patch or custom build is required. See [installation validation](docs/native-install.md) for verified versions and migration limits.
+<a id="get-started"></a>
+## Get started
 
-## What you can do
+This page describes current development source. npm **0.1.1** is an earlier preview that still uses dedicated Supervisor presets and lacks some enhancements below; current source creates Tasks in native modes. See [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md) for version boundaries.
 
-- **Review plans before execution**: check coverage of the original requirements. User approval is the default; explicit preauthorization can admit execution after a passing review.
-- **Track progress and rework**: the DAG shows node states, participating Agents and attempt counts, with reasons and affected dependencies retained.
-- **Consult the Supervisor**: discuss objectives or ask about progress in the sidebar, and explicitly pause, resume or close supervision.
-- **Repair completed work**: inspect the proposed impact and confirm a return to the original task and DAG, retaining earlier acceptance records.
+### Install into a Web profile
 
-![Main conversation DAG and sidebar rework details](docs/assets/rework-attempt-details.png)
-
-*An earlier isolated validation example showing a passed node entering a new rework attempt and its dependency impact.*
-
-## Installation and version scope
-
-Use Node 24 and official DSH `0.2.0-rc.2`, with its Web profile and your existing model configuration. Add this bundle to that profile and start DSH:
+Node 24 and official DSH `0.2.0-rc.2` are validated without Host or native sandbox modifications. Retain the profile's model configuration and install the public package:
 
 ```sh
 dsh plugin --profile web add dsh-task-supervisor@0.1.1
 dsh web
 ```
 
-The npm 0.1.1 package includes the built Host plugin, Web client, check gateway and bundle patch and still uses dedicated Supervisor presets. Development source now creates Tasks in native modes and retains Goal/Plan tools; this change is not yet published. See [task supervision in native modes](docs/native-task.md) for natural-language creation, continuation ownership and old Session recovery.
+To test current source, build and pack it with the development commands below, then use `dsh plugin --profile web add /absolute/path/to/package.tgz` in an isolated profile. The package includes Host and Web plugins plus an optional check gateway; DSH provides its native components.
 
-If an independent command modifies the captured artifact tree, its evidence is invalid and subsequent checks are rejected; automatic check-directory recovery has not passed validation. This version retains that limitation. Default review uses main-Session logs; independent artifact checks need explicit configuration and independent browser observation is unavailable. See [implementation status](docs/implementation.md).
+### Create and approve a task
 
-## Planning supervision
+Enter `/task <objective>` in the main conversation to begin planning. Bare `/task` waits for the next message as the objective; with an unfinished task it shows status without resuming execution. `/task new <objective>` remains a compatibility alias. The main Agent can also use the task tool for an explicit natural-language creation request.
 
-Planning supervision is enabled by default (`planningSupervision`; `maxPlanningWithoutProgress: 2`). Before a submitted plan exists, native step boundaries use the existing activity observation thresholds; a completed planning turn without a submission, or a second truncation after recovery, also requests an independent planning review. Its evidence-linked facts, unknowns and next action stay bound to the requirements version. A pass only continues planning. `needs-user`, exhausted internal recovery and repeated independently judged lack of progress pause with distinct reasons. Disabling `automaticContinuation` prevents new rounds; disabling `observeLongTurns` suppresses in-turn observation, while `planningSupervision: false` suppresses planning reviews entirely.
+After plan review passes, execution normally waits for `/task approve`, a qualifying approval reply in the main conversation, or the sidebar approval button. Explicitly authorize execution after review to automate that approval. Approval permits implementation; node and whole-task acceptance still apply.
 
-## Current workflow
+The main conversation shows a compact DAG, participating Agents, progress and short review notices. A node or details link opens the full sidebar: conversation handles consultation and requirements; details holds plans, nodes, reviews and controls. The more menu provides read-only task history.
 
-1. `/task <objective>` starts planning a supervised task. Bare `/task` waits for the next human message as its objective without calling the model; `/task off` cancels that entry. `/task new <objective>` remains a compatibility alias.
-2. `/task status` shows status; bare `/task` also inspects an unfinished task without resuming it. A fresh reviewer checks a submitted plan against the original objective and returns omissions for revision. After that review passes, the initial plan waits for `/task approve` or the **Approve plan** button by default; explicit `after-review` preauthorization admits it automatically. Planning retains native DSH tool permissions, including `run_code`, file and command tools for workspace investigation. The main Agent is instructed to wait for approval before implementing deliverables. The original `/task <objective>` input is recorded and displayed as a native user message.
-3. After approval, the controller admits follow-up turns. The main Agent reports stage evidence with `task_report_stage`. A fresh reviewer reads bounded pages of the main Session log and returns `pass`, `revise`, or `needs-user`.
-4. If a configured number of turns pass without a stage report, a progress reviewer decides whether to continue, correct course, or pause for the user. Once all stages pass, `task_request_completion` starts a separate final review. Only its `pass` decision marks the task complete.
-5. `/task pause`, `/task off`, `/task on`, `/task resume`, `/task edit <objective>`, and `/task clear` control the lifecycle. Plan, stage, and completion checkpoints show separate cards for the main Agent's submission and the Supervisor's independent review, with event and reviewer Session references. Each side's remaining content expands separately. The right sidebar shows state and the relevant controls, including an explicit **Close Supervisor** button. A host restart restores the task but waits for manual resume.
-6. For a defect within a completed objective, propose impact through `task_propose_repair` or consultation. A user click returns the same task to its original DAG. Execution waits for confirmation; historical acceptance remains and affected nodes are reviewed again. See the [repair protocol](docs/completed-task-repair.md) and [validation evidence](docs/completed-task-repair-validation.md).
+![Main conversation DAG and sidebar rework details](docs/assets/rework-attempt-details.png)
 
-Both the main Session and current task consultation accept `/task` commands; sidebar commands reach the same main-Session controller. Ordinary consultation leaves the task unchanged; explicit “pause task”, “resume task”, or “new task: complete objective” after completion forwards a control action. New tasks and pauses open the sidebar’s Task details tab. Older consultation remains historical and cannot control a newer task. Its composer stays at the sidebar bottom; task controls belong to Task details.
+*An earlier isolated validation example retaining the reason and dependency impact of a passed node entering a new rework attempt.*
 
-After a task finishes, the same main Session can start another. The sidebar's **Task history** view reads completed and cleared tasks from the native Session log on demand, with read-only plans, nodes, and reviews. Its consultation prepares a draft and creates it through the same task controller. The main Session's compact DAG follows only the current task; completed tasks show their final state without a prominent Clear task button. `/task clear` remains available for deliberate cancellation.
+-----
 
-For objectives that require completed read-only model turns after approval, the plan can set `read_only_turns_before_write` (0–10). The controller blocks writes until that many read-only turns have completed; interrupted turns do not count. This gate covers this explicit action-order constraint; it does not compile arbitrary natural-language timing requirements into rules.
+<a id="architecture-and-responsibilities"></a>
+## Architecture and responsibilities
 
-Before implementing a node, the main Agent records its node and attempt with `task_start_node`; ordinary questions do not start execution. Successful `task_rework_node` results produce a main-Session notice and DAG rework labels with attempt numbers. Node details retain the reason, prior acceptance, and affected descendants. Older Sessions rebuild these records from native tool logs. A previous pass never accepts a new attempt; missing start records do not imply execution.
+Supervisor contains a deterministic controller and model reviewers. The controller owns task state and continuation authority; reviewers make evidence-based decisions. Consultation is a user-facing Session, separate from automatic checkpoint review.
 
-Reviewer model selection follows the main Agent's effective DSH route by default. `reviewerModel` may select another provider, model, and reasoning effort available through the active profile. Each review records its model, reviewer Session ID, evidence seqs, and main Session cutoff.
+```mermaid
+flowchart TD
+  U["用户 / User"] --> M["主 Agent / Main Agent"]
+  U -->|"批准、暂停 / Controls"| C["Supervisor 控制器 / Controller"]
+  M -->|"计划、报告、完成申请 / Submissions"| C
+  C -->|"绑定版本与证据 / Bound review job"| R["审查者 / Reviewer"]
+  R -->|"裁决与引用 / Decision and evidence"| C
+  C -->|"续行、暂停、完成 / Continue, pause, complete"| M
+  M --> L["DSH 原生 Session 日志 / Session logs"]
+  C --> L
+  R --> L
+```
 
-Log review is the default. New configurations explicitly set `reviewVerification: independent` and provide `independentVerification.storageRoot` to enable requirement-driven plans and two-phase artifact acceptance. Read-only requirements need no command runner; computation or behavior checks require a container and toolchain. Existing `independentVerification`-only configurations retain their legacy protocol without invented historical plans. Independent browser checks remain unavailable. See [configuration](docs/implementation.md#independent-artifact-checks-and-two-stage-review) and [current real-model validation](eval/independent-verification/generic-quality-20260930/README.md).
+| Actor or component | Responsibility | Authority and limits |
+| --- | --- | --- |
+| User | Supplies objectives, constraints, approval and necessary decisions. | Initial execution defaults to manual approval; every post-completion reopening needs an impact-confirmation click. |
+| Main Agent | Investigates, proposes plans, implements, integrates, reports and requests completion. | Can propose completion but cannot mark the Task accepted itself. |
+| Supervisor controller | Persists tasks and DAGs, admits turns, starts reviews, applies valid decisions, stops and restores owned work. | Checks identity, versions, permission and evidence validity before transitions; model prose alone grants no authority. |
+| Checkpoint reviewer | Checks original requirements and evidence within the job, returning pass, revise or needs-user. | Normally a fresh native Session per checkpoint; supplementation or recovery retains the job identity and never implements in the main workspace. |
+| Delegated Worker, optional | Implements ready DAG nodes within exact assigned file paths. | The main Agent integrates and rechecks; a Worker report does not accept its node. |
+| Consultation | Refines objectives, proposes drafts, explains progress and forwards explicit controls. | Ordinary questions do not pause execution; the same controller validates control requests. |
+| DSH Sessions and projections | Retain human messages, execution and control records, review links and rebuildable views. | Native logs are authoritative; projections do not create a second history requiring manual synchronization. |
 
-`truncationRecovery` is enabled by default: after a generation reaches its output limit, an admitted task may resume planning or execution once native tools and queues settle. `automaticContinuation: false` disables automatic new turns. `maxRecoveryWithoutProgress` defaults to 2; repeated recovery without novel verifiable tool output pauses for manual resume. Recovery messages, original turns, evidence and counts persist in the main Session; pause, off and restart never automatically resume.
+Current source retains the main Session's native preset and Goal/Plan tools. While a Task exists, Supervisor disarms native Goal continuation through public GoalService; native Plan/Todo can organize work but cannot approve or accept the Task. Supervisor does not act as a general Team Lead; the main Agent and Workers implement.
 
-`planningSupervision` defaults to `true` and checks plan formation before submission. `executionApproval` defaults to `manual`; select `after-review` in the profile or use `/task auto-approve-on` before first approval to preauthorize execution after an independent formal plan pass. `/task auto-approve-off` revokes it, including during review. Editing requirements clears approval and preauthorization. [Validation](docs/planning-supervision-validation.md) separates deterministic checks from real-model probes.
+-----
 
-## Development and isolated validation
+<a id="the-complete-task-lifecycle"></a>
+## The complete Task lifecycle
 
-Use Node 24 and an installed unmodified DSH source checkout for source tests. These commands read the checkout without building or changing it; `DSH_SOURCE` selects its path:
+A task can span many model turns. Reviews in this diagram are formal checkpoints handed to the controller after submission; planning and execution also receive activity observations under the next section's conditions.
+
+```mermaid
+flowchart TD
+  A["建立目标 / Create task"] --> B["勘察与规划 / Plan"]
+  B --> C["计划覆盖审查 / Plan review"]
+  C -->|"修订 / Revise"| B
+  C -->|"通过 / Pass"| D["执行批准 / Approval"]
+  D --> E["实施就绪节点 / Execute ready node"]
+  E --> F["节点验收 / Node review"]
+  F -->|"补做 / Revise"| E
+  F -->|"还有节点 / More nodes"| E
+  F -->|"全部通过 / All passed"| G["整体验收 / Completion review"]
+  G -->|"补做 / Revise"| E
+  G -->|"通过 / Pass"| H["完成 / Complete"]
+  H --> I["发现原目标缺陷 / Repair proposal"]
+  I -->|"用户确认影响 / Confirm impact"| E
+```
+
+1. **Establish requirements.** Create a task directly, or refine a broad idea into a consultation draft first. The controller binds the main Session, task ID and requirements version. Original human requirements remain the acceptance authority.
+2. **Investigate and form a plan.** The main Agent uses native tools to inspect inputs and the workspace, then proposes criteria and a DAG. Planning retains native permissions and asks for investigation before implementation approval; it does not prohibit every read or `run_code`. Supervisor can inspect planning progress for unknown conditions, repetition or stalled investigation.
+3. **Submit the plan.** `task_submit_plan` persists the job, proposal, requirements version, evidence cutoff and reviewer Session identity, promptly returns submitted, and ends the turn. After tool activity settles, the controller runs coverage review. Revision findings return to the main Agent; a pass enters initial execution approval.
+4. **Admit implementation.** Wait for user approval by default; explicit preauthorization permits automatic execution only after review passes. Independent mode checks declared capabilities and toolchains first. Requirements edits revoke prior approval and preauthorization and return to planning. Later plan revisions under unchanged requirements still need review without unconditionally repeating initial approval.
+5. **Execute DAG nodes.** Predecessors must pass review before successors become ready. The main Agent records the current attempt with `task_start_node`, then implements or delegates non-overlapping file scopes. After integration and rechecks it submits evidence with `task_report_stage`. Supervisor can inspect progress during work or continue after a turn ends.
+6. **Accept or rework a node.** Only a passing review accepts the attempt and releases dependencies. Revision requires more work without accepting the node. A defect in an accepted node can trigger `task_rework_node`, creating new attempts for it and its descendants while retaining unrelated branches and historical reviews. Resubmissions bind the current attempt.
+7. **Check the whole delivery.** All nodes passing still requires the main Agent to submit the current combined result with `task_request_completion`. Completion review checks every necessary original requirement, component relationships and supporting evidence. Only a valid applied pass completes the Task. Revision returns to implementation; user needs or internal faults pause it.
+8. **Continue after completion.** The same Session can start another task and retain the previous one in history. An original-objective defect first requires a repair reason, root nodes and impact proposal. Every reopening waits for a user confirmation click, then returns to the same Task/DAG, preserving prior completion and reaccepting affected nodes and the combined result.
+
+“Review submitted” does not mean “review passed”; native turn completion does not mean Task completion. During review, the main Agent waits for handoff. The UI shows job kind, elapsed time, evidence reads, last activity, deadline and next action; the proposal DAG is explicitly unapproved. Read counts measure activity, not completion percentage or coverage.
+
+-----
+
+<a id="when-reviewers-intervene-and-what-they-check"></a>
+## When reviewers intervene and what they check
+
+These are five job kinds in one review engine, not five resident Agents. Jobs bind requirements, plan, node attempt and evidence cutoff. A pass has a different meaning at each checkpoint.
+
+| Job and phase | Trigger | What the reviewer checks | Controller response |
+| --- | --- | --- | --- |
+| `planning`: plan formation | A normal planning turn ends without submission, activity reaches observation thresholds, or planning still needs inspection after truncation recovery. | Separates confirmed investigation facts from unknowns, evaluates relevant new progress and proposes a concrete next output. | Pass or revise only permits further planning; user needs or consecutive lack of progress pauses, never authorizes implementation. |
+| `plan`: proposed plan | The main Agent submits an initial or revised plan; coverage review is on by default. | Checks original requirements, criterion provenance, coverage, feasibility, normalized dependencies, verification ordering and required capabilities; rejects downstream checks needed to accept their predecessors. | Pass enters the valid approval path; missing or weakened requirements return for revision; necessary user decisions pause. |
+| `progress`: implementation | Activity reaches observation thresholds, or automatic continuation without node reports reaches its configured limit. | Examines actual output, tool failures, repetition and drift across ready/running nodes to decide continuation, correction or help. | Pass continues work without accepting a node; revise delivers correction; user needs pause. |
+| `stage`: node acceptance | The main Agent submits evidence for the current attempt; delegated nodes require main-Session integration checks. | Checks node requirements, action constraints and evidence, including child and integration records as needed; independent mode inspects current artifacts. | Pass accepts the attempt and releases dependencies; revise requires work; user needs pause. |
+| `completion`: task closure | After every node passes, the main Agent requests completion. | Checks all necessary original requirements and the combined delivery, rather than merely aggregating node passes or accepting the main summary. | Only a valid pass completes; revise requires work; unresolved verification requiring the user pauses. |
+
+Default native safe-step observations trigger on **24 tool results**, **five minutes with recorded tool activity** since the previous observation, or **three consecutive tool errors**. Wall time alone without new tool results does not trigger inspection or prove drift. Execution also uses `maxAutomaticRoundsWithoutReport: 3` as a turn-based fallback. Formal verdicts reset observation so review time cannot immediately count as another main-Agent progress interval.
+
+`planningSupervision` controls planning review; `observeLongTurns` controls in-turn observation; `progressReviewMode: required-only` skips execution-progress review while retaining plan, node and completion checkpoints. Thresholds are configurable, not continuous observation of every operation. On an output-limit ending, the controller can resume another turn with confirmed context; that recovery is not a review pass.
+
+-----
+
+<a id="evidence-and-independent-verification"></a>
+## Evidence and independent verification
+
+A separate Session isolates review context but does not prove that the reviewer ran or observed artifacts. The UI shows the effective mode. Plan and progress jobs use log review; node and completion jobs use the configured verification method.
+
+| Mode | Reviewer capabilities | Decision boundary |
+| --- | --- | --- |
+| `reviewVerification: log`, default | Pages through human requirements, tool calls/results, main reports, child integration records and available native images before the cutoff. | Checks recorded behavior and evidence, not reviewer-run product execution; unavailable behavior remains explicitly unverified. |
+| `reviewVerification: independent` | Captures artifacts including applicable uncommitted/untracked files, reads them directly, and uses configured isolated command execution as required. | Claims only available capabilities. Reading alone needs no runner; computation or behavior checks require a suitable environment. Independent browser observation is unavailable. |
+
+Explicit `independent` mode with `independentVerification.storageRoot` enables the generic protocol below; execution additionally needs a configured container and toolchain. Sessions retaining only legacy `independentVerification` use the compatibility protocol without invented historical check plans. Independent node and completion reviews proceed in this order:
+
+1. **Plan checks.** Read complete original requirements, necessary inputs and constraints; list artifacts and capabilities. Persist sources, facts, methods, expectations and coverage with `task_review_check_plan`, separating explicit requirements from hypotheses before expanding deliverables.
+2. **Inspect independently.** Choose reading, recalculation or execution from requirements, rather than a code/document checklist. Assess whether existing assertions and operation paths support them; retain actual checks, failures, unverified results, coverage and limitations.
+3. **Compare reports.** Persist independent findings with `task_review_observations` before opening main reports, execution logs and historical verdicts. Investigate discrepancies and append checks while retaining earlier findings.
+4. **Decide.** `task_review_decision` cites evidence actually read or run in this job. The controller checks identity, version and artifact freshness before application. File existence, zero exit status or test counts alone cannot prove a requirement.
+
+Missing necessary capabilities cannot silently downgrade to a pass. Known needs can be prepared before dispatch; needs identified in planning are checked before implementation approval. See [independent artifact checks](docs/implementation.md) for configuration and [generic review enhancement](docs/review-quality.md) for protocol and real-model evidence.
+
+-----
+
+<a id="continuation-pause-and-recovery"></a>
+## Continuation, pause and recovery
+
+After native activity settles, the controller checks task identity, permission, versions and pending human input before another turn. Continuation carries the current objective, DAG/attempt, recorded progress and next action, rather than only “continue.” Formal plan, node and completion submissions end the tool turn; the controller owns review, so normal outer PTC settlement does not cancel a handed-off job.
+
+| State or condition | Meaning and next action |
+| --- | --- |
+| Awaiting approval | Plan review passed without implementation permission; approve the plan or edit requirements first. |
+| Reviewing | The main Agent waits for the verdict; inspect live read-only records. Activity counts are not acceptance percentages. |
+| User decision required | The reviewer needs a condition resolved by the user; supply a decision and manually resume. Waiting timeout is not approval. |
+| Internal fault or review timeout | No valid review completion; retain job, Session, error and retry details. `/task retry-review` validates and restores the job without approving or automatically resuming previously paused implementation. |
+| Planning stalled or recovery without progress | By default, two consecutive counts of the corresponding no-progress condition pause; investigate and resume manually. |
+| `/task pause` or `/task off` | Stop owned continuation and review while retaining records. `/task on` enables supervision; `/task resume` explicitly restores work. |
+| Requirements edits or artifact changes | Old-version verdicts cannot accept new work. Use `/task edit <objective>` for requirements; changed artifacts need fresh verification. |
+| Host restart | Rebuild state from logs and wait for manual continuation without duplicate dispatch. Viewing does not start models; cold Session controls require restoration through the main conversation. |
+
+Ordinary log review defaults to a ten-minute deadline; independent checks use their configured deadline, default thirty minutes. Missing decision protocol allows bounded supplementation within the same job, Session and cutoff; exhaustion pauses as an internal fault. User stops, disabling, version changes and Host exit have distinct cancellation semantics; not all cancellations retry automatically. See [review-job lifetime](docs/review-queue.md) and [progress display](docs/review-progress.md).
+
+-----
+
+<a id="understand-the-implementation-and-develop"></a>
+## Understand the implementation and develop
+
+The plugin uses public DSH Sessions, Inbox, lifecycle and client extensions. Source and owning documents maintain exact protocols. These modules locate responsibility for control, evidence and views.
+
+<details>
+<summary>Module responsibilities and development entry</summary>
+
+| Source | Responsibility |
+| --- | --- |
+| [Controller](src/index.ts), [review queue](src/review-queue.ts) | Task admission, native continuation, checkpoint handoff and cancellation. |
+| [Task state](src/state.ts), [DAG](src/graph.ts) | Event projection, dependency readiness, node attempts and propagated rework. |
+| [Reviewer](src/reviewer.ts), [check protocol](src/verification.ts) | Bound jobs, evidence access, independent snapshots/checks, decisions and bounded supplementation. |
+| [Consultation](src/consultation.ts), [post-completion repair](src/repair-runtime.ts) | Drafts, explicit control delivery, impact proposals and confirmation clicks. |
+| [Panel API](src/panel-api.ts), [client](src/client/index.tsx) | Current state, read-only history/review records, inline DAG and sidebar. |
+
+Use Node 24, installed dependencies and an unmodified DSH source checkout. Tests read `DSH_SOURCE` without building or editing that Host:
 
 ```sh
 pnpm install
@@ -82,42 +211,45 @@ DSH_SOURCE=/absolute/path/to/deepseek-harness node spikes/kernel/run.mjs
 pnpm pack --dry-run
 ```
 
-For installation acceptance, use official npm DSH in a registered isolated `DSH_HOME` and install the packed tarball through `dsh plugin --profile web add /absolute/path/to/package.tgz`. No source Host/Client rebuild, manually linked SDK or private event-reader API is used. Native components are peer dependencies supplied by DSH, so the plugin does not replace Host components with a different version.
+Real installation/model validation uses registered isolated `DSH_HOME` and temporary workspaces, installs packed artifacts and retains failures. See [implementation status](docs/implementation.md) for scope. Formal evaluation remains separate from development regression.
 
-## Design and evaluation
+</details>
 
-| Read | Purpose |
-| --- | --- |
-| [Implementation status](docs/implementation.md) | Actual code, installation prerequisite, tests, and limits. |
-| [Supervisor interaction proposal](docs/supervisor-experience-v2.md) | Shrine Session findings, response language, task graph, decisions, and persistent consultation. |
-| [Conversation and review recovery plan](docs/10-plans/conversation-and-review-recovery/plans.md) | Proposed: forming tasks through discussion, bounded protocol repair, fault tracing, and review frequency experiments. |
-| [V2 integrated validation](docs/v2-integrated-validation.md) | Real-model checks of batches two and three, DAGs, persistent consultation, workers, and failure repairs. |
-| [Rework and execution validation](docs/rework-progress-validation.md) | Explicit main-node starts, prior acceptance, affected descendants, and older-log recovery. |
-| [Independent verification and repair after completion](docs/10-plans/independent-verification/plans.md) | Repair, snapshots and two-stage independent execution are validated; independent browser and joint regression remain pending. |
-| [Architecture](docs/architecture.md) | Ownership and DSH integration design. |
-| [Task state and control](docs/task-lifecycle.md) | Full multi-task lifecycle proposal. |
-| [Review and intervention](docs/review-policy.md) | Review timing and user decisions. |
-| [Planning supervision and execution approval](.agents/notes/implemented/feature/2026-09-29-planning-supervision.md) | Implemented: planning observation, contextual recovery, bounded reviewer supplementation and explicit execution preauthorization; evidence and limits linked. |
-| [Evaluation design and execution roadmap](docs/evaluation.md) | Public benchmarks first; datasets, comparison arms, metrics, checklist, and development-result links. |
-| [First prototype](docs/prototype.md) | Acceptance gates and comparison with Agent Team. |
-| [Supervisor Session](docs/session-runtime.md) | Durable control and recovery design. |
-| [Reviewer model](docs/review-model.md) | DSH profile model policy. |
-| [Kernel experiment](docs/host-spike.md) | Initial capability investigation. |
+-----
 
-The prototype executes one task at a time per Session and supports successive tasks after completion. The five-task queue, `/task plan` shortcut, user-configurable decision timeout, and formal long-horizon comparison remain future work. A lifecycle trial found a false completion decision on an explicit ordering constraint; an [independent regression case](eval/reliability-v1/README.zh.md) and real-model recovery run record the subsequent fix. Current development source retains native presets and Goal/Plan tools; Supervisor owns continuation while a Task executes. npm 0.1.1 uses the older dedicated presets, which require explicit `legacyPresets` support for old Session recovery.
+<a id="further-exploration"></a>
+## Further Exploration
 
-[简体中文](README.zh.md)
+These pages own implementation, recovery, independent checks and evaluation. Early design proposals do not describe current installation capabilities.
 
+- [Implementation status](docs/implementation.md): effective configuration, validated behavior and capability boundaries.
+- [Native tasks](docs/native-task.md): presets, Goal/Plan composition and legacy Session recovery.
+- [Post-completion repair](docs/completed-task-repair.md): impact confirmation, original DAG and prior acceptance.
+- [Generic review enhancement](docs/review-quality.md): requirement-driven methods, evidence coverage and independent checks.
+- [Review-job lifetime](docs/review-queue.md): tool handoff, deadlines, cancellation and same-job recovery.
+- [Evaluation design](docs/evaluation.md): public benchmarks, conditions, metrics and results.
+
+<a id="model-experience"></a>
 ## Model Experience
 
-The main Agent uses `/task` and task tools; original inputs and model answers retain native rendering. Reviewers use bounded evidence and constrained inspection tools. A separate review Session alone does not prove independent execution or observation; the panel reports the effective verification mode. Consultation and compaction inherit native preset capabilities without another root-scoped compaction backend.
+The main Agent receives task context and uses tools to submit plans, start nodes, report and request completion. Human input and answers retain native rendering. Reviewers receive only permitted evidence/tools and cite actual checks against current requirements. Consultation uses native conversation and compaction without interfering through ordinary questions.
 
+Review defaults to the main Agent's effective DSH route. `reviewerModel` can select a provider, model and reasoning level from the current profile; records retain the actual route and Session identity. Responses aim to follow human language requirements or explicit configuration; the plugin cannot guarantee the main model's internal reasoning language.
+
+<a id="known-limitations-and-deferred-work"></a>
 ## Known Limitations and Deferred Work
 
-Private 0.1.0 extension logs cannot restore directly in public DSH: retain their original Host and start a fresh 0.1.1 Session. This release migrates or rewrites no historical log. npm 0.1.1 still requires selecting its dedicated mode for a new Session; current development source can create a Task in a native Session through `/task`. Successive tasks retain prior history. Independent browser checks and automatic check-directory recovery remain unavailable; installation acceptance does not establish long-horizon superiority over Goal/Plan.
+Current source runs one Task per main Session at a time and permits another after completion. `automaticContinuation: false` prevents automatic new turns. `executionApproval: after-review` or `/task auto-approve-on` only preauthorizes the current requirements version and expires on edit. User-decision timeout continuation, parallel multi-task queues and `/task plan` are unimplemented.
 
-## Supervisor conversation layout
+Independent browser observation and automatic check-directory restoration are unavailable; commands changing the captured artifact tree invalidate evidence. Controlled Workers default to at most two and write exact assigned files; arbitrary shell and final integration belong to the main Agent. These limits do not prohibit native main-Agent tools.
 
-The sidebar header contains Chat / Details and current status. Task history and help use the native overflow menu. One conversation handles questions, drafts, explicit creation and requirement edits; no Discussion / Direct creation switch remains. Historical input-mode records are retained but no longer turn ordinary messages into tasks.
+Keep the original Host for 0.1.0 private-extension logs; this version does not rewrite them. Recovering npm 0.1.1 dedicated presets requires explicit `legacyPresets`. Without the plugin, public Host cannot install its admission protection; unloading is not a protected pause. Independent reviews can miss defects; installation and development regressions do not prove better long-horizon success than Goal, Plan or Agent Team.
 
-Drafts appear below their logged Supervisor replies. Expand requirements and create the current draft; older versions remain read-only. `/task <objective>` or an explicit creation directive starts planning. Questions leave task state unchanged. Initial plan approval and impact confirmation for completed-task repair still apply. See [layout and validation](docs/consultation-layout.md).
+### Dev Note
+
+<details>
+<summary>Maintainer working context, non-authoritative</summary>
+
+None.
+
+</details>
