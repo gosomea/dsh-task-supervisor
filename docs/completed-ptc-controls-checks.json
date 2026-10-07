@@ -1,0 +1,393 @@
+{
+  "date": "2026-10-07",
+  "sourceCommits": [
+    "5cb714e10e5b27120b75da47a0418a04f2d0d80a",
+    "20fda6eae9f04e2178b8f9a3da573dc409ccbae9"
+  ],
+  "dshPublishedVersion": "0.2.0-rc.2",
+  "kernel": {
+    "owningFile": "spikes/kernel/supervisor.spec.ts",
+    "passed": 113,
+    "skipped": 1,
+    "newRegressions": 3
+  },
+  "strictTypes": {
+    "host": true,
+    "client": true
+  },
+  "build": true,
+  "package": {
+    "sha256": "a67987f3121be8a7287e00c8bcfdd576aac8bbb2eca29994fadd1ac62a106960",
+    "declaredEntriesResolved": true,
+    "installedRuntimeMatches": true,
+    "clientUnchanged": true
+  },
+  "realModel": {
+    "reviewVerification": "log",
+    "preset": "ptc",
+    "nativePtcReviewBudgetMs": 600000,
+    "profileBudgetChanged": false,
+    "firstTaskApprovalCount": 1,
+    "firstTaskReviews": [
+      {
+        "kind": "plan",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-56757fb9-220e-4653-8216-be1f6d180efe"
+      },
+      {
+        "kind": "stage",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-b1d0e047-7fac-4e98-b623-a004b2e0d0b1"
+      },
+      {
+        "kind": "completion",
+        "status": "applied",
+        "verdict": "pass",
+        "sessionId": "task-review-5e698c7c-12c8-478d-8aeb-c2548e836f8c"
+      }
+    ],
+    "completionInquiryAfterRestart": {
+      "errors": 0,
+      "directTools": [
+        "task_status",
+        "read"
+      ],
+      "taskIdUnchanged": true,
+      "deniedInheritedSchemasHidden": true
+    },
+    "nextTask": {
+      "oldId": "8c65206a-68e7-450b-abd8-2ff66ca6b241",
+      "id": "3e344151-4e9b-4775-b43a-287797aa800a",
+      "userMessageSeq": 207,
+      "creationCallSeq": 216,
+      "originalTaskArchived": true,
+      "phase": "awaiting-approval",
+      "approvedPlanVersion": null,
+      "approvalSent": false,
+      "nativePresetUnchanged": true,
+      "requestToolLists": [
+        [
+          "run_code"
+        ],
+        []
+      ]
+    },
+    "workspace": {
+      "onlyInputFile": true,
+      "unchanged": true,
+      "expectedSum": 20
+    }
+  },
+  "retainedFailures": [
+    {
+      "sessionId": "session-816b3431-2517-4e7d-b104-aa59d3d6eafe",
+      "kind": "post-approval-ptc-read-transport",
+      "fixed": true,
+      "handling": "controlled pause and restart; failed progress review retained as operator cancellation"
+    },
+    {
+      "sessionId": "session-816b3431-2517-4e7d-b104-aa59d3d6eafe",
+      "kind": "outer-ptc-default-budget-cancels-review",
+      "fixed": false,
+      "outerDefaultBudgetMs": 120000,
+      "fault": {
+        "jobId": "ae342ce5-f6a8-4b4a-827e-cd8df1139df6",
+        "stageId": "s1",
+        "cutoff": 178,
+        "reviewerSessionId": "task-review-6d5b20ba-bb65-4330-b9d1-20c638964bd3",
+        "code": "cancelled",
+        "message": "run_code settled",
+        "retryable": false,
+        "attempt": 1,
+        "errorSeq": null,
+        "outcomeKnown": false
+      },
+      "retryCommand": "no retryable review fault",
+      "resumeCommand": "review fault unresolved"
+    },
+    {
+      "sessionId": "session-efab9ba4-bdf4-46cf-8ae1-cd2669a7d8dd",
+      "kind": "pre-mask-extra-bash-denied",
+      "toolErrors": 1,
+      "fixedBy": "hide unavailable inherited schemas; repeat inquiry after restart"
+    }
+  ],
+  "dailyDeployment": {
+    "port": 3080,
+    "pid": 69164,
+    "profile": "web-rc2",
+    "sha256": "a67987f3121be8a7287e00c8bcfdd576aac8bbb2eca29994fadd1ac62a106960",
+    "sessionCount": 521,
+    "originalTaskId": "ff14d17c-b1ef-489b-b704-05dfa974ec4c",
+    "originalTaskPhase": "complete",
+    "originalPreset": "ptc",
+    "originalSessionPrompted": false,
+    "otherDependenciesUnchanged": true,
+    "bundleListUnchanged": true,
+    "cordisFilesUnchanged": true,
+    "webReloadVerified": true
+  },
+  "sessions": [
+    {
+      "sessionId": "session-efab9ba4-bdf4-46cf-8ae1-cd2669a7d8dd",
+      "role": "successful-main",
+      "eventCount": 247,
+      "logSha256": "1cbd15dc8fc737eeb3ffa3779ab70f6549f37f9647075742e5097822fe4dba6a",
+      "requestHeaders": 9,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 140470,
+        "outputTokens": 9162,
+        "cacheReadTokens": 226304,
+        "cacheWriteTokens": 0,
+        "totalTokens": 375936
+      },
+      "toolCalls": 21,
+      "ptcDispatches": 13,
+      "toolErrors": 2,
+      "turnEndReasons": [
+        "completed",
+        "completed",
+        "completed",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-56757fb9-220e-4653-8216-be1f6d180efe",
+      "role": "successful-plan",
+      "eventCount": 59,
+      "logSha256": "d7c90391276e62f136c6ea50064f050c8dcabf613bf2f7b7ea17bf16854acbc7",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 18266,
+        "outputTokens": 8609,
+        "cacheReadTokens": 61824,
+        "cacheWriteTokens": 0,
+        "totalTokens": 88699
+      },
+      "toolCalls": 13,
+      "ptcDispatches": 0,
+      "toolErrors": 3,
+      "turnEndReasons": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-b1d0e047-7fac-4e98-b623-a004b2e0d0b1",
+      "role": "successful-stage",
+      "eventCount": 86,
+      "logSha256": "b5d4f6babae72b997f0f6fad4b1d79ba3752e4846f3c6604ab4e2cc8a6444ef3",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 32213,
+        "outputTokens": 9118,
+        "cacheReadTokens": 171136,
+        "cacheWriteTokens": 0,
+        "totalTokens": 212467
+      },
+      "toolCalls": 22,
+      "ptcDispatches": 0,
+      "toolErrors": 2,
+      "turnEndReasons": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-5e698c7c-12c8-478d-8aeb-c2548e836f8c",
+      "role": "successful-completion",
+      "eventCount": 126,
+      "logSha256": "0c5f467582ccb0bf8b3f8dfad40fac3e17175ad9393c8c8ecc12dc516781678e",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 40773,
+        "outputTokens": 19996,
+        "cacheReadTokens": 326272,
+        "cacheWriteTokens": 0,
+        "totalTokens": 387041
+      },
+      "toolCalls": 36,
+      "ptcDispatches": 0,
+      "toolErrors": 2,
+      "turnEndReasons": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-b7153bb9-8c8d-4b1a-9818-9cbc5e5133ba",
+      "role": "successful-plan",
+      "eventCount": 45,
+      "logSha256": "85794d5c8a128541083306131fba6feb4fdd939897af12c32211ef543a0350c6",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 10336,
+        "outputTokens": 13973,
+        "cacheReadTokens": 41088,
+        "cacheWriteTokens": 0,
+        "totalTokens": 65397
+      },
+      "toolCalls": 9,
+      "ptcDispatches": 0,
+      "toolErrors": 0,
+      "turnEndReasons": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "session-816b3431-2517-4e7d-b104-aa59d3d6eafe",
+      "role": "retained-failure-main",
+      "eventCount": 211,
+      "logSha256": "3207c43f4114dea3e922b9580c12f744e00c6f61aa88c0a8b8220c5325ddb09e",
+      "requestHeaders": 6,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 61498,
+        "outputTokens": 6223,
+        "cacheReadTokens": 209664,
+        "cacheWriteTokens": 0,
+        "totalTokens": 277385
+      },
+      "toolCalls": 13,
+      "ptcDispatches": 14,
+      "toolErrors": 7,
+      "turnEndReasons": [
+        "completed",
+        "completed",
+        "aborted",
+        "completed",
+        "completed",
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-2f88388f-bb58-41b8-adbc-3789349e5d5d",
+      "role": "retained-failure-plan",
+      "eventCount": 66,
+      "logSha256": "f654626e88db05eb896258eaa1e9d00fc1b0eae1ffa3caae04a1eab597cd18dd",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 15712,
+        "outputTokens": 11904,
+        "cacheReadTokens": 77056,
+        "cacheWriteTokens": 0,
+        "totalTokens": 104672
+      },
+      "toolCalls": 15,
+      "ptcDispatches": 0,
+      "toolErrors": 0,
+      "turnEndReasons": [
+        "completed"
+      ]
+    },
+    {
+      "sessionId": "task-review-5e88a1ad-92dc-4978-ba1c-fba3d486a2cf",
+      "role": "retained-failure-progress",
+      "eventCount": 83,
+      "logSha256": "9dce78def2a483ba8919fa21abaabed08d92df633f82365541432d1998bc2595",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 22162,
+        "outputTokens": 10768,
+        "cacheReadTokens": 144384,
+        "cacheWriteTokens": 0,
+        "totalTokens": 177314
+      },
+      "toolCalls": 19,
+      "ptcDispatches": 0,
+      "toolErrors": 1,
+      "turnEndReasons": [
+        "aborted"
+      ]
+    },
+    {
+      "sessionId": "task-review-6d5b20ba-bb65-4330-b9d1-20c638964bd3",
+      "role": "retained-failure-stage",
+      "eventCount": 93,
+      "logSha256": "e57bac64bf4ec72b7273b77dac0babf5a7fcf9a6866bf9a76ed99ac91df0514c",
+      "requestHeaders": 1,
+      "requestHeaderModels": [
+        {
+          "provider": "deepseek-codebuddy",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "reportedTokens": {
+        "inputTokens": 36341,
+        "outputTokens": 19883,
+        "cacheReadTokens": 222464,
+        "cacheWriteTokens": 0,
+        "totalTokens": 278688
+      },
+      "toolCalls": 21,
+      "ptcDispatches": 0,
+      "toolErrors": 3,
+      "turnEndReasons": [
+        "aborted"
+      ]
+    }
+  ],
+  "reportedAllSessionTokens": {
+    "inputTokens": 377771,
+    "outputTokens": 109636,
+    "cacheReadTokens": 1480192,
+    "cacheWriteTokens": 0,
+    "totalTokens": 1967599
+  },
+  "unreportedInterruptedUsage": null,
+  "limitations": [
+    "Tool admission regression, not an independent product validation or comparative evaluation.",
+    "Real review calls used explicit native-supported 600000 ms PTC budgets; default-budget failure remains unresolved.",
+    "Public inherited-tool masks exempt Agent-local tool registrations; execution guards remain authoritative.",
+    "One existing Docker test was skipped; full repository suite and public benchmark were not run.",
+    "Daily deployment is a local packed artifact; no npm version published in this change."
+  ]
+}

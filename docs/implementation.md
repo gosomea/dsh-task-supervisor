@@ -1,5 +1,7 @@
 # Implementation status
 
+2026-10-07: Completed PTC Tasks expose direct read/control tools without changing the preset; next-task planning restores its presentation. See [completed PTC tool access](completed-ptc-controls.md).
+
 **2026-10-06: development source retains native modes.** Human-message-bound `task_create` is available; native Goal/Plan remain and Supervisor owns Task continuation and acceptance. This change is not yet published; see [task supervision in native modes](native-task.md) for workflow, compatibility and validation.
 
 **2026-10-04: 0.1.1 standard installation.** Native persistent records and preset admission are implemented; projection cache is 17. [Installation validation](native-install.md) owns current evidence and limits; earlier version counts below retain historical scope.
