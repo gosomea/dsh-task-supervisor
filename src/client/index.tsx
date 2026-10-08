@@ -230,7 +230,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
       {state && <ReviewProgress state={state} t={t} />}
-      {(reviewId || state?.reviewing) && <Button size="sm" variant="toolbar" onClick={() => {
+      {(reviewId || reviewJob) && <Button size="sm" variant="toolbar" onClick={() => {
         const job = reviewId ? state?.reviewJobs?.find(item => item.reviewerSessionId === reviewId) : reviewJob
         setReviewNavigationError('')
         if (!job) { setReviewNavigationError(t('reviewUnavailable')); return }
@@ -243,7 +243,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
       {task?.pauseReason === 'planning-stalled' && <p role="status">独立规划检查未发现新的相关进展，已暂停。检查未决问题后可手动恢复。</p>}
       {task?.recovery && <section className="dsh-task-section"><Disclosure title="生成截断后的续行记录"><p>原回合 {task.recovery.turn} · 结束事件 seq {task.recovery.endSeq} · 连续无进展 {task.recovery.noProgress} 次</p><p className="dsh-task-review">{task.recovery.instruction}</p></Disclosure></section>}
       {task?.pauseReason === 'recovery-stalled' && <p role="status">连续恢复未产生可核实的新进展，已暂停。检查现状后可手动恢复或修改目标。</p>}
-      {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>任务已暂停，已保存审查现场。重试只恢复审查；后续执行仍需明确恢复。</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
+      {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>{t('reviewFaultRecoveryBoundary')}</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
       {state?.reviewVerification && <p className="dsh-task-muted">续行控制：Supervisor · 原生 Goal／Plan 可用于规划，不代替任务批准与验收。<br />验收模式：{state.reviewVerification === 'independent' ? '独立产物验证' : '日志证据审查'} · 计划与进展采用日志审查</p>}
       {reviewJob && <ReviewInspection job={reviewJob} t={t} />}
       {state?.entryActive ? <p>已进入任务规划。下一条主会话消息将作为任务目标；提交计划后等待批准。使用 /task off 取消。</p> : !task ? <p>未启用任务督导。输入 /task &lt;目标&gt; 开始规划，或在督导对话中整理草案。</p> : <>
@@ -262,7 +262,14 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
         <RepairPanel key={task.id} task={task} state={state} busy={busy} store={store} />
         {!reviewId && reviewSection}
         {(state.reviews?.length ?? 0) > 1 && <section className="dsh-task-section"><Disclosure title={`审查历史 · 最近 ${state.reviews?.length} 项`}>
-          {state.reviews?.slice().reverse().map(item => <Disclosure key={`${item.stageId}:${item.cutoff}`} title={`${item.stageId} · ${VERDICT[item.verdict]} · ${headline(item.finding, 34)}`}><p className="dsh-task-review">{item.finding}</p></Disclosure>)}
+          {state.reviews?.slice().reverse().map(item => <Disclosure key={`${item.stageId}:${item.cutoff}`} title={`${item.stageId} · ${VERDICT[item.verdict]} · ${headline(item.finding, 34)}`}><p className="dsh-task-review">{item.finding}</p>
+            {item.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => {
+              const job = state.reviewJobs?.find(value => value.reviewerSessionId === item.reviewerSessionId)
+              setReviewNavigationError('')
+              if (!job) { setReviewNavigationError(t('reviewUnavailable')); return }
+              void showReview(job).catch(error => setReviewNavigationError(String(error)))
+            }}>{t('reviewOpenPrimary')}</Button>}
+          </Disclosure>)}
         </Disclosure></section>}
       </>}
     </div>

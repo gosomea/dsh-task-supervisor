@@ -32,6 +32,6 @@ Recovery rebuilds read eligibility from paired successful native reviewer tool r
 | reviewFaultRetryDelayMs | 3000 | 0–60000 ms before retry |
 | resumeAfterReviewRecovery | true | Reuse only the original valid execution permit |
 
-Planning and progress review frequencies remain unchanged. No browser executor, PTC timeout or native sandbox changes are introduced. Kernel acceptance passed 405 tests with 13 skipped; strict Host/Client types passed. The official isolated Host completed two Tasks in one Session. Browser acceptance confirmed native streaming, tool failures, historical expansion and six unique job nodes after refresh. Independent runner, fault injection and public-package installation acceptance still precede release; types or packing do not substitute for these outcomes.
+Planning and progress review frequencies remain unchanged. No browser executor, PTC timeout or native sandbox changes are introduced. Kernel acceptance passed 405 tests with 13 skipped; strict Host/Client types passed. The official isolated Host completed two Tasks in one Session. Browser acceptance confirmed native streaming, tool failures, historical expansion and six unique job nodes after refresh. Independent mode executed snapshot checks and recovered within the same job from one injected 503 and one actual review timeout, then continued. Clean installation and public package checks are recorded in [0.1.3 release acceptance](releases/0.1.3.md).
 
 [中文](review-experience.zh.md)

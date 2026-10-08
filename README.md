@@ -31,14 +31,14 @@ Use `/task` to track, pause and rework a goal, follow its DAG, and obtain review
 <a id="get-started"></a>
 ## Get started
 
-This page describes **0.1.2**, which creates Tasks in native DSH modes. npm **0.1.1** is an earlier preview with dedicated Supervisor presets. See [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md) for version boundaries.
+This page describes **0.1.3**, which creates Tasks in native DSH modes and adds native review process visibility and bounded recovery. See [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
 
 ### Install into a Web profile
 
 Node 24 and official DSH `0.2.0-rc.2` are validated without Host or native sandbox modifications. Retain the profile's model configuration and install the public package:
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.2
+dsh plugin --profile web add dsh-task-supervisor@0.1.3
 dsh web
 ```
 

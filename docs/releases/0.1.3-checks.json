@@ -1,0 +1,634 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "version": "0.1.3",
+  "checks": {
+    "kernel": {
+      "passed": 405,
+      "skipped": 13,
+      "files": 28,
+      "skips": "5 Docker gateway, 7 Docker command runner, 1 controlled Docker defect scenario; Docker environment variables not supplied in generic suite"
+    },
+    "strictHostClientTypes": true,
+    "build": true,
+    "longReviewWallSeconds": 125,
+    "longReviewPassed": true
+  },
+  "model": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "protocol": "openai-completions",
+    "actualRequestHeadersVerified": true
+  },
+  "cases": [
+    {
+      "name": "log-two-tasks",
+      "mainSessionId": "session-15a906b8-bd42-42cb-a8a3-5cc80d972dd6",
+      "taskIds": [
+        "58e6cd7b-a735-4741-99c8-c4af2b64b285",
+        "ece0cb1c-5bf7-48e8-87cd-82075c89eac8"
+      ],
+      "finalPhase": "complete",
+      "initialApprovals": 2,
+      "commandRunNames": [
+        "task",
+        "task"
+      ],
+      "manualResumesOrRetries": 0,
+      "jobs": [
+        {
+          "id": "f2376854-9aca-4b93-8e12-d98251982eb9",
+          "taskId": "ece0cb1c-5bf7-48e8-87cd-82075c89eac8",
+          "kind": "plan",
+          "stageId": "plan",
+          "reviewerSessionId": "task-review-f70cca77-08df-426b-942a-390e23fb335c",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": null,
+          "cutoff": 40,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:27:41.823Z",
+          "finishedAt": "2026-10-08T08:28:58.045Z",
+          "durationSeconds": 76.222,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 0,
+              "approvedPlanVersion": null
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "401cdfd9-210d-48cd-aa39-c6929ec8151e",
+          "taskId": "ece0cb1c-5bf7-48e8-87cd-82075c89eac8",
+          "kind": "stage",
+          "stageId": "n1",
+          "reviewerSessionId": "task-review-829541d1-17d8-4e2d-9b99-3cec058136c0",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": 1,
+          "cutoff": 108,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:32:21.813Z",
+          "finishedAt": "2026-10-08T08:33:42.474Z",
+          "durationSeconds": 80.661,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "f6e1b2b5-046e-49fe-a0a3-5cde18989199",
+          "taskId": "ece0cb1c-5bf7-48e8-87cd-82075c89eac8",
+          "kind": "completion",
+          "stageId": "completion",
+          "reviewerSessionId": "task-review-67f02f65-b21c-407c-97b9-ab40d0ee645e",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": null,
+          "cutoff": 132,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:33:46.369Z",
+          "finishedAt": "2026-10-08T08:34:52.355Z",
+          "durationSeconds": 65.986,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "f113e735-de10-4b07-bf5b-19ee23db869a",
+          "taskId": "58e6cd7b-a735-4741-99c8-c4af2b64b285",
+          "kind": "plan",
+          "stageId": "plan",
+          "reviewerSessionId": "task-review-b4b55d2b-b732-4dc7-a8b1-7ffe540810c0",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": null,
+          "cutoff": 186,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:45:35.780Z",
+          "finishedAt": "2026-10-08T08:46:34.348Z",
+          "durationSeconds": 58.568,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 0,
+              "approvedPlanVersion": null
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "b7384ce8-a69a-452e-afd7-d649bef80f2d",
+          "taskId": "58e6cd7b-a735-4741-99c8-c4af2b64b285",
+          "kind": "stage",
+          "stageId": "n1",
+          "reviewerSessionId": "task-review-40777325-f99f-4ce8-b762-fdd0d5bcdeb2",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": 1,
+          "cutoff": 251,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:47:27.713Z",
+          "finishedAt": "2026-10-08T08:49:07.237Z",
+          "durationSeconds": 99.524,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "f94117d4-acb4-46c1-82e0-0c5fef1d7c28",
+          "taskId": "58e6cd7b-a735-4741-99c8-c4af2b64b285",
+          "kind": "completion",
+          "stageId": "completion",
+          "reviewerSessionId": "task-review-422d39c9-ab93-4e61-a262-467b994a9811",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": null,
+          "cutoff": 275,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:49:15.374Z",
+          "finishedAt": "2026-10-08T08:50:22.067Z",
+          "durationSeconds": 66.693,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        }
+      ],
+      "sessions": [
+        {
+          "id": "session-15a906b8-bd42-42cb-a8a3-5cc80d972dd6",
+          "role": "main",
+          "requestHeaders": 10,
+          "routeMatches": true,
+          "messagesWithUsage": 21,
+          "reportedTotalTokens": 378625,
+          "cacheReadTokens": 238464,
+          "toolCalls": 19
+        },
+        {
+          "id": "task-review-f70cca77-08df-426b-942a-390e23fb335c",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 7,
+          "reportedTotalTokens": 84166,
+          "cacheReadTokens": 55552,
+          "toolCalls": 14
+        },
+        {
+          "id": "task-review-829541d1-17d8-4e2d-9b99-3cec058136c0",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 13,
+          "reportedTotalTokens": 269023,
+          "cacheReadTokens": 229376,
+          "toolCalls": 26
+        },
+        {
+          "id": "task-review-67f02f65-b21c-407c-97b9-ab40d0ee645e",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 12,
+          "reportedTotalTokens": 299989,
+          "cacheReadTokens": 253056,
+          "toolCalls": 24
+        },
+        {
+          "id": "task-review-b4b55d2b-b732-4dc7-a8b1-7ffe540810c0",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 8,
+          "reportedTotalTokens": 155171,
+          "cacheReadTokens": 116992,
+          "toolCalls": 11
+        },
+        {
+          "id": "task-review-40777325-f99f-4ce8-b762-fdd0d5bcdeb2",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 14,
+          "reportedTotalTokens": 342494,
+          "cacheReadTokens": 289024,
+          "toolCalls": 23
+        },
+        {
+          "id": "task-review-422d39c9-ab93-4e61-a262-467b994a9811",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 10,
+          "reportedTotalTokens": 298790,
+          "cacheReadTokens": 243200,
+          "toolCalls": 28
+        }
+      ],
+      "allSessionReportedTokens": 1828258,
+      "tokenScopeNote": "Native assistant usage.totalTokens, including cached input; failed requests without usage remain unknown. Log case includes one route-health turn."
+    },
+    {
+      "name": "independent-fault-recovery",
+      "mainSessionId": "session-5e650f44-90ff-447b-9378-1797de9f75ee",
+      "taskIds": [
+        "95ecaac5-4efc-4962-b6ad-e391a0245ed1"
+      ],
+      "finalPhase": "complete",
+      "initialApprovals": 1,
+      "commandRunNames": [
+        "task"
+      ],
+      "manualResumesOrRetries": 0,
+      "jobs": [
+        {
+          "id": "1def5967-a41b-4836-a06e-ee125c84eba6",
+          "taskId": "95ecaac5-4efc-4962-b6ad-e391a0245ed1",
+          "kind": "plan",
+          "stageId": "plan",
+          "reviewerSessionId": "task-review-267bbd15-34f5-47bc-9964-fa3e3d39a34a",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 1,
+          "nodeAttempt": null,
+          "cutoff": 49,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:52:47.001Z",
+          "finishedAt": "2026-10-08T08:54:06.314Z",
+          "durationSeconds": 79.313,
+          "recovery": {
+            "consumed": 0,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 0,
+              "approvedPlanVersion": null
+            },
+            "faults": []
+          },
+          "snapshot": {
+            "id": null,
+            "digest": null,
+            "entries": []
+          },
+          "executedChecks": 0,
+          "successfulCommands": 0,
+          "checkFindings": 0,
+          "phaseTimes": null
+        },
+        {
+          "id": "c259e877-1903-4f3d-8115-774fc03f1d50",
+          "taskId": "95ecaac5-4efc-4962-b6ad-e391a0245ed1",
+          "kind": "stage",
+          "stageId": "n1",
+          "reviewerSessionId": "task-review-c75b72c3-bc39-4e1f-93cb-c50d7db00b8a",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 2,
+          "nodeAttempt": 1,
+          "cutoff": 144,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:55:16.155Z",
+          "finishedAt": "2026-10-08T08:58:29.759Z",
+          "durationSeconds": 193.604,
+          "recovery": {
+            "consumed": 1,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": [
+              {
+                "code": "provider",
+                "providerCode": "SERVER",
+                "attempt": 1,
+                "at": "2026-10-08T08:55:16.301Z"
+              }
+            ]
+          },
+          "snapshot": {
+            "id": "4fba18e7-d861-4cfd-89cd-0b5d6f8f4bba",
+            "digest": "ffaf6d766abf32422336cf6d1ee4be63e9ebf69bb95df3c5ca0538753fcc323d",
+            "entries": [
+              {
+                "path": "data.json",
+                "kind": "file",
+                "hash": "a87b10b6951e7a7b3457cd2fbb225ee21c7dd88fec98259ba0182c722615303d",
+                "bytes": 7,
+                "mode": 420
+              },
+              {
+                "path": "report.json",
+                "kind": "file",
+                "hash": "e25645b7458fc02083bcbaad7aa6921e262743bee724121b29f29b02ff5ff994",
+                "bytes": 11,
+                "mode": 420
+              },
+              {
+                "path": "sum.mjs",
+                "kind": "file",
+                "hash": "81fc3ba8c2b901cea804baa6ec228b7d6e5e6bf30d4c72f733e508d91e7fa065",
+                "bytes": 1978,
+                "mode": 384
+              }
+            ]
+          },
+          "executedChecks": 6,
+          "successfulCommands": 6,
+          "checkFindings": 7,
+          "phaseTimes": {
+            "planning": "2026-10-08T08:55:16.217Z",
+            "independent": "2026-10-08T08:55:33.202Z",
+            "comparison": "2026-10-08T08:56:40.165Z"
+          }
+        },
+        {
+          "id": "347d2330-aebc-46fc-a893-345005efbeda",
+          "taskId": "95ecaac5-4efc-4962-b6ad-e391a0245ed1",
+          "kind": "completion",
+          "stageId": "completion",
+          "reviewerSessionId": "task-review-d5cd0f51-7006-46d4-80fa-a379b6acc442",
+          "status": "applied",
+          "verdict": "pass",
+          "attempt": 2,
+          "nodeAttempt": null,
+          "cutoff": 234,
+          "requirementsVersion": 1,
+          "startedAt": "2026-10-08T08:58:38.292Z",
+          "finishedAt": "2026-10-08T09:04:38.449Z",
+          "durationSeconds": 360.157,
+          "recovery": {
+            "consumed": 1,
+            "limit": 1,
+            "manualOnly": false,
+            "permit": {
+              "armed": true,
+              "requirementsVersion": 1,
+              "planVersion": 1,
+              "approvedPlanVersion": 1
+            },
+            "faults": [
+              {
+                "code": "timeout",
+                "providerCode": null,
+                "attempt": 1,
+                "at": "2026-10-08T09:03:38.311Z"
+              }
+            ]
+          },
+          "snapshot": {
+            "id": "68ffb92c-e460-4327-8e6d-d033d0fa0674",
+            "digest": "ffaf6d766abf32422336cf6d1ee4be63e9ebf69bb95df3c5ca0538753fcc323d",
+            "entries": [
+              {
+                "path": "data.json",
+                "kind": "file",
+                "hash": "a87b10b6951e7a7b3457cd2fbb225ee21c7dd88fec98259ba0182c722615303d",
+                "bytes": 7,
+                "mode": 420
+              },
+              {
+                "path": "report.json",
+                "kind": "file",
+                "hash": "e25645b7458fc02083bcbaad7aa6921e262743bee724121b29f29b02ff5ff994",
+                "bytes": 11,
+                "mode": 420
+              },
+              {
+                "path": "sum.mjs",
+                "kind": "file",
+                "hash": "81fc3ba8c2b901cea804baa6ec228b7d6e5e6bf30d4c72f733e508d91e7fa065",
+                "bytes": 1978,
+                "mode": 384
+              }
+            ]
+          },
+          "executedChecks": 12,
+          "successfulCommands": 11,
+          "checkFindings": 8,
+          "phaseTimes": {
+            "planning": "2026-10-08T08:58:38.338Z",
+            "independent": "2026-10-08T08:58:51.755Z",
+            "comparison": "2026-10-08T09:00:26.012Z"
+          }
+        }
+      ],
+      "sessions": [
+        {
+          "id": "session-5e650f44-90ff-447b-9378-1797de9f75ee",
+          "role": "main",
+          "requestHeaders": 5,
+          "routeMatches": true,
+          "messagesWithUsage": 20,
+          "reportedTotalTokens": 343520,
+          "cacheReadTokens": 262272,
+          "toolCalls": 20
+        },
+        {
+          "id": "task-review-267bbd15-34f5-47bc-9964-fa3e3d39a34a",
+          "role": "reviewer",
+          "requestHeaders": 1,
+          "routeMatches": true,
+          "messagesWithUsage": 8,
+          "reportedTotalTokens": 105779,
+          "cacheReadTokens": 75904,
+          "toolCalls": 13
+        },
+        {
+          "id": "task-review-c75b72c3-bc39-4e1f-93cb-c50d7db00b8a",
+          "role": "reviewer",
+          "requestHeaders": 2,
+          "routeMatches": true,
+          "messagesWithUsage": 39,
+          "reportedTotalTokens": 1295901,
+          "cacheReadTokens": 1194624,
+          "toolCalls": 69
+        },
+        {
+          "id": "task-review-d5cd0f51-7006-46d4-80fa-a379b6acc442",
+          "role": "reviewer",
+          "requestHeaders": 2,
+          "routeMatches": true,
+          "messagesWithUsage": 57,
+          "reportedTotalTokens": 3038275,
+          "cacheReadTokens": 2855168,
+          "toolCalls": 91
+        }
+      ],
+      "allSessionReportedTokens": 4783475,
+      "tokenScopeNote": "Native assistant usage.totalTokens, including cached input; failed requests without usage remain unknown. Log case includes one route-health turn."
+    }
+  ],
+  "browser": {
+    "uniqueLogJobsAfterRefresh": 6,
+    "uniqueIndependentJobsAfterRefresh": 3,
+    "historyDefaultExpanded": false,
+    "collapsedNativeTranscriptCount": 0,
+    "visibleReviewComposers": 0,
+    "sidePanelNavigationReachedHeaderTopPx": 76,
+    "narrowViewport": {
+      "width": 760,
+      "height": 900
+    },
+    "liveNativeToolsErrorsReplies": true,
+    "historyDoesNotForceBottom": true,
+    "historyModelRequestsDelta": 0
+  },
+  "faultInjection": {
+    "method": "local forwarding proxy, one stage response replaced by HTTP503",
+    "count": 1,
+    "nativeLlmRetryDisabledOnlyInFixture": true,
+    "reviewDeadlineMs": 300000,
+    "taskInputsUnchanged": true,
+    "resumeOrApprovalAdded": false
+  },
+  "unannotatedMetrics": {
+    "correctionRate": null,
+    "falsePauseRate": null,
+    "falseAcceptanceRate": null
+  },
+  "cleanInstallation": {
+    "officialDshVersion": "0.2.0-rc.2",
+    "pluginVersion": "0.1.3",
+    "sha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05",
+    "allPackedFilesEqual": true,
+    "packedFiles": 12,
+    "nativePreset": "standard",
+    "loadedApi": true,
+    "statusCommandSucceeded": true,
+    "compositionHasPlugin": true,
+    "browserPluginRunning": true,
+    "clientConsoleErrors": 0
+  },
+  "artifact": {
+    "version": "0.1.3",
+    "size": 187051,
+    "unpackedSize": 769039,
+    "shasum": "08ab991d3a220bf2d9f922761231eb729090748c",
+    "integrity": "sha512-96zjKEtp8SJCpg9mI+pr8MSw4WWzkrFP7SuZozj4e91Fhj/XaycnPQq5kUZ7LhWswE04YupNyjssoiAPwR2O6Q==",
+    "sha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05"
+  },
+  "publication": {
+    "status": "pending npm authentication"
+  },
+  "retainedEnvironment": {
+    "port": 51230,
+    "faultProxyRemoved": true,
+    "nativeLlmRetryRestored": true,
+    "reviewMode": "log",
+    "testReviewDeadlineRemoved": true,
+    "daily3080Restarted": false
+  }
+}

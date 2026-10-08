@@ -1,0 +1,76 @@
+# Bilingual-pair consistency record for implementation.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/implementation.md
+/implementation-status:
+  en: ab40dc0b373e5dfd
+  zh: a0dc90a00ccd5d14
+/implementation-status/completed-task-repair-in-the-original-dag:
+  en: cac6b0a8ebbdf32d
+  zh: d1bfd8011d7fade9
+/implementation-status/independent-artifact-checks-and-two-stage-review:
+  en: fa8bab4eaa7d5103
+  zh: 28b221b5a3053d1b
+/implementation-status/bounded-protocol-repair-and-manual-recovery-b:
+  en: 518b83c33697e626
+  zh: 7af8805a68615f0c
+/implementation-status/review-fault-records-a:
+  en: 2e088f596c2d5d44
+  zh: 5c5aa6948737bbbe
+/implementation-status/v2-integrated-acceptance:
+  en: ca0ac1bea69957f8
+  zh: f69bcecf552f35f1
+/implementation-status/ui-hierarchy-and-native-answers:
+  en: 0b6881d64573b2fe
+  zh: 49ae33dde9268485
+/implementation-status/native-integration:
+  en: 6cb613bbe87db28c
+  zh: 8ba3cfd2f8e58e71
+/implementation-status/control-behavior:
+  en: f79102375542fee2
+  zh: 6e096a59c67123f2
+/implementation-status/verification-performed:
+  en: f17009d63f358ed9
+  zh: 9864d04daa780b23
+/implementation-status/current-limits:
+  en: b5ed72efe8523ab3
+  zh: a511808432596a27
+/implementation-status/v2-batch-one-language-and-continuation-context:
+  en: 58128f0300feb306
+  zh: 9e5eb9336375fd75
+/implementation-status/v2-batch-one-decisions-and-current-task-surfaces:
+  en: 7654b5eda6e07ff4
+  zh: 56542edfd89be609
+/implementation-status/v2-batch-two-provenance-and-pageable-evidence:
+  en: a0947c3c11717c2c
+  zh: ab97a2dc1046caff
+/implementation-status/dag-state-and-attempt-identity:
+  en: 56dabc37171c823c
+  zh: 1224439a9bff6c97
+/implementation-status/long-turn-observations:
+  en: a3d0303b6b42c811
+  zh: 527f643f9db89cae
+/implementation-status/native-image-evidence:
+  en: f98de399257c72c6
+  zh: a25d330d3f18d271
+/implementation-status/dag-presentation:
+  en: 2761ff13d6a13559
+  zh: 6ea965db10cdc90b
+/implementation-status/persistent-consultation:
+  en: e4c6307bf4b5fea4
+  zh: d5d446a6c73915bc
+/implementation-status/controlled-native-delegation:
+  en: 7d936bfb40be27d5
+  zh: 6388e28e1bea90b7
+/implementation-status/planning-semantics-found-during-integration:
+  en: db07720f2ea45d78
+  zh: deda0b7de1e1d6a3
+/implementation-status/interrupted-review-and-native-compaction-configuration:
+  en: 6de498b61472c17e
+  zh: 900f039415054be9
+/implementation-status/web-scope-integration-fixes:
+  en: 95e71b5d4a0620b7
+  zh: 6dd0607308c235c2
+/implementation-status/worker-settlement-and-failed-turn-convergence:
+  en: 5f22fedc1f843b7e
+  zh: a5400aa2a27bb9c2
