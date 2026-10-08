@@ -11,6 +11,17 @@ export const zh = {
   'reviewKind.progress': '进展检查', 'reviewKind.completion': '整体验收',
   reviewRunning: '审查进行中', reviewEnded: '审查已结束', reviewAttempt: '尝试', reviewProcess: '审查过程',
   reviewQueued: '等待审查 Session 建立',
+  reviewWaitingRecovery: '审查等待恢复',
+  minute: '分', second: '秒', reviewReads: '成功读取', reviewErrors: '工具失败', reviewLastActivity: '最近记录距今', reviewDeadline: '本次截止',
+  reviewQueuedAction: '审查已提交，等待启动', reviewReadingAction: '正在读取证据', reviewCheckingAction: '正在运行检查',
+  reviewDecidingAction: '正在提交裁决', reviewApplyingAction: '正在保存与应用裁决', reviewGeneratingAction: '审查者正在生成回复',
+  reviewPrimaryWaiting: '主 Agent 本轮结束，Supervisor 正在审查。', reviewNextPlan: '通过后按批准策略执行；需修订时返回规划。',
+  reviewNextPlanning: '检查结束后接续规划。', reviewNextNode: '裁决有效后才能推进依赖节点。',
+  reviewAwaitApproval: '计划审查通过，等待你批准后执行。', reviewFaultPaused: '审查故障，任务已暂停且尚未验收。可重试审查。',
+  reviewOpenPrimary: '在主对话中查看审查过程', reviewUnavailable: '此审查不在当前记录窗口中',
+  phasePlan: '制定检查', phaseIndependent: '独立检查', phaseComparison: '对照汇报', phaseDecision: '裁决', phaseLog: '日志检查',
+  independentScope: '独立产物审查 · 快照读取', logScope: '日志审查 · 核对主 Session 记录', executedChecks: '实际运行检查',
+  sessionEvidenceBoundary: '独立 Session 本身不代表已独立验证', reviewPrimaryChecking: '主 Agent 等待 Supervisor 检查，不代表任务已完成。',
 }
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
@@ -26,4 +37,15 @@ export const en: Record<SupervisorKey, string> = {
   'reviewKind.progress': 'Progress check', 'reviewKind.completion': 'Final acceptance',
   reviewRunning: 'Review in progress', reviewEnded: 'Review ended', reviewAttempt: 'Attempt', reviewProcess: 'Review process',
   reviewQueued: 'Waiting for the review Session',
+  reviewWaitingRecovery: 'Review awaits recovery',
+  minute: 'm', second: 's', reviewReads: 'Successful reads', reviewErrors: 'Tool errors', reviewLastActivity: 'Last record age', reviewDeadline: 'Attempt deadline',
+  reviewQueuedAction: 'Review queued', reviewReadingAction: 'Reading evidence', reviewCheckingAction: 'Running a check',
+  reviewDecidingAction: 'Submitting a decision', reviewApplyingAction: 'Saving and applying the decision', reviewGeneratingAction: 'Reviewer generating a response',
+  reviewPrimaryWaiting: 'The primary Turn ended; Supervisor is reviewing.', reviewNextPlan: 'Pass follows the approval policy; revisions return to planning.',
+  reviewNextPlanning: 'Planning continues after the check.', reviewNextNode: 'Dependent nodes wait for an applicable decision.',
+  reviewAwaitApproval: 'Plan review passed; execution awaits your approval.', reviewFaultPaused: 'Review fault; task paused without acceptance. You can retry the review.',
+  reviewOpenPrimary: 'View the review process in the primary conversation', reviewUnavailable: 'Review is outside the current record window',
+  phasePlan: 'Check plan', phaseIndependent: 'Independent checks', phaseComparison: 'Compare reports', phaseDecision: 'Decision', phaseLog: 'Log checks',
+  independentScope: 'Artifact review · snapshot reads', logScope: 'Log review · primary Session records', executedChecks: 'Executed checks',
+  sessionEvidenceBoundary: 'A separate Session does not itself establish independent verification', reviewPrimaryChecking: 'The primary Agent awaits the Supervisor check; the task is not complete.',
 }

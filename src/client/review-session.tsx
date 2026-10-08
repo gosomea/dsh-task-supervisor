@@ -8,6 +8,7 @@ import type { ReviewJob } from '../review-records.ts'
 import { DisclosureRow, IconChevronDownOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SupervisorTranslate } from './locales.ts'
 import { taskStore } from './task-store.ts'
+import { ReviewProgress } from './review-progress.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } }
@@ -35,10 +36,11 @@ function ReviewTranscript({ id, sessions, SessionProvider, renderSlot }: { id: s
 }
 export function ReviewSession({ sessions, t, ...props }: ReviewNodeProps & { sessions: ISessions; t: SupervisorTranslate }) {
   const job = props.node.data
-  const active = ['queued', 'started', 'repairing', 'submitted'].includes(job.status)
   const store = useMemo(() => taskStore(props.sessionId), [props.sessionId])
   const { state } = useSyncExternalStore(store.subscribe, store.getSnapshot)
-  const ready = active ? state?.reviewActivity?.jobId === job.id : job.model !== null
+  const pending = ['queued', 'started', 'repairing', 'submitted'].includes(job.status)
+  const active = pending && state?.live !== false && (!state || state.task?.id === job.taskId && state.task.phase === 'reviewing')
+  const ready = active ? state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null : job.model !== null
   const [expanded, setExpanded] = useState<boolean | undefined>()
   useEffect(() => { setExpanded(undefined) }, [active])
   const open = expanded ?? active
@@ -46,7 +48,8 @@ export function ReviewSession({ sessions, t, ...props }: ReviewNodeProps & { ses
   if (props.sessionId !== job.mainSessionId) return null
   return <section id={`task-review-${job.id}`} className="dsh-task-review-session" data-review-job={job.id} data-review-status={job.status}>
     <strong>Supervisor · {t(`reviewKind.${job.kind}`)}{title ? ` · ${title}` : ''}</strong>
-    <p className="dsh-task-meta">{t(active ? 'reviewRunning' : 'reviewEnded')} · {t('reviewAttempt')} {job.attempt}</p>
+    <p className="dsh-task-meta">{t(active ? 'reviewRunning' : pending ? 'reviewWaitingRecovery' : 'reviewEnded')} · {t('reviewAttempt')} {job.attempt}</p>
+    {active && state?.reviewActivity?.jobId === job.id && <ReviewProgress state={state} t={t} />}
     {job.decision && <p>{job.decision.finding}</p>}
     {job.fault && <p role="status">{job.fault.message}</p>}
     <DisclosureRow className="dsh-task-disclosure" titleClassName="dsh-task-disclosure-title" icon={<IconChevronDownOutlineRegular />}

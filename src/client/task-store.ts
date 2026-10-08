@@ -7,6 +7,7 @@ import type { ReworkRecord } from '../rework-records.ts'
 import type { ReviewActivity } from '../review-activity.ts'
 
 export interface PanelState {
+  primaryTurnEnded?: boolean
   entryActive?: boolean
   task: TaskSnapshot | null
   live: boolean

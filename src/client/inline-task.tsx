@@ -7,14 +7,16 @@ import { runsOf } from '../graph.ts'
 import { TaskGraph } from './task-graph.tsx'
 import { displayedPlan, executionActors, executorLabel, headline, nodeLabel, nodeRework, progress, taskStatus } from './presentation.ts'
 import { ReviewProgress } from './review-progress.tsx'
+import type { SupervisorTranslate } from './locales.ts'
 
 export interface TaskNavigation { view?: 'details' | 'consultation'; nodeId?: string; reviewerSessionId?: string }
 function preference(key: string): boolean | null {
   try { const value = localStorage.getItem(key); return value === null ? null : value === 'open' } catch { return null }
 }
-export function TaskOverview({ sessionId, state, task, actions, error, open }: {
+export function TaskOverview({ sessionId, state, task, actions, error, open, t }: {
   sessionId: string; state: PanelState; task: TaskSnapshot; actions: ReactNode; error: string;
   open: (params?: TaskNavigation) => void
+  t: SupervisorTranslate
 }) {
   const key = `dsh-task-graph:${sessionId}:${task.id}`
   const [choice, setChoice] = useState<boolean | null>(() => preference(key))
@@ -38,7 +40,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       <Button size="sm" onClick={() => open()}>查看详情</Button>
     </div>
     {expanded && <div className="dsh-task-inline-map">
-      <ReviewProgress state={state} />
+      <ReviewProgress state={state} t={t} />
       {plan.proposal && <p className="dsh-task-muted">{plan.label} · {graphTask.stages.length} 个节点 · 尚未批准执行</p>}
       {graphTask.stages.length ? <TaskGraph task={graphTask} reworks={state.reworks} compact selected={stage?.id}
         select={nodeId => open({ nodeId })} label={id => plan.proposal ? plan.label : nodeLabel(task, id, state)} executor={id => executorLabel(task, sessionId, id)} />
@@ -60,7 +62,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open }: {
       {task.recovery && <small>Supervisor · 生成截断后继续{task.phase === 'planning' ? '规划' : '任务'} · 无进展恢复 {task.recovery.noProgress} 次</small>}
       {task.pauseReason === 'recovery-stalled' && <small>连续恢复未产生可核实的新进展，等待手动恢复。</small>}
       {state.reviewing && reviewJob?.verification && <small>Supervisor · 已运行 {reviewJob.verification.checks.length} 次独立检查</small>}
-      {task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
+      {!state.reviewing && task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
     {state.repairs?.some(item => item.taskId === task.id && ['pending', 'confirmed'].includes(item.status)) && <div className="dsh-task-inline-summary"><span>修复提案待确认 · 任务仍为已完成</span><Button size="sm" variant="toolbar" onClick={() => open()}>查看影响范围</Button></div>}
     {actions && <div className="dsh-task-inline-controls">{actions}</div>}

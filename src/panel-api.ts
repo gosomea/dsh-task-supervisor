@@ -65,10 +65,14 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 /** Register the panel route only when a Web Connection exists. */
 export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[]; reviewVerification?: 'log' | 'independent' }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
   const details = (agent: Agent) => {
+    const events = agent.session.snapshotEvents()
+    const primaryStart = events.findLast(event => event.type === 'turn/start')
+    const primaryEnd = events.findLast(event => event.type === 'turn/end')
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
     const active = projection?.reviewJobs.findLast(job => job.taskId === projection.current?.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
     const reviewer = active?.reviewerSessionId ? ctx.agents.get(SessionId(active.reviewerSessionId)) : undefined
-    return { entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [],
+    return { primaryTurnEnded: primaryEnd !== undefined && (primaryStart?.seq ?? -1) < primaryEnd.seq,
+      entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [],
       reviewActivity: active ? reviewActivity(active, reviewer?.session.snapshotEvents() ?? [], reviewer?.status === 'running') : null }
   }
   ctx.inject(['connection'], web => {

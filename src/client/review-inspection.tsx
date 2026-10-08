@@ -1,24 +1,25 @@
 /** Display actual inspection protocol and evidence scope without wrapping main answers. */
 import type { ReviewJob } from '../review-records.ts'
 import { Disclosure } from './disclosure.tsx'
+import type { SupervisorKey, SupervisorTranslate } from './locales.ts'
 
-export function inspectionPhase(job: ReviewJob): string {
-  if (job.status === 'queued') return '已提交 · 等待控制器'
-  if (job.decision) return '裁决'
-  if (!job.verification) return '日志审查'
-  if (job.verification.phase === 'comparison') return '对照汇报'
-  return job.checkProtocol && !job.verification.checkPlan?.length ? '制定检查' : '独立检查'
+export function inspectionPhase(job: ReviewJob): SupervisorKey {
+  if (job.status === 'queued') return 'reviewQueuedAction'
+  if (job.decision) return 'phaseDecision'
+  if (!job.verification) return 'phaseLog'
+  if (job.verification.phase === 'comparison') return 'phaseComparison'
+  return job.checkProtocol && !job.verification.checkPlan?.length ? 'phasePlan' : 'phaseIndependent'
 }
-export function ReviewInspection({ job }: { job: ReviewJob }) {
+export function ReviewInspection({ job, t }: { job: ReviewJob; t: SupervisorTranslate }) {
   const state = job.verification
   const checks = state?.checkPlan?.flatMap(entry => entry.checks) ?? []
   const findings = job.decision?.checks ?? state?.checkFindings ?? []
   const phase = inspectionPhase(job)
-  const phases = job.checkProtocol ? ['制定检查', '独立检查', '对照汇报', '裁决'] : state ? ['独立检查', '对照汇报', '裁决'] : ['日志审查', '裁决']
-  return <section className="dsh-task-section" aria-label="审查过程">
-    <h3>审查过程 · {phase}</h3>
-    <p className="dsh-task-muted">{state ? '独立产物审查 · 快照读取' : '日志审查 · 核对主 Session 记录'}{state && ` · 实际运行 ${state.checks.length} 次`}。独立 Session 本身不代表已独立验证。</p>
-    <ol className="dsh-task-review-phases" aria-label="审查阶段">{phases.map(name => <li key={name} aria-current={name === phase ? 'step' : undefined}>{name}</li>)}</ol>
+  const phases: SupervisorKey[] = job.checkProtocol ? ['phasePlan', 'phaseIndependent', 'phaseComparison', 'phaseDecision'] : state ? ['phaseIndependent', 'phaseComparison', 'phaseDecision'] : ['phaseLog', 'phaseDecision']
+  return <section className="dsh-task-section" aria-label={t('reviewProcess')}>
+    <h3>{t('reviewProcess')} · {t(phase)}</h3>
+    <p className="dsh-task-muted">{t(state ? 'independentScope' : 'logScope')}{state && ` · ${t('executedChecks')} ${state.checks.length}`} · {t('sessionEvidenceBoundary')}</p>
+    <ol className="dsh-task-review-phases" aria-label={t('reviewProcess')}>{phases.map(name => <li key={name} aria-current={name === phase ? 'step' : undefined}>{t(name)}</li>)}</ol>
     {checks.length ? <Disclosure title={`要求检查 · ${checks.length} 项`}>
       {checks.map(check => {
         const result = findings.find(item => item.checkId === check.id)

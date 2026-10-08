@@ -22,6 +22,8 @@ import { zh, en, type SupervisorTranslate } from './locales.ts'
 import { reviewDefinition } from './review-events.ts'
 import { ReviewConversation, ReviewSession, type ReviewNodeProps } from './review-session.tsx'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ReviewJob } from '../review-records.ts'
+import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
 declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
@@ -65,7 +67,7 @@ function Actions({ sessionId }: PanelProps) {
     data-action={action} disabled={busy || !state.live} onClick={() => { void store.act(action) }}>
     {ACTION_LABEL[action] ?? action}</Button>)}</div>
 }
-function InlineTask({ sessionId, open }: PanelProps & { open: (params?: TaskNavigation) => void }): ReactNode {
+function InlineTask({ sessionId, open, t }: PanelProps & { open: (params?: TaskNavigation) => void; t: SupervisorTranslate }): ReactNode {
   const { state, error } = useTask(sessionId)
   const task = state?.task
   const previous = useRef<{ id: string | null; phase: string | null } | null>(null)
@@ -80,7 +82,7 @@ function InlineTask({ sessionId, open }: PanelProps & { open: (params?: TaskNavi
   if (state?.entryActive) return <div className="dsh-task-actions"><span>任务规划 · 等待输入目标</span><Button size="sm" variant="toolbar" onClick={() => open({ view: 'details' })}>查看详情</Button></div>
   if (!task || task.phase === 'cleared') return null
   return <TaskOverview key={task.id} sessionId={sessionId} task={task} state={state} error={error}
-    actions={state.actions.length ? <Actions sessionId={sessionId} /> : null} open={open} />
+    actions={state.actions.length ? <Actions sessionId={sessionId} /> : null} open={open} t={t} />
 }
 
 function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sessionId: string }): ReactNode {
@@ -112,29 +114,9 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
     </section>}
   </>
 }
-/** Read retained records through the Host; no reviewer Agent or writable composer is opened. */
-function ReviewLog({ sessionId, reviewerSessionId, active = false }: { sessionId: string; reviewerSessionId: string; active?: boolean }) {
-  const [records, setRecords] = useState<Array<{ seq: number; type: string; data: unknown }>>([])
-  const [error, setError] = useState('')
-  useEffect(() => {
-    const abort = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined; setError(''); setRecords([])
-    const load = () => fetch(`/api/task-supervisor?sessionId=${encodeURIComponent(sessionId)}&view=review-log&reviewerSessionId=${encodeURIComponent(reviewerSessionId)}`,
-      { signal: abort.signal, cache: 'no-store' }).then(async response => {
-        const body = await response.json() as { events?: typeof records; error?: string }
-        if (!response.ok || !body.events) throw new Error(body.error ?? '无法读取审查原始记录')
-        if (!abort.signal.aborted) { setRecords(body.events); setError('') }
-      }).catch(error => { if (!abort.signal.aborted) setError(String(error)) })
-        .finally(() => { if (active && !abort.signal.aborted) timer = setTimeout(() => { void load() }, 2000) })
-    void load()
-    return () => { abort.abort(); clearTimeout(timer) }
-  }, [sessionId, reviewerSessionId, active])
-  return <section className="dsh-task-section" aria-label="只读审查原始记录"><h3>原始审查记录 · 只读</h3>
-    <p className="dsh-task-meta">{reviewerSessionId} · 最近 100 条记录，长文本按证据协议截断</p>
-    {error && <p role="alert">{error}</p>}{records.map(record => <Disclosure key={record.seq} title={`seq ${record.seq} · ${record.type}`}>
-      <pre className="dsh-task-log-record">{JSON.stringify(record, null, 2)}</pre></Disclosure>)}</section>
-}
-function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
+function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: PanelProps & {
   navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode; t: SupervisorTranslate
+  showReview: (job: ReviewJob) => Promise<void>
 }): ReactNode {
   const { state, error, busy, store } = useTask(sessionId)
   const [tab, setTab] = useState<'details' | 'consultation'>('details')
@@ -150,6 +132,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
   const [opening, setOpening] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [reviewId, setReviewId] = useState<string | null>(null)
+  const [reviewNavigationError, setReviewNavigationError] = useState('')
   const detailsBody = useRef<HTMLDivElement>(null)
   const historyBody = useRef<HTMLDivElement>(null)
   const task = state?.task
@@ -243,9 +226,14 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
       {error && <p role="alert" className="dsh-task-error">{error}</p>}
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
-      {state && <ReviewProgress state={state} />}
-      {reviewId && !review && <div className="dsh-task-evidence-chat"><ReviewLog sessionId={sessionId} reviewerSessionId={reviewId} active={state?.reviewing === true && state.reviewActivity?.sessionId === reviewId} /></div>}
-      {!reviewId && state?.reviewing && reviewJob?.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(reviewJob.reviewerSessionId!)}>查看实时审查记录</Button>}
+      {state && <ReviewProgress state={state} t={t} />}
+      {(reviewId || state?.reviewing) && <Button size="sm" variant="toolbar" onClick={() => {
+        const job = reviewId ? state?.reviewJobs?.find(item => item.reviewerSessionId === reviewId) : reviewJob
+        setReviewNavigationError('')
+        if (!job) { setReviewNavigationError(t('reviewUnavailable')); return }
+        void showReview(job).catch(error => setReviewNavigationError(String(error)))
+      }}>{t('reviewOpenPrimary')}</Button>}
+      {reviewNavigationError && <p role="alert">{reviewNavigationError}</p>}
       {reviewId && reviewSection}
       {task && <section className="dsh-task-section"><p className="dsh-task-meta">计划 v{task.planVersion} · 要求 v{task.requirementsVersion}</p><h3>执行批准</h3><p>{task.approvalPolicy?.mode === 'after-review' && task.approvalPolicy.mainSessionId === sessionId && task.approvalPolicy.requirementsVersion === task.requirementsVersion ? '按你的设置：计划通过独立审查后自动执行' : '手动批准计划后执行'}</p>{task.approvalPolicy && <small className="dsh-task-meta">来源：{task.approvalPolicy.source === 'profile' ? 'DSH profile 设置' : '用户任务设置'} · 授权事件 seq {task.approvalPolicy.grantSeq}</small>}{task.lastApproval?.source === 'policy' && task.lastApproval.planVersion === task.planVersion && <p>本计划按预授权自动批准 · 授权 seq {task.lastApproval.authorizationSeq} · 审查作业 {task.lastApproval.reviewJobId}</p>}</section>}
       {task?.planning && task.planning.requirementsVersion === task.requirementsVersion && <section className="dsh-task-section"><h3>规划进展 · Supervisor</h3><p>{task.planning.nextAction}</p><Disclosure title={`已确认 ${task.planning.facts.length} 项 · 待核对 ${task.planning.unknowns.length} 项`}><h4>已确认事实</h4><ul>{task.planning.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul><h4>未决问题</h4><ul>{task.planning.unknowns.map((question, i) => <li key={i}>{question}</li>)}</ul><p className="dsh-task-meta">要求 v{task.planning.requirementsVersion} · 截至 seq {task.planning.cutoff} · 证据 {task.planning.evidenceSeqs.join(', ')} · 连续无进展 {task.planning.noProgress} 次</p></Disclosure></section>}
@@ -254,7 +242,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, t }: PanelProps & {
       {task?.pauseReason === 'recovery-stalled' && <p role="status">连续恢复未产生可核实的新进展，已暂停。检查现状后可手动恢复或修改目标。</p>}
       {task?.reviewFault && <section className="dsh-task-fault" role="alert"><h3>审查故障 · 尚未形成有效决定</h3><p>任务已暂停，已保存审查现场。重试只恢复审查；后续执行仍需明确恢复。</p><Disclosure title="诊断详情"><p>错误：{task.reviewFault.code}<br />{task.reviewFault.message}<br />尝试 {task.reviewFault.attempt} · 原证据截止 {task.reviewFault.cutoff}<br />错误事件 {task.reviewFault.errorSeq ?? '无'} · 审查 Session {task.reviewFault.reviewerSessionId ?? '尚未创建'}</p>{task.reviewFault.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => setReviewId(task.reviewFault!.reviewerSessionId!)}>查看审查原始对话</Button>}</Disclosure></section>}
       {state?.reviewVerification && <p className="dsh-task-muted">续行控制：Supervisor · 原生 Goal／Plan 可用于规划，不代替任务批准与验收。<br />验收模式：{state.reviewVerification === 'independent' ? '独立产物验证' : '日志证据审查'} · 计划与进展采用日志审查</p>}
-      {reviewJob && <ReviewInspection job={reviewJob} />}
+      {reviewJob && <ReviewInspection job={reviewJob} t={t} />}
       {state?.entryActive ? <p>已进入任务规划。下一条主会话消息将作为任务目标；提交计划后等待批准。使用 /task off 取消。</p> : !task ? <p>未启用任务督导。输入 /task &lt;目标&gt; 开始规划，或在督导对话中整理草案。</p> : <>
         <section className="dsh-task-section"><h3>任务目标</h3><Disclosure title={headline(task.objective, 72)}><p className="dsh-task-objective">{task.objective}</p></Disclosure></section>
         <section className="dsh-task-section"><h3>{plan?.proposal ? `${plan.label} · 尚未批准执行` : '执行计划'} · {graphTask!.stages.length} 个节点</h3>
@@ -326,10 +314,18 @@ export function apply(ctx: ClientContext): void {
   const open = (params: TaskNavigation = {}) => ctx.sidebarRight.openTab('task-supervisor', { params })
   const Panel = (props: ConsultationPanelProps) => {
     const { tab } = props.useTabInfo()
-    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation} t={t}
+    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation} t={t} showReview={async job => {
+      const binding = ctx.sessions.binding(props.sessionId as SessionId)
+      if (!binding || job.mainSessionId !== props.sessionId) throw new Error(t('reviewUnavailable'))
+      await binding.session.loadThrough(Math.max(0, job.cutoff) as SessionSeq)
+      for (let frame = 0; frame < 3; frame++) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const node = document.getElementById(`task-review-${job.id}`)
+      if (!node) throw new Error(t('reviewUnavailable'))
+      node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }}
       renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
   }
-  const Inline = (props: PanelProps) => <InlineTask {...props} open={open} />
+  const Inline = (props: PanelProps) => <InlineTask {...props} open={open} t={t} />
   const Notes = (props: TailProps) => <><ReviewNotes {...props} open={open} /><DraftNotes {...props} t={t} /></>
   const Review = (props: ReviewNodeProps) => <ReviewSession {...props} sessions={ctx.sessions} t={t} />
   ctx.effect(() => ctx.uiConversation.events.register(reviewDefinition), 'task-supervisor:reviews')

@@ -2507,7 +2507,9 @@ it.each(['pass', 'revise', 'needs-user', 'fault'])('applies profile preauthoriza
   const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, [], { executionApproval: 'after-review' })
   const { agent } = await ctx.agents.create({ sessionId: SessionId(`policy-${verdict}`), agentOptions: { provider: 'scripted', model: 'scripted' } })
   await ctx.commands.execute(agent, '/task new Build import', [], new AbortController().signal); await agent.whenIdle()
-  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).not.toBe('reviewing'))
+  // A pass records awaiting-approval before the asynchronous policy approval settles.
+  const expectedPhase = verdict === 'pass' ? 'active' : verdict === 'revise' ? 'planning' : 'paused'
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe(expectedPhase))
   const task = taskOf(ctx, agent)!
   expect(task.phase).toBe(verdict === 'pass' ? 'active' : verdict === 'revise' ? 'planning' : 'paused')
   expect(task.everApproved).toBe(verdict === 'pass')

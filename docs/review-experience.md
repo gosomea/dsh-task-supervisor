@@ -10,6 +10,10 @@ Active processes expand by default and collapse when settled. Historical Session
 
 ## Implementation and verification
 
-Step one connects the native conversation node. Unified state, controller recovery and release verification follow in later steps. Typechecks and packaging do not substitute for browser or real-model verification.
+Step one connects the native conversation node. Step two distinguishes queuing, response generation, evidence reads, checks and decision application, showing the current tool, last record age and deadline. Failed tools are not successful reads. Outstanding parallel calls remain visible until settled.
+
+Actual Turn events determine whether the primary Turn ended. During review, the DAG dock no longer presents a prior node verdict as current activity. Sidebar links locate the same review job in the primary transcript. The legacy JSON endpoint remains compatible but is not the primary viewer.
+
+Controller recovery and release verification follow in step three. Typechecks and packaging do not substitute for browser or real-model verification.
 
 [中文](review-experience.zh.md)
