@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "checkedAt": "2026-10-08",
   "runtimeSourceCommit": "47be327268352b7a444ec1bceefc55c4410f1dee",
-  "npmPublication": "pending",
+  "npmPublication": "published",
   "registry": "https://registry.npmjs.org",
   "checks": {
     "build": "passed",
@@ -54,5 +54,34 @@
     "../native-task.zh.md",
     "../review-queue.zh.md",
     "../review-progress.zh.md"
-  ]
+  ],
+  "releaseSourceCommit": "ca2ff98bab9481a7642afcb649111ba45980e30d",
+  "officialRegistryVerification": {
+    "version": "0.1.2",
+    "latest": "0.1.2",
+    "tarball": "https://registry.npmjs.org/dsh-task-supervisor/-/dsh-task-supervisor-0.1.2.tgz",
+    "integrity": "sha512-gjxMt4u603S/8zyZwYO/IrSmgpZvYDyKezwnTttdXDP1d5arwmfzy7kx4GBcC/9A93mtV9JQkyEB9g/H76H/+g==",
+    "shasum": "2e2aae7d25ec4919dd8f6ef06953a461c4142b9b",
+    "downloadMatchesPreparedTarball": true
+  },
+  "publishedPackageInstall": {
+    "status": "passed",
+    "command": "dsh plugin --profile release-check add dsh-task-supervisor@0.1.2 --registry=https://registry.npmjs.org",
+    "profileDependency": "0.1.2",
+    "installedVersion": "0.1.2",
+    "installedRuntimeEntriesMatchOfficialTarball": true,
+    "dshVersion": "0.2.0-rc.2",
+    "nodeVersion": "24.19.0",
+    "transientFailures": {
+      "mirrorLag": true,
+      "officialCdnCachedPrepublication404": true,
+      "resolvedAfterCacheExpiry": true
+    }
+  },
+  "githubRelease": "https://github.com/gosomea/dsh-task-supervisor/releases/tag/v0.1.2",
+  "publicationReceipt": {
+    "cliExitCode": 0,
+    "initialRegistryHttpStatus": 202,
+    "publicAvailabilityVerified": true
+  }
 }
