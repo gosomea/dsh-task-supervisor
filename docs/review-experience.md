@@ -6,6 +6,8 @@ Each durable review job creates one node where it intervenes, showing the Superv
 
 Expanding a review retains its own Session and uses native Chat for streaming replies, tool groups, errors, timing and history. It adds no composer and leaves primary Agent responses intact. Returned reasoning follows native presentation settings.
 
+The plugin owns a public shell-slot entry and portals the native view into the primary transcript anchor, avoiding recursion of the same conversation factory. History opens with a durable parent/child address. New reviews record a native child descriptor without granting generic child continuation authority. Older reviews without descriptors remain readable through the compatibility endpoint; viewing never edits history or dispatches a model.
+
 Active processes expand by default and collapse when settled. Historical Sessions are retained only while expanded. Queued jobs wait for the review Session to exist; reading history never launches a model. Refresh reconstructs the same job and retries do not create a second card.
 
 ## Implementation and verification
@@ -30,6 +32,6 @@ Recovery rebuilds read eligibility from paired successful native reviewer tool r
 | reviewFaultRetryDelayMs | 3000 | 0–60000 ms before retry |
 | resumeAfterReviewRecovery | true | Reuse only the original valid execution permit |
 
-Planning and progress review frequencies remain unchanged. No browser executor, PTC timeout or native sandbox changes are introduced. Kernel acceptance passed 403 tests with 13 skipped; strict Host/Client types passed. Real-model, browser and public-package installation acceptance still precede release; types or packing do not substitute for these outcomes.
+Planning and progress review frequencies remain unchanged. No browser executor, PTC timeout or native sandbox changes are introduced. Kernel acceptance passed 405 tests with 13 skipped; strict Host/Client types passed. The official isolated Host completed two Tasks in one Session. Browser acceptance confirmed native streaming, tool failures, historical expansion and six unique job nodes after refresh. Independent runner, fault injection and public-package installation acceptance still precede release; types or packing do not substitute for these outcomes.
 
 [中文](review-experience.zh.md)

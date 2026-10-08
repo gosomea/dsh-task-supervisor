@@ -20,8 +20,8 @@ import { CSS } from './styles.ts'
 import { draftDefinition, type DraftCard } from './draft-events.ts'
 import { zh, en, type SupervisorTranslate } from './locales.ts'
 import { reviewDefinition } from './review-events.ts'
+import { createReviewPortals, ReviewPortalHost, type ReviewPortalProps } from './review-portals.tsx'
 import { ReviewConversation, ReviewSession, type ReviewNodeProps } from './review-session.tsx'
-import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ReviewJob } from '../review-records.ts'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 
@@ -42,8 +42,9 @@ interface ClientContext {
       guide: Array<{ id: string; order: number; title: () => string; description: () => string }> }): () => void
   }
   slots: {
-    register(definition: { name: 'conversation.chat.node'; key: 'task-supervisor-review'; children: { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } } }, component: (props: ReviewNodeProps) => ReactNode): () => void
-    register(definition: { name: 'task-supervisor.review-session' }, component: (props: PropsRuntime<'task-supervisor.review-session'> & PropsRenderSlots<'conversation.session'>) => ReactNode): () => void
+    register(definition: { name: 'shell.overlay'; id: string; children: { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } } }, component: (props: ReviewPortalProps) => ReactNode): () => void
+    register(definition: { name: 'conversation.chat.node'; key: 'task-supervisor-review' }, component: (props: ReviewNodeProps) => ReactNode): () => void
+    register(definition: { name: 'task-supervisor.review-session' }, component: (props: PropsRuntime<'task-supervisor.review-session'> & PropsRenderFactories) => ReactNode): () => void
     register(definition: { name: 'sidebar.right.pane.tab'; key: string; children: { 'task-supervisor.consultation': { kind: 'single'; scope: 'session' } } }, component: (props: ConsultationPanelProps) => ReactNode): () => void
     register(definition: { name: 'task-supervisor.consultation' }, component: (props: PropsRuntime<'task-supervisor.consultation'> & PropsRenderFactories) => ReactNode): () => void
     inject(name: string, factory: () => () => void): () => void
@@ -327,11 +328,15 @@ export function apply(ctx: ClientContext): void {
   }
   const Inline = (props: PanelProps) => <InlineTask {...props} open={open} t={t} />
   const Notes = (props: TailProps) => <><ReviewNotes {...props} open={open} /><DraftNotes {...props} t={t} /></>
-  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} sessions={ctx.sessions} t={t} />
+  const portals = createReviewPortals()
+  ctx.effect(() => () => portals.dispose())
+  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} portals={portals} t={t} />
+  const ReviewHost = (props: ReviewPortalProps) => <ReviewPortalHost {...props} portals={portals} sessions={ctx.sessions} />
   ctx.effect(() => ctx.uiConversation.events.register(reviewDefinition), 'task-supervisor:reviews')
+  ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'task-supervisor/review-portals',
+    children: { 'task-supervisor.review-session': { kind: 'single', scope: 'session' } } }, ReviewHost)))
   ctx.effect(() => ctx.slots.inject('task-supervisor.review-session', () => ctx.slots.register({ name: 'task-supervisor.review-session' }, ReviewConversation)))
-  ctx.effect(() => ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({ name: 'conversation.chat.node', key: 'task-supervisor-review',
-    children: { 'task-supervisor.review-session': { kind: 'single', scope: 'session' } } }, Review)))
+  ctx.effect(() => ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({ name: 'conversation.chat.node', key: 'task-supervisor-review' }, Review)))
   ctx.effect(() => ctx.slots.inject('task-supervisor.consultation', () => ctx.slots.register({ name: 'task-supervisor.consultation' }, ConsultationConversation)))
   ctx.effect(() => ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({ name: 'conversation.input.dock', id: `${PANEL_ID}/current` }, Inline)))
   ctx.effect(() => ctx.uiConversation.events.register(milestoneDefinition), 'task-supervisor:milestones')

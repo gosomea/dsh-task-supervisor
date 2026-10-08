@@ -583,6 +583,8 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
     const persisted = await reviewerLog.read()
     expect(reviewerLog.header.cwd).toBe(root)
     expect(reviewerLog.header.parentSession).toBe(agent.id)
+    expect(persisted.events.filter(event => event.type === 'subagent/descriptor'))
+      .toMatchObject([{ data: { mode: 'one-shot', provider: 'task-supervisor' } }])
     expect(persisted.events.filter(event => event.type === 'tool/call').map(event => event.data.name))
       .toEqual(['task_review_decision', 'read_task_evidence', 'task_review_decision'])
     const results = persisted.events.filter(event => event.type === 'tool/result')
@@ -2990,6 +2992,7 @@ it.each(['once', 'exhausted', 'auth'] as const)('bounds %s faults and restores s
     const reviewer = await ctx.sessionPersistence.open(SessionId(jobs[0]!.reviewerSessionId!), 'read')
     try {
       const events = (await reviewer.read(0, 200)).events
+      expect(events.filter(event => event.type === 'subagent/descriptor')).toHaveLength(1)
       expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'read_task_evidence')).toHaveLength(1)
       expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(0)
     } finally { await reviewer.close() }

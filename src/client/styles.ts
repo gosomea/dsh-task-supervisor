@@ -1,5 +1,8 @@
 /** Native DSH tokens, with separate summary, detail, and conversation surfaces. */
 export const CSS = `
+.dsh-task-review-transcript [data-composer-seat] { display: none; }
+.dsh-task-review-transcript [data-conversation-content], .dsh-task-review-transcript [data-conversation-scroll] { height: auto; min-height: 0; overflow: visible; flex: none; }
+
 .dsh-task-inline,.dsh-task-panel,.dsh-task-review-note{color:var(--dsw-alias-label-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:1.55;font-family:inherit}
 .dsh-task-inline *,.dsh-task-panel *{box-sizing:border-box}
 .dsh-task-inline{container-type:inline-size;flex:none;width:calc(100% - 2 * var(--dsh-composer-side-clearance,16px) - 4 * var(--dsh-composer-dock-inset,8px));max-width:calc(var(--dsh-composer-card-max-width,800px) - 4 * var(--dsh-composer-dock-inset,8px));margin:6px auto;border-radius:12px;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1));backdrop-filter:var(--dsw-menu-backdrop-filter);box-shadow:var(--dsw-elevation-panel);border:0;overflow:hidden;--dsw-elevation-stroke-color:var(--dsw-alias-border-l1)}

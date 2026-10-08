@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-api-session-controller/types'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { childSessionMeta } from '@deepseek-ai/dsh-subagent'
+import { childSessionMeta, snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { installImageEvidence } from './image-evidence.ts'
@@ -523,6 +523,13 @@ async function runReviewStage(
   const handle = exists ? await ctx.agents.resume({ resumeSessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal, ...setup })
     : await ctx.agents.create({ sessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal,
       meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false), ...setup })
+  // Browsing needs the native durable child identity, not merely a subagent header.
+  // The generic child UI has no continuation authority; this controller owns retries.
+  if (!handle.agent.session.snapshotEvents().some(event => event.type === 'subagent/descriptor')) {
+    handle.agent.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+      mode: 'one-shot', provider: 'task-supervisor', label: `Supervisor ${reviewKind}: ${stageId}`,
+    }))
+  }
   const ledger = restoreReviewReads(handle.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
   for (const seq of ledger.observed) observedSeqs.add(seq)
   for (const seq of ledger.located) locatedSeqs.add(seq)
