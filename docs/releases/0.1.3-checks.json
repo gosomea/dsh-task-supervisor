@@ -633,7 +633,15 @@
     "frozenSourceCommit": "b27a593743c8c7c92a8109507d8526c25ebbacf5",
     "publisherAccount": "foreveryu",
     "gitTag": "v0.1.3",
-    "githubRelease": "https://github.com/gosomea/dsh-task-supervisor/releases/tag/v0.1.3"
+    "githubRelease": "https://github.com/gosomea/dsh-task-supervisor/releases/tag/v0.1.3",
+    "githubReleaseVerified": {
+      "url": "https://github.com/gosomea/dsh-task-supervisor/releases/tag/v0.1.3",
+      "publishedAt": "2026-10-08T09:41:45Z",
+      "tagName": "v0.1.3",
+      "tagCommit": "0465c6af37cc5ebba231f9493f9de0b05fc2b78d",
+      "assetByteIdentical": true,
+      "assetSha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05"
+    }
   },
   "retainedEnvironment": {
     "port": 51230,
@@ -654,5 +662,19 @@
     "statusCommandSucceeded": true,
     "compositionHasPlugin": true,
     "registry": "https://registry.npmjs.org"
-  }
+  },
+  "installationHostCleanup": [
+    {
+      "environment": "clean",
+      "port": 51232,
+      "stoppedAfterIdleCheck": true,
+      "homeRetained": true
+    },
+    {
+      "environment": "public",
+      "port": 51233,
+      "stoppedAfterIdleCheck": true,
+      "homeRetained": true
+    }
+  ]
 }
