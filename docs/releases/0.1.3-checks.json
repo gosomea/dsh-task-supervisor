@@ -621,7 +621,19 @@
     "sha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05"
   },
   "publication": {
-    "status": "pending npm authentication"
+    "version": "0.1.3",
+    "latest": "0.1.3",
+    "sha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05",
+    "integrity": "sha512-96zjKEtp8SJCpg9mI+pr8MSw4WWzkrFP7SuZozj4e91Fhj/XaycnPQq5kUZ7LhWswE04YupNyjssoiAPwR2O6Q==",
+    "shasum": "08ab991d3a220bf2d9f922761231eb729090748c",
+    "byteIdentical": true,
+    "checkedAt": "2026-10-08T09:39:03.017Z",
+    "url": "https://www.npmjs.com/package/dsh-task-supervisor/v/0.1.3",
+    "status": "public and installed",
+    "frozenSourceCommit": "b27a593743c8c7c92a8109507d8526c25ebbacf5",
+    "publisherAccount": "foreveryu",
+    "gitTag": "v0.1.3",
+    "githubRelease": "https://github.com/gosomea/dsh-task-supervisor/releases/tag/v0.1.3"
   },
   "retainedEnvironment": {
     "port": 51230,
@@ -630,5 +642,17 @@
     "reviewMode": "log",
     "testReviewDeadlineRemoved": true,
     "daily3080Restarted": false
+  },
+  "publicInstallation": {
+    "officialDshVersion": "0.2.0-rc.2",
+    "pluginVersion": "0.1.3",
+    "sha256": "1e4dffc8f3b06dd8f89a8e8833173f4a7a834fc97be13529f3c21f256467ac05",
+    "allPackedFilesEqual": true,
+    "packedFiles": 12,
+    "nativePreset": "standard",
+    "loadedApi": true,
+    "statusCommandSucceeded": true,
+    "compositionHasPlugin": true,
+    "registry": "https://registry.npmjs.org"
   }
 }

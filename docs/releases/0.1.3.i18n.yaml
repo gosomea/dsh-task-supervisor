@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/releases/0.1.3.md
 /0-1-3-review-process-and-bounded-recovery:
-  en: 1f960d5f9269bffa
-  zh: 78df002bff201962
+  en: d3c5715c65094bb4
+  zh: de3b18d038d9ccfa
 /0-1-3-review-process-and-bounded-recovery/changes:
   en: b13671f1b4abca98
   zh: 13f2222199b61258
