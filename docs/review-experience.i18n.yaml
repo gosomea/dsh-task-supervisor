@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for review-experience.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/review-experience.md
+/native-review-process-and-recovery:
+  en: 96e20674327c8a25
+  zh: c0d62235afec2883
+/native-review-process-and-recovery/reviews-in-the-primary-conversation:
+  en: 319a1567724bdac7
+  zh: fbfe3e26d589dbce
+/native-review-process-and-recovery/implementation-and-verification:
+  en: 953237b538dd5162
+  zh: 8cad94475ad83402
+/native-review-process-and-recovery/controller-recovery-and-evidence-inheritance:
+  en: 008a6a90f9d2166c
+  zh: 106d37fd427dc1f9
+/native-review-process-and-recovery/configuration:
+  en: 50ee676c4fb2759e
+  zh: d601a7cd63df0327

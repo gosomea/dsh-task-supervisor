@@ -53,6 +53,7 @@ export const reviewFaultSchema = z.object({
   jobId: z.string().uuid(), stageId: z.string(), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(),
   code: z.enum(['protocol-missing', 'decision-invalid', 'provider', 'evidence-read', 'timeout', 'cancelled', 'stale', 'internal', 'snapshot', 'check-infrastructure']),
+  providerCode: z.string().optional(), providerStatus: z.number().int().optional(),
   message: z.string(), retryable: z.boolean(), attempt: z.number().int().positive(),
   errorSeq: z.number().int().nonnegative().nullable(), outcomeKnown: z.boolean(),
 }).strict()

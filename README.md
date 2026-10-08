@@ -173,15 +173,19 @@ After native activity settles, the controller checks task identity, permission, 
 | State or condition | Meaning and next action |
 | --- | --- |
 | Awaiting approval | Plan review passed without implementation permission; approve the plan or edit requirements first. |
-| Reviewing | The main Agent waits for the verdict; inspect live read-only records. Activity counts are not acceptance percentages. |
+| Reviewing | After its Turn ends, the main Agent awaits the verdict; the Supervisor node in the primary conversation shows native live replies, tools, errors and elapsed time. Activity counts are not acceptance percentages. |
 | User decision required | The reviewer needs a condition resolved by the user; supply a decision and manually resume. Waiting timeout is not approval. |
-| Internal fault or review timeout | No valid review completion; retain job, Session, error and retry details. `/task retry-review` validates and restores the job without approving or automatically resuming previously paused implementation. |
+| Internal fault or review timeout | Internal timeouts and recognized transient request faults retry once by default. Exhaustion retains the job and fault; `/task retry-review` quickly queues the same job. A still-valid approval and version permit continuation; user pauses, disabling, restarts and old records without permission remain manual. |
 | Planning stalled or recovery without progress | By default, two consecutive counts of the corresponding no-progress condition pause; investigate and resume manually. |
 | `/task pause` or `/task off` | Stop owned continuation and review while retaining records. `/task on` enables supervision; `/task resume` explicitly restores work. |
 | Requirements edits or artifact changes | Old-version verdicts cannot accept new work. Use `/task edit <objective>` for requirements; changed artifacts need fresh verification. |
 | Host restart | Rebuild state from logs and wait for manual continuation without duplicate dispatch. Viewing does not start models; cold Session controls require restoration through the main conversation. |
 
-Ordinary log review defaults to a ten-minute deadline; independent checks use their configured deadline, default thirty minutes. Missing decision protocol allows bounded supplementation within the same job, Session and cutoff; exhaustion pauses as an internal fault. User stops, disabling, version changes and Host exit have distinct cancellation semantics; not all cancellations retry automatically. See [review-job lifetime](docs/review-queue.md) and [progress display](docs/review-progress.md).
+Ordinary log review defaults to a ten-minute deadline; independent checks use their configured deadline, default thirty minutes. Missing decision protocol allows bounded supplementation within the same job, Session and cutoff; exhaustion pauses as an internal fault. User stops, disabling, version changes and Host exit have distinct cancellation semantics; not all cancellations retry automatically. Fault retries and protocol supplementation have separate counters; supplementation does not extend the current deadline. Retries retain the reviewer Session, requirements, node attempt, evidence cutoff and artifact snapshot. History subscribes only when expanded; viewing never starts a model. Running reviews expand by default, then collapse while retaining the decision and next step.
+
+New configuration: `reviewFaultRetryAttempts` defaults to `1` (0–3), `reviewFaultRetryDelayMs` to `3000` (0–60000), and `resumeAfterReviewRecovery` to `true`, reusing only a valid original permit. Review control records use version 7; old records remain readable without gaining permission. Successful original tool reads restore evidence eligibility; index summaries, failed calls and model claims do not. See [native review process and recovery](docs/review-experience.md) for the handoff and boundaries.
+
+See [review-job lifetime](docs/review-queue.md) and [progress display](docs/review-progress.md).
 
 -----
 

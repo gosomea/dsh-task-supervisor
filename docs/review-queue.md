@@ -1,5 +1,7 @@
 # Controller-owned review jobs
 
+See [native review process and recovery](review-experience.md) for 0.1.3 controller recovery and the native primary-conversation process. Formal submissions and manual retries return promptly. The evidence below describes 0.1.2 history; the former always-manual continuation after recovery has changed.
+
 This reference covers plan, node and whole-task submission, cancellation and recovery. See [validation evidence](review-queue-checks.json).
 
 ## Submission and execution

@@ -1,5 +1,7 @@
 # Review progress and plan handoff
 
+The primary conversation now uses the native reviewer Session directly; the sidebar locates the same record instead of using JSON polling as its main viewer. See [native review process and recovery](review-experience.md) for current activity, recovery and boundaries. Earlier-version evidence is retained below.
+
 2026-10-07: This change explains ownership after the main Agent's turn ends and prevents an unnecessary progress review immediately after a formal checkpoint. The [validation record](review-progress-checks.json) separates kernel, real-model and browser evidence.
 
 ## Observed failure

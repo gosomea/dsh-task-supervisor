@@ -1,3 +1,5 @@
+import type { ReviewJob } from './review-records.ts'
+import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
 /** Native DSH task controller: durable state, human commands, and model tools. */
 import { installStandardHost } from './standard-host.ts'
 import { confirmedPtcTimeout } from './review-transport-recovery.ts'
@@ -71,6 +73,9 @@ export interface Config {
   planningReadTools?: string[]
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
+  reviewFaultRetryAttempts?: number
+  reviewFaultRetryDelayMs?: number
+  resumeAfterReviewRecovery?: boolean
   reviewVerification?: 'log' | 'independent'
   requiredVerification?: VerificationNeeds
   independentVerification?: VerificationConfig
@@ -128,6 +133,7 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const reviewerPolicy = reviewPolicy({ ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
+  const recoveryPolicy = faultRecoveryPolicy(config.reviewFaultRetryAttempts, config.reviewFaultRetryDelayMs, config.resumeAfterReviewRecovery)
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
   const repairLimits = { files: config.repairMaxFiles ?? 10000, bytes: config.repairMaxBytes ?? 256 * 1024 * 1024 }
   for (const [key, value] of Object.entries(repairLimits)) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`repair ${key} limit must be a positive integer`)
@@ -463,6 +469,14 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     await prepareCapabilities(ctx, agent, selectedReviewPolicy.verification, { capabilities: [...capabilities], ...programs ? { programs } : {} }, signal)
   }
 
+  function reviewPolicyFor(agent: Agent, armed = runtime(agent).armed) {
+    return { ...selectedReviewPolicy, faultRecovery: { ...recoveryPolicy, armed } }
+  }
+  function canContinueReview(agent: Agent, jobId: string, task: TaskSnapshot) {
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === jobId)
+    return recoveryCanContinue(job, task)
+  }
+
   function approvalFor(agent: Agent, task: TaskSnapshot) {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
     return policyApproval(task, agent.id, agent.session.snapshotEvents().map(controlEvent), job)
@@ -518,7 +532,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const decision = await reviewStage(ctx, agent, task, stageId,
         planning ? `Planning observation: ${reason}. Read actual investigation since the previous planning cutoff ${task.planning?.cutoff ?? 'none'}. No submitted DAG exists yet; separate confirmed facts from unknowns and propose one concrete next output. Duration/activity alone does not imply drift.`
           : `In-turn observation: ${reason}. Inspect actual progress across ready/running nodes, not just the selected node. Duration/activity triggers inspection and does not imply drift. Productive work should continue.`,
-        reviewSignal, config.reviewerModel, planning ? 'planning' : 'progress', selectedReviewPolicy)
+        reviewSignal, config.reviewerModel, planning ? 'planning' : 'progress', reviewPolicyFor(agent))
       reviewSignal.throwIfAborted()
       const latest = current(agent)
       if (disposed || latest?.id !== task.id || latest.revision !== task.revision || !latest.enabled || !life.armed || hasPending(agent)) { await finishReviewRecord(agent, decision.jobId, 'stale'); return null }
@@ -540,7 +554,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       await flush(agent)
       reviewSignal.throwIfAborted()
       if (disposed || current(agent)?.revision !== next.revision || hasPending(agent)) { life.armed = false; return null }
-      life.armed = next.phase === 'active' || next.phase === 'planning'
+      life.armed = (next.phase === 'active' || next.phase === 'planning') && canContinueReview(agent, decision.jobId, next)
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
       return next
     } catch (error: unknown) {
@@ -610,7 +624,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const signal = AbortSignal.any([maintenanceSignal, abort.signal])
       try {
         const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence,
-          signal, config.reviewerModel, 'progress', selectedReviewPolicy)
+          signal, config.reviewerModel, 'progress', reviewPolicyFor(agent, true))
         signal.throwIfAborted()
         const latest = current(agent)
         if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision
@@ -625,8 +639,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         appendTask(ctx, agent, next)
         await finishReviewRecord(agent, decision.jobId, 'applied')
         await flush(agent)
-        runtime(agent).armed = next.phase === 'active'
-        if (next.phase === 'active') {
+        runtime(agent).armed = next.phase === 'active' && canContinueReview(agent, decision.jobId, next)
+        if (next.phase === 'active' && runtime(agent).armed) {
           agent.followup(inputFor(next,
             `Continue stage ${stageId} under the progress review: ${decision.finding}. `
             + 'Report concrete stage evidence with task_report_stage when ready.'))
@@ -654,7 +668,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const parsed = pending.kind === 'plan' ? planInput.parse(JSON.parse(pending.evidence)) : undefined
       const input = parsed ? { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite: parsed.read_only_turns_before_write ?? 0 } : task
       const job = { ...createReviewJob(agent, input, pending.stageId, parsed ? JSON.stringify(parsed.stages) : pending.evidence,
-        pending.kind as 'plan' | 'stage' | 'completion', selectedReviewPolicy, 'queued', pending.jobId),
+        pending.kind as 'plan' | 'stage' | 'completion', reviewPolicyFor(agent), 'queued', pending.jobId),
         owner: 'controller' as const, model: reviewerOptions(ctx, agent, config.reviewerModel).model }
       await recordReview(ctx, agent, job)
       runtime(agent).armed = false
@@ -681,7 +695,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     async run(agent, task, signal) {
       const pending = task.pendingReview!
       const exec: ReviewExecution = { agent, signal, concludeTurn() {} }
-      const result = pending.kind === 'plan'
+      const recoveryJob = boundReview(agent, task)
+      const result = recoveryJob?.recovery?.manualPending
+        ? await performRecovery(agent, task, recoveryJob, signal)
+        : pending.kind === 'plan'
         ? await submitPlan(JSON.parse(pending.evidence), exec)
         : await settleReview(agent, task, pending.stageId, pending.evidence, pending.kind as 'stage' | 'completion', exec)
       const latest = current(agent)
@@ -697,8 +714,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       // A maintenance result is not a tool result in the already finished PTC turn.
       // Deliver the next permitted response through the durable native Inbox.
       const completeNext = pending.kind === 'stage' && latest.phase === 'active'
-        && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
+        && runtime(agent).armed && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
       const revisePlan = pending.kind === 'plan' && latest.phase === 'planning' && config.automaticContinuation !== false
+        && canContinueReview(agent, latest.lastReview?.jobId ?? '', latest)
       const node = latest.stages[latest.stageIndex]
       // A formal checkpoint covers earlier work. Reviewer time is not main-Agent activity.
       runtime(agent).observation = { key: latest.phase === 'planning' ? `${latest.id}:planning:${latest.requirementsVersion}`
@@ -870,7 +888,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         if (task === null) throw new Error('no task exists; use /task <objective>')
         if (input === 'retry-review') {
           await retryReview(agent, task, signal)
-          return reply('审查恢复完成；检查结果后批准计划或手动恢复任务。', current(agent), false)
+          return reply('审查重试已提交；Supervisor 将运行审查，并按原许可决定是否续行。', current(agent), false)
         }
         if (input === 'auto-approve-on' || input === 'auto-approve-off') {
           const revoking = input === 'auto-approve-off'
@@ -903,6 +921,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             throw new Error('a finished task cannot be paused')
           }
           withdrawOwned(agent)
+          const interruptedJob = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.findLast(job => job.taskId === task.id)
+          if (!reviewAbort.has(agent) && interruptedJob?.recovery && !interruptedJob.recovery.manualOnly) await recordReview(ctx, agent,
+            { ...interruptedJob, revision: interruptedJob.revision + 1, recovery: { ...interruptedJob.recovery, manualOnly: true } })
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             enabled: input === 'off' ? false : task.enabled,
             phase: input === 'clear' ? 'cleared' : input === 'pause' ? 'paused' : task.phase,
@@ -921,7 +942,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         if (input === 'resume') {
           if (task.pauseReason !== 'review-fault' && task.pendingReview?.jobId && boundReview(agent, task)?.owner === 'controller' && !life.armed && !reviewAbort.has(agent)) {
             await retryReview(agent, task, signal, true)
-            return reply('原审查已恢复；检查结果后批准计划或手动恢复实施。', current(agent), false)
+            return reply('原审查恢复已提交；用户暂停或宿主重启后的实施仍需手动恢复。', current(agent), false)
           }
           if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请使用 /task retry-review，或编辑任务要求。')
           if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
@@ -951,6 +972,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             throw new Error('a finished task cannot be edited')
           }
           withdrawOwned(agent)
+          const interruptedJob = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.findLast(job => job.taskId === task.id)
+          if (!reviewAbort.has(agent) && interruptedJob?.recovery && !interruptedJob.recovery.manualOnly) await recordReview(ctx, agent,
+            { ...interruptedJob, revision: interruptedJob.revision + 1, recovery: { ...interruptedJob.recovery, manualOnly: true } })
           const next: TaskSnapshot = { ...task, revision: task.revision + 1,
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
@@ -1109,7 +1133,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         planDecision = await reviewStage(ctx, agent,
           { ...task, criteria: parsed.criteria, stages: parsed.stages, readOnlyTurnsBeforeWrite },
           'plan', JSON.stringify(parsed.stages), AbortSignal.any([exec.signal, abort.signal]),
-          config.reviewerModel, 'plan', selectedReviewPolicy, boundReview(agent, task))
+          config.reviewerModel, 'plan', reviewPolicyFor(agent), boundReview(agent, task))
       } catch (error) {
         await pauseForReviewFailure(agent, task, error)
         exec.concludeTurn()
@@ -1160,7 +1184,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       await flush(agent)
     }
     if (disposed || current(agent)?.id !== settled.id || current(agent)?.revision !== settled.revision || hasPending(agent)) { runtime(agent).armed = false; throw new Error('task changed during plan admission') }
-    if (settled.phase === 'active') runtime(agent).armed = !authorization || config.automaticContinuation !== false
+    if (settled.phase === 'active') runtime(agent).armed = (!authorization || config.automaticContinuation !== false)
+      && (!planDecision || canContinueReview(agent, planDecision.jobId, settled))
     closeWithResponse(agent, settled.revision)
     return { phase: settled.phase, planVersion: settled.planVersion,
       ...authorization && settled.lastApproval?.source === 'policy' ? { approvalSource: 'policy', authorizationSeq: authorization.authorizationSeq, reviewJobId: authorization.reviewJobId } : {},
@@ -1183,15 +1208,26 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
-    await agent.runMaintenance(async maintenanceSignal => {
-      const latest = current(agent)
-      if (latest?.id !== expected.id || latest.revision !== expected.revision || reviewAbort.has(agent)) throw new Error('task changed before review recovery')
-      const reviewing: TaskSnapshot = { ...latest, revision: latest.revision + 1, phase: 'reviewing', reviewFault: null, pauseReason: null }
-      appendTask(ctx, agent, reviewing)
-      await flush(agent)
+    commandSignal.throwIfAborted()
+    const strategy = job.recovery ?? { retryLimit: 0, delayMs: 0, resume: false, consumed: 0, protocolRepairs: 0,
+      permit: { armed: false, requirementsVersion: job.input.requirementsVersion, planVersion: job.planVersion,
+        approvedPlanVersion: job.input.approvedPlanVersion }, manualOnly: true, manualPending: false, nextRetryAt: null, failures: [] }
+    const queued: ReviewJob = { ...job, revision: job.revision + 1, status: job.status === 'submitted' ? 'submitted' : 'queued',
+      recovery: { ...strategy, manualOnly: strategy.manualOnly || interrupted, manualPending: true, nextRetryAt: null } }
+    await recordReview(ctx, agent, queued)
+    const reviewing: TaskSnapshot = { ...expected, revision: expected.revision + 1, phase: 'reviewing', reviewFault: null, pauseReason: null,
+      pendingReview: { kind: job.kind, stageId: job.stageId, evidence: job.evidence, jobId: job.id, cutoff: job.cutoff } }
+    appendTask(ctx, agent, reviewing)
+    runtime(agent).armed = false
+    await flush(agent)
+    queuedReviews.schedule(agent, reviewing)
+  }
+
+  async function performRecovery(agent: Agent, expected: TaskSnapshot, job: ReviewJob, commandSignal: AbortSignal) {
+      const reviewing = expected
       const abort = new AbortController()
       reviewAbort.set(agent, abort)
-      const signal = AbortSignal.any([commandSignal, maintenanceSignal, abort.signal])
+      const signal = AbortSignal.any([commandSignal, abort.signal])
       try {
         const decision = job.status === 'submitted'
           ? await savedReviewDecision(ctx, agent, job, selectedReviewPolicy, signal)
@@ -1225,20 +1261,28 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         } else if (job.kind === 'planning') next = { ...next, phase: decision.verdict === 'needs-user' ? 'paused' : 'planning',
           ...decision.planning ? { planning: { ...decision.planning, requirementsVersion: next.requirementsVersion, cutoff: decision.cutoff, jobId: decision.jobId, evidenceSeqs: decision.evidenceSeqs, noProgress: 0 } } : {} }
         else if (job.kind === 'stage') next = finishNode(next, job.stageId, decision.verdict, agent.session.seq)
+        if (job.kind === 'plan' && next.phase === 'awaiting-approval' && !job.recovery?.manualOnly) {
+          const authorization = policyApproval(next, agent.id, agent.session.snapshotEvents().map(controlEvent),
+            ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === decision.jobId))
+          if (authorization) { await verifyBeforeApproval(agent, next, signal); next = { ...approvedTask(next, agent.session.seq),
+            lastApproval: { planVersion: next.planVersion, userMessageSeq: null, ...authorization } } }
+        }
         appendTask(ctx, agent, next)
         await finishReviewRecord(agent, decision.jobId, 'applied')
         await flush(agent)
-        // Retrying is review permission. Previously paused execution is resumed explicitly.
-        runtime(agent).armed = false
+        runtime(agent).armed = !!job.recovery && (next.phase === 'active' || next.phase === 'planning')
+          && canContinueReview(agent, decision.jobId, next) && config.automaticContinuation !== false
+        return { verdict: decision.verdict, finding: decision.finding, phase: next.phase,
+          message: runtime(agent).armed ? 'Review recovered; execution continues under the original permit.' : 'Review recovered; waiting for approval or manual execution resume.' }
       } catch (error) {
         await pauseForReviewFailure(agent, reviewing, error)
         throw error
       } finally { reviewAbort.delete(agent) }
-    })
   }
 
   async function settleReview(agent: Agent, task: TaskSnapshot, stageId: string,
     evidence: string, kind: 'stage' | 'completion', exec: ReviewExecution) {
+    const originalArmed = runtime(agent).armed
     runtime(agent).armed = false
     const reviewing: TaskSnapshot = task.pendingReview?.jobId ? task : { ...task, revision: task.revision + 1, phase: 'reviewing',
       pendingReview: { ...task.pendingReview, kind, stageId, evidence } }
@@ -1247,7 +1291,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     reviewAbort.set(agent, abort)
     const signal = AbortSignal.any([exec.signal, abort.signal])
     try {
-      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, selectedReviewPolicy, boundReview(agent, reviewing))
+      const decision = await reviewStage(ctx, agent, reviewing, stageId, evidence, signal, config.reviewerModel, kind, reviewPolicyFor(agent, originalArmed), boundReview(agent, reviewing))
       signal.throwIfAborted()
       const latest = current(agent)
       if (latest?.id !== reviewing.id || latest.revision !== reviewing.revision || latest.phase !== 'reviewing') {
@@ -1268,7 +1312,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       appendTask(ctx, agent, settled)
       await finishReviewRecord(agent, decision.jobId, 'applied')
       await flush(agent)
-      runtime(agent).armed = settled.phase === 'active'
+      runtime(agent).armed = settled.phase === 'active' && canContinueReview(agent, decision.jobId, settled)
       const awaitsCompletion = kind === 'stage' && settled.phase === 'active'
         && acceptedNodes(settled).length === settled.stages.length
       if (awaitsCompletion) exec.concludeTurn()

@@ -1,5 +1,7 @@
 # Review and intervention proposal
 
+Current recovery defaults and visible activity are documented in [native review process and recovery](review-experience.md): timeouts and recognized transient request failures retry once, with continuation only under a valid original permit. User pauses, disabling, restarts and decision pauses stay manual. Protocol supplementation and fault recovery have separate counters and grant no new permission.
+
 **Status: design proposal.** This page owns task review, checkpoint timing, evidence access, and intervention. The proposed thresholds are provisional and need calibration on real tasks.
 
 **Prototype status (2026-09-27):** Plan submission now runs an independent coverage review; stage, progress, and completion reviews still use fresh reviewer Sessions. The prototype adds `read_task_call` for inspecting tool arguments and lets a plan declare `read_only_turns_before_write` to enforce a completed read-only turn before writing. General action-order enforcement and configurable user-decision timeouts below remain design goals.

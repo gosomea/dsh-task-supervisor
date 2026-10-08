@@ -1,6 +1,8 @@
 /** Fresh, read-only reviewer over a fixed main Session evidence cutoff. */
 import { controlEvent } from './session-records.ts'
 
+import { restoreReviewReads } from './review-read-ledger.ts'
+import { transientReviewFault, waitReviewRetry, type FaultRecoveryPolicy } from './review-recovery.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
@@ -37,7 +39,7 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
+export interface ReviewPolicy { faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -157,6 +159,11 @@ export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string
     startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
+    ...policy.faultRecovery ? { recovery: { retryLimit: policy.faultRecovery.attempts, delayMs: policy.faultRecovery.delayMs,
+      resume: policy.faultRecovery.resume, consumed: 0, protocolRepairs: 0,
+      permit: { armed: policy.faultRecovery.armed, requirementsVersion: task.requirementsVersion,
+        planVersion: task.planVersion, approvedPlanVersion: task.approvedPlanVersion },
+      manualOnly: false, manualPending: false, nextRetryAt: null, failures: [] } } : {},
     ...policy.verificationMode ? { verificationMode: verification ? 'independent' : 'log' } : {},
     ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {},
     ...verification && policy.checkProtocol ? { checkProtocol: policy.checkProtocol } : {} }
@@ -187,26 +194,61 @@ export async function savedReviewDecision(ctx: Context, main: Agent, job: Review
     ...decision.programs === undefined ? {} : { programs: decision.programs } }
 }
 
-/** Every attempt has an identity before creating the read-only reviewer. */
+/** The controller owns retries after each native reviewer has completely stopped. */
 export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
+  evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
+  kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob, recovery = false): Promise<ReviewDecision> {
+  let prior = previous
+  const taskRevision = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current?.revision
+  for (;;) {
+    try { return await reviewAttempt(ctx, main, task, stageId, evidence, signal, fixedModel, kind, policy, prior, recovery) }
+    catch (error) {
+      if (!(error instanceof ReviewFailure) || signal.aborted || !transientReviewFault(error.fault)) throw error
+      const job = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === error.fault.jobId)
+      const strategy = job?.recovery
+      if (!job || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
+      const actual = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
+      if (!actual?.enabled || actual.id !== task.id || actual.revision !== taskRevision) throw error
+      prior = { ...job, revision: job.revision + 1, status: 'queued', recovery: { ...strategy,
+        consumed: strategy.consumed + 1, nextRetryAt: new Date(Date.now() + strategy.delayMs).toISOString() } }
+      await recordReview(ctx, main, prior)
+      try { await waitReviewRetry(strategy.delayMs, signal) }
+      catch (cause) {
+        const fault = { ...error.fault, code: 'cancelled' as const, retryable: false, message: 'Review recovery cancelled before the next attempt.',
+          cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' }
+        await recordReview(ctx, main, { ...prior, revision: prior.revision + 1, status: 'failed', fault,
+          recovery: { ...prior.recovery!, manualOnly: true, nextRetryAt: null, failures: [...prior.recovery!.failures, { at: new Date().toISOString(), fault }] } })
+        throw new ReviewFailure(fault, { cause })
+      }
+      recovery = true
+    }
+  }
+}
+
+/** Every attempt has an identity before creating the read-only reviewer. */
+async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stageId: string,
   evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
   kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob, recovery = false): Promise<ReviewDecision> {
   const verification = (kind === 'stage' || kind === 'completion') ? policy.verification : undefined
   const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
-  signal = AbortSignal.any([signal, AbortSignal.timeout(limits.deadlineMs)])
   const queued = previous?.status === 'queued' && !recovery
   const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
     ...previous.verification ? { verification: structuredClone(previous.verification) } : {},
     status: 'started', fault: null, decision: null, finishedAt: null,
-    trigger: queued ? previous.trigger : 'manual-retry',
+    ...previous.recovery ? { recovery: { ...previous.recovery, manualPending: false, nextRetryAt: null } } : {},
+    trigger: queued ? previous.trigger : previous.recovery?.nextRetryAt ? 'fault-retry' : 'manual-retry',
     attempt: previous.attempt + (queued ? 0 : 1), repairLimit: limits.repairAttempts,
     runtimeId: queued ? previous.runtimeId : randomUUID(),
     attemptStartedAt: new Date().toISOString(),
     deadlineAt: queued ? previous.deadlineAt : new Date(Date.now() + limits.deadlineMs).toISOString() }
     : createReviewJob(main, task, stageId, evidence, kind, policy)
-  if (queued && job.deadlineAt) signal = AbortSignal.any([signal, AbortSignal.timeout(Math.max(0, Date.parse(job.deadlineAt) - Date.now()))])
-  await recordReview(ctx, main, job)
+  const deadline = new AbortController()
+  const timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')),
+    Math.max(0, Date.parse(job.deadlineAt!) - Date.now()))
+  timer.unref()
+  signal = AbortSignal.any([signal, deadline.signal])
   try {
+    await recordReview(ctx, main, job)
     signal.throwIfAborted()
     if (verification) {
       try { await prepareVerification(ctx, main, job, verification, signal) }
@@ -223,9 +265,13 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
       reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? signal.reason instanceof Error && signal.reason.name === 'TimeoutError' ? 'timeout' as const : 'cancelled' as const : 'internal' as const,
       ...signal.aborted && signal.reason?.name !== 'TimeoutError' ? { cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' } : {},
       message: String(error), retryable: !signal.aborted || signal.reason?.name === 'TimeoutError', attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+    if (job.recovery) {
+      job.recovery.failures.push({ at: new Date().toISOString(), fault })
+      if (fault.code === 'cancelled') job.recovery.manualOnly = true
+    }
     await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
     throw new ReviewFailure(fault, { cause: error })
-  }
+  } finally { clearTimeout(timer) }
 }
 
 /** Run one reviewer, with no workspace mutation capability and a fixed log prefix. */
@@ -477,10 +523,22 @@ async function runReviewStage(
   const handle = exists ? await ctx.agents.resume({ resumeSessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal, ...setup })
     : await ctx.agents.create({ sessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal,
       meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false), ...setup })
+  const ledger = restoreReviewReads(handle.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+  for (const seq of ledger.observed) observedSeqs.add(seq)
+  for (const seq of ledger.located) locatedSeqs.add(seq)
+  for (const key of ledger.workers) workerEvents.add(key)
+  for (const id of ledger.inspectedWorkers) inspectedWorkers.add(id)
+  for (const seq of ledger.images) imageSeqs.add(seq)
+  if (exists && job.verification) {
+    job.verification.readFiles = ledger.files
+    job.verification.readChecks = ledger.checks
+    job.verification.readInputs = (job.verification.readInputs ?? []).filter(seq => ledger.observed.has(seq))
+  }
   const abort = () => handle.agent.cancel({ kind: 'parent' })
   signal.addEventListener('abort', abort, { once: true })
   try {
     signal.throwIfAborted()
+    if (exists && job.verification) await recordReview(ctx, main, { ...job, revision: ++job.revision })
     handle.agent.followup(createUserMessage({
       source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
       content: [{ type: 'text', text: [
@@ -548,6 +606,7 @@ async function runReviewStage(
         message: `前一审查轮未成功提交有效决定，正在有限补交。原生结束原因：${last!.data.reason.kind}；turn ${last!.data.turn}，end seq ${last!.seq}。`,
         retryable: true, attempt: job.attempt, errorSeq: errorResult?.seq ?? last?.seq ?? null, outcomeKnown: true }
       job.attempt++
+      if (job.recovery) job.recovery.protocolRepairs++
       job.status = 'repairing'
       await recordReview(ctx, main, { ...job, revision: ++job.revision })
       signal.throwIfAborted()
@@ -562,7 +621,9 @@ async function runReviewStage(
       const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
         : last?.type === 'turn/end' && last.data.reason.kind === 'aborted' ? 'cancelled'
         : call?.type === 'tool/call' ? call.data.name === 'task_review_decision' ? 'decision-invalid' : 'evidence-read' : 'protocol-missing'
+      const provider = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error : undefined
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
+        ...provider ? { providerCode: provider.code, ...provider.status === undefined ? {} : { providerStatus: provider.status } } : {},
         message: code === 'protocol-missing' ? `reviewer ended without a valid structured decision; native reason ${last?.type === 'turn/end' ? last.data.reason.kind : 'unknown'}, repair ${job.attempt - firstAttempt}/${job.repairLimit}`
           : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message : `review failed: ${code}`,
         retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })

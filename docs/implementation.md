@@ -1,5 +1,7 @@
 # Implementation status
 
+2026-10-08: The primary conversation embeds the native reviewer Session process and distinguishes current activity from prior verdicts. Controller recovery defaults to one fault retry, queues manual retry promptly, preserves original continuation permission and restores real read eligibility. Review records use version 7 and projection cache 20; old jobs remain manual. See [native review process and recovery](review-experience.md). Earlier evidence below preserves behavior at that time, rather than current recovery defaults.
+
 2026-10-07: Reset main-Agent observation after formal verdicts so reviewer time cannot immediately trigger a redundant planning check. Both task surfaces show the proposal DAG, measured review activity and next handoff; reads do not approve or resume. See [review progress](review-progress.md) for validation and daily deployment.
 
 2026-10-07: Plan, node and whole-task reviews are durably submitted and run by the controller. Normal outer PTC settlement no longer cancels review. Review deadlines, user stops and restart recovery remain distinct. Current task record 15, review record 6 and projection cache 19; see [review-job lifetime](review-queue.md) for validation and scope.

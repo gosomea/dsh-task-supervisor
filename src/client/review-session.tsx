@@ -39,8 +39,8 @@ export function ReviewSession({ sessions, t, ...props }: ReviewNodeProps & { ses
   const store = useMemo(() => taskStore(props.sessionId), [props.sessionId])
   const { state } = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const pending = ['queued', 'started', 'repairing', 'submitted'].includes(job.status)
-  const active = pending && state?.live !== false && (!state || state.task?.id === job.taskId && state.task.phase === 'reviewing')
-  const ready = active ? state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null : job.model !== null
+  const active = pending && state?.live !== false && (!state || state.task?.id === job.taskId && (state.reviewing || state.task.phase === 'reviewing'))
+  const ready = active ? state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null || !!job.recovery?.failures.length : job.model !== null
   const [expanded, setExpanded] = useState<boolean | undefined>()
   useEffect(() => { setExpanded(undefined) }, [active])
   const open = expanded ?? active
@@ -52,6 +52,7 @@ export function ReviewSession({ sessions, t, ...props }: ReviewNodeProps & { ses
     {active && state?.reviewActivity?.jobId === job.id && <ReviewProgress state={state} t={t} />}
     {job.decision && <p>{job.decision.finding}</p>}
     {job.fault && <p role="status">{job.fault.message}</p>}
+    {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     <DisclosureRow className="dsh-task-disclosure" titleClassName="dsh-task-disclosure-title" icon={<IconChevronDownOutlineRegular />}
       title={t('reviewProcess')} open={open} expandable expandOnRowClick onToggle={() => setExpanded(!open)}>
       {open && !ready && <p className="dsh-task-meta">{t('reviewQueued')}</p>}

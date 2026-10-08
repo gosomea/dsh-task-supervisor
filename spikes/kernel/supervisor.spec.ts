@@ -14,7 +14,7 @@ import * as GoalTools from '@deepseek-ai/dsh-tool-goal'
 import PlanMode from '@deepseek-ai/dsh-plan-mode'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
-import LlmRuntime, { LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { LlmError, LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
@@ -488,6 +488,7 @@ it('turns the Supervisor off without discarding human input or silently rearming
   await agent.whenIdle()
   expect(adapter.requests).toBe(2)
   expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
   await agent.whenIdle()
   expect(adapter.requests).toBe(3)
 })
@@ -1414,6 +1415,8 @@ it('recovers the failed plan review manually without silently approving or wakin
   scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'manual-read'),
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'Plan covers the request', evidence_seqs: [0] }, 'manual-submit')]
   expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false, reviewFault: null,
     lastReview: { reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, verdict: 'pass' } })
   const recovered = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
@@ -2166,7 +2169,8 @@ it('keeps a recovered planning decision stale when a direct user message arrives
   await agent.whenIdle()
   adapter.pauseNext = true; adapter.pauseModel = 'reviewer'
   const retry = ctx.commands.execute(agent, '/task retry-review', [], new AbortController().signal)
-  await Promise.race([adapter.entered.promise, retry.then(result => { throw new Error(`retry ended before reviewer barrier: ${JSON.stringify(result)}`) })])
+  expect((await retry)?.result.kind).toBe('success')
+  await adapter.entered.promise
   agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '先不要用这份旧结论' }] }))
   adapter.release.resolve(); await retry; await agent.whenIdle()
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' })
@@ -2314,7 +2318,7 @@ it('controller deadline is retryable on the same job and reviewer Session withou
     }
   }
   const ctx = await host(root, new Adapter({ reviewer: [textResponse('interrupted'), ...coverageChecks()] }), true,
-    { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewDeadlineMs: 500 })
+    { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewDeadlineMs: 500, reviewFaultRetryAttempts: 0 })
   const { agent } = await ctx.agents.create({ sessionId: SessionId('review-deadline'), agentOptions: { provider: 'scripted', model: 'main' } })
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
@@ -2325,6 +2329,8 @@ it('controller deadline is retryable on the same job and reviewer Session withou
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
   expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
   expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).not.toBe('reviewing'))
+  await agent.whenIdle()
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(1)
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({
     id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, nodeAttempt: job.nodeAttempt, status: 'applied', attempt: 2 })
@@ -2349,6 +2355,8 @@ it('a user stop between durable submission and handoff keeps the queued job for 
   expect(adapter.requests).toBe(1)
   expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toHaveLength(0)
   expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ id: job.id, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, status: 'applied', attempt: 2 })
 })
@@ -2442,11 +2450,14 @@ it.each(['queued', 'started', 'submitted'] as const)('restart retains a %s contr
   expect(adapter.requests).toBe(0)
   expect(taskOf(second, resumed)?.pendingReview?.jobId).toBe(job.id)
   expect((await second.commands.execute(resumed, '/task resume', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(taskOf(second, resumed)?.phase).toBe('awaiting-approval'))
+  await resumed.whenIdle()
   expect(taskOf(second, resumed)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
   const jobs = second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs
   expect(jobs).toHaveLength(1)
   expect(jobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, status: 'applied', attempt: status === 'submitted' ? 1 : 2 })
-  expect(adapter.requests).toBe(status === 'submitted' ? 0 : 2)
+  // The controller posts one primary closing response; this is not implementation.
+  expect(adapter.requests).toBe(status === 'submitted' ? 1 : 3)
 })
 
 it('does not apply a saved decision to changed artifacts or dispatch another model request', async () => {
@@ -2498,6 +2509,8 @@ it('unload aborts a running controller review and a restarted Host does not disp
   expect(taskOf(second, resumed)?.pendingReview?.jobId).toBe(job.id)
   expect(taskOf(second, resumed)?.everApproved).toBe(false)
   expect((await second.commands.execute(resumed, '/task resume', [], signal))?.result.kind).toBe('success')
+  await vi.waitFor(() => expect(second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs[0]?.status).toBe('applied'))
+  await resumed.whenIdle()
   expect(second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, status: 'applied', attempt: 2 })
 })
 
@@ -2941,4 +2954,96 @@ it('does not create from a rejected human step after bare entry', async () => {
   expect(taskOf(ctx, agent)).toBeNull()
   expect(adapter.requests).toBe(0)
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.entry?.active).toBe(true)
+})
+
+
+it.each(['once', 'exhausted', 'auth'] as const)('bounds %s faults and restores successful native reads in the same job', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-fault-retry-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    reviewerRequests = 0
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') {
+        this.reviewerRequests++
+        if (this.reviewerRequests === 2 || mode === 'exhausted' && this.reviewerRequests === 3) {
+          throw new LlmError('controlled native request failure', mode === 'auth' ? 'AUTH' : 'TRANSPORT', { status: mode === 'auth' ? 401 : 503 })
+        }
+      }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewFaultRetryDelayMs: 0 })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`fault-${mode}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
+  const receipt = await ctx.tools.execute({ agent, signal, callId: ToolCallId('fault-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  expect(receipt.isError).toBe(false)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe(mode === 'once' ? 'awaiting-approval' : 'paused'))
+  await agent.whenIdle()
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(1)
+  expect(jobs[0]).toMatchObject({ status: mode === 'once' ? 'applied' : 'failed',
+    attempt: mode === 'auth' ? 1 : 2, recovery: { consumed: mode === 'auth' ? 0 : 1, protocolRepairs: 0 } })
+  expect(jobs[0]!.recovery!.failures).toHaveLength(mode === 'exhausted' ? 2 : 1)
+  expect(adapter.reviewerRequests).toBe(mode === 'auth' ? 2 : mode === 'once' ? 3 : 3)
+  if (mode === 'once') {
+    const reviewer = await ctx.sessionPersistence.open(SessionId(jobs[0]!.reviewerSessionId!), 'read')
+    try {
+      const events = (await reviewer.read(0, 200)).events
+      expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'read_task_evidence')).toHaveLength(1)
+      expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(0)
+    } finally { await reviewer.close() }
+  }
+  expect(taskOf(ctx, agent)?.everApproved).toBe(false)
+})
+
+it.each([true, false])('preserves an approved stage permit after internal recovery (resume=%s)', async resume => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-fault-continue-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    first = true
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer' && this.first) { this.first = false; throw new LlmError('controlled temporary server error', 'SERVER', { status: 503 }) }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ main: [textResponse('planning'), textResponse('stage ready'), textResponse('review summary')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, false, [],
+    { reviewFaultRetryDelayMs: 0, resumeAfterReviewRecovery: resume })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`fault-continue-${resume}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
+  await executeSettled(ctx, { agent, signal, callId: ToolCallId('continue-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
+  // Approval is held even when automatic continuation is disabled for this controlled fixture.
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('continue-stage'), name: 'task_report_stage', arguments: { stage_id: 'n', evidence: 'actual fixture observed' } })
+  await vi.waitFor(() => expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs[0]?.status).toBe('applied'))
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!, job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(task).toMatchObject({ phase: 'active', everApproved: true, approvedPlanVersion: 1 })
+  expect(job.recovery).toMatchObject({ consumed: 1, permit: { armed: true, requirementsVersion: 1, planVersion: 1, approvedPlanVersion: 1 } })
+  const { recoveryCanContinue } = await import('../../src/review-recovery.ts')
+  expect(recoveryCanContinue(job, task)).toBe(resume)
+  expect(recoveryCanContinue({ ...job, recovery: { ...job.recovery!, manualOnly: true } }, task)).toBe(false)
+})
+
+
+it('user pause cancels a scheduled fault retry and leaves execution manually disarmed', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-fault-pause-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    reviewerRequests = 0
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') { this.reviewerRequests++; throw new LlmError('controlled connection error', 'TRANSPORT') }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter(), ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewFaultRetryDelayMs: 60000 })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('fault-retry-pause'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('pause-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  await vi.waitFor(() => expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs[0]?.recovery?.nextRetryAt).toEqual(expect.any(String)))
+  await ctx.commands.execute(agent, '/task pause', [], signal); await agent.whenIdle()
+  expect(adapter.reviewerRequests).toBe(1)
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' })
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ status: 'failed', recovery: { manualOnly: true, consumed: 1, nextRetryAt: null }, fault: { code: 'cancelled' } })
 })
