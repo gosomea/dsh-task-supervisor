@@ -7,6 +7,10 @@ export const zh = {
   draft: '任务草案', requirements: '查看完整要求', questions: '待确认', create: '建立任务',
   created: '已建立任务', older: '此前草案', current: '查看当前草案', currentDraft: '当前草案',
   blocked: '当前任务结束后可建立', unresolved: '请在对话中补充待确认内容',
+  'reviewKind.planning': '规划检查', 'reviewKind.plan': '计划审查', 'reviewKind.stage': '节点审查',
+  'reviewKind.progress': '进展检查', 'reviewKind.completion': '整体验收',
+  reviewRunning: '审查进行中', reviewEnded: '审查已结束', reviewAttempt: '尝试', reviewProcess: '审查过程',
+  reviewQueued: '等待审查 Session 建立',
 }
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
@@ -18,4 +22,8 @@ export const en: Record<SupervisorKey, string> = {
   draft: 'Task draft', requirements: 'Full requirements', questions: 'Open questions', create: 'Create task',
   created: 'Task created', older: 'Earlier draft', current: 'View current draft', currentDraft: 'Current draft',
   blocked: 'Available after the current task ends', unresolved: 'Answer the open questions in chat',
+  'reviewKind.planning': 'Planning check', 'reviewKind.plan': 'Plan review', 'reviewKind.stage': 'Node review',
+  'reviewKind.progress': 'Progress check', 'reviewKind.completion': 'Final acceptance',
+  reviewRunning: 'Review in progress', reviewEnded: 'Review ended', reviewAttempt: 'Attempt', reviewProcess: 'Review process',
+  reviewQueued: 'Waiting for the review Session',
 }

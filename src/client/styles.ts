@@ -27,4 +27,7 @@ export const CSS = `
 
 .dsh-task-review-phases { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0; list-style: none; color: var(--fg-muted, #888); font-size: 12px; }
 .dsh-task-review-phases li[aria-current="step"] { color: var(--fg, inherit); font-weight: 600; }
+.dsh-task-review-session{margin:16px 0;padding:12px 0;border-top:1px solid var(--dsw-alias-border-l1);min-width:0}
+.dsh-task-review-session>strong{font-size:13px;font-weight:600}.dsh-task-review-session>p{white-space:pre-wrap;overflow-wrap:anywhere}
+.dsh-task-review-transcript{min-width:0;width:100%}.dsh-task-review-transcript [data-chat-flow]{max-width:100%}
 `
