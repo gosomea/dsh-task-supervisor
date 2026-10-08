@@ -162,7 +162,9 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
       setShowHistory(false); setHistorySelection(null); setTab('details'); setSelected(null)
     }
   }, [showHistory, historySelection, task?.id, task?.phase])
-  const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情"><h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
+  const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情">
+          {state?.reviewing && review.reviewerSessionId !== reviewJob?.reviewerSessionId && <p className="dsh-task-meta">{t('reviewPreviousDecision')}</p>}
+          <h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
           <p className="dsh-task-review">{review.finding}</p><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
   function openConsultation() {
     setTab('consultation')
@@ -322,7 +324,7 @@ export function apply(ctx: ClientContext): void {
       for (let frame = 0; frame < 3; frame++) await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
       const node = document.getElementById(`task-review-${job.id}`)
       if (!node) throw new Error(t('reviewUnavailable'))
-      node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      node.scrollIntoView({ block: 'start', behavior: 'smooth' })
     }}
       renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
   }
