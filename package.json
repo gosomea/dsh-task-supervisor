@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-supervisor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DSH-native supervised task lifecycle",
   "type": "module",
   "main": "lib/index.mjs",

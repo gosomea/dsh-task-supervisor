@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for 0.1.2.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/releases/0.1.2.md
+/0-1-2-tasks-in-native-dsh-modes:
+  en: dbd2401b2ec962cc
+  zh: 97e84b67511b4904
+/0-1-2-tasks-in-native-dsh-modes/changes:
+  en: 4b314c3072607195
+  zh: 401db6f2051ac703
+/0-1-2-tasks-in-native-dsh-modes/install-and-upgrade:
+  en: 50a9d38f66169a88
+  zh: c4defaabb616a84f
+/0-1-2-tasks-in-native-dsh-modes/validation-and-boundaries:
+  en: 9d4d776cda464af4
+  zh: cdf92b8e6876d249

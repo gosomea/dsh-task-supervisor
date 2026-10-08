@@ -31,14 +31,14 @@ kind: "package-bundle"
 <a id="get-started"></a>
 ## 开始使用
 
-下文描述当前开发源码。npm **0.1.1** 是较早的预览版，仍使用专用 Supervisor preset，未包含本文全部增强；当前源码在原生模式中创建 Task。安装与版本边界见[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
+下文描述 **0.1.2**，在原生 DSH 模式中创建 Task。npm **0.1.1** 是使用专用 Supervisor preset 的较早预览版。安装与版本边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
 
 ### 安装到 Web profile
 
 已验证 Node 24 和官方 DSH `0.2.0-rc.2`，无需修改 Host 或原生沙箱。沿用该 profile 的模型配置；安装公开包：
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.1
+dsh plugin --profile web add dsh-task-supervisor@0.1.2
 dsh web
 ```
 
