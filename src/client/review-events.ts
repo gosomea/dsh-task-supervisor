@@ -1,6 +1,6 @@
 /** One native conversation node per durable review job, including idle-time reviews. */
 import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { reviewJobSchema, type ReviewJob } from '../review-records.ts'
+import { reviewJobSchema, type ReviewJob } from '../review-schema.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-chat/client' {
   interface ChatNodeDataMap { 'task-supervisor-review': ReviewJob }

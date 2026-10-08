@@ -50,7 +50,10 @@ export function ReviewSession({ sessions, t, ...props }: ReviewNodeProps & { ses
     <strong>Supervisor · {t(`reviewKind.${job.kind}`)}{title ? ` · ${title}` : ''}</strong>
     <p className="dsh-task-meta">{t(active ? 'reviewRunning' : pending ? 'reviewWaitingRecovery' : 'reviewEnded')} · {t('reviewAttempt')} {job.attempt}</p>
     {active && state?.reviewActivity?.jobId === job.id && <ReviewProgress state={state} t={t} />}
-    {job.decision && <p>{job.decision.finding}</p>}
+    {job.decision && <>
+      <p><strong>{t(`reviewVerdict.${job.decision.verdict}`)}</strong> · {job.decision.finding.split(/\r?\n/u)[0]?.slice(0, 240)}</p>
+      <p className="dsh-task-meta">{t(job.decision.verdict === 'needs-user' ? 'reviewUserNext' : job.decision.verdict === 'revise' ? 'reviewRevisionNext' : job.kind === 'completion' ? 'reviewTaskComplete' : job.kind === 'plan' ? 'reviewNextPlan' : job.kind === 'planning' ? 'reviewNextPlanning' : 'reviewNextNode')}</p>
+    </>}
     {job.fault && <p role="status">{job.fault.message}</p>}
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     <DisclosureRow className="dsh-task-disclosure" titleClassName="dsh-task-disclosure-title" icon={<IconChevronDownOutlineRegular />}
