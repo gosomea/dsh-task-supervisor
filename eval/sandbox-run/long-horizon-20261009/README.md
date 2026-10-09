@@ -79,6 +79,10 @@ This run also exposed a gap between tool acknowledgment and durable decision rec
 
 The position used 197 model requests, 311 tool calls and about 53 minutes of execution. One request lacks usage, so total tokens across all Sessions remain null, with reported lower bounds listed separately. This snapshot seals 7/24 positions: five officially scored and two infrastructure faults. Position eight, Geo/Supervisor, subsequently started. Incomplete condition coverage does not support a comparative conclusion.
 
+## Plan revision in a formal task
+
+Position eight, Geo/Supervisor, has [durable plan-revision evidence](supervisor-plan-revision-v6.json). The first plan review's `revise` was validly applied at main seq 220. The main Agent then submitted a changed candidate, and a new review job queued at seq 229. Candidate-plan digests differ while the original objective and requirements version remain identical. No initial grant or human rescue existed at this capture. This proves actual planning intervention and resubmission, not artifact acceptance, official success or labeled correction benefit. Execution input, original deadline and frozen plugin remain unchanged.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

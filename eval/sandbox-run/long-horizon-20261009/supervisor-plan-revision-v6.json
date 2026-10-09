@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-formal-plan-revision-before-initial-approval",
+  "atUnix": 1791572587.0090199,
+  "position": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "requirementsVersion": 1,
+  "taskDeadlineAt": "2026-10-09T21:46:10.882Z",
+  "originalTaskDeadlineSeconds": 1791582370.8826408,
+  "jobs": [
+    {
+      "id": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "reviewerSessionId": "task-review-ddd4a65f-6fdd-48e0-9512-2c06c9a76376",
+      "taskRevision": 3,
+      "planVersion": 0,
+      "cutoff": 204,
+      "status": "applied",
+      "verdict": "revise",
+      "requirementResultCount": 7,
+      "findingSha256": "9904c214d6297007813d3af5540b87b4932b3b8700bbad986b664d2d9b9319c8",
+      "candidatePlanSha256": "606f3e91ece457aa04f3413e933d94ef8bf90aca3a97aace9e6f3c4670af2661",
+      "criterionCount": 7,
+      "stageCount": 4
+    },
+    {
+      "id": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+      "reviewerSessionId": "task-review-00c82237-81ec-4879-b5e7-bf99ea39ef3c",
+      "taskRevision": 5,
+      "planVersion": 0,
+      "cutoff": 228,
+      "status": "started",
+      "verdict": null,
+      "requirementResultCount": 0,
+      "findingSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidatePlanSha256": "332fd1b30d018b08cd9d46ed9b70536367fa446988f10d998f6520445e6646b2",
+      "criterionCount": 7,
+      "stageCount": 4
+    }
+  ],
+  "history": [
+    {
+      "seq": 205,
+      "atUnix": 1791572058.498,
+      "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "revision": 1,
+      "status": "queued",
+      "verdict": null,
+      "cutoff": 204
+    },
+    {
+      "seq": 212,
+      "atUnix": 1791572058.611,
+      "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "revision": 2,
+      "status": "started",
+      "verdict": null,
+      "cutoff": 204
+    },
+    {
+      "seq": 214,
+      "atUnix": 1791572058.618,
+      "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "revision": 3,
+      "status": "started",
+      "verdict": null,
+      "cutoff": 204
+    },
+    {
+      "seq": 216,
+      "atUnix": 1791572378.177,
+      "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "revision": 4,
+      "status": "submitted",
+      "verdict": "revise",
+      "cutoff": 204
+    },
+    {
+      "seq": 220,
+      "atUnix": 1791572378.197,
+      "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+      "revision": 5,
+      "status": "applied",
+      "verdict": "revise",
+      "cutoff": 204
+    },
+    {
+      "seq": 229,
+      "atUnix": 1791572388.102,
+      "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+      "revision": 1,
+      "status": "queued",
+      "verdict": null,
+      "cutoff": 228
+    },
+    {
+      "seq": 236,
+      "atUnix": 1791572388.207,
+      "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+      "revision": 2,
+      "status": "started",
+      "verdict": null,
+      "cutoff": 228
+    },
+    {
+      "seq": 238,
+      "atUnix": 1791572388.218,
+      "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+      "revision": 3,
+      "status": "started",
+      "verdict": null,
+      "cutoff": 228
+    }
+  ],
+  "objectiveUnchanged": true,
+  "requirementsVersionUnchanged": true,
+  "candidatePlanChanged": true,
+  "initialApprovalIntents": 0,
+  "initialApprovalReceipts": 0,
+  "humanRescueActions": 0,
+  "mainSessionObservationSha256": "18beb02f2e92fc0ee42fafead44653d08f5b3a761653f32851e4acfd9570009c",
+  "startedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51",
+  "taskBindingSha256": "b86837bfd73e84b0e6b60f05e8fe89e2e04f695211af1d12efb7b9340c90fdac",
+  "artifactAcceptanceComplete": false,
+  "officialReward": null,
+  "scope": "A plan revise was durably applied before a changed candidate was submitted for a new review; no initial grant existed at this capture. This is log-mode plan review, not artifact verification or labeled correction benefit."
+}
