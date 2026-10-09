@@ -74,6 +74,25 @@ it('does not invent running status before the controller state loads', () => {
   const { job } = fixture()
   expect(reviewPresentation(job, null)).toMatchObject({ active: false, label: 'reading', tone: 'neutral' })
 })
+it('preserves separate report and process preferences across a browser reload with bounded, optional storage', () => {
+  let saved = ''
+  const storage = { getItem: () => saved, setItem: (_: string, value: string) => { saved = value } }
+  const first = createReviewDisclosureState(2, storage)
+  first.set('result:a', true, false)
+  first.set('a', false, true)
+  first.clear()
+  const reloaded = createReviewDisclosureState(2, storage)
+  expect(reloaded.open('result:a', true)).toBe(false)
+  expect(reloaded.open('a', false)).toBe(true)
+  reloaded.set('b', false, false)
+  expect(JSON.parse(saved)).toHaveLength(2)
+  saved = 'invalid'
+  expect(createReviewDisclosureState(2, storage).open('a', true)).toBe(true)
+  const denied = { getItem: () => { throw new Error('denied') }, setItem: () => { throw new Error('denied') } }
+  const ephemeral = createReviewDisclosureState(2, denied)
+  ephemeral.set('a', true, false)
+  expect(ephemeral.open('a', true)).toBe(false)
+})
 it('does not show a submitted pass as applied, and derives the next action from actual authorization', () => {
   const { job, state } = fixture()
   job.decision = { verdict: 'pass', finding: '完整结论\n\n正文末尾', evidenceSeqs: [10], imageSeqs: [], decisionSeq: 30 }
@@ -95,6 +114,18 @@ it('keeps the report visible when process details are collapsed, including after
   expect(choices.open('result:job', true)).toBe(false)
   expect(choices.open('job', true)).toBe(true)
   expect(choices.open('result:job', true)).toBe(false)
+})
+
+it('does not describe the previous applied result as waiting for manual resume during the next review', () => {
+  const { job, state } = fixture()
+  job.status = 'applied'
+  job.decision = { verdict: 'revise', finding: '补充核算', evidenceSeqs: [10], imageSeqs: [], decisionSeq: 30 }
+  const next = { ...job, id: randomUUID(), status: 'started' as const, decision: null }
+  state.reviewJobs = [job, next]
+  state.task!.phase = 'reviewing'
+  state.armed = false
+  expect(reviewPresentation(job, state).next).toBe('reviewPreviousDecision')
+  expect(reviewPresentation(next, state)).toMatchObject({ active: true, label: 'reviewRunning' })
 })
 
 it('renders the entire recorded tool-only report using native Markdown without truncating its tail', () => {

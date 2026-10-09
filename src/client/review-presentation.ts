@@ -42,6 +42,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
   else if (job.status === 'applied') {
     const latest = state?.reviewJobs?.findLast(item => item.taskId === job.taskId && item.status === 'applied')
     if (!current || latest?.id !== job.id) next = 'reviewPreviousDecision'
+    else if (currentReviewJob(state)?.id && currentReviewJob(state)?.id !== job.id) next = 'reviewPreviousDecision'
     else if (state.task?.phase === 'complete') next = 'reviewTaskComplete'
     else if (state.task?.phase === 'awaiting-approval') next = 'reviewAwaitApproval'
     else if (state.task?.pauseReason === 'decision') next = 'reviewUserNext'
@@ -59,19 +60,32 @@ const FAULT_LABELS: Record<ReviewFault['code'], SupervisorKey> = {
 export function reviewFaultDescription(fault: ReviewFault): SupervisorKey { return FAULT_LABELS[fault.code] }
 
 /** Native transcript virtualization can remount rows while their reviewer streams. */
-export function createReviewDisclosureState(limit = 256) {
+export function createReviewDisclosureState(limit = 256, persistence?: Pick<Storage, 'getItem' | 'setItem'>) {
+  const key = 'dsh-task-review-disclosures:1'
+  try { persistence ??= typeof localStorage === 'undefined' ? undefined : localStorage } catch { /* Preferences also work without browser storage. */ }
   const choices = new Map<string, { active: boolean; open: boolean }>()
+  try {
+    const saved: unknown = JSON.parse(persistence?.getItem(key) ?? '[]')
+    if (Array.isArray(saved)) for (const entry of saved.slice(-limit)) {
+      if (Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].length <= 128
+        && entry[1] && typeof entry[1].active === 'boolean' && typeof entry[1].open === 'boolean') choices.set(entry[0], entry[1])
+    }
+  } catch { /* Invalid or unavailable preference data cannot affect review execution. */ }
+  function save() {
+    try { persistence?.setItem(key, JSON.stringify([...choices])) } catch { /* A local fold still applies when storage is disabled or full. */ }
+  }
   return {
     open(id: string, active: boolean): boolean {
       const before = choices.get(id)
       if (before?.active === active) return before.open
-      if (before) choices.set(id, { active, open: active })
+      if (before) { choices.set(id, { active, open: active }); save() }
       return active
     },
     set(id: string, active: boolean, open: boolean) {
       choices.delete(id)
       choices.set(id, { active, open })
       while (choices.size > limit) choices.delete(choices.keys().next().value!)
+      save()
     },
     clear() { choices.clear() },
   }
