@@ -2,13 +2,40 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
-from batch import next_operation, validate_release
+from batch import next_operation, validate_release, run_batch
 import hashlib
 import json
 from unittest.mock import patch
 
 
 class OriginalPositionTests(TestCase):
+    def test_repair_release_can_only_acknowledge_exact_preexisting_result(self):
+        for acknowledgement in ('exact', 'different', 'missing'):
+            with self.subTest(acknowledgement=acknowledgement), TemporaryDirectory() as directory:
+                root = Path(directory) / 'release'; root.mkdir()
+                runs = Path(directory) / 'runs'; (runs / 'p').mkdir(parents=True)
+                (root / 'specs').mkdir(); (root / 'specs/p.json').write_text('{}')
+                order = root / 'order.json'; order.write_text(json.dumps({'positions': [{'id': 'p'}]}))
+                result = runs / 'p/result.json'
+                result.write_text(json.dumps({'terminal': {'infrastructureFault': True,
+                    'firstStopReason': 'native-upstream-fault'}, 'gradingFault': None}))
+                release = {'runnerFilesSha256': {}, 'orderSha256': hashlib.sha256(order.read_bytes()).hexdigest(),
+                    'specsSha256': {'p': hashlib.sha256(b'{}').hexdigest()}}
+                if acknowledgement != 'missing':
+                    release['acknowledgedSealedFaults'] = {'p': hashlib.sha256(result.read_bytes()).hexdigest()
+                        if acknowledgement == 'exact' else '0' * 64}
+                (root / 'release.json').write_text(json.dumps(release))
+                if acknowledgement == 'exact':
+                    run_batch(root, runs, 'python', 'localhost',
+                              invoke=lambda *_: self.fail('no replacement delivery or regrading'))
+                    kinds = [json.loads(p.read_text())['kind'] for p in (runs / 'batch-events').glob('*.json')]
+                    self.assertIn('acknowledged-prior-fault', kinds)
+                    self.assertIn('matrix-sealed', kinds)
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'stop new delivery'):
+                        run_batch(root, runs, 'python', 'localhost',
+                                  invoke=lambda *_: self.fail('no model delivery'))
+
     def test_restarts_follow_original_position_without_delivery(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)

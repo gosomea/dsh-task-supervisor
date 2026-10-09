@@ -94,6 +94,15 @@ def run_batch(root, runs, python, domain, *, invoke=subprocess.run):
                     raise RuntimeError('original position requires reconciliation: ' + position['id'] + ' / ' + operation)
             result = json.loads((directory / 'result.json').read_text())
             if result['terminal']['infrastructureFault'] or result['gradingFault']:
+                # A repair release may explicitly carry an already sealed fault
+                # forward. Bind exact original bytes; never forgive a new fault
+                # or launch a replacement Agent for that position.
+                acknowledged = release.get('acknowledgedSealedFaults', {}).get(position['id'])
+                if acknowledged and hashlib.sha256((directory / 'result.json').read_bytes()).hexdigest() == acknowledged:
+                    exclusive_json(runs / 'batch-events' / (str(time.time_ns()) + '.json'),
+                        {'kind': 'acknowledged-prior-fault', 'position': position['id'],
+                         'originalResultSha256': acknowledged, 'replacementDelivered': False})
+                    continue
                 exclusive_json(runs / 'batch-events' / (str(time.time_ns()) + '.json'),
                     {'kind': 'attention', 'position': position['id'], 'operation': 'sealed-result',
                      'reason': result['terminal']['firstStopReason'], 'gradingFault': result['gradingFault'],
