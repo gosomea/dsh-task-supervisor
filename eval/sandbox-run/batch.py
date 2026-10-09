@@ -23,6 +23,12 @@ def validate_release(release, root):
         path = Path(filename)
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise ValueError('frozen runtime input differs')
+    server = release.get('runtimeInventory', {}).get('server')
+    if server:
+        row = json.loads(subprocess.check_output(['docker', '--context', release['capacity']['dockerContext'],
+            'inspect', server['containerId']], timeout=30))[0]
+        if row['Image'] != server['imageId'] or not row['State']['Running'] or row['State']['StartedAt'] != server['startedAt']:
+            raise ValueError('frozen OpenSandbox server changed or restarted')
 
 
 def next_operation(directory):

@@ -4,6 +4,8 @@ from unittest import TestCase
 
 from batch import next_operation, validate_release
 import hashlib
+import json
+from unittest.mock import patch
 
 
 class OriginalPositionTests(TestCase):
@@ -30,3 +32,10 @@ class OriginalPositionTests(TestCase):
             runtime.write_bytes(b'changed')
             with self.assertRaisesRegex(ValueError, 'runtime input differs'):
                 validate_release(release, root)
+
+    def test_server_restart_cannot_silently_change_the_run_environment(self):
+        release = {'runnerFilesSha256': {}, 'capacity': {'dockerContext': 'isolated'},
+            'runtimeInventory': {'server': {'containerId': 'server', 'imageId': 'image', 'startedAt': 'original'}}}
+        row = {'Image': 'image', 'State': {'Running': True, 'StartedAt': 'restarted'}}
+        with patch('batch.subprocess.check_output', return_value=json.dumps([row]).encode()):
+            with self.assertRaisesRegex(ValueError, 'restarted'): validate_release(release, Path('.'))

@@ -45,6 +45,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
             time.sleep(1)
         else: raise TimeoutError('candidate private check did not finish')
         result = json.loads(runtime.read(box, '/opt/eval/topology-result.json'))
+        exclusive_json(out / 'check-result.json', result)
         if result.get('error') or result.get('dockerSocketMounted') or result.get('check', {}).get('exitCode') != 0 \
                 or not result.get('snapshot', {}).get('untrackedCaptured') or not result.get('recoveryAcknowledged'):
             private = out / 'private-topology-result.json'; private.write_text(json.dumps(result)); private.chmod(0o600)
@@ -53,7 +54,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
         if checked(runtime, box, 'git -C /workspace status --porcelain').strip(): raise ValueError('check changed source baseline')
         # Snapshot has no credentials, grading material or running Host. Only
         # image runtimes and the clean repository are reused by future positions.
-        checked(runtime, box, 'kill -TERM "$(cat /opt/eval/keyless.pid)"')
+        checked(runtime, box, 'if kill -0 "$(cat /opt/eval/keyless.pid)" 2>/dev/null; then kill -TERM "$(cat /opt/eval/keyless.pid)"; fi')
         for _ in range(60):
             code, _, _ = runtime.exec(box, 'kill -0 "$(cat /opt/eval/keyless.pid)" 2>/dev/null', timeout_s=5)
             if code != 0: break
