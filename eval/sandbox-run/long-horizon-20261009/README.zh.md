@@ -5,7 +5,7 @@
 ## 冻结材料
 
 - [release.json](release.json)：脱敏运行摘要、安装包与源码身份、运行依赖索引摘要、准入证据摘要。
-- [order.json](order.json)：种子 `dsh-opensandbox-long-horizon-v1` 的固定顺序，第一位置为 geo / Plan / r2。
+- [order.json](order.json)：原始种子 `dsh-opensandbox-long-horizon-v1` 排序，第一位置为 geo / Plan / r2；后续用户调整的执行顺序见 [execution-order-v5.json](execution-order-v5.json)。
 - [admission.json](admission.json)：四题原生权限、未跟踪快照、离线独立命令检查与无挂载干净 baseline；官方空补丁 0／参考补丁 1；真实主 Agent 与审查者路由证明。冻结前无模型准入失败及修复一并保留。
 - [冻结安装包](artifacts/dsh-task-supervisor-frozen.tgz)：SHA-256 `cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366`。插件源码提交 `44b2a42`，监控及用量口径提交 `2796533`。
 
@@ -45,9 +45,17 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 
 第二位置实施期间，受控状态回放确认另一个运行器判定缺口：已批准 Plan 的旧回复可能掩盖当前请求错误，或在原生 Inbox 仍有续行时被当成完成。新增完成依据要求当前轮次的 `turn/end.completed`、一致的轮次身份以及空 Inbox；当前已确定请求故障不能被旧完成提示覆盖，仍按两次观察确认。该修复不修改 DSH Plan、Agent 或权限。原本地监控器已停止新投递，原第二位置 Agent、Session、批准和截止保留；73 项 Python 回归通过，并实测原 Agent 在修复期间继续实施。修复版将接续原位置，不重投题目。
 
-当前冻结见 [repair-v4.json](repair-v4.json)，运行器源码为 `bc45ef6`。24 个 spec、安装包、模型路由和运行顺序未改变，第二位置从原 Session 接续并取得有效正常完成记录后进入收集及评分。首次批准只保留原回执；此判定修复作为单独协议偏差报告，不覆盖早先 release 或结果。
+该次监控修复冻结见 [repair-v4.json](repair-v4.json)，运行器源码为 `bc45ef6`。修复时 24 个 spec、安装包、模型路由和运行顺序未改变，第二位置从原 Session 接续并取得有效正常完成记录后进入收集及评分。首次批准只保留原回执；此判定修复作为单独协议偏差报告，不覆盖早先 release 或结果。
 
 后续公开快照在 `terminal.nativeCompletionEvidence` 中保留原生完成的事件编号、轮次、时间及控制器源码摘要；只导出实际持久证据，不包含事件正文。报告导出不修改冻结运行器或原始结果，控制器完成与官方评分分别展示。
+
+## 用户调整：优先取得 Supervisor 结果
+
+前五个种子排序位置恰好都是 Plan。五个位置已投递、四个已封口时，用户明确要求优先评测 Supervisor。当前执行冻结为 [supervisor-priority-v5.json](supervisor-priority-v5.json)，顺序为 [execution-order-v5.json](execution-order-v5.json)：保留已经启动的前五个位置，之后将八个未投递的 Supervisor-independent 位置按原相对顺序集中执行，再按原相对顺序完成其余 Goal／Plan 位置。
+
+位置 ID、四题、每条件八次及完整 24 次分母均保留。24 个 spec 和全部运行器文件逐字节核对未变；安装包、模型、预算、授权及评分规则未改动。25 份既有启动、交付、批准及封口记录的摘要已核对。仅交接本地监控器，第五位置原 Agent、Session、截止和一次批准继续有效，没有停止或重新投递 Agent。
+
+这是用户调整执行优先级的协议偏差，不是新增产品故障修复。原始种子顺序和所有旧 release 保留；新快照绑定实际执行顺序的摘要。最终报告须注明条件与运行时间的关联可能影响对照，不能再描述为完整按种子排序执行，也不能将先得到的 Supervisor 结果当成全部对照已完成。
 
 ## 环境交接与断点接续
 

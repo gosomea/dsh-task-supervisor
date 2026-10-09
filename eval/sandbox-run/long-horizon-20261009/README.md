@@ -5,7 +5,7 @@ DeepSWE v1.1 is pinned to `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`. Four undel
 ## Frozen material
 
 - [release.json](release.json): safe runtime projection, artifact/source identity, dependency index digest and admission evidence digests.
-- [order.json](order.json): fixed seed `dsh-opensandbox-long-horizon-v1`; the first position is geo / Plan / r2.
+- [order.json](order.json): the original seed order `dsh-opensandbox-long-horizon-v1`; the first position is geo / Plan / r2. The subsequent user-requested execution order is [execution-order-v5.json](execution-order-v5.json).
 - [admission.json](admission.json): four actual permission, untracked-snapshot, offline independent-command and mount-free baseline gates; official empty=0/reference=1 controls; real main/reviewer route proof. Model-free admission failures and repairs remain recorded.
 - [Frozen tarball](artifacts/dsh-task-supervisor-frozen.tgz): SHA-256 `cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366`. Plugin source `44b2a42`; monitoring and usage convention `2796533`.
 
@@ -45,9 +45,17 @@ The third repair freeze is [repair-v3.json](repair-v3.json), with 68 Python regr
 
 During implementation of position two, controlled state replay exposed another runner predicate gap: an approved Plan's earlier response could mask a current request failure or imply completion while native Inbox continuation remained queued. Finish evidence now requires the current `turn/end.completed`, matching turn identities and empty queues. A settled request failure cannot be overridden by an earlier completion hint and still needs two observations. This changes no DSH Plan, Agent or permission behavior. The local monitor stopped new delivery while the original second Agent, Session, approval and deadline were retained. All 73 Python regressions passed; actual original-Agent progress during repair was verified. The repaired freeze reconnects that position without redelivering its task.
 
-The current freeze is [repair-v4.json](repair-v4.json), from runner source `bc45ef6`. All 24 specifications, package bytes, route and execution order are unchanged. Position two reconnected its original Session and reached collection/grading after valid normal-finish evidence. Its original initial-grant receipt remains the only grant. This predicate repair is a separate protocol deviation; earlier releases and results are not overwritten.
+That monitor repair is frozen in [repair-v4.json](repair-v4.json), from runner source `bc45ef6`. At repair time, all 24 specifications, package bytes, route and execution order were unchanged. Position two reconnected its original Session and reached collection/grading after valid normal-finish evidence. Its original initial-grant receipt remains the only grant. This predicate repair is a separate protocol deviation; earlier releases and results are not overwritten.
 
 Subsequent public snapshots retain native completion event sequence, turn, timestamp and controller source digest in `terminal.nativeCompletionEvidence`, without event bodies. Report export does not modify the frozen runner or original results. Controller completion and official reward remain separate outcomes.
+
+## User-requested Supervisor priority
+
+The seed order happened to put five Plan positions first. With five delivered and four sealed, the user requested prioritizing Supervisor evaluation. The current execution freeze is [supervisor-priority-v5.json](supervisor-priority-v5.json), with [execution-order-v5.json](execution-order-v5.json): preserve the five started positions, execute all eight undelivered Supervisor-independent positions in their original relative order, then complete the remaining Goal/Plan positions in their original relative order.
+
+Position IDs, four tasks, eight positions per condition and the full 24-position denominator remain. All 24 specification files and runner files were verified byte-for-byte unchanged; package, model, budgets, authorization and grading rules also remain. Digests of 25 existing start, delivery, grant and sealed-result records were verified. Only the local monitor was handed off; position five retains its original Agent, Session, deadline and single grant, without stopping or redelivering the Agent.
+
+This is a user-requested execution-priority deviation, not another product-fault repair. The seed order and previous releases remain intact; new snapshots bind the actual execution-order digest. The final report must disclose possible confounding between condition and execution time. It cannot describe the batch as fully seed-ordered or treat early Supervisor results as the completed comparison.
 
 ## Environment handoff and resumption
 

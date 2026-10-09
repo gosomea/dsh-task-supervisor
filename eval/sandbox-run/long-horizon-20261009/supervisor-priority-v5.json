@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "user-requested-supervisor-priority",
+  "planned": 24,
+  "releaseSha256": "c6e7f3d981f1d6b30bf3c15aee270366d80b575b6a8b97441d5b31be85c4497f",
+  "previousReleaseSha256": "4410e6f1747beebbf3758ff429e01fd24f76d8b5e528c0ab6956a4fd629f1828",
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+  "previousOrderSha256": "f9a83a9aa239c911874913fa2416434d426db661839c1c948874f93a3afe5109",
+  "runnerCommit": "bc45ef61ffa7be9a59ed7c56f1b6768959c70013",
+  "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+  "deviation": {
+    "kind": "user-requested-supervisor-priority",
+    "atUnix": 1791566570.9569511,
+    "afterDeliveredPositions": 5,
+    "alreadySealedPositions": 4,
+    "previousOrderSha256": "f9a83a9aa239c911874913fa2416434d426db661839c1c948874f93a3afe5109",
+    "newOrderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+    "startedPrefixPreserved": true,
+    "remainingSupervisorPositions": 8,
+    "agentReruns": 0,
+    "unchangedSpecs": true,
+    "unchangedTarball": true,
+    "unchangedModelAndBudgets": true,
+    "reason": "human request to prioritize Supervisor evaluation",
+    "comparisonLimitation": "condition ordering is no longer the fully seed-ranked order; temporal route or infrastructure effects may be confounded with condition"
+  },
+  "originalRecordsVerified": 25,
+  "allSpecsUnchanged": true,
+  "allRunnerFilesUnchanged": true,
+  "capacity": {
+    "dockerFreeBytes": 35978010624,
+    "hostFreeBytes": 11931463680,
+    "cpus": 6,
+    "memoryBytes": 25146785792,
+    "atUnix": 1791566570.956919
+  },
+  "gateSha256": "26e89ca454c99df8c5aeeae1210565b0ec2d1977cc0874cc0c230a839c641572"
+}
