@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 from monitor import Journal, applied_plan, fold, observe, parse_events, protocol_actions, renew
+from instruction_identity import task_instruction_identity
 
 
 def fixture():
@@ -49,6 +50,24 @@ class MonitorTests(unittest.TestCase):
         view['idle'] = True
         protocol_actions(self.journal, self.started, view, sent.append, clock=self.clock)
         self.assertEqual(len(sent), 1)
+
+    def test_native_command_trim_binds_original_instruction_and_approves_once(self):
+        view, sent = fixture(), []
+        started = {**self.started, **task_instruction_identity(view['task']['objective'] + '\n')}
+        for _ in range(2):
+            protocol_actions(self.journal, started, view, sent.append, clock=self.clock)
+        self.assertEqual(len(sent), 1)
+        binding = self.journal.read('task-binding.json')
+        self.assertEqual(binding['instructionSha256'], started['instructionSha256'])
+        self.assertEqual(binding['objectiveSha256'], started['taskObjectiveSha256'])
+
+    def test_native_command_trim_does_not_accept_changed_content(self):
+        view = fixture()
+        started = {**self.started, **task_instruction_identity(view['task']['objective'] + '\n')}
+        view['task']['objective'] = 'initial  objective'
+        with self.assertRaisesRegex(ValueError, 'differs from the frozen'):
+            protocol_actions(self.journal, started, view, lambda _: self.fail('grant on changed content'), clock=self.clock)
+        self.assertIsNone(self.journal.read('task-binding.json'))
 
     def test_transport_loss_reconciles_without_duplicate_approval(self):
         view, sent = fixture(), []

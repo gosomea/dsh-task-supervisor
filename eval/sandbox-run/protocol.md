@@ -12,6 +12,8 @@ The development revision case permits one initial approval and one authorization
 
 ## Admission and immutable inputs
 
+Original instructions retain their UTF-8 bytes at delivery and their `instructionSha256`. Native `/task` applies ECMAScript `trim()` to the objective. New start records separately retain `taskObjectiveSha256` and an explicit `taskObjectiveNormalization`; the monitor verifies Task identity using that fixed command rule. Interior spaces, line breaks and text are not normalized, and changed content still rejects authorization. Legacy records without these fields keep their original exact-byte check, without invented historical identity or permission.
+
 Use a supplied immutable package, fixed DSH/Node versions, pinned images, and private per-run homes. Verify native read, workspace write, execution, and denied writes before task delivery. An unusable permission sandbox is an infrastructure admission failure, not a reason to increase permissions.
 
 Capture the baseline before credentials or model requests. Restore and compare fixture bytes. Connect the existing administrator check gateway through a task-private socket and artifact lease; only the administrator service has Docker control. Verify snapshots, independent checks, cleanup, official empty/reference grading controls, resource capacity, and actual main/reviewer model routes. A config dump or HTTP 200 alone is insufficient.

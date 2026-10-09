@@ -23,6 +23,7 @@ from monitor import Journal, fold, observe, parse_events, renew
 from runtime import SandboxRef
 from runtime_rpc import RuntimeDshRpc
 from native_fault import native_request_fault
+from instruction_identity import task_instruction_identity
 from native_completion import plan_completion_evidence
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
@@ -230,7 +231,8 @@ def deliver(runtime, box, rpc, spec, journal):
         'sandboxId': box.id, 'startedAtUnix': ready['windowStartedAtUnix'], 'deliveredAtUnix': now,
         'deadlineAtUnix': ready['deadlineAtUnix'], 'budgetIncludesHostBootstrap': True,
         'instructionSha256': spec['instructionSha256'], 'modelSelection': selected,
-        'baseCommit': spec.get('baseCommit'), 'automaticAgentReruns': 0})
+        'baseCommit': spec.get('baseCommit'), 'automaticAgentReruns': 0,
+        **(task_instruction_identity(spec['instruction']) if spec['condition'] == 'supervisor-independent' else {})})
     journal.write('delivery-intent.json', {**started, 'source': 'evaluation-protocol'})
     try:
         if spec['condition'] == 'plan':

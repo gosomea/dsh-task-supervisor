@@ -16,6 +16,7 @@ import uuid
 
 from records import exclusive_json
 from native_fault import confirmed_fault
+from instruction_identity import expected_task_objective_sha256
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from session_records import control_event
@@ -189,10 +190,13 @@ def protocol_actions(journal, started, view, send, *, revision=None, clock=time.
         raise ValueError('Task identity changed during a fixed position')
     if not binding:
         actual_hash = hashlib.sha256(task['objective'].encode()).hexdigest()
-        if started.get('instructionSha256') and actual_hash != started['instructionSha256']:
+        expected_hash = expected_task_objective_sha256(started)
+        if expected_hash and actual_hash != expected_hash:
             raise ValueError('Task objective differs from the frozen original instruction')
         journal.write('task-binding.json', {'taskId': task['id'], 'sessionId': started['sessionId'],
-            'requirementsVersion': task['requirementsVersion'], 'objectiveSha256': actual_hash})
+            'requirementsVersion': task['requirementsVersion'], 'objectiveSha256': actual_hash,
+            'instructionSha256': started.get('instructionSha256'),
+            'taskObjectiveNormalization': started.get('taskObjectiveNormalization')})
         binding = journal.read('task-binding.json')
     for name in ('initial-approval', 'revision', 'revision-approval'):
         reconcile_action(journal, name, task, clock=clock)
