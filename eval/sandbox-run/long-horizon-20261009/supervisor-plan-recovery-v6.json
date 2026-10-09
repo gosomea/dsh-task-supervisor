@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-supervisor-plan-review-automatic-retry-applied",
+  "atUnix": 1791569238.576312,
+  "position": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+  "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+  "taskId": "c0083607-d6b5-46c6-8e77-325786701512",
+  "jobId": "bbba5a58-820e-497c-a5a4-7ddf9fdd190f",
+  "reviewerSessionId": "task-review-f0761a2b-28ea-4bef-941d-e464699f75cd",
+  "reviewKind": "plan",
+  "verificationMode": "log",
+  "status": "applied",
+  "attempt": 2,
+  "verdict": "pass",
+  "nativeAppliedEventSeq": 173,
+  "evidenceSeqs": [
+    19,
+    20,
+    27,
+    29,
+    41,
+    43,
+    48,
+    50,
+    55,
+    57,
+    64,
+    69,
+    71,
+    78,
+    90,
+    102,
+    109,
+    127,
+    134,
+    141,
+    145
+  ],
+  "identityUnchangedAcrossDurableRevisions": true,
+  "identity": {
+    "taskId": "c0083607-d6b5-46c6-8e77-325786701512",
+    "taskRevision": 3,
+    "mainSessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+    "reviewerSessionId": "task-review-f0761a2b-28ea-4bef-941d-e464699f75cd",
+    "kind": "plan",
+    "stageId": "plan",
+    "nodeAttempt": null,
+    "planVersion": 0,
+    "cutoff": 145
+  },
+  "history": [
+    {
+      "seq": 146,
+      "revision": 1,
+      "status": "queued",
+      "attempt": 1,
+      "runtimeId": "8185db31-dd22-44e8-954b-a5173748d897",
+      "deadlineAt": "2026-10-09T18:02:19.054Z",
+      "faultCode": null,
+      "recoveryConsumed": 0
+    },
+    {
+      "seq": 153,
+      "revision": 2,
+      "status": "started",
+      "attempt": 1,
+      "runtimeId": "8185db31-dd22-44e8-954b-a5173748d897",
+      "deadlineAt": "2026-10-09T18:02:19.054Z",
+      "faultCode": null,
+      "recoveryConsumed": 0
+    },
+    {
+      "seq": 155,
+      "revision": 3,
+      "status": "started",
+      "attempt": 1,
+      "runtimeId": "8185db31-dd22-44e8-954b-a5173748d897",
+      "deadlineAt": "2026-10-09T18:02:19.054Z",
+      "faultCode": null,
+      "recoveryConsumed": 0
+    },
+    {
+      "seq": 157,
+      "revision": 4,
+      "status": "failed",
+      "attempt": 1,
+      "runtimeId": "8185db31-dd22-44e8-954b-a5173748d897",
+      "deadlineAt": "2026-10-09T18:02:19.054Z",
+      "faultCode": "timeout",
+      "recoveryConsumed": 0
+    },
+    {
+      "seq": 161,
+      "revision": 5,
+      "status": "queued",
+      "attempt": 1,
+      "runtimeId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+      "deadlineAt": "2026-10-09T18:02:19.054Z",
+      "faultCode": "timeout",
+      "recoveryConsumed": 1
+    },
+    {
+      "seq": 163,
+      "revision": 6,
+      "status": "started",
+      "attempt": 2,
+      "runtimeId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+      "deadlineAt": "2026-10-09T18:12:22.166Z",
+      "faultCode": null,
+      "recoveryConsumed": 1
+    },
+    {
+      "seq": 165,
+      "revision": 7,
+      "status": "started",
+      "attempt": 2,
+      "runtimeId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+      "deadlineAt": "2026-10-09T18:12:22.166Z",
+      "faultCode": null,
+      "recoveryConsumed": 1
+    },
+    {
+      "seq": 169,
+      "revision": 8,
+      "status": "submitted",
+      "attempt": 2,
+      "runtimeId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+      "deadlineAt": "2026-10-09T18:12:22.166Z",
+      "faultCode": null,
+      "recoveryConsumed": 1
+    },
+    {
+      "seq": 173,
+      "revision": 9,
+      "status": "applied",
+      "attempt": 2,
+      "runtimeId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+      "deadlineAt": "2026-10-09T18:12:22.166Z",
+      "faultCode": null,
+      "recoveryConsumed": 1
+    }
+  ],
+  "recovery": {
+    "retryLimit": 1,
+    "consumed": 1,
+    "protocolRepairs": 0,
+    "failureCodes": [
+      "timeout"
+    ]
+  },
+  "taskBudget": {
+    "deadlineAt": "2026-10-09T20:44:03.453Z",
+    "taskDeadlineMs": 10800000,
+    "reviewFaultActions": [
+      {
+        "id": "review:bbba5a58-820e-497c-a5a4-7ddf9fdd190f:2",
+        "kind": "review-fault",
+        "at": "2026-10-09T18:02:19.140Z",
+        "requirementsVersion": 1,
+        "planVersion": 0,
+        "effectId": "dc997fcd-05c9-45d3-898f-5f0933a67097",
+        "status": "confirmed",
+        "confirmedAt": "2026-10-09T18:02:22.248Z"
+      }
+    ],
+    "stops": []
+  },
+  "evidenceSha256": "606d79c7e18c78f3edc22abaedac3be4299c6d48bea47366c496c90dc24a5c8d",
+  "initialApprovalReceipts": 0,
+  "artifactAcceptanceComplete": false,
+  "officialScoreAvailable": false,
+  "humanRescueActions": 0,
+  "scope": "actual timeout and same-job retry applied in log plan review; no independent artifact acceptance or official score inferred"
+}

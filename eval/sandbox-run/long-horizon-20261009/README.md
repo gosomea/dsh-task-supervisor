@@ -67,6 +67,8 @@ The current runner freeze is [repair-v6.json](repair-v6.json), source `f328155`,
 
 Position seven, Koota/Supervisor, has [bound its actual original instruction](live-identity-confirmation-v6.json). Its first [planning observation review](supervisor-first-review-v6.json) was validly applied at native event seq 121, after which the main Agent continued planning without an initial grant or rescue. This checkpoint uses log review. Independent artifact checks and final official grading still require actual completion; this does not establish whole-task acceptance.
 
+The subsequent plan review reached its own 600-second deadline and the plugin retried it once. [Same-job recovery evidence](supervisor-plan-recovery-v6.json) records the second attempt's passing decision validly applied at seq 173. Task, reviewer Session, plan version and evidence cutoff remained identical across nine durable job revisions. The Task budget confirmed one fault recovery without extending the original 10800-second deadline. No initial grant had been issued when this evidence was captured. This proves actual-model plan-review recovery, not independent artifact acceptance or a passing official score.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
