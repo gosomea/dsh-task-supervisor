@@ -166,3 +166,7 @@ Benchmark counts, model scores, SDK commands, and infrastructure estimates in so
 ## Dev Note
 
 This document records the unified evaluation protocol and pending work, not run results. Finalize task IDs, formal sample size, execution environment, exact model versions, and official-protocol adaptation during integration; record observed runs in their evaluation result documents.
+
+## OpenSandbox long-horizon batch
+
+The [new paired protocol](../eval/sandbox-run/protocol.md) pins a four-task, three-condition, two-repeat comparison. Admission and execution are pending; no result belongs to this new batch yet. The runner draft is retained separately from the earlier frozen DeepSWE positions.
