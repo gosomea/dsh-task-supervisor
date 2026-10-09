@@ -10,10 +10,22 @@ const page = z.object({ cutoff: z.number().int(), sessionId: z.string().optional
   seq: z.number().int().nonnegative().optional(), text: z.string().optional(), nodeId: z.string().optional(), attempt: z.number().int().optional(),
 }).passthrough()
 const textResult = z.object({ seq: z.number().int().nonnegative(), text: z.string() }).passthrough()
+const readRange = textResult.extend({ offset: z.number().int().nonnegative(), totalChars: z.number().int().nonnegative(),
+  truncated: z.boolean(), nextOffset: z.number().int().nonnegative().nullable() }).refine(value => value.offset + value.text.length <= value.totalChars)
 const artifactRead = z.object({ snapshotId: z.string(), path: z.string(), hash: z.string(), offset: z.number().int().nonnegative(), totalChars: z.number().int().nonnegative(), text: z.string() }).passthrough()
 const checkRead = artifactRead.omit({ path: true, hash: true }).extend({ checkId: z.string(), stream: z.enum(['stdout', 'stderr']) })
 export function restoreReviewReads(events: readonly SessionEvent[], job: ReviewJob, mainEvents: readonly SessionEvent[] = []) {
   const observed = new Set<number>(), located = new Set<number>(), workers = new Set<string>(), inspectedWorkers = new Set<string>()
+  const ranges = new Map<number, { total: number; ranges: [number, number][]; truncated: boolean }>()
+  const accept = (raw: unknown) => {
+    const value = readRange.safeParse(raw)
+    if (!value.success || value.data.seq > job.cutoff) return false
+    const item = value.data, prior = ranges.get(item.seq)
+    if (prior && prior.total !== item.totalChars) return false
+    const range = prior ?? { total: item.totalChars, ranges: [], truncated: false }
+    range.ranges.push([item.offset, item.offset + item.text.length]); range.truncated ||= item.truncated
+    ranges.set(item.seq, range); observed.add(item.seq); return true
+  }
   const calls = new Map<string, Extract<SessionEvent, { type: 'tool/call' }>>()
   const files: NonNullable<ReviewJob['verification']>['readFiles'] = [], checks: NonNullable<ReviewJob['verification']>['readChecks'] = [], images = new Set<number>()
   const comparison = job.verification?.phase !== 'independent'
@@ -41,6 +53,12 @@ export function restoreReviewReads(events: readonly SessionEvent[], job: ReviewJ
     if (content.length !== 1 || content[0]?.type !== 'text') continue
     let raw: unknown
     try { raw = JSON.parse(content[0].text) } catch { continue }
+    if (call.data.name === 'read_task_evidence_batch' && comparison) {
+      const result = z.object({ sessionId: z.string(), cutoff: z.number().int(), items: z.array(z.object({ ok: z.boolean() }).passthrough()).max(6) }).safeParse(raw)
+      if (!result.success || result.data.sessionId !== job.mainSessionId || result.data.cutoff !== job.cutoff) continue
+      for (const item of result.data.items) if (item.ok === true && typeof item.seq === 'number' && (observed.has(item.seq) || located.has(item.seq))) accept(item)
+      continue
+    }
     if (call.data.name === 'inspect_task_artifact' && job.verification) {
       const parsed = artifactRead.safeParse(raw)
       if (!parsed.success || parsed.data.snapshotId !== job.verification.snapshot.id) continue
@@ -79,13 +97,20 @@ export function restoreReviewReads(events: readonly SessionEvent[], job: ReviewJ
       if (call.data.name === 'read_task_evidence_index') {
         for (const item of value.entries ?? []) if (item.seq <= job.cutoff) located.add(item.seq)
       } else {
-        for (const item of value.events ?? []) if (item.seq <= job.cutoff && (call.data.name !== 'read_task_input' || item.type === 'user/message')) observed.add(item.seq)
-        if (call.data.name === 'read_task_input' && value.seq !== undefined && value.seq <= job.cutoff && value.text !== undefined) observed.add(value.seq)
+        for (const item of value.events ?? []) if (item.seq <= job.cutoff && (call.data.name !== 'read_task_input' || item.type === 'user/message')) {
+          located.add(item.seq)
+          if (job.scope) accept(item); else observed.add(item.seq)
+        }
+        if (call.data.name === 'read_task_input' && value.seq !== undefined && value.seq <= job.cutoff && value.text !== undefined) {
+          if (job.scope) accept(value); else observed.add(value.seq)
+        }
       }
     } else if (comparison && ['read_task_text', 'read_task_call'].includes(call.data.name)) {
       const text = textResult.safeParse(raw)
-      if (text.success && text.data.seq <= job.cutoff && (observed.has(text.data.seq) || located.has(text.data.seq))) observed.add(text.data.seq)
+      if (text.success && text.data.seq <= job.cutoff && (observed.has(text.data.seq) || located.has(text.data.seq))) {
+        if (job.scope) accept(raw); else observed.add(text.data.seq)
+      }
     }
   }
-  return { observed, located, workers, inspectedWorkers, images, files, checks }
+  return { observed, located, workers, inspectedWorkers, images, files, checks, ranges }
 }

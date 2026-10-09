@@ -46,7 +46,25 @@ class ScriptedAdapter extends LlmAdapter {
     this.requests++
     const response = this.scripts[options.model]?.shift()
     if (response !== undefined) {
-      for (const chunk of response) yield chunk
+      // Lifecycle scripts cite returned original text, not a metadata-only seq 0.
+      const decision = response.find(chunk => chunk.type === 'block-end' && chunk.block.type === 'tool-call' && chunk.block.name === 'task_review_decision')
+      let serialized: string | undefined
+      if (decision?.type === 'block-end' && decision.block.type === 'tool-call') {
+        const args = JSON.parse(decision.block.arguments)
+        if (JSON.stringify(args.evidence_seqs) === '[0]') {
+          const reads = options.messages.filter(message => message.role === 'tool').flatMap(message => message.content.filter(block => block.type === 'text').flatMap(block => {
+            if (block.type !== 'text') return []
+            try { const data = JSON.parse(block.text); return data.events?.filter((event: { text?: string }) => typeof event.text === 'string') ?? [] } catch { return [] }
+          }))
+          const seq = reads.find((event: { seq: number }) => event.seq === 0)?.seq ?? reads[0]?.seq
+          if (typeof seq === 'number') { args.evidence_seqs = [seq]; serialized = JSON.stringify(args) }
+        }
+      }
+      for (const chunk of response) {
+        if (serialized && chunk.type === 'tool-call-delta') yield { ...chunk, argumentsDelta: serialized }
+        else if (serialized && chunk.type === 'block-end' && chunk.block.type === 'tool-call') yield { ...chunk, block: { ...chunk.block, arguments: serialized } }
+        else yield chunk
+      }
       return
     }
     yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -576,7 +594,7 @@ it('reviews a stage and final completion in fresh bounded reviewer Sessions', as
   const afterStage = taskOf(ctx, agent)
   expect(afterStage?.stageIndex).toBe(1)
   expect(afterStage?.lastReview?.reviewerSessionId).toMatch(/^task-review-/)
-  expect(afterStage?.lastReview?.evidenceSeqs).toEqual([0])
+  expect(afterStage?.lastReview?.evidenceSeqs).toHaveLength(1)
   expect(afterStage?.lastReview?.model).toEqual({ provider: 'scripted', model: 'scripted' })
   const reviewerLog = await ctx.sessionPersistence.open(SessionId(afterStage!.lastReview!.reviewerSessionId!), 'read')
   try {
@@ -745,9 +763,9 @@ it('reviews independent DAG branches out of order without releasing an unfinishe
   const root = await mkdtemp(join(tmpdir(), 'dsh-supervisor-dag-'))
   roots.push(root)
   const ctx = await host(root, new ScriptedAdapter({ reviewer: [
-    toolResponse('read_task_evidence', { from_seq: 0, limit: 1 }, 'b-read'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'b-read'),
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'B accepted', evidence_seqs: [0] }, 'b-pass'),
-    toolResponse('read_task_evidence', { from_seq: 0, limit: 1 }, 'a-read'),
+    toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'a-read'),
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'A accepted', evidence_seqs: [0] }, 'a-pass'),
   ] }), true, { provider: 'scripted', model: 'reviewer' })
   const { agent } = await ctx.agents.create({ sessionId: SessionId('dag-main'), agentOptions: { provider: 'scripted', model: 'main' } })
@@ -3049,4 +3067,40 @@ it('user pause cancels a scheduled fault retry and leaves execution manually dis
   expect(adapter.reviewerRequests).toBe(1)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' })
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ status: 'failed', recovery: { manualOnly: true, consumed: 1, nextRetryAt: null }, fault: { code: 'cancelled' } })
+})
+
+
+it.each([0, 1])('bounds structured read correction in the same job (limit=%s)', async limit => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-read-correction-')); roots.push(root)
+  const script: Record<string, StreamChunk[][]> = {}, adapter = new ScriptedAdapter(script), ctx = await host(root, adapter, false)
+  await ctx.sessionProjections.register(taskProjection)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`correction-${limit}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const input = agent.session.append('user/message', createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Read a static report and check its total.' }] }), { surfaceOp: 'append' })
+  const task = { ...newTask('Read a static report and check its total.'), creationRequestId: `main-task:${agent.id}:${input.seq}` }
+  appendTask(ctx, agent, task)
+  script.reviewer = [
+    toolResponse('read_task_input', { seq: input.seq }, 'input'),
+    toolResponse('read_task_text', { seq: input.seq, offset: -1 }, 'bad-offset'), textResponse('Need to correct the page.'),
+    toolResponse('read_task_evidence_batch', { items: [{ seq: input.seq, limit: 6000 }, { seq: 999999 }] }, 'batch'),
+    toolResponse('task_review_decision', { verdict: 'pass', finding: '# Static requirements covered\n\nInput read.', evidence_seqs: [input.seq] }, 'decision'),
+  ]
+  const policy = { scopeProtocol: 1 as const, readCorrectionAttempts: limit, repairAttempts: 0 }
+  const controller = new AbortController()
+  if (limit === 0) await expect(reviewStage(ctx, agent, task, 'plan', 'Plan', controller.signal, { provider: 'scripted', model: 'reviewer' }, 'plan', policy)).rejects.toMatchObject({ fault: { code: 'evidence-read' } })
+  else expect(await reviewStage(ctx, agent, task, 'plan', 'Plan', controller.signal, { provider: 'scripted', model: 'reviewer' }, 'plan', policy)).toMatchObject({ verdict: 'pass', evidenceSeqs: [input.seq] })
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.readCorrections).toMatchObject({ limit, consumed: limit, history: limit ? [{ tool: 'read_task_text', code: 'INVALID_RANGE', field: 'offset' }] : [] })
+  expect(job.recovery).toBeUndefined()
+  expect(job.attempt).toBe(1)
+  if (limit) {
+    expect(job).toMatchObject({ status: 'submitted', scope: { taskFromSeq: input.seq, taskId: task.id } })
+    const reader = await ctx.sessionPersistence.open(SessionId(job.reviewerSessionId!), 'read')
+    try {
+      const events = (await reader.read(0, 200)).events
+      const { restoreReviewReads } = await import('../../src/review-read-ledger.ts')
+      const ledger = restoreReviewReads(events, job, agent.session.snapshotEvents())
+      expect(ledger.observed.has(input.seq)).toBe(true); expect(ledger.observed.has(999999)).toBe(false)
+      expect(ledger.ranges.get(input.seq)?.ranges).toContainEqual([0, 'Read a static report and check its total.'.length])
+    } finally { await reader.close() }
+  }
 })

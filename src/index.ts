@@ -71,6 +71,7 @@ export interface Config {
   responseLanguage?: string
   fallbackLanguage?: string
   planningReadTools?: string[]
+  reviewReadCorrectionAttempts?: number
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
   reviewFaultRetryAttempts?: number
@@ -131,7 +132,7 @@ function inputFor(task: TaskSnapshot, instruction: string) {
 
 /** Register one independently owned workflow on public DSH seams. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
-  const reviewerPolicy = reviewPolicy({ ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
+  const reviewerPolicy = reviewPolicy({ ...config.reviewReadCorrectionAttempts === undefined ? {} : { readCorrectionAttempts: config.reviewReadCorrectionAttempts }, ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   const recoveryPolicy = faultRecoveryPolicy(config.reviewFaultRetryAttempts, config.reviewFaultRetryDelayMs, config.resumeAfterReviewRecovery)
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
@@ -167,7 +168,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
-  const selectedReviewPolicy = { ...reviewerPolicy, verificationMode: effectiveVerification,
+  const selectedReviewPolicy = { ...reviewerPolicy, scopeProtocol: 1 as const, verificationMode: effectiveVerification,
     ...config.reviewVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,

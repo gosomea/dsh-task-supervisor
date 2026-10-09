@@ -50,4 +50,14 @@ Planning and progress review frequencies remain unchanged. No browser executor, 
 
 The subsequent corrected-read and collapsed-summary regression is recorded in [the October 9 diagnosis and acceptance](postmortem/2026-10-09-review-repair.md). It tests log review and native presentation; it does not add an independent executor or publish a replacement package.
 
+## Scoped evidence and bounded read correction
+
+New controller jobs write version 8 with immutable Task, requirements/plan versions, node attempt, cutoff and task/attempt/change locator ranges. Direct request identity and referenced earlier constraints are retained; other earlier user messages are marked needs-check and remain accessible. A location window is not proof that every event belongs to this task. Old jobs keep their original protocol and permission.
+
+`read_task_evidence_index` accepts current-task, current-attempt, changes, earlier-context or all, plus bound task/node/attempt filters. `read_task_evidence_batch` expands at most six located originals and 12000 redacted characters, reporting per-item errors, actual ranges, truncation and next offsets. Indexes and metadata only locate originals. New decisions validate citations against successful delivered native results; recovery restores actual read ranges from the same Session.
+
+`reviewReadCorrectionAttempts` defaults to 1 and accepts 0–1. When a settled reviewer ends on a recognized argument, pagination or locator error, the controller can deliver one correction within that job and Session. This counter survives internal retries; correction and protocol supplements do not extend the attempt deadline. Permission denial, stale artifacts and unknown errors do not qualify. Native in-turn corrections remain in the tool history.
+
+Focused controlled-Host tests cover enabled/disabled correction, successful batch items with a failed sibling, same-job read-range recovery, fault retry with real evidence and user-stop recovery. Registered real-model and browser acceptance is pending.
+
 [中文](review-experience.zh.md)

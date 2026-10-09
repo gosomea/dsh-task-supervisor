@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { planningSummarySchema, reviewFaultSchema, taskSchema } from './state-schema.ts'
 import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
+import { reviewScopeSchema } from './review-scope-schema.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
-export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
+export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
@@ -32,6 +33,10 @@ export const reviewJobSchema = z.object({
   startedAt: z.string(), finishedAt: z.string().nullable(), trigger: z.string(),
   input: taskSchema, evidence: z.string(), fault: reviewFaultSchema.nullable(),
   recovery: reviewRecoverySchema.optional(),
+  scope: reviewScopeSchema.optional(),
+  readCorrections: z.object({ limit: z.number().int().min(0).max(1), consumed: z.number().int().min(0).max(1),
+    history: z.array(z.object({ at: z.string(), errorSeq: z.number().int().nonnegative(), tool: z.string(),
+      code: z.string(), field: z.string(), validRange: z.string(), nextAction: z.string() }).strict()).max(1) }).strict().optional(),
   verification: verificationSchema.optional(),
   verificationMode: z.enum(['log', 'independent']).optional(),
   requirementsProtocol: z.literal(1).optional(),
@@ -43,6 +48,11 @@ export const reviewJobSchema = z.object({
     criteria: z.array(findingSchema).optional(), checks: z.array(checkFindingSchema).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict().superRefine((job, ctx) => {
+  if (job.readCorrections && !job.scope) ctx.addIssue({ code: 'custom', message: 'read corrections require a bound review scope' })
+  if (job.scope && (job.scope.taskId !== job.taskId || job.scope.cutoff !== job.cutoff || job.scope.planVersion !== job.planVersion
+    || job.scope.requirementsVersion !== job.input.requirementsVersion || job.scope.nodeId !== job.stageId
+    || job.scope.nodeAttempt !== job.nodeAttempt)) ctx.addIssue({ code: 'custom', message: 'review scope does not bind this job' })
+  if (job.readCorrections && job.readCorrections.consumed !== job.readCorrections.history.length) ctx.addIssue({ code: 'custom', message: 'read correction history is inconsistent' })
   if (job.kind === 'planning') {
     if (job.verification || job.nodeAttempt !== null) ctx.addIssue({ code: 'custom', message: 'planning reviews have no artifact verification or node attempt' })
     if (job.decision && (!job.decision.planning || job.decision.evidenceSeqs.length === 0
@@ -53,4 +63,3 @@ export const reviewJobSchema = z.object({
 })
 export type ReviewJob = z.infer<typeof reviewJobSchema>
 export type ReviewFault = z.infer<typeof reviewFaultSchema>
-

@@ -34,3 +34,18 @@ it('recovery retains the independent/comparison lock instead of exposing prior m
   expect(restoreReviewReads(events, locked).observed.size).toBe(0)
   expect([...restoreReviewReads(pair('read_task_input', { cutoff: 20, seq: 3, text: 'original request' }), locked).observed]).toEqual([3])
 })
+it('restores v8 batch read ranges but never failed items, metadata, malformed pages or index summaries', () => {
+  const scoped = { ...job, scope: { protocol: 1 } } as ReviewJob
+  const index = pair('read_task_evidence_index', { sessionId: 'main', cutoff: 20, entries: [{ seq: 9 }, { seq: 10 }] })
+  const value = { sessionId: 'main', cutoff: 20, items: [
+    { ok: true, seq: 9, type: 'tool/result', text: 'part', offset: 2, totalChars: 12, truncated: true, nextOffset: 6 },
+    { ok: false, seq: 10, error: { code: 'NOT_FOUND' } },
+  ] }
+  const actual = restoreReviewReads([...index, ...pair('read_task_evidence_batch', value)], scoped)
+  expect([...actual.observed]).toEqual([9])
+  expect(actual.ranges.get(9)).toEqual({ total: 12, ranges: [[2, 6]], truncated: true })
+  expect(restoreReviewReads([...index, ...pair('read_task_evidence_batch', { ...value, sessionId: 'foreign' })], scoped).observed.size).toBe(0)
+  expect(restoreReviewReads(pair('read_task_evidence', { cutoff: 20, events: [{ seq: 8, type: 'tool/call' }] }), scoped).observed.size).toBe(0)
+  expect(restoreReviewReads([...index, ...pair('read_task_text', { seq: 9, text: 'summary' })], scoped).observed.size).toBe(0)
+  expect(restoreReviewReads([...index, ...pair('read_task_text', { seq: 9, text: 'overflow', offset: 9, totalChars: 10, truncated: true, nextOffset: null })], scoped).observed.size).toBe(0)
+})
