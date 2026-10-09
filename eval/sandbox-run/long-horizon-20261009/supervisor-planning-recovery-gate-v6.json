@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "kind": "frozen-product-planning-recovery-gate",
+  "captureOnly": true,
+  "formalResultSealed": false,
+  "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+  "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+  "taskId": "23475c5d-a300-4855-b664-dc5cdc8e9973",
+  "observedAt": "2026-10-09T22:05:30.123464+00:00",
+  "nativeSourceSha256": "eeb6452e910f293782c239dad71500949e7ca519b83ba2625522b47c57cdfebb",
+  "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+  "startedSha256": "e414073ce7cf9fa3b9ba49cee9d222514597a5b683bd6ee5d8130798136ecf5a",
+  "originalDeadlineAtUnix": 1791591787.8889768,
+  "frozenPluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "recoverySourceSha256": "5d94a3b32c0a8d1e53fa83a5e1c0524c7ecd0bab1c5128287b2814f46685cae6",
+  "task": {
+    "phase": "planning",
+    "revision": 8,
+    "planVersion": 0,
+    "requirementsVersion": 1,
+    "approvedPlanVersion": null,
+    "everApproved": false,
+    "enabled": true,
+    "pauseReason": null
+  },
+  "review": {
+    "id": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+    "kind": "plan",
+    "status": "applied",
+    "attempt": 2,
+    "revision": 9,
+    "planVersion": 0,
+    "cutoff": 204,
+    "reviewerSessionId": "task-review-bceff709-e61d-43b9-897b-83b77a0873ac",
+    "startedAt": "2026-10-09T21:44:17.738Z",
+    "deadlineAt": "2026-10-09T22:04:20.814Z"
+  },
+  "verdict": "revise",
+  "recovery": {
+    "retryLimit": 1,
+    "delayMs": 3000,
+    "resume": true,
+    "consumed": 1,
+    "protocolRepairs": 0,
+    "permit": {
+      "armed": true,
+      "requirementsVersion": 1,
+      "planVersion": 0,
+      "approvedPlanVersion": null
+    },
+    "manualOnly": false,
+    "manualPending": false
+  },
+  "faultCodes": [
+    "timeout"
+  ],
+  "reviewEvents": [
+    {
+      "seq": 205,
+      "timestampMs": 1791582257741,
+      "status": "queued",
+      "attempt": 1
+    },
+    {
+      "seq": 212,
+      "timestampMs": 1791582257856,
+      "status": "started",
+      "attempt": 1
+    },
+    {
+      "seq": 214,
+      "timestampMs": 1791582257863,
+      "status": "started",
+      "attempt": 1
+    },
+    {
+      "seq": 216,
+      "timestampMs": 1791582857788,
+      "status": "failed",
+      "attempt": 1
+    },
+    {
+      "seq": 220,
+      "timestampMs": 1791582857801,
+      "status": "queued",
+      "attempt": 1
+    },
+    {
+      "seq": 222,
+      "timestampMs": 1791582860821,
+      "status": "started",
+      "attempt": 2
+    },
+    {
+      "seq": 224,
+      "timestampMs": 1791582860835,
+      "status": "started",
+      "attempt": 2
+    },
+    {
+      "seq": 228,
+      "timestampMs": 1791583001709,
+      "status": "submitted",
+      "attempt": 2
+    },
+    {
+      "seq": 232,
+      "timestampMs": 1791583001729,
+      "status": "applied",
+      "attempt": 2
+    }
+  ],
+  "postAppliedEvents": [
+    {
+      "seq": 233,
+      "type": "agent/inbox/spliced",
+      "timestampMs": 1791583001732,
+      "reason": null
+    },
+    {
+      "seq": 234,
+      "type": "agent/inbox/spliced",
+      "timestampMs": 1791583001738,
+      "reason": null
+    },
+    {
+      "seq": 235,
+      "type": "turn/start",
+      "timestampMs": 1791583001740,
+      "reason": null
+    },
+    {
+      "seq": 236,
+      "type": "agent/inbox/spliced",
+      "timestampMs": 1791583001741,
+      "reason": null
+    },
+    {
+      "seq": 237,
+      "type": "step/start",
+      "timestampMs": 1791583001810,
+      "reason": null
+    },
+    {
+      "seq": 238,
+      "type": "user/message",
+      "timestampMs": 1791583001811,
+      "reason": null
+    },
+    {
+      "seq": 239,
+      "type": "request/header",
+      "timestampMs": 1791583001812,
+      "reason": null
+    },
+    {
+      "seq": 240,
+      "type": "developer/message",
+      "timestampMs": 1791583001813,
+      "reason": null
+    },
+    {
+      "seq": 241,
+      "type": "assistant/message",
+      "timestampMs": 1791583013919,
+      "reason": null
+    },
+    {
+      "seq": 242,
+      "type": "step/end",
+      "timestampMs": 1791583013927,
+      "reason": null
+    },
+    {
+      "seq": 243,
+      "type": "turn/end",
+      "timestampMs": 1791583013929,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  ],
+  "mainLastSeq": 243,
+  "budgetRevision": 3,
+  "confirmedFaultActions": 1,
+  "initialApprovalIntents": 0,
+  "reproduction": {
+    "actual": false,
+    "isolatedVersionCounterfactual": true,
+    "freshUnretriedPlanning": true
+  },
+  "reproductionExecution": "Node 24 imports exact frozen TypeScript source; fixture uses current durable job and task in memory; no Host command or model request",
+  "counterfactualScope": "Only planVersion differs in an in-memory fixture; this is not an authorization or a Task mutation",
+  "expectedContinuationScope": "Planning revision only, not permission to implement",
+  "runtimeMutated": false,
+  "rescueActions": 0,
+  "officialReward": null,
+  "strictSuccess": null
+}

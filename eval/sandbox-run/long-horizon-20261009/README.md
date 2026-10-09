@@ -115,6 +115,14 @@ This position proves that the committed artifact passed official tests while rev
 
 This snapshot seals 8/24 positions: six officially scored, with one reward 1 and five reward 0, plus two infrastructure faults retaining null. The ninth actual delivery is original position 11, Geo/Supervisor/r1. The previous seven results, new eighth result and current release digests remain identical. Execution continues in Supervisor-priority order.
 
+## Continuation gap after plan-review recovery
+
+The ninth actual delivery (original position 11, Geo/Supervisor/r1) exposed a [planning-recovery validation gap](supervisor-planning-recovery-gate-v6.json). The first review of the third candidate plan timed out, and the plugin retried the same job and reviewer Session once with the original evidence cutoff at seq 204. Attempt two's `revise` was validly applied at main seq 232. The Task returned to planning with requirements version 1, plan version 0 and no implementation approval. One fault recovery was confirmed without extending the original absolute deadline.
+
+The frozen `recoveryCanContinue` source requires `permit.planVersion + 1 === task.planVersion` for every recovered plan review. A passing plan increments the version; a revision retains version 0, making this comparison `1 === 0` and disabling automatic planning continuation. Importing the frozen TypeScript source with the actual durable job and Task as an in-memory fixture returned false. Changing only the fixture's plan version by one returned true, as did the unretried planning fixture. This reproduction neither mutates the original Task nor grants implementation permission.
+
+The log subsequently records one main-Agent handoff turn, normally completed at seq 243. No later tool or new review existed at capture, and no initial grant had been issued. This proves the recovery gate's version mismatch and subsequent inactivity; it does not establish a sealed position, official reward 0 or a need to conflate planning continuation with implementation permission. The frozen condition retains this product behavior. The monitor waits for the original deadline or an existing terminal condition without rescue, rerun or runner changes. Final elapsed time and official grading will enter a new immutable snapshot after sealing.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
