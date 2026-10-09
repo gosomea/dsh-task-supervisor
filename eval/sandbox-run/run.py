@@ -3,8 +3,8 @@
 
 probe and baseline talk to a running OpenSandbox service and deny egress.
 decide applies the closed intervention rules to one observation and does not
-start a sandbox. launch restores a baseline snapshot, starts the worker DSH
-inside it, and starts a plugin-free supervising DSH on this machine.
+start a sandbox. run uses one deterministic monitor and the worker's native
+controller. The older launch experiment remains available for compatibility.
 """
 
 import argparse
@@ -30,7 +30,7 @@ def _preflight(args: argparse.Namespace) -> None:
     runtime = _runtime(args)
     try:
         result = native_preflight(runtime, image=args.image, tarball=args.tarball,
-            tarball_sha256=args.tarball_sha256, probe=args.probe, out=args.out)
+            tarball_sha256=args.tarball_sha256, probe=args.probe, out=args.out, platform=args.platform)
     finally:
         runtime.close()
     print(json.dumps({'passed': result['passed'], 'modelRequests': 0, 'out': str(args.out)}))
@@ -102,6 +102,42 @@ def _decide(args: argparse.Namespace) -> None:
     print(json.dumps(decide(observation).as_dict(), ensure_ascii=False))
 
 
+def _position(args):
+    from execution import prepare, deliver, watch, validate_spec
+    from collect import collect, grade
+    from monitor import Journal
+    spec = json.loads(args.spec.read_text())
+    journal = Journal(args.out)
+    validate_spec(spec)
+    if args.command == 'grade':
+        result = grade(spec, journal)
+    else:
+        runtime = _runtime(args)
+        try:
+            if args.command == 'run':
+                with journal.owner():
+                    box, rpc, _ = prepare(runtime, spec, journal)
+                    if args.prepare_only:
+                        result = {'prepared': True, 'modelRequests': 0}
+                    else:
+                        deliver(runtime, box, rpc, spec, journal)
+                if not args.prepare_only:
+                    result = watch(runtime, spec, journal, max_ticks=1 if args.once else None)
+            elif args.command == 'observe':
+                result = watch(runtime, spec, journal, max_ticks=1 if args.once else None)
+            elif args.command == 'collect':
+                with journal.owner(): result = collect(runtime, spec, journal)
+        finally:
+            runtime.close()
+    print(json.dumps({key: result.get(key) for key in ('prepared', 'pending', 'firstStopReason', 'reward', 'strictSuccess') if key in result}))
+
+
+def _summarize(args):
+    from summarize import write_summary
+    value = write_summary(args.order, args.runs, args.out)
+    print(json.dumps({'planned': value['planned'], 'sealed': value['sealed'], 'complete': value['complete']}))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="OpenSandbox evaluation runner for dsh-task-supervisor")
     parser.add_argument("--domain", help="OpenSandbox host:port. Defaults to OPEN_SANDBOX_DOMAIN or localhost:8080")
@@ -110,8 +146,23 @@ def main() -> None:
                         help="Reach sandbox endpoints directly. Omit this when the client cannot route to container IPs.")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    summary = sub.add_parser('summarize', help='report every planned position and task-level paired uncertainty')
+    summary.add_argument('--order', type=Path, required=True)
+    summary.add_argument('--runs', type=Path, required=True)
+    summary.add_argument('--out', type=Path, required=True)
+    summary.set_defaults(func=_summarize)
+
+    for operation in ('run', 'observe', 'collect', 'grade'):
+        position = sub.add_parser(operation, help='deterministic frozen position ' + operation)
+        position.add_argument('--spec', type=Path, required=True)
+        position.add_argument('--out', type=Path, required=True)
+        position.add_argument('--once', action='store_true', help='observe one tick without changing original execution')
+        position.add_argument('--prepare-only', action='store_true', help='prepare with no model delivery')
+        position.set_defaults(func=_position)
+
     admission = sub.add_parser('preflight', help='keyless native DSH permission admission; requires frozen artifacts')
     admission.add_argument('--image', required=True)
+    admission.add_argument('--platform', choices=['linux/amd64', 'linux/arm64'])
     admission.add_argument('--tarball', type=Path, required=True)
     admission.add_argument('--tarball-sha256', required=True)
     admission.add_argument('--probe', type=Path, required=True)

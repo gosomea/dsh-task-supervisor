@@ -13,13 +13,13 @@ def file_digest(path: Path) -> str:
 
 
 def native_preflight(runtime, *, image: str, tarball: Path, tarball_sha256: str,
-                     probe: Path, out: Path) -> dict:
+                     probe: Path, out: Path, platform=None) -> dict:
     if file_digest(tarball) != tarball_sha256:
         raise ValueError('frozen tarball digest differs')
     exclusive_json(out / 'native-intent.json', {'image': image, 'tarballSha256': tarball_sha256,
                                              'probeSha256': file_digest(probe), 'modelRequests': 0})
     box = runtime.create(image=image, snapshot_id=None, metadata={'role': 'native-preflight'},
-                         timeout_minutes=15, cpu='2', memory='8Gi', network_policy='allow')
+                         timeout_minutes=15, cpu='2', memory='2Gi', network_policy='allow', platform=platform)
     exclusive_json(out / 'native-started.json', {'sandboxId': box.id})
     result = None
     try:
@@ -49,8 +49,8 @@ def native_preflight(runtime, *, image: str, tarball: Path, tarball_sha256: str,
         code, _, error = runtime.exec(box,
             'DSH_HOME=/opt/eval/home DSH_TELEMETRY_DISABLED=1 dsh web --host 127.0.0.1 --port 3080 --no-open '
             '--trusted-host host.docker.internal --trusted-host localhost '
-            '> /opt/eval/host.log 2>&1', background=True)
-        runtime.exec(box, 'python3 /opt/eval/relay.py > /opt/eval/relay.log 2>&1', background=True)
+            '> /opt/eval/host.log 2>&1', timeout_s=None, background=True)
+        runtime.exec(box, 'python3 /opt/eval/relay.py > /opt/eval/relay.log 2>&1', timeout_s=None, background=True)
         rpc = RuntimeDshRpc(runtime, box, timeout=10)
         for attempt in range(60):
             try:
@@ -72,7 +72,8 @@ def native_preflight(runtime, *, image: str, tarball: Path, tarball_sha256: str,
             and result.get('written') == 'native workspace write\n' \
             and result.get('denied', {}).get('exitCode') != 0 \
             and result.get('outsideUnchanged') is True and not result.get('error')
-        result.update(passed=bool(passed), image=image, tarballSha256=tarball_sha256)
+        result.update(passed=bool(passed), image=image, tarballSha256=tarball_sha256,
+            preflightCpu=2, preflightMemoryMiB=2048, performanceTrial=False)
         exclusive_json(out / 'native-result.json', result)
         if not passed:
             raise RuntimeError('native execution admission failed; model delivery forbidden')

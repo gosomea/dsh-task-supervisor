@@ -28,6 +28,8 @@ class RuntimeTests(TestCase):
         self.assertEqual(args["extensions"], {"bootstrap.execd.isolation": "enable"})
         self.assertEqual(args["resource"], {"cpu": "2", "memory": "8Gi"})
         self.assertEqual(args["network_policy"].default_action, "deny")
+        self.assertEqual(args['platform'].os, 'linux')
+        self.assertEqual(args['platform'].arch, 'amd64')
         self.assertEqual(args["volumes"][0].pvc.claim_name, "owned-volume")
         self.assertIn("one", self.runtime._owned)
 

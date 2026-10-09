@@ -63,7 +63,7 @@ def verified_output(result: dict, wrapped: bool) -> bool:
     return re.search(r"\b(?:verify(?:\.mjs)?[- ]?)?exit(?: code)?\s*[:=]\s*0\b", output) is not None
 
 
-def check_revision(workspace: Path, events: list[dict]) -> dict:
+def check_revision(workspace: Path, events: list[dict], *, execution_workspace: Path | None = None) -> dict:
     source = ROOT / "fixtures/revision-and-evidence"
     for name in ("data.csv", "verify.mjs"):
         assert hashlib.sha256((workspace / name).read_bytes()).digest() == hashlib.sha256((source / name).read_bytes()).digest(), f"{name} changed"
@@ -95,12 +95,13 @@ def check_revision(workspace: Path, events: list[dict]) -> dict:
                for seq, state in states), "no new plan after objective revision"
 
     calls = successful_calls(events)
+    command_workspace = execution_workspace or workspace
     write_calls = [event for event, _ in calls if event["seq"] > edit_seq
-                   and workspace_command(event, workspace, "analyze.mjs") is not None]
+                   and workspace_command(event, command_workspace, "analyze.mjs") is not None]
     assert write_calls, "no successful revised report generation call"
     final_write = max(event["seq"] for event in write_calls)
     verify_calls = [(event, result) for event, result in calls if event["seq"] > final_write
-                    and (command := workspace_command(event, workspace, "verify.mjs")) is not None
+                    and (command := workspace_command(event, command_workspace, "verify.mjs")) is not None
                     and verified_output(result, command[1])]
     assert verify_calls, "no successful verifier call after the final report generation call"
     return {"passed": True, "expected": expected, "revisionSeq": edit_seq,

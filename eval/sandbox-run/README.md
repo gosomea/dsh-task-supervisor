@@ -9,7 +9,7 @@ This directory implements the [long-horizon protocol](protocol.md) with a new de
 
 ## Implementation status
 
-The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Task-wide durable budgets and controlled Host/UI regression are implemented. Deterministic monitoring, real development regressions and final freezing remain pending.
+The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Task-wide budgets, deterministic monitoring, collection and grading are implemented. The revision development fixture completed with external fixture reward=1. Strict fault injection and final candidate snapshot integration remain under validation; formal execution is not frozen. Initial failures and fixes remain recorded in [runner validation](validation-20261009.md).
 
 | Entry point | Purpose |
 | --- | --- |
@@ -18,8 +18,13 @@ The [environment admission record](admission-20261009.json) verifies native work
 | `baseline` | Prepare clean public development fixtures before credentials or model delivery |
 | `controls.py` | Unchanged official empty/reference scoring with separate-environment and cleanup evidence |
 | `route_preflight.py` | Calibrate actual main and bound-reviewer HTTP requests and durable Session lineage |
+| `run` / `observe` | Monitor an original single delivery, durable ownership, actions, authorization and absolute deadline |
+| `collect` | After stopping, collect logs, artifacts, committed patch and check storage; release owned resources after verification |
+| `grade` | Score original artifacts once externally; reconcile the original grader on unknown response |
+| `summarize` | Retain the full planned denominator, missing measures and paired task differences |
+| `batch.py` | Run a frozen serial release; verify hashes/capacity per position and reconnect started positions |
 
-Legacy `launch`/`decide` contain a second model supervisor and external rescue rules. They are **not used by this protocol** and do not establish completion of the new runner. The subsequent implementation adds `run`, `observe`, `collect`, `grade` and `summarize` to the same entry point.
+Legacy `launch`/`decide` contain a second model supervisor and external rescue rules. They are **not used by this protocol**. The current path uses one Python monitor and the native controller of each condition.
 
 ## Admission commands
 
@@ -46,4 +51,8 @@ The administrator gateway owns Docker socket access, private check copies and cl
 
 Receipts use exclusive creation, atomic publication and directory fsync; results cannot be overwritten. SDK `connect` does not acquire destruction ownership or create another Agent. Sandbox renewal cannot extend Task deadlines, and snapshot creation no longer renews implicitly.
 
-Admission retains four pre-model failures and their causes. Routing calibration deliberately stops review after observing actual main/reviewer requests; it proves routing and lineage, not a decision or independent-stage acceptance. Browser display, candidate-wide artifact integration, peak capacity and storage enforcement remain subsequent gates.
+Admission retains pre-model failures and causes. Route calibration establishes requests and lineage; development runs separately record independent stage and completion acceptance. Browser checks cover complete decision bodies, same-job retries and the Task terminal state. Final candidate snapshot integration remains a delivery gate.
+
+Official task resources are 2 CPU/8 GiB for execution. Independent checks use 2 CPU/8 GiB and the administrator uses 1 CPU/1 GiB, reported separately. Before each new delivery, admission requires at least 5 CPU/17 GiB capacity, 30 GiB free Docker disk and 8 GiB free host disk. The main writable layer (20 GiB) and private check storage (4 GiB) are sampled every 60 seconds and trigger stopping; these are not hard disk quotas or instantaneous peak guarantees. Check CPU time cannot be recovered from current native records and remains null.
+
+After sealing, check sources, private copies and outputs are archived and hashed before releasing explicitly owned volumes. Reconnection uses original Sessions and exports without duplicate delivery, approval, scoring or evaluator-created Agent commits. Completion in the final polling gap is verified from settled native records after stopping, never from model claims.

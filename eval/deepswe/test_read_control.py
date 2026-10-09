@@ -39,6 +39,18 @@ class ControlTests(unittest.TestCase):
             self.assertTrue(result['scored'])
             self.assertIsNone(result['fault'])
 
+    def test_f2p_p2p_require_official_row_classification(self):
+        self.fixture(0, 1, 1)
+        path = self.trial / 'verifier/ctrf.json'
+        report = json.loads(path.read_text())
+        self.assertIsNone(read_control(self.root)['F2P'])
+        report['results']['tests'][0]['name'] = '[p2p] retained behavior'
+        report['results']['tests'][1]['name'] = '[f2p] missing behavior'
+        path.write_text(json.dumps(report))
+        result = read_control(self.root)
+        self.assertEqual(result['F2P']['rate'], 0)
+        self.assertEqual(result['P2P']['rate'], 1)
+
     def test_missing_or_mismatched_test_details_are_unscored(self):
         for rows, fault in [([], 'invalid-test-details'),
                             ([{'name': 'a', 'status': 'failed'}] * 7, 'test-details-summary-mismatch')]:

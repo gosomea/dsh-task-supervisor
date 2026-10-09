@@ -1,5 +1,7 @@
 # 评测设计与执行路线
 
+当前工作以[OpenSandbox 长程协议](../eval/sandbox-run/protocol.zh.md)为准：四道留出题、三条件、两次重复，24 个位置。当前完成修订开发回归，严格故障恢复与最终冻结尚在验收；公开投递 0/24。下文历史批次保持原有日期和口径，不与新批混合。
+
 **更新日期：2026-09-28。状态：两道冻结样本三组已封口，第三道已过环境门禁。** 本文统一维护评测问题、执行顺序、数据集、对照组、指标与结果交付。接入证据见 [SWE-bench Pro V2 记录](../eval/swebench-pro-v2/README.zh.md)，三组同题校准见 [NodeBB 校准结果](../eval/swebench-pro-v2/calibration-nodebb-20260928.zh.md)，逐题配对运行见 [冻结 NodeBB 结果](../eval/swebench-pro-v2/frozen-nodebb-20260928.zh.md)和[冻结 Navidrome 结果](../eval/swebench-pro-v2/frozen-navidrome-20260928.zh.md)；目前还没有足以估计总体胜率的样本、长程留出集或优越性结论。[架构](architecture.zh.md)负责产品设计，[实现状态](implementation.zh.md)记录运行能力。
 
 最新开发回归和恢复审计见[步骤 F](10-plans/conversation-and-review-recovery/evidence/f.md)，后续频率条件见[冻结协议](../eval/review-recovery/frequency-p2-protocol.zh.md)。旧冻结样本成绩保持原样；60 次旧版频率对照已启动，2026-09-28 19:48 核对封口 6/60，见[阶段报告](../eval/review-recovery/p2-20260928/progress-20260928-1948.zh.md)。增强版独立检查另立协议与批次，旧成绩不合并。

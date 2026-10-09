@@ -1,8 +1,10 @@
 # Implementation status
 
+2026-10-09: The deterministic runner now connects native approval, revision barriers, absolute deadlines, original-run reconnection, resource archival and external grading. Revision development passed; strict fault inheritance passed; final candidate integration remains pending, with 0/24 formal deliveries. Check-copy contamination, stale confirmations and log-method handling were fixed with failures retained. See [runner validation](../eval/sandbox-run/validation-20261009.md).
+
 2026-10-09: The check-copy contamination found in long-horizon development is fixed. Every command receives a fresh invocation; generated reports and modified captured files are distinct, while legacy rejection rules remain. The original run was sealed as an infrastructure fault with reward null. See [check invocation isolation](check-invocation-isolation.md).
 
-2026-10-09: Plugin source now implements Task-wide long-horizon budgets: Task record 16, budget record 1, projection cache 22. Default cumulative truncation/review-fault limits are six/three. Absolute deadlines, reservation-before-handoff and restart/replan retention are covered by controlled Host and UI checks. Real development runs, the complete runner and 24 formal positions remain pending. See the [long-horizon protocol](../eval/sandbox-run/protocol.md).
+2026-10-09: Plugin source now implements Task-wide long-horizon budgets: Task record 16, budget record 1, projection cache 22. Default cumulative truncation/review-fault limits are six/three. Absolute deadlines, reservation-before-handoff and restart/replan retention are covered by controlled Host and UI checks. This records the budget step; subsequent development/runner status is in the newest entry above. The 24 formal positions have not started. See the [long-horizon protocol](../eval/sandbox-run/protocol.md).
 
 2026-10-09: The complete durable report is separate from native tool process details. New record-8 jobs bind Task/attempt scopes, original read ranges and one bounded read correction; requirement outcomes and specific primary-Agent handoffs retain their actual evidence level. Existing jobs keep their original protocol and permissions. Focused Host tests, strict checks and builds precede real-model/browser validation and release. See [review experience](review-experience.md).
 

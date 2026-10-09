@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tomllib
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'deepswe'))
+sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from grade import cleanup_owned_projects, environment_evidence, stop_group, verify_image
 from read_control import read_control
 from prepare_grade import official_files

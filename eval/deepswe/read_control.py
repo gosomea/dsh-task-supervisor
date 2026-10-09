@@ -65,6 +65,14 @@ def read_control(job):
         result['fault'] = 'reward-test-summary-mismatch'
         return result
     result.update(reward=reward, scored=True)
+    # Official canonical rows name their buckets. Preserve those classifications
+    # rather than inferring F2P from a test name or a reference patch.
+    for bucket in ('f2p', 'p2p'):
+        classified = [row for row in rows if row['name'].startswith('[' + bucket + '] ')]
+        result[bucket.upper()] = {'total': len(classified), 'passed': sum(row['status'] == 'passed' for row in classified),
+            'failed': sum(row['status'] == 'failed' for row in classified),
+            'rate': sum(row['status'] == 'passed' for row in classified) / len(classified) if classified else None,
+            'source': 'official-canonical-ctrf-bucket'} if classified else None
     return result
 
 

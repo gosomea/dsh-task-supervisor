@@ -24,11 +24,17 @@ class OpenSandboxRuntime:
                network_policy: str = "deny", timeout_minutes: int = 20,
                cpu: str = "1", memory: str = "2Gi", platform: str | None = None,
                volumes: list[dict] | None = None, native_isolation: bool = True) -> SandboxRef:
-        from opensandbox.models.sandboxes import NetworkPolicy, Volume
+        from opensandbox.models.sandboxes import NetworkPolicy, Volume, PlatformSpec
         from opensandbox.sync.sandbox import SandboxSync
 
         if network_policy not in {"allow", "deny"}:
             raise ValueError("network_policy must be allow or deny")
+        platform_spec = None
+        if platform is not None:
+            parts = platform.split('/')
+            if len(parts) != 2 or any(not part for part in parts):
+                raise ValueError('platform must be os/architecture')
+            platform_spec = PlatformSpec(os=parts[0], arch=parts[1])
         sandbox = SandboxSync.create(
             image,
             snapshot_id=snapshot_id,
@@ -38,7 +44,7 @@ class OpenSandboxRuntime:
             timeout=timedelta(minutes=timeout_minutes),
             ready_timeout=timedelta(seconds=120),
             resource={"cpu": cpu, "memory": memory},
-            platform=platform,
+            platform=platform_spec,
             volumes=[Volume.model_validate(volume) for volume in volumes] if volumes else None,
             # OpenSandbox 1.1.0 documents this bootstrap extension for nested
             # bwrap namespaces. DSH still enforces workspace-write itself.

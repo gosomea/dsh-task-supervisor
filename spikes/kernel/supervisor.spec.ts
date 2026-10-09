@@ -1,4 +1,6 @@
 import { appendControlRecord, controlEvent } from '../../src/session-records.ts'
+import * as EvaluationProtocol from '../../eval/sandbox-run/protocol-controls.ts'
+import { createHash } from 'node:crypto'
 import { installNativePresets } from './native-presets.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
@@ -12,6 +14,7 @@ import Goals from '@deepseek-ai/dsh-goal'
 import * as GoalDriver from '@deepseek-ai/dsh-goal-round-driver'
 import * as GoalTools from '@deepseek-ai/dsh-tool-goal'
 import PlanMode from '@deepseek-ai/dsh-plan-mode'
+import UserQuestions from '@deepseek-ai/dsh-user-questions'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
 import LlmRuntime, { LlmError, LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -35,6 +38,7 @@ import { artifactIdentity } from '../../src/artifact-identity.ts'
 import { recordReview } from '../../src/review-records.ts'
 import { confirmedPtcTimeout } from '../../src/review-transport-recovery.ts'
 import { budgetCounts } from '../../src/execution-budget.ts'
+import { installClosingResponse } from '../../src/closing-response.ts'
 import { appendTask, taskOf, newTask, taskProjection, NAMESPACE } from '../../src/state.ts'
 
 class ScriptedAdapter extends LlmAdapter {
@@ -3267,4 +3271,111 @@ it.each([0, 1])('bounds structured read correction in the same job (limit=%s)', 
       expect(ledger.ranges.get(input.seq)?.ranges).toContainEqual([0, 'Read a static report and check its total.'.length])
     } finally { await reader.close() }
   }
+})
+
+it('binds evaluation approval to an applied plan and reserves the single grant durably', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-eval-approval-')); roots.push(root)
+  const objective = 'Build import'
+  const adapter = new ScriptedAdapter({ scripted: [toolResponse('task_submit_plan', smallPlan, 'eval-plan'), textResponse('waiting')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  await ctx.plugin(EvaluationProtocol, { initialSha256: createHash('sha256').update(objective).digest('hex') })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('eval-approval'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/eval-protocol {"action":"bind","actionId":"binding"}', [], signal)
+  await ctx.commands.execute(agent, '/task ' + objective, [], signal); await agent.whenIdle()
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await vi.waitFor(() => expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.kind === 'plan')?.status).toBe('applied'))
+  const task = taskOf(ctx, agent)!, job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.find(item => item.kind === 'plan')!
+  const input = { action: 'initial-approval', actionId: 'one-grant', taskId: task.id, revision: task.revision,
+    requirementsVersion: task.requirementsVersion, planVersion: task.planVersion, reviewJobId: job.id }
+  expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify({ ...input, reviewJobId: 'wrong' }), [], signal))?.result.kind).toBe('error')
+  // A rejected command yields to native delivery; use the then-current Task
+  // revision for the following distinct authorization attempt.
+  await agent.whenIdle()
+  input.revision = taskOf(ctx, agent)!.revision
+  const granted = await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify(input), [], signal)
+  expect(granted?.result.kind, granted?.result.text).toBe('success')
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.everApproved).toBe(true)
+  expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify(input), [], signal))?.result.kind).toBe('error')
+  const intent = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record'
+    && event.data.namespace === 'dsh-long-horizon-eval' && event.data.kind === 'action-intent')
+  expect(intent).toHaveLength(1)
+  expect(intent[0]!.type === 'extension/record' && intent[0]!.data.payload).toMatchObject({ source: 'evaluation-protocol', actionId: 'one-grant' })
+})
+
+it('holds the development revision at the first passed node and releases it on user pause', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-eval-barrier-')); roots.push(root)
+  const objective = 'Build import', revision = 'Build revised import'
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  await ctx.plugin(EvaluationProtocol, { initialSha256: createHash('sha256').update(objective).digest('hex'),
+    revision: { objective: revision, sha256: createHash('sha256').update(revision).digest('hex') } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('eval-barrier'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/eval-protocol {"action":"bind","actionId":"barrier-binding"}', [], signal)
+  const task = { ...newTask(objective), phase: 'active' as const, stageIndex: 1, planVersion: 1, approvedPlanVersion: 1, everApproved: true,
+    criteria: smallPlan.criteria.map(item => ({ ...item, provenance: { kind: 'user' as const, reference: 'objective' } })), stages: [{ id: 'n1', title: 'first', criterionIds: ['c'], dependsOn: [] }, { id: 'n2', title: 'later', criterionIds: ['c'], dependsOn: ['n1'] }],
+    nodeRuns: [{ id: 'n1', attempt: 1, status: 'passed' as const }, { id: 'n2', attempt: 1, status: 'pending' as const }] }
+  appendTask(ctx, agent, task); await ctx.sessions.flush(agent.session)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Continue' }] }))
+  await vi.waitFor(() => expect(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record'
+    && event.data.namespace === 'dsh-long-horizon-eval' && event.data.kind === 'revision-barrier')).toHaveLength(1))
+  expect(adapter.requests).toBe(0)
+  await ctx.commands.execute(agent, '/task pause', [], signal); await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.phase).toBe('paused'); expect(adapter.requests).toBe(0)
+})
+
+it('retires an unused checkpoint answer when a barrier edit starts a new planning revision', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-eval-edit-closing-')); roots.push(root)
+  const objective = 'Build import', revision = 'Build revised import'
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  const close = installClosingResponse(ctx)
+  await ctx.plugin(EvaluationProtocol, { initialSha256: createHash('sha256').update(objective).digest('hex'),
+    revision: { objective: revision, sha256: createHash('sha256').update(revision).digest('hex') } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('eval-edit-closing'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/eval-protocol {"action":"bind","actionId":"binding"}', [], signal)
+  const task = { ...newTask(objective), phase: 'active' as const, stageIndex: 1, planVersion: 1, approvedPlanVersion: 1, everApproved: true,
+    criteria: smallPlan.criteria.map(item => ({ ...item, provenance: { kind: 'user' as const, reference: 'objective' } })),
+    stages: [{ id: 'n1', title: 'first', criterionIds: ['c'], dependsOn: [] }, { id: 'n2', title: 'later', criterionIds: ['c'], dependsOn: ['n1'] }],
+    nodeRuns: [{ id: 'n1', attempt: 1, status: 'passed' as const }, { id: 'n2', attempt: 1, status: 'pending' as const }] }
+  appendTask(ctx, agent, task); await ctx.sessions.flush(agent.session)
+  close(agent, task.revision, true)
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Checkpoint answer' }] }))
+  await vi.waitFor(() => expect(agent.session.snapshotEvents().map(controlEvent).some(event => event.type === 'extension/record'
+    && event.data.namespace === 'dsh-long-horizon-eval' && event.data.kind === 'revision-barrier')).toBe(true))
+  expect(adapter.requests).toBe(0)
+  expect((await ctx.commands.execute(agent, '/task edit ' + revision, [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.requirementsVersion).toBe(2)
+  expect(adapter.requests).toBe(1)
+  expect(close.isPending(agent, taskOf(ctx, agent)!.revision)).toBe(false)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end').at(-1)?.data.reason.kind).toBe('completed')
+})
+
+it('answers only one exact native Plan review through the public question seam', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-eval-native-plan-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  await ctx.plugin(UserQuestions)
+  await ctx.plugin(EvaluationProtocol, { condition: 'plan', initialSha256: createHash('sha256').update('objective').digest('hex') })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('eval-native-plan'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/eval-protocol {"action":"bind","actionId":"native-plan-binding"}', [], new AbortController().signal)
+  const plan = '# Plan\nInspect and implement the original requirement.', controller = new AbortController()
+  const request = { agent, signal: controller.signal, questions: [{ id: 'plan-review', question: 'Review', detail: plan,
+    options: [{ label: 'Approve' }], intent: { kind: 'plan-review' as const, approve: 'Approve', callId: ToolCallId('plan-call') } }] }
+  const answer = ctx.userQuestions.ask(request)
+  const questionOf = () => agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record'
+    && event.data.namespace === 'dsh-long-horizon-eval' && event.data.kind === 'question').map(event => event.type === 'extension/record' ? event.data.payload : null)
+  await vi.waitFor(() => expect(questionOf()).toHaveLength(1))
+  const question = questionOf()[0] as { id: string }
+  const action = { action: 'native-plan-approval', actionId: 'native-grant', questionId: question.id,
+    callId: 'plan-call', planSha256: createHash('sha256').update(plan).digest('hex') }
+  expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify({ ...action, planSha256: 'wrong' }), [], controller.signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify(action), [], controller.signal))?.result.kind).toBe('success')
+  expect(await answer).toEqual({ answers: [{ id: 'plan-review', selected: ['Approve'] }] })
+  const second = ctx.userQuestions.ask(request); void second.catch(() => {})
+  await vi.waitFor(() => expect(questionOf()).toHaveLength(3))
+  const next = questionOf()[2] as { id: string }
+  expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify({ ...action, questionId: next.id, actionId: 'second-grant' }), [], controller.signal))?.result.kind).toBe('error')
+  controller.abort(); await expect(second).rejects.toThrow('aborted')
 })

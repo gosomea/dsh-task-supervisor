@@ -1,0 +1,961 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "de75f7a632b5f43c6a460b00fcb0aaccf9d0dcb9",
+  "formalDelivered": 0,
+  "formalPlanned": 24,
+  "developmentRuns": [
+    {
+      "id": "development-revision-5",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-1a6858b3-e384-494e-a0ae-61278783705f",
+      "reward": null,
+      "strictSuccess": false,
+      "firstStopReason": "infrastructure-fault",
+      "infrastructureFault": true,
+      "graderErrorType": null,
+      "metrics": {
+        "allSessionTokens": null,
+        "tokensReported": {
+          "uncachedInputTokens": 149027,
+          "outputTokens": 115243,
+          "cacheReadTokens": 4871424,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": false,
+        "unreportedAttempts": 1,
+        "sessions": [
+          {
+            "sessionId": "session-1a6858b3-e384-494e-a0ae-61278783705f",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 11,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 35105,
+              "outputTokens": 3766,
+              "cacheReadTokens": 114432,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-ab04a894-0642-4b6e-8b1e-0d30fafa7f11",
+            "parentSession": "session-1a6858b3-e384-494e-a0ae-61278783705f",
+            "usageCoverage": {
+              "settledAttempts": 95,
+              "unreportedAttempts": 1,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 91546,
+              "outputTokens": 100007,
+              "cacheReadTokens": 4664576,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-d5e88b9c-5c92-4933-aa19-0e98da5b106e",
+            "parentSession": "session-1a6858b3-e384-494e-a0ae-61278783705f",
+            "usageCoverage": {
+              "settledAttempts": 7,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 22376,
+              "outputTokens": 11470,
+              "cacheReadTokens": 92416,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 1,
+        "reviewToolCalls": 124,
+        "repeatedExactReads": 5,
+        "plannedIndependentChecks": 10,
+        "recordedIndependentCheckResults": 6,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "e75d0364-eedc-4104-82e1-21c5f705962a",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "f729ba0d-d96c-4d55-8283-e7c02f80d0bd",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 14150.0,
+            "independentMs": 161658.0,
+            "comparisonAndDecisionMs": 378896.0
+          }
+        ],
+        "checkWaitMs": 220.0,
+        "checkCount": 1,
+        "independentReviewJobs": 1,
+        "independentComparisonJobs": 1,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 3,
+          "readFiles": 4
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "cleanupAcknowledged": true
+    },
+    {
+      "id": "development-revision-6",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-5dc4c9be-75ac-427e-affd-9078770e1975",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-plugin-fault",
+      "infrastructureFault": false,
+      "graderErrorType": "FileNotFoundError",
+      "metrics": {
+        "allSessionTokens": {
+          "uncachedInputTokens": 68622,
+          "outputTokens": 33970,
+          "cacheReadTokens": 446848,
+          "cacheWriteTokens": 0
+        },
+        "tokensReported": {
+          "uncachedInputTokens": 68622,
+          "outputTokens": 33970,
+          "cacheReadTokens": 446848,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": true,
+        "unreportedAttempts": 0,
+        "sessions": [
+          {
+            "sessionId": "session-5dc4c9be-75ac-427e-affd-9078770e1975",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 10,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 18787,
+              "outputTokens": 4423,
+              "cacheReadTokens": 102272,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-195bc45b-9f0e-4812-8898-a118af40e5ce",
+            "parentSession": "session-5dc4c9be-75ac-427e-affd-9078770e1975",
+            "usageCoverage": {
+              "settledAttempts": 6,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 15413,
+              "outputTokens": 14390,
+              "cacheReadTokens": 60160,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-c85deda0-6bf5-4ae3-8930-5a64011fe8f2",
+            "parentSession": "session-5dc4c9be-75ac-427e-affd-9078770e1975",
+            "usageCoverage": {
+              "settledAttempts": 17,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 34422,
+              "outputTokens": 15157,
+              "cacheReadTokens": 284416,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 1,
+        "reviewToolCalls": 31,
+        "repeatedExactReads": 0,
+        "plannedIndependentChecks": 5,
+        "recordedIndependentCheckResults": 5,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "32bf8717-351c-469f-a00d-1deab4f01c13",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "ca9a420e-3831-4f16-b8e9-1b34e9a57b49",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 16346.0,
+            "independentMs": 22036.0,
+            "comparisonAndDecisionMs": 39798.0
+          }
+        ],
+        "checkWaitMs": 316.0,
+        "checkCount": 1,
+        "independentReviewJobs": 1,
+        "independentComparisonJobs": 1,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 1,
+          "readFiles": 3
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null,
+        "requestCount": 33,
+        "toolCallsAllSessions": 43,
+        "contextCompactions": 0,
+        "reviewReads": 21,
+        "reviewReadFailures": 1,
+        "reviewProtocolSubmissions": 0,
+        "reviewFaultHistoryCount": 0,
+        "taskFaultRetryReservations": 0,
+        "taskTruncationReservations": 0,
+        "wholeElapsedSec": 778.9001708030701,
+        "protocolUserActions": 2,
+        "humanRescueActions": 0
+      },
+      "cleanupAcknowledged": true
+    },
+    {
+      "id": "development-revision-7",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+      "reward": 1,
+      "strictSuccess": true,
+      "firstStopReason": "controller-complete",
+      "infrastructureFault": false,
+      "graderErrorType": null,
+      "metrics": {
+        "allSessionTokens": null,
+        "tokensReported": {
+          "uncachedInputTokens": 556600,
+          "outputTokens": 314539,
+          "cacheReadTokens": 7398144,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": false,
+        "unreportedAttempts": 1,
+        "sessions": [
+          {
+            "sessionId": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 27,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 162940,
+              "outputTokens": 11296,
+              "cacheReadTokens": 525440,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-2a87b9d3-e12b-4dfc-b519-491a59a263f0",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 31,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 54553,
+              "outputTokens": 46268,
+              "cacheReadTokens": 833152,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-3ff2a1c4-9bb4-43e3-845a-1faea6dde459",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 6,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 15888,
+              "outputTokens": 7079,
+              "cacheReadTokens": 61312,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-5029b21d-36f9-4e60-bcd0-93274c14e98b",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 25,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 46091,
+              "outputTokens": 31341,
+              "cacheReadTokens": 538880,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-6d2b6a2a-3f82-4da7-b1fa-4589b4a1ddb7",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 8,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 26875,
+              "outputTokens": 23269,
+              "cacheReadTokens": 108416,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-84bbee14-42f7-4518-b39e-addc6f79a8d6",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 26,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 46058,
+              "outputTokens": 26897,
+              "cacheReadTokens": 573312,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-90475db9-abd6-4769-b335-66802a9e0bba",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 66,
+              "unreportedAttempts": 1,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 165257,
+              "outputTokens": 149460,
+              "cacheReadTokens": 4496640,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-9e914f1f-7162-4501-a007-ded889ce5aa7",
+            "parentSession": "session-bf0d6b26-d38f-4a49-8861-667fcdc47ee1",
+            "usageCoverage": {
+              "settledAttempts": 12,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 38938,
+              "outputTokens": 18929,
+              "cacheReadTokens": 260992,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 1,
+        "reviewToolCalls": 264,
+        "repeatedExactReads": 5,
+        "plannedIndependentChecks": 30,
+        "recordedIndependentCheckResults": 30,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "071574d9-db47-4bab-9692-b09c2cd6f1cb",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "c5d6634c-c9d9-4525-a3d3-795256c9fef4",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 17816.0,
+            "independentMs": 34003.0,
+            "comparisonAndDecisionMs": 103272.0
+          },
+          {
+            "jobId": "5e27967c-cbdb-4f8d-9f40-fc8e834aedbe",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "6a16bc1c-d7eb-4432-9c19-b22479ec30d1",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "04f5b0a9-1ab0-4426-acde-8f2b16c7187f",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 12470.0,
+            "independentMs": 26031.0,
+            "comparisonAndDecisionMs": 195455.0
+          },
+          {
+            "jobId": "ba75afa4-9c06-42cc-bc08-568aa9eed22f",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 13137.0,
+            "independentMs": 53317.0,
+            "comparisonAndDecisionMs": 67376.0
+          },
+          {
+            "jobId": "70723a19-8a1d-4b8e-982f-e6f8b3c2f82a",
+            "kind": "completion",
+            "mode": "independent",
+            "planningMs": 14043.0,
+            "independentMs": 77812.0,
+            "comparisonAndDecisionMs": 524518.0
+          }
+        ],
+        "checkWaitMs": 3953.0,
+        "checkCount": 13,
+        "independentReviewJobs": 4,
+        "independentComparisonJobs": 4,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 11,
+          "readFiles": 16
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null,
+        "requestCount": 201,
+        "toolCallsAllSessions": 293,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0,
+        "reviewReads": 172,
+        "reviewReadFailures": 12,
+        "reviewProtocolSubmissions": 0,
+        "reviewFaultHistoryCount": 1,
+        "taskFaultRetryReservations": 1,
+        "taskTruncationReservations": 0,
+        "wholeElapsedSec": 1609.8527290821075,
+        "protocolUserActions": 3,
+        "humanRescueActions": 0
+      },
+      "cleanupAcknowledged": true
+    },
+    {
+      "id": "development-fault-1",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-5f5f7f9b-6c14-4526-986d-c6a8e366d57d",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "infrastructureFault": false,
+      "graderErrorType": "AssertionError",
+      "metrics": {
+        "allSessionTokens": null,
+        "tokensReported": {
+          "uncachedInputTokens": 134604,
+          "outputTokens": 85917,
+          "cacheReadTokens": 2348160,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": false,
+        "unreportedAttempts": 2,
+        "sessions": [
+          {
+            "sessionId": "session-5f5f7f9b-6c14-4526-986d-c6a8e366d57d",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 14,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 28806,
+              "outputTokens": 6364,
+              "cacheReadTokens": 186240,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-31af5df9-d6fa-47da-923c-9f3b4efbf12f",
+            "parentSession": "session-5f5f7f9b-6c14-4526-986d-c6a8e366d57d",
+            "usageCoverage": {
+              "settledAttempts": 6,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 16824,
+              "outputTokens": 12450,
+              "cacheReadTokens": 56704,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-398d502f-1bc5-423a-b376-2fb44dd7077d",
+            "parentSession": "session-5f5f7f9b-6c14-4526-986d-c6a8e366d57d",
+            "usageCoverage": {
+              "settledAttempts": 52,
+              "unreportedAttempts": 2,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 88974,
+              "outputTokens": 67103,
+              "cacheReadTokens": 2105216,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 0,
+        "reviewToolCalls": 77,
+        "repeatedExactReads": 0,
+        "plannedIndependentChecks": 6,
+        "recordedIndependentCheckResults": 6,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "73c84263-f9ca-48fd-9d4f-409948d6c953",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "67a273ef-aa13-4658-a619-e715100b59e6",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 311434.0,
+            "independentMs": 74699.0,
+            "comparisonAndDecisionMs": 216897.0
+          }
+        ],
+        "checkWaitMs": 1489.0,
+        "checkCount": 5,
+        "independentReviewJobs": 1,
+        "independentComparisonJobs": 1,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 4,
+          "readFiles": 5
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null,
+        "requestCount": 72,
+        "toolCallsAllSessions": 97,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0,
+        "reviewReads": 46,
+        "reviewReadFailures": 1,
+        "reviewProtocolSubmissions": 0,
+        "reviewFaultHistoryCount": 2,
+        "taskFaultRetryReservations": 1,
+        "taskTruncationReservations": 0,
+        "wholeElapsedSec": 757.1896891593933,
+        "protocolUserActions": 1,
+        "humanRescueActions": 0
+      },
+      "cleanupAcknowledged": true
+    },
+    {
+      "id": "development-fault-2",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-d32c81a2-d1e5-4f10-8ecd-ba5f2353a169",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "controller-complete",
+      "infrastructureFault": false,
+      "graderErrorType": "AssertionError",
+      "metrics": {
+        "allSessionTokens": null,
+        "tokensReported": {
+          "uncachedInputTokens": 197686,
+          "outputTokens": 85899,
+          "cacheReadTokens": 1773568,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": false,
+        "unreportedAttempts": 1,
+        "sessions": [
+          {
+            "sessionId": "session-d32c81a2-d1e5-4f10-8ecd-ba5f2353a169",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 16,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 61639,
+              "outputTokens": 7480,
+              "cacheReadTokens": 207616,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-2c0eb9fd-f79a-4e07-9401-059578e302e9",
+            "parentSession": "session-d32c81a2-d1e5-4f10-8ecd-ba5f2353a169",
+            "usageCoverage": {
+              "settledAttempts": 25,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 71610,
+              "outputTokens": 28637,
+              "cacheReadTokens": 884608,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-340ae170-9fcb-473c-8cf6-39b1603159b0",
+            "parentSession": "session-d32c81a2-d1e5-4f10-8ecd-ba5f2353a169",
+            "usageCoverage": {
+              "settledAttempts": 9,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 20758,
+              "outputTokens": 31118,
+              "cacheReadTokens": 121600,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-c53c3b6d-5a90-4550-9eb2-5840106dd287",
+            "parentSession": "session-d32c81a2-d1e5-4f10-8ecd-ba5f2353a169",
+            "usageCoverage": {
+              "settledAttempts": 23,
+              "unreportedAttempts": 1,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 43679,
+              "outputTokens": 18664,
+              "cacheReadTokens": 559744,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 1,
+        "reviewToolCalls": 96,
+        "repeatedExactReads": 1,
+        "plannedIndependentChecks": 11,
+        "recordedIndependentCheckResults": 11,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "2e571412-388e-429e-8ebb-d09ffbedb708",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "ecaf3b81-c444-4532-8136-2f60f4a97350",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 308032.0,
+            "independentMs": 21695.0,
+            "comparisonAndDecisionMs": 69489.0
+          },
+          {
+            "jobId": "bc9eae19-2a30-43cd-808d-1365bcd0be58",
+            "kind": "completion",
+            "mode": "independent",
+            "planningMs": 13782.0,
+            "independentMs": 25067.0,
+            "comparisonAndDecisionMs": 98005.0
+          }
+        ],
+        "checkWaitMs": 1105.0,
+        "checkCount": 6,
+        "independentReviewJobs": 2,
+        "independentComparisonJobs": 2,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 8,
+          "readFiles": 4
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null,
+        "requestCount": 73,
+        "toolCallsAllSessions": 114,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0,
+        "reviewReads": 71,
+        "reviewReadFailures": 4,
+        "reviewProtocolSubmissions": 0,
+        "reviewFaultHistoryCount": 1,
+        "taskFaultRetryReservations": 1,
+        "taskTruncationReservations": 0,
+        "wholeElapsedSec": 819.9728000164032,
+        "protocolUserActions": 1,
+        "humanRescueActions": 0
+      },
+      "cleanupAcknowledged": true
+    },
+    {
+      "id": "development-fault-3",
+      "formal": false,
+      "officialPublicScore": false,
+      "sessionId": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+      "reward": 1,
+      "strictSuccess": true,
+      "firstStopReason": "controller-complete",
+      "infrastructureFault": false,
+      "graderErrorType": null,
+      "metrics": {
+        "allSessionTokens": null,
+        "tokensReported": {
+          "uncachedInputTokens": 274586,
+          "outputTokens": 106889,
+          "cacheReadTokens": 3127424,
+          "cacheWriteTokens": 0
+        },
+        "tokenCoverageComplete": false,
+        "unreportedAttempts": 1,
+        "sessions": [
+          {
+            "sessionId": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+            "parentSession": null,
+            "usageCoverage": {
+              "settledAttempts": 18,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 76369,
+              "outputTokens": 7679,
+              "cacheReadTokens": 262656,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-839520d2-783f-421a-8b16-95fa3a180270",
+            "parentSession": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+            "usageCoverage": {
+              "settledAttempts": 35,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 91903,
+              "outputTokens": 34435,
+              "cacheReadTokens": 1656960,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-a2cefe92-a0d0-4b20-a834-14a0a89f3b08",
+            "parentSession": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+            "usageCoverage": {
+              "settledAttempts": 4,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 13530,
+              "outputTokens": 18185,
+              "cacheReadTokens": 29312,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-ad4abece-b540-4e95-a561-443500b4257a",
+            "parentSession": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+            "usageCoverage": {
+              "settledAttempts": 24,
+              "unreportedAttempts": 1,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 43724,
+              "outputTokens": 26231,
+              "cacheReadTokens": 577408,
+              "cacheWriteTokens": 0
+            }
+          },
+          {
+            "sessionId": "task-review-eaffa78d-d802-4903-9087-66f8e16ef215",
+            "parentSession": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+            "usageCoverage": {
+              "settledAttempts": 26,
+              "unreportedAttempts": 0,
+              "unsettledSteps": 0
+            },
+            "tokensReported": {
+              "uncachedInputTokens": 49060,
+              "outputTokens": 20359,
+              "cacheReadTokens": 601088,
+              "cacheWriteTokens": 0
+            }
+          }
+        ],
+        "missingReviewerSessions": [],
+        "excludedUnrelatedSessions": 1,
+        "reviewToolCalls": 160,
+        "repeatedExactReads": 4,
+        "plannedIndependentChecks": 14,
+        "recordedIndependentCheckResults": 14,
+        "reviewPhaseDurations": [
+          {
+            "jobId": "a6598991-dedb-43cb-a6c3-ae52ff7d58bf",
+            "kind": "plan",
+            "mode": "log",
+            "planningMs": null,
+            "independentMs": null,
+            "comparisonAndDecisionMs": null
+          },
+          {
+            "jobId": "aabe2b2c-63a8-47c0-a3cd-59f729ca8913",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 9152.0,
+            "independentMs": 310215.0,
+            "comparisonAndDecisionMs": 100946.0
+          },
+          {
+            "jobId": "b0239cdb-442b-450e-8357-96f2c9f36628",
+            "kind": "stage",
+            "mode": "independent",
+            "planningMs": 15545.0,
+            "independentMs": 33441.0,
+            "comparisonAndDecisionMs": 126178.0
+          },
+          {
+            "jobId": "082d0b4f-8f3c-413b-99a7-40cb8fa1f2a7",
+            "kind": "completion",
+            "mode": "independent",
+            "planningMs": 15864.0,
+            "independentMs": 25061.0,
+            "comparisonAndDecisionMs": 60717.0
+          }
+        ],
+        "checkWaitMs": 2400.0,
+        "checkCount": 11,
+        "independentReviewJobs": 3,
+        "independentComparisonJobs": 3,
+        "independentEvidenceCoverage": {
+          "applicableCriterionFindings": 9,
+          "readFiles": 12
+        },
+        "extraCheckCpuNs": null,
+        "extraCheckCpuMeasurement": "not-recorded-by-current-native-check-ledger",
+        "falsePauseRate": null,
+        "correctionBenefit": null,
+        "requestCount": 107,
+        "toolCallsAllSessions": 180,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0,
+        "reviewReads": 117,
+        "reviewReadFailures": 5,
+        "reviewProtocolSubmissions": 0,
+        "reviewFaultHistoryCount": 1,
+        "taskFaultRetryReservations": 1,
+        "taskTruncationReservations": 0,
+        "wholeElapsedSec": 952.129035949707,
+        "protocolUserActions": 1,
+        "humanRescueActions": 0
+      },
+      "checks": {
+        "passed": true,
+        "expected": {
+          "count": 3,
+          "sum": 16
+        },
+        "injected": true,
+        "sameJobAndSession": true,
+        "sameCutoffAndSnapshot": true,
+        "retryCount": 1,
+        "nodeAppliedOnce": true,
+        "preRetryReadQualificationsPreserved": true,
+        "jobId": "aabe2b2c-63a8-47c0-a3cd-59f729ca8913",
+        "reviewerSessionId": "task-review-ad4abece-b540-4e95-a561-443500b4257a"
+      },
+      "cleanup": {
+        "acknowledged": true,
+        "faults": [],
+        "sessionId": "session-fac748ec-9fcf-42a8-ae9f-8e2180308360",
+        "sandboxId": "916a21f7-282a-4615-a1b0-f074c6a5a097",
+        "atUnix": 1791551218.026546,
+        "completionEvidence": {
+          "condition": "supervisor-independent",
+          "taskId": "7e77be6b-01e3-4342-bdeb-7e33548dee7c",
+          "reviewJobId": "082d0b4f-8f3c-413b-99a7-40cb8fa1f2a7",
+          "seq": 354,
+          "atUnix": 1791551155.793,
+          "source": "settled-native-record"
+        }
+      }
+    }
+  ],
+  "faultEvidenceRecoveryGate": "pending development-fault-3 with artifact/output-read trigger",
+  "checks": {
+    "kernelPassed": 464,
+    "kernelEnvironmentSkipped": 15,
+    "pythonSandboxPassed": 51,
+    "officialGradeAdapterPassed": 7,
+    "officialControlParserPassed": 7,
+    "protocolFocusedPassed": 4,
+    "hostTypecheck": "passed",
+    "clientTypecheck": "passed"
+  },
+  "resourcePolicy": {
+    "mainCpu": 2,
+    "mainMemoryGiB": 8,
+    "checkCpu": 2,
+    "checkMemoryGiB": 8,
+    "administratorCpu": 1,
+    "administratorMemoryGiB": 1,
+    "dockerFreeGiBFloor": 30,
+    "hostFreeGiBFloor": 8,
+    "mainStorageGiB": 20,
+    "checkStorageGiB": 4,
+    "storageMode": "sampled-every-60s-not-hard-quota",
+    "checkCpuTime": null
+  },
+  "oldResultsModified": false,
+  "dailyHostRestarted": false,
+  "strictFaultRecoveryPassed": true,
+  "collectionRepair": {
+    "type": "stopped-administrator-not-removed",
+    "originalResultsPreserved": true,
+    "regressionPassed": true
+  },
+  "sandboxPythonTestsPassed": 55,
+  "narrowViewportVerified": true
+}

@@ -1,0 +1,12 @@
+# A changed HOME must not hide dependencies already warmed into the image.
+# Module storage stays read-only inside checks; Go's build cache uses /check/home.
+ARG WARM_IMAGE
+FROM ${WARM_IMAGE}
+ENV GOPATH=/root/go GOMODCACHE=/root/go/pkg/mod
+RUN cd /app && go test ./... -run '^$' \
+ && mkdir -p /opt/eval/go-wrapper \
+ && ln -s "$(command -v go)" /opt/eval/go-real \
+ && cp -a /root/.cache/go-build /opt/eval/go-build
+COPY eval/sandbox-run/go-cache-wrapper.sh /opt/eval/go-wrapper/go
+RUN chmod 755 /opt/eval/go-wrapper/go
+ENV PATH="/opt/eval/go-wrapper:${PATH}"

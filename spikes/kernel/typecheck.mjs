@@ -25,6 +25,7 @@ for (const side of ['host', 'client']) {
     resolve(project, 'eval/independent-verification/gateway-probe.ts'),
     resolve(project, 'eval/independent-verification/process-provenance-probe.ts'),
     resolve(project, 'eval/deepswe/profile-probe.ts'),
+    resolve(project, 'eval/sandbox-run/protocol-controls.ts'),
     resolve(project, 'src/process-provenance.ts'), resolve(project, 'spikes/kernel/provenance-store.spec.ts'),
     resolve(project, 'spikes/kernel/provenance-git.spec.ts'),
     resolve(project, 'spikes/kernel/provenance-docker.spec.ts'),

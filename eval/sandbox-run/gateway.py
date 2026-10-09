@@ -92,12 +92,76 @@ def prepare_gateway(*, context: str, admin_image: str, check_image: str, tarball
 def stop_gateway(receipt: dict, *, root: Path, retain_storage=True) -> None:
     """Only remove this lease's admin, after native resource cleanup."""
     context, lease = receipt['context'], receipt['lease']
-    row = json.loads(docker(context, 'inspect', receipt['adminId']))[0]
-    if row['Id'] != receipt['adminId'] or row['Config'].get('Labels', {}).get(LABEL) != lease:
-        raise RuntimeError('foreign administrator; refusing cleanup')
-    docker(context, 'stop', '--time', '30', receipt['adminId'])
-    (root / 'gateway-private.log').write_text(docker(context, 'logs', receipt['adminId']))
-    docker(context, 'rm', receipt['adminId'])
+    administrator = docker(context, 'ps', '-aq', '--no-trunc', '--filter', 'id=' + receipt['adminId'])
+    previous = root / 'gateway-cleanup.json'
+    if previous.exists():
+        value = json.loads(previous.read_text())
+        if value.get('lease') != lease or value.get('adminRemoved') is not True:
+            raise RuntimeError('sealed gateway cleanup identity differs')
+        ledger = json.loads((root / 'check-quiescence.json').read_text())
+        if ledger.get('lease') != lease or not ledger.get('acknowledged'):
+            raise RuntimeError('original gateway cleanup retained an infrastructure fault')
+        if administrator:
+            row = json.loads(docker(context, 'inspect', receipt['adminId']))[0]
+            if row['Id'] != receipt['adminId'] or row['Config'].get('Labels', {}).get(LABEL) != lease or row['State']['Running']:
+                raise RuntimeError('sealed cleanup has a live or foreign administrator')
+            docker(context, 'rm', receipt['adminId'])
+            repaired = root / 'administrator-removal-reconciled.json'
+            if not repaired.exists():
+                exclusive_json(repaired, {'lease': lease, 'adminId': receipt['adminId'],
+                    'originalCleanupPreserved': True, 'removedAfterNativeQuiescence': True})
+        return
+    if administrator:
+        row = json.loads(docker(context, 'inspect', receipt['adminId']))[0]
+        if row['Id'] != receipt['adminId'] or row['Config'].get('Labels', {}).get(LABEL) != lease:
+            raise RuntimeError('foreign administrator; refusing cleanup')
+        docker(context, 'stop', '--time', '30', receipt['adminId'])
+        if docker(context, 'inspect', '--format', '{{.State.Running}}', receipt['adminId']) != 'false':
+            raise RuntimeError('administrator did not stop')
+        log = root / 'gateway-private.log'
+        log.write_text(docker(context, 'logs', receipt['adminId'])); log.chmod(0o600)
+    elif not (root / 'check-quiescence.json').exists():
+        raise RuntimeError('administrator missing without its original cleanup evidence')
+    # Read the private native cleanup ledger after disposal, using a keyless
+    # bounded helper. A fallback removal is a fault, not a native cleanup ack.
+    private = receipt['volumes']['private']
+    inspected = json.loads(docker(context, 'volume', 'inspect', private['name']))[0]
+    if inspected.get('Labels', {}).get(LABEL) != lease or inspected['Mountpoint'] != private['path']:
+        raise RuntimeError('private storage ownership differs')
+    script = r'''const fs=require('fs'),path=require('path'),root=process.argv[1],out=[];
+for(const file of fs.readdirSync(root)){if(!/^snapshot-[a-f0-9-]{36}\.json$/.test(file))continue;
+const s=JSON.parse(fs.readFileSync(path.join(root,file),'utf8'));
+if(path.dirname(s.root)!==root||fs.realpathSync(s.root)!==s.root)throw Error('snapshot binding');
+for(const f of fs.readdirSync(s.root)){if(!/^container-[a-f0-9-]{36}\.json$/.test(f))continue;
+const id=f.slice(10,-5),r=JSON.parse(fs.readFileSync(path.join(s.root,f),'utf8'));
+const removed=path.join(s.root,'removed-'+id+'.json');out.push({snapshotId:s.id,id,record:r,
+removed:fs.existsSync(removed)?JSON.parse(fs.readFileSync(removed,'utf8')):null});}}
+console.log(JSON.stringify(out));'''
+    rows = json.loads(docker(context, 'run', '--rm', '--pull', 'never', '--network', 'none',
+        '--label', LABEL + '=' + lease, '--read-only', '--cpus', '.25', '--memory', '256m',
+        '--mount', f'type=volume,source={private["name"]},target={private["path"]},readonly',
+        '--entrypoint', 'node', receipt['adminImage'], '-e', script, private['path']))
+    faults = []
+    for check in rows:
+        record = check['record']; removed = check['removed']
+        if record['image'] != receipt['checkImage'] or record['snapshotId'] != check['snapshotId'] or record['name'] != 'dsh-review-' + check['id']:
+            raise RuntimeError('check ledger identity differs')
+        remaining = docker(context, 'ps', '-aq', '--no-trunc', '--filter', 'name=^/' + record['name'] + '$')
+        if remaining:
+            item = json.loads(docker(context, 'inspect', remaining))[0]
+            if item.get('Config', {}).get('Labels', {}).get('dsh.supervisor.snapshot') != check['snapshotId']:
+                raise RuntimeError('foreign check; refusing fallback cleanup')
+            docker(context, 'rm', '-f', remaining)
+            faults.append('fallback-removal:' + check['id'])
+        if not removed or removed.get('removed') is not True or removed.get('name') != record['name']:
+            faults.append('native-removal-unacknowledged:' + check['id'])
+    settled = {'lease': lease, 'acknowledged': not faults,
+        'checks': [{'snapshotId': row['snapshotId'], 'id': row['id']} for row in rows], 'faults': faults}
+    ledger = root / 'check-quiescence.json'
+    if ledger.exists():
+        if json.loads(ledger.read_text()) != settled: raise RuntimeError('settled check cleanup evidence differs')
+    else: exclusive_json(ledger, settled)
+    if administrator: docker(context, 'rm', receipt['adminId'])
     if not retain_storage:
         for item in receipt['volumes'].values():
             row = json.loads(docker(context, 'volume', 'inspect', item['name']))[0]
@@ -106,3 +170,85 @@ def stop_gateway(receipt: dict, *, root: Path, retain_storage=True) -> None:
             docker(context, 'volume', 'rm', item['name'])
     exclusive_json(root / 'gateway-cleanup.json', {'adminRemoved': True, 'storageRetained': retain_storage,
                                                  'lease': lease})
+    if faults:
+        raise RuntimeError('checks required fallback cleanup; retain infrastructure fault')
+
+
+def archive_storage(receipt, *, root):
+    """Preserve actual snapshots/output before releasing this settled lease.
+
+    The archive is private diagnostic evidence, never model input or a public
+    report. Unknown interrupted exports remain reserved for reconciliation.
+    """
+    import gzip
+    import hashlib
+    import os
+    context, lease = receipt['context'], receipt['lease']
+    cleanup = json.loads((root / 'gateway-cleanup.json').read_text())
+    if cleanup.get('lease') != lease or not cleanup.get('adminRemoved'):
+        raise RuntimeError('gateway must stop before storage collection')
+    archive = root / 'check-storage.tar.gz'
+    seal = root / 'check-storage.json'
+    intent = root / 'check-storage-intent.json'
+    if not seal.exists():
+        reserved = intent.exists()
+        helper = 'dsh-lh-archive-' + lease
+        if reserved:
+            original = json.loads(intent.read_text())
+            if original != {'lease': lease, 'volumes': receipt['volumes'], 'helper': helper}:
+                raise ValueError('original storage export identity differs')
+            # A lost response never starts a second export. Wait for the owned
+            # original helper, then validate its complete bytes or retain fault.
+            for _ in range(60):
+                live = docker(context, 'ps', '-q', '--filter', 'name=^/' + helper + '$', '--filter', 'label=' + LABEL + '=' + lease)
+                if not live: break
+                time.sleep(1)
+            else: raise RuntimeError('original storage export still running')
+        else:
+            exclusive_json(intent, {'lease': lease, 'volumes': receipt['volumes'], 'helper': helper})
+        args = ['docker', '--context', context, 'run', '--rm', '--name', 'dsh-lh-archive-' + lease,
+            '--pull', 'never', '--network', 'none', '--read-only', '--cpus', '.25', '--memory', '256m',
+            '--label', LABEL + '=' + lease]
+        for role, item in receipt['volumes'].items():
+            row = json.loads(docker(context, 'volume', 'inspect', item['name']))[0]
+            if row.get('Labels', {}).get(LABEL) != lease or row['Mountpoint'] != item['path']:
+                raise RuntimeError('foreign storage; refusing export')
+            if docker(context, 'ps', '-aq', '--filter', 'volume=' + item['name']):
+                raise RuntimeError('storage still mounted by original execution')
+            args.extend(['--mount', f'type=volume,source={item["name"]},target=/archive/{role},readonly'])
+        args.extend(['--entrypoint', 'tar', receipt['adminImage'], '-czf', '-', '-C', '/archive', 'client', 'private', 'channel'])
+        partial = root / 'check-storage.part.gz'
+        # The output is exclusively created before launching tar. A reservation
+        # with no output and no original helper therefore never launched export.
+        # Reconcile that pre-launch failure without replaying an unknown export.
+        if not reserved or (not partial.exists() and not archive.exists()):
+            with partial.open('xb') as output:
+                subprocess.run(args, stdout=output, stderr=subprocess.PIPE, check=True, timeout=600)
+                output.flush(); os.fsync(output.fileno())
+            partial.chmod(0o600)
+        source_path = archive if archive.exists() else partial
+        # Reading through EOF checks the gzip trailer, including after a crash
+        # between rename and seal. An incomplete export is never accepted.
+        with gzip.open(source_path, 'rb') as source:
+            while source.read(1024 * 1024): pass
+        with tarfile.open(source_path, 'r:gz') as source:
+            names = source.getnames()
+            if {name.split('/')[0] for name in names} != {'client', 'private', 'channel'} \
+                    or not all('..' not in name.split('/') for name in names):
+                raise ValueError('storage archive paths differ')
+        if source_path != archive: os.rename(partial, archive)
+        with archive.open('rb') as stream: digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+        exclusive_json(seal, {'lease': lease, 'sha256': digest,
+            'bytes': archive.stat().st_size, 'members': len(names), 'source': 'actual-settled-check-storage'})
+    frozen = json.loads(seal.read_text())
+    with archive.open('rb') as stream: digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+    if frozen['lease'] != lease or digest != frozen['sha256']: raise ValueError('sealed storage archive changed')
+    removed = root / 'check-storage-released.json'
+    if removed.exists(): return
+    existing = set(docker(context, 'volume', 'ls', '--format', '{{.Name}}').splitlines())
+    for item in receipt['volumes'].values():
+        if item['name'] not in existing: continue  # Prior removal after a durable archive.
+        row = json.loads(docker(context, 'volume', 'inspect', item['name']))[0]
+        if row.get('Labels', {}).get(LABEL) != lease: raise RuntimeError('foreign storage; refusing removal')
+        docker(context, 'volume', 'rm', item['name'])
+    exclusive_json(removed, {'lease': lease, 'archivedBeforeRemoval': True, 'sha256': frozen['sha256']})

@@ -69,3 +69,32 @@ class GradeEnvironmentTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class OriginalGraderRecoveryTests(unittest.TestCase):
+    def test_live_original_never_relaunches_or_cleans_an_active_trial(self):
+        from grade import resume_grade
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'started.json').write_text('{}')
+            (root / 'process.json').write_text(json.dumps({'pid': 321}))
+            with patch('grade.subprocess.run', return_value=__import__('types').SimpleNamespace(stdout='pier run --config ' + str(root / 'config.json'))), \
+                    patch('grade.subprocess.Popen') as launch, patch('grade.cleanup_owned_projects') as cleanup:
+                with self.assertRaisesRegex(RuntimeError, 'original grader still running'):
+                    resume_grade(root, 'fixture')
+                launch.assert_not_called(); cleanup.assert_not_called()
+
+    def test_reused_observer_pid_cannot_be_killed(self):
+        from grade import stop_original_observer
+        from types import SimpleNamespace
+        with patch('grade.subprocess.run', return_value=SimpleNamespace(stdout='unrelated-process')), patch('grade.os.kill') as kill:
+            with self.assertRaisesRegex(RuntimeError, 'identity changed'):
+                stop_original_observer({'observerPid': 321, 'observerCommand': ['docker', 'events'], 'observerOutput': '/tmp/original'})
+            kill.assert_not_called()
+
+    def test_original_observer_needs_its_exact_output_file(self):
+        from grade import stop_original_observer
+        from types import SimpleNamespace
+        with patch('grade.subprocess.run', side_effect=[SimpleNamespace(stdout='docker events'), SimpleNamespace(stdout='p321\nfd1\nn/tmp/other\n')]), patch('grade.os.kill') as kill:
+            with self.assertRaisesRegex(RuntimeError, 'output identity changed'):
+                stop_original_observer({'observerPid': 321, 'observerCommand': ['docker', 'events'], 'observerOutput': '/tmp/original'})
+            kill.assert_not_called()

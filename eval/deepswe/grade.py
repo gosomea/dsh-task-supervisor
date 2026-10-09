@@ -88,6 +88,10 @@ def run_grade(dataset, task_id, submission_dir, run_dir, pier_bin, docker_contex
         try:
             process = subprocess.Popen([str(pier_bin), 'run', '--config', str(run_dir / 'config.json')],
                                        env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            write_new(run_dir / 'process.json', {'pid': process.pid, 'command': [str(pier_bin), 'run', '--config', str(run_dir / 'config.json')],
+                'observerPid': observer.pid, 'observerCommand': ['docker', '--context', docker_context, 'events', '--format', '{{json .}}'],
+                'observerOutput': str(run_dir / 'docker-events.jsonl'),
+                'deadlineAtUnix': __import__('time').time() + outer_timeout})
             exit_code = process.wait(timeout=outer_timeout)
         except subprocess.TimeoutExpired:
             timeout, exit_code = True, None
@@ -105,6 +109,7 @@ def run_grade(dataset, task_id, submission_dir, run_dir, pier_bin, docker_contex
                 except subprocess.TimeoutExpired:
                     observer.kill()
                     observer.wait(timeout=10)
+    write_new(run_dir / 'process-finished.json', {'timeout': timeout, 'exitCode': exit_code})
     result = reconcile(run_dir, timeout=timeout, exit_code=exit_code)
     try:
         result.update(environment_evidence(run_dir, docker_context))
@@ -120,6 +125,57 @@ def run_grade(dataset, task_id, submission_dir, run_dir, pier_bin, docker_contex
     result.update(image)
     write_new(run_dir / 'grade-result.json', result)
     return result
+
+
+def resume_grade(run_dir, context):
+    """Seal only a finished original verifier; never relaunch its carrier."""
+    run_dir = Path(run_dir)
+    if (run_dir / 'grade-result.json').exists():
+        return json.loads((run_dir / 'grade-result.json').read_text())
+    started = json.loads((run_dir / 'started.json').read_text())
+    process_path = run_dir / 'process.json'
+    if process_path.exists():
+        process = json.loads(process_path.read_text())
+        command = subprocess.run(['ps', '-p', str(process['pid']), '-o', 'command='], capture_output=True, text=True).stdout.strip()
+        if command and str(run_dir / 'config.json') in command:
+            raise RuntimeError('original grader still running; reconnect without relaunch')
+    trials = list((run_dir / 'jobs' / 'official').glob('*/result.json'))
+    if len(trials) != 1:
+        raise RuntimeError('original grader outcome unknown; retain position without relaunch')
+    if process_path.exists():
+        stop_original_observer(process)
+    cleanup_owned_projects(run_dir, context)
+    finished = json.loads((run_dir / 'process-finished.json').read_text()) if (run_dir / 'process-finished.json').exists() else {}
+    result = reconcile(run_dir, timeout=finished.get('timeout', False), exit_code=finished.get('exitCode'))
+    result.update(environment_evidence(run_dir, context))
+    carrier = json.loads((run_dir / 'task.manifest.json').read_text())
+    if carrier['taskId'] != started['taskId']: raise ValueError('original grader task identity differs')
+    from prepare_grade import official_files, sha
+    if official_files(run_dir / 'task') != carrier['officialFilesSha256'] \
+            or sha(run_dir / 'task/solution/solve.sh') != carrier['carrierSha256'] \
+            or sha(run_dir / 'task/solution/model.patch') != carrier['submission']['patchSha256']:
+        raise ValueError('original verifier or submitted patch changed; no regrade')
+    result.update(officialFilesSha256=carrier['officialFilesSha256'], submission=carrier['submission'],
+                  imageDigest=started['imageDigest'], architecture=started['architecture'],
+                  reconciledOriginalVerifier=True)
+    if not result['cleanupConfirmed'] or not result['separateEnvironmentObserved']:
+        result.update(reward=None, scored=False, fault='independent-grader-environment-unconfirmed')
+    write_new(run_dir / 'grade-result.json', result)
+    return result
+
+
+def stop_original_observer(identity):
+    """A reused PID is not ownership; verify argv and the original open log."""
+    if not identity.get('observerCommand') or not identity.get('observerOutput'): return
+    pid = identity['observerPid']
+    command = subprocess.run(['ps', '-p', str(pid), '-o', 'command='], capture_output=True, text=True).stdout.strip()
+    if not command: return
+    if command != ' '.join(identity['observerCommand']):
+        raise RuntimeError('observer PID identity changed; refusing termination')
+    files = subprocess.run(['lsof', '-a', '-p', str(pid), '-d', '1', '-Fn'], capture_output=True, text=True).stdout.splitlines()
+    if 'n' + str(Path(identity['observerOutput']).resolve()) not in files:
+        raise RuntimeError('observer output identity changed; refusing termination')
+    os.kill(pid, signal.SIGTERM)
 
 
 def cleanup_owned_projects(run_dir, context):
@@ -176,6 +232,7 @@ def reconcile(run_dir, *, timeout=False, exit_code=None):
               'finishedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'reward': None if fault else read['reward'], 'scored': read['scored'] and fault is None,
               'fault': fault, 'tests': read['tests'], 'execution': read.get('execution'),
+              'F2P': read.get('F2P'), 'P2P': read.get('P2P'),
               'evidenceSha256': read['evidenceSha256'], 'processExitCode': exit_code,
               'cleanupConfirmed': False}
     # Separate verifier evidence must name distinct Agent and verifier sessions.
