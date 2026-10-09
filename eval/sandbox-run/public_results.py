@@ -68,7 +68,7 @@ def metrics(value):
     return out
 
 
-def safe_request_fault(value):
+def safe_native_evidence(value):
     if not isinstance(value, dict):
         return None
     return {**{key: code(value.get(key)) for key in ('kind', 'condition', 'errorCode', 'controllerSourceSha256', 'basis')},
@@ -96,7 +96,8 @@ def result(value):
         'reward': number(value.get('reward')), 'strictSuccess': value.get('strictSuccess') is True,
         'gradingFault': code(value.get('gradingFault')),
         'terminal': {
-            'requestFaultEvidence': safe_request_fault(terminal.get('requestFaultEvidence')),
+            'requestFaultEvidence': safe_native_evidence(terminal.get('requestFaultEvidence')),
+            'nativeCompletionEvidence': safe_native_evidence(terminal.get('nativeCompletionEvidence')),
             'sessionId': code(terminal.get('sessionId')),
             'firstStopReason': code(terminal.get('firstStopReason')),
             **{key: number(terminal.get(key)) for key in ('atUnix', 'deadlineAtUnix', 'rescueCount')},

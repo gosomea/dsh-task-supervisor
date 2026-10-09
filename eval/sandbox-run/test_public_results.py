@@ -12,7 +12,11 @@ class PublicResultsTests(unittest.TestCase):
             'formal': True, 'reward': 0, 'strictSuccess': False, 'gradingFault': None,
             'terminal': {'sessionId': 'session-test', 'firstStopReason': 'completed',
                 'controllerComplete': True, 'finishedBeforeDeadline': True,
-                'infrastructureFault': False, 'privateUrl': private, 'cleanup': {'detail': private}},
+                'infrastructureFault': False, 'privateUrl': private, 'cleanup': {'detail': private},
+                'nativeCompletionEvidence': {'kind': 'native-plan-turn-completed',
+                    'seq': 580, 'turn': 1, 'nativeStoppedAtUnix': 1791560982.206,
+                    'controllerSourceSha256': '2f' * 32,
+                    'basis': 'completed-current-turn-and-empty-queues', 'rawEvent': private}},
             'officialGrade': {'reward': 0, 'scored': True, 'fault': None,
                 'privatePath': private, 'tests': {'tests': 2, 'passed': 1, 'failed': 1},
                 'F2P': {'total': 1, 'passed': 0, 'failed': 1, 'rate': 0, 'message': private}},
@@ -27,6 +31,8 @@ class PublicResultsTests(unittest.TestCase):
         self.assertEqual(public['officialGrade']['F2P']['passed'], 0)
         self.assertIsNone(public['metrics']['allSessionTokens'])
         self.assertEqual(public['metrics']['tokensReported']['outputTokens'], 14)
+        self.assertEqual(public['terminal']['nativeCompletionEvidence']['seq'], 580)
+        self.assertEqual(public['terminal']['nativeCompletionEvidence']['controllerSourceSha256'], '2f' * 32)
 
     def test_missing_or_invalid_usage_never_becomes_zero(self):
         public = metrics({'allSessionTokens': None, 'tokensReported': None,
