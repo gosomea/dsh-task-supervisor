@@ -51,11 +51,19 @@ Subsequent public snapshots retain native completion event sequence, turn, times
 
 ## User-requested Supervisor priority
 
-The seed order happened to put five Plan positions first. With five delivered and four sealed, the user requested prioritizing Supervisor evaluation. The current execution freeze is [supervisor-priority-v5.json](supervisor-priority-v5.json), with [execution-order-v5.json](execution-order-v5.json): preserve the five started positions, execute all eight undelivered Supervisor-independent positions in their original relative order, then complete the remaining Goal/Plan positions in their original relative order.
+The seed order happened to put five Plan positions first. With five delivered and four sealed, the user requested prioritizing Supervisor evaluation. That order change is frozen in [supervisor-priority-v5.json](supervisor-priority-v5.json), with [execution-order-v5.json](execution-order-v5.json): preserve the five started positions, execute all eight undelivered Supervisor-independent positions in their original relative order, then complete the remaining Goal/Plan positions in their original relative order.
 
 Position IDs, four tasks, eight positions per condition and the full 24-position denominator remain. All 24 specification files and runner files were verified byte-for-byte unchanged; package, model, budgets, authorization and grading rules also remain. Digests of 25 existing start, delivery, grant and sealed-result records were verified. Only the local monitor was handed off; position five retains its original Agent, Session, deadline and single grant, without stopping or redelivering the Agent.
 
 This is a user-requested execution-priority deviation, not another product-fault repair. The seed order and previous releases remain intact; new snapshots bind the actual execution-order digest. The final report must disclose possible confounding between condition and execution time. It cannot describe the batch as fully seed-ordered or treat early Supervisor results as the completed comparison.
+
+## Native Task command identity repair
+
+Position five, Updo/Plan, completed normally and ran official grading: reward=0, F2P 16/17 and P2P 123/123. Only the Agent's committed 65,802-byte patch was submitted. Controller completion and full official acceptance remain separate; no failing-test hints are sent to later Agents.
+
+Position six was the first Supervisor run. Its instruction file ends with a newline, while native `/task` applies `trim()`. The monitor compared the resulting objective directly against the raw-file digest, raised `ValueError` during planning and stopped/collected the run. Original logs prove that only the final newline was removed. This remains a runner infrastructure fault with reward=null. No independent review or official grading ran, so this is not evidence of Supervisor verification quality.
+
+The current runner freeze is [repair-v6.json](repair-v6.json), source `f328155`, preserving v5's Supervisor priority. New start records retain both raw-instruction and native-objective digests with an explicit ECMAScript trim rule. Content or interior-format changes still reject; legacy records keep their previous protocol. All 38 focused regressions passed. Original-log replay reproduced the old rejection and verified corrected binding without granting approval; seven inputs matched actual Node `trim()`. All 24 specifications and the original package remain unchanged, 32 existing record digests were verified, and fault resources were actually released. The freeze acknowledges only the exact previous fault result, without redelivering position six. Any new infrastructure or scoring fault still stops later delivery.
 
 ## Environment handoff and resumption
 

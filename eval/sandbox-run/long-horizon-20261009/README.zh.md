@@ -51,11 +51,19 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 
 ## 用户调整：优先取得 Supervisor 结果
 
-前五个种子排序位置恰好都是 Plan。五个位置已投递、四个已封口时，用户明确要求优先评测 Supervisor。当前执行冻结为 [supervisor-priority-v5.json](supervisor-priority-v5.json)，顺序为 [execution-order-v5.json](execution-order-v5.json)：保留已经启动的前五个位置，之后将八个未投递的 Supervisor-independent 位置按原相对顺序集中执行，再按原相对顺序完成其余 Goal／Plan 位置。
+前五个种子排序位置恰好都是 Plan。五个位置已投递、四个已封口时，用户明确要求优先评测 Supervisor。该次顺序调整冻结为 [supervisor-priority-v5.json](supervisor-priority-v5.json)，顺序为 [execution-order-v5.json](execution-order-v5.json)：保留已经启动的前五个位置，之后将八个未投递的 Supervisor-independent 位置按原相对顺序集中执行，再按原相对顺序完成其余 Goal／Plan 位置。
 
 位置 ID、四题、每条件八次及完整 24 次分母均保留。24 个 spec 和全部运行器文件逐字节核对未变；安装包、模型、预算、授权及评分规则未改动。25 份既有启动、交付、批准及封口记录的摘要已核对。仅交接本地监控器，第五位置原 Agent、Session、截止和一次批准继续有效，没有停止或重新投递 Agent。
 
 这是用户调整执行优先级的协议偏差，不是新增产品故障修复。原始种子顺序和所有旧 release 保留；新快照绑定实际执行顺序的摘要。最终报告须注明条件与运行时间的关联可能影响对照，不能再描述为完整按种子排序执行，也不能将先得到的 Supervisor 结果当成全部对照已完成。
+
+## 原生 Task 命令身份修复
+
+第五位置 Updo／Plan 已正常结束并实际运行官方评分：reward=0，F2P 16/17，P2P 123/123。提交的是 Agent 已 commit 的 65,802 字节补丁；控制器完成与官方要求全部满足分别记录，不向后续 Agent 提供失败测试提示。
+
+第六位置为首个 Supervisor。原题文件末尾有换行，而原生 `/task` 使用 `trim()`；监控器误把处理后的目标与原文件哈希直接比较，因此在规划中产生 `ValueError` 并主动停止、收集。原日志中的目标只少末尾一个换行，正文完全一致。该次保留为运行器基础设施故障，reward=null；没有运行独立审查或官方评分，不能据此评价 Supervisor 的检查能力。
+
+当前运行器冻结为 [repair-v6.json](repair-v6.json)，源码 `f328155`，继续采用 v5 的 Supervisor 优先顺序。新启动记录同时保存原始题目哈希和原生命令目标哈希，明确采用 ECMAScript 首尾空白规则；内容或内部格式变化仍拒绝，旧记录保持原协议。38 项针对性回归通过；原故障日志回放先复现旧拒绝，再验证正确绑定，未发送批准；七组输入与实际 Node `trim()` 结果相同。24 个 spec 和原安装包保持不变，32 份既有记录摘要已核对，故障资源已实际释放。新冻结仅确认精确的旧故障结果，不重投第六位置；任何新的基础设施或评分故障仍停止后续投递。
 
 ## 环境交接与断点接续
 

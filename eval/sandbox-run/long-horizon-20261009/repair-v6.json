@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-task-instruction-identity-repair",
+  "planned": 24,
+  "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+  "previousReleaseSha256": "c6e7f3d981f1d6b30bf3c15aee270366d80b575b6a8b97441d5b31be85c4497f",
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+  "runnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+  "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+  "acknowledgedSealedFaults": {
+    "lh-01-geo-shapeindex-serialization-plan-r2": "a60a6ac134be74b6ee88af0745a1f9ec4479abe5da808b0ec1cc62403a78c1ff",
+    "lh-06-updo-policy-alerting-supervisor-independent-r2": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1"
+  },
+  "deviation": {
+    "kind": "native-task-instruction-identity-repair",
+    "atUnix": 1791567755.916857,
+    "afterDeliveredPositions": 6,
+    "alreadySealedPositions": 6,
+    "originalPosition": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+    "originalResultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+    "agentReruns": 0,
+    "unchangedSpecs": true,
+    "unchangedOrder": true,
+    "unchangedPackageModelAndBudgets": true,
+    "scope": "retain raw instruction hash and separately bind the native Task command ECMAScript trim objective",
+    "sourceCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe"
+  },
+  "actualFaultReplay": {
+    "schemaVersion": 1,
+    "kind": "native-task-instruction-identity-repair",
+    "atUnix": 1791567560.477786,
+    "originalPosition": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+    "originalResultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+    "originalStartedSha256": "dd379b18680ccf168f31662977c03ab20520754f96788e59c92c2aef2aceb970",
+    "originalSessionId": "session-0e5e7cba-d146-4800-8a64-b2cd20c75155",
+    "originalTaskId": "822e4a32-cf7e-4e55-bd40-8d3158821d2e",
+    "instructionSha256": "5f57493c1865cf900c66f0b505499e2e58c3cfe2da297d43ce3b89b95ec47ff5",
+    "observedTaskObjectiveSha256": "f95b0aa3966c726967ffcc6e46a3f7603f26263915af3c36dd8bcb528b31c701",
+    "difference": "single trailing newline removed by native Task command",
+    "oldFaultReproduced": true,
+    "correctedBindingSucceeded": true,
+    "approvalSentDuringReplay": false,
+    "nativeNodeTrimCases": 7,
+    "unchangedRawInstruction": true,
+    "agentRedeliveries": 0,
+    "daily3080Restarted": false,
+    "focusedRegressions": {
+      "passed": 38,
+      "failed": 0
+    }
+  },
+  "changedRunnerFiles": {
+    "runner/sandbox-run/test_monitor.py": {
+      "previousSha256": "26e72730e1cdae90654b0a2b65cf694a93bdf6da98d3067600b0df253ba2c4e1",
+      "sha256": "74dc6e6e78803f325efbf5819135493f1bc5876742d712dd82091500ea0d31da"
+    },
+    "runner/sandbox-run/execution.py": {
+      "previousSha256": "ab61c692a2ee05ffcc30825fa62aacb3397cc723506e888cae0e0d80ff03e45f",
+      "sha256": "7727b3845e4f06a7c19808e9488aae84f0560f6ab30afda720e104028c46f89e"
+    },
+    "runner/sandbox-run/monitor.py": {
+      "previousSha256": "953f28719b5a15376ac9339beaa07cbde987f98f65b5d89e18ecfd1912319d97",
+      "sha256": "ab6c5beb93922438e529cabe578af9a08592e93014098ded3aaf8a551e4cf7ae"
+    },
+    "runner/sandbox-run/public_results.py": {
+      "previousSha256": "d451276a74bcb09085f87b47a723dcbdf1c998ba9569230f891a8d941adbfa06",
+      "sha256": "484217fa28be46c0695549481d6e41dade4c46a731b3a893f0d21f3c45d76673"
+    },
+    "runner/sandbox-run/test_public_results.py": {
+      "previousSha256": "6a4c32059fc6fbb7affd12bcd0c49f4bed5d8eeddab1a133b57608e16056f083",
+      "sha256": "c99ea8901acfd220f772b6c857b35413066635489ee21d860d50f83d83127a9a"
+    },
+    "runner/sandbox-run/trajectory.py": {
+      "previousSha256": "276ab2b60278be6ebea2e84d7aaae94c872551f4af2ced894738709ac1b659ff",
+      "sha256": "942dc9e840060c79af091efe23331a77f6e44cb2d16af255fa6ad89ca1fdf497"
+    },
+    "runner/sandbox-run/test_trajectory.py": {
+      "previousSha256": "8f8bd2e2dcd9521ad3a11eba9bc346c59af5f45c67c0c45ae091524821bad242",
+      "sha256": "928a3d2f2a11a96cd67d1aa1616417ad565895d89ca93313804bcfcd88dab407"
+    },
+    "runner/sandbox-run/instruction_identity.py": {
+      "previousSha256": null,
+      "sha256": "e964ebd2d3036766e25217ba9310bbc35454704e45b47569ce5f05b21f6a614d"
+    },
+    "runner/sandbox-run/test_instruction_identity.py": {
+      "previousSha256": null,
+      "sha256": "cc4e63e7a5b62d0b7e8b54962dbe0afdc187e2ffdf67f4506ab8772fd7e2120b"
+    }
+  },
+  "runnerFileCount": 85,
+  "allSpecsUnchanged": true,
+  "preservedRecordCount": 32,
+  "gateSha256": "716916dd2c4058f047860425a64238f3ba52e69e504a235048fe25374c832104",
+  "capacity": {
+    "dockerFreeBytes": 36029546496,
+    "hostFreeBytes": 93156315136,
+    "cpus": 6,
+    "memoryBytes": 25146785792,
+    "atUnix": 1791567755.916832
+  }
+}
