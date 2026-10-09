@@ -17,7 +17,8 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
   const current = state?.task?.id === job.taskId
   const active = pending && state?.live === true && currentReviewJob(state)?.id === job.id
     && state.reviewing
-  const currentFault = current && state?.task?.reviewFault?.jobId === job.id
+  const currentFault = current && (state?.task?.reviewFault?.jobId === job.id
+    || currentReviewJob(state)?.id === job.id && ['user', 'restart'].includes(state?.task?.pauseReason ?? ''))
   const canRetry = currentFault && state?.live === true
     && state.actions.includes('retry-review')
   let label: SupervisorKey = 'reviewEnded'

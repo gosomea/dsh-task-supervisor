@@ -1,0 +1,1270 @@
+{
+  "schema": 1,
+  "version": "0.1.4",
+  "releaseState": "validated-awaiting-npm-authentication",
+  "kernel": {
+    "files": 31,
+    "passed": 452,
+    "skipped": 0,
+    "durationSeconds": 34.79,
+    "dockerContext": "colima-dsh-eval-rosetta",
+    "image": "sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6",
+    "initialHarnessFailure": "A final verification invocation used a nonexistent storage parent: 20 ENOENT fixture failures, 432 passes. The required parent was created; the complete rerun above passed. Earlier complete suite: 451 passes before one presentation test."
+  },
+  "types": {
+    "host": "passed",
+    "client": "passed"
+  },
+  "build": "passed",
+  "longReview": {
+    "reviewSeconds": 125.3,
+    "totalSeconds": 129.1,
+    "assertions": "Submitting tool settled before review; original native PTC transport ended without cancelling the review; one application",
+    "mode": "controlled native Host with real wall clock, not a real provider delay"
+  },
+  "package": {
+    "sha256": "e35394e370a70a9b6d22dc49a19023f1f4b431578f94c271a3e07fa3a0643d82",
+    "sha1": "c34a5077c0fe8d50b1ce8afae473eb71bc70788f",
+    "integrity": "sha512-9qKkqwXfxIKVrjGtFtDkDOmw0XI1mICeWbq5uVi5sKQEE21V1UBrgRhP4PDuEDsjyqWLkWiOIRpO007tbhPofw==",
+    "files": 12,
+    "size": 199351
+  },
+  "cleanInstall": {
+    "version": "0.1.4",
+    "officialHost": "0.2.0-rc.2",
+    "sha256": "e35394e370a70a9b6d22dc49a19023f1f4b431578f94c271a3e07fa3a0643d82",
+    "filesByteMatched": [
+      "lib/client.js",
+      "package.json",
+      "README.md",
+      "README.zh.md",
+      "lib/artifact-snapshot-DHu4fJ4E.mjs",
+      "lib/check-gateway.mjs",
+      "lib/evidence-BuyAWIxB.mjs",
+      "lib/index.mjs",
+      "lib/process-provenance.mjs",
+      "lib/review-check-BeONnj0X.mjs",
+      "README.i18n.yaml",
+      "cordis.patch.yml"
+    ],
+    "ordinaryProfile": "web",
+    "nativePreset": "standard",
+    "statusCommand": "success",
+    "modelRequests": 0,
+    "pid": 3185,
+    "port": 51236,
+    "sessionId": "session-b64fa34e-98e5-4fca-9670-238da9239e60"
+  },
+  "daily3080": {
+    "originalPid": 16236,
+    "restarted": false
+  },
+  "comparison": {
+    "schema": 1,
+    "kind": "development-fixture-comparison",
+    "grading": "Local deterministic development oracle, not an official benchmark",
+    "blindFalseAcceptance": null,
+    "blindFalsePause": null,
+    "records": [
+      {
+        "name": "baseline",
+        "case": "calculation",
+        "sessionId": "session-9d6c62e4-d691-47dd-ba79-7f6ee8141243",
+        "taskId": "30b37575-c6e2-4469-ab96-d8f7b4b3eca4",
+        "terminal": "complete",
+        "elapsedSeconds": 242.968,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "714bbcb1ddc4b46a33dd5086258ab22ca34d53104ed3ec53a8a6ea6773e28b20",
+        "sessions": [
+          {
+            "id": "session-9d6c62e4-d691-47dd-ba79-7f6ee8141243",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 75654,
+              "outputTokens": 5758,
+              "cacheReadTokens": 214144,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 295556,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 8,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-ffa04c53-bf42-4095-ad3f-cffbc8325228",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 20604,
+              "outputTokens": 7506,
+              "cacheReadTokens": 88576,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 116686,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-c8cbd212-2672-4f8b-9e4c-e2e8a2b6c4bf",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 37747,
+              "outputTokens": 11405,
+              "cacheReadTokens": 279296,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 328448,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-12b9d27a-4225-4515-8425-41c2c206fee3",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 72540,
+              "outputTokens": 19494,
+              "cacheReadTokens": 611968,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 704002,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "2ff273cb-75dc-44b5-b15c-bac8a7594209",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-ffa04c53-bf42-4095-ad3f-cffbc8325228",
+            "cutoff": 182,
+            "startedAt": "2026-10-09T07:49:53.549Z",
+            "finishedAt": "2026-10-09T07:50:33.670Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 14,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          },
+          {
+            "id": "2d0ad582-d205-4941-a46e-5ff92a079da3",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-c8cbd212-2672-4f8b-9e4c-e2e8a2b6c4bf",
+            "cutoff": 249,
+            "startedAt": "2026-10-09T07:50:51.737Z",
+            "finishedAt": "2026-10-09T07:51:51.899Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 25,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          },
+          {
+            "id": "71afc79f-eb61-4caf-b951-f04b36ec8604",
+            "kind": "completion",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-12b9d27a-4225-4515-8425-41c2c206fee3",
+            "cutoff": 282,
+            "startedAt": "2026-10-09T07:51:59.784Z",
+            "finishedAt": "2026-10-09T07:53:41.920Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 31,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          }
+        ],
+        "totalReportedTokens": 1444692,
+        "toolCalls": 70,
+        "failedToolResults": 3,
+        "repeatedReads": 0,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 0,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 3
+        }
+      },
+      {
+        "name": "baseline",
+        "case": "static",
+        "sessionId": "session-9d6c62e4-d691-47dd-ba79-7f6ee8141243",
+        "taskId": "101607c6-d4f2-4079-8b8f-0dd7f83c6484",
+        "terminal": "complete",
+        "elapsedSeconds": 224.114,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "7a4043fb76fb770f46d6f549534e2c0dfeaddcf77a2f8cf2bd7f95787d776f09",
+        "sessions": [
+          {
+            "id": "session-9d6c62e4-d691-47dd-ba79-7f6ee8141243",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 44462,
+              "outputTokens": 4948,
+              "cacheReadTokens": 100224,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 149634,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 8,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-25ffd0dc-58ce-4abd-95d9-e5ef790af413",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 11600,
+              "outputTokens": 10745,
+              "cacheReadTokens": 20608,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 42953,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-387b360f-671a-4a5d-8297-a5bcec094075",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 30242,
+              "outputTokens": 10708,
+              "cacheReadTokens": 178688,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 219638,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-20a49c8e-16df-4ed0-b375-ddc010e6ddbe",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 40151,
+              "outputTokens": 12944,
+              "cacheReadTokens": 394496,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 447591,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "631f095c-6fe5-4027-8f15-c17af7860eb4",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-25ffd0dc-58ce-4abd-95d9-e5ef790af413",
+            "cutoff": 33,
+            "startedAt": "2026-10-09T07:46:06.972Z",
+            "finishedAt": "2026-10-09T07:47:00.906Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 9,
+            "failedToolResults": 0,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          },
+          {
+            "id": "f4f25397-5e2e-4703-b425-c2c59f532501",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-387b360f-671a-4a5d-8297-a5bcec094075",
+            "cutoff": 100,
+            "startedAt": "2026-10-09T07:47:16.387Z",
+            "finishedAt": "2026-10-09T07:48:13.043Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 20,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          },
+          {
+            "id": "7e128676-361a-40bb-a5b5-298042dab5d9",
+            "kind": "completion",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-20a49c8e-16df-4ed0-b375-ddc010e6ddbe",
+            "cutoff": 131,
+            "startedAt": "2026-10-09T07:48:21.319Z",
+            "finishedAt": "2026-10-09T07:49:38.963Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 28,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": null,
+            "protocolRepairs": 0,
+            "requirementCount": null,
+            "independentChecks": 0,
+            "independentEvidenceCount": null
+          }
+        ],
+        "totalReportedTokens": 859816,
+        "toolCalls": 57,
+        "failedToolResults": 2,
+        "repeatedReads": 0,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 0,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 2
+        }
+      },
+      {
+        "name": "candidate",
+        "case": "calculation",
+        "sessionId": "session-60e41bf7-ccde-448e-b22d-8032a474b5b8",
+        "taskId": "1c64bc2c-7fc6-4d0c-9d00-dcee1ecb38e5",
+        "terminal": "complete",
+        "elapsedSeconds": 272.073,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "8d8fb11dc804670eb779d2dc5fc79ae755cf4db923e8a2e0e58085e69a243dc7",
+        "sessions": [
+          {
+            "id": "session-60e41bf7-ccde-448e-b22d-8032a474b5b8",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 120805,
+              "outputTokens": 6678,
+              "cacheReadTokens": 363392,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 490875,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 8,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-2249b787-2876-4156-8fb2-19531484c7bc",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 21543,
+              "outputTokens": 19547,
+              "cacheReadTokens": 108800,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 149890,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-4e94631f-58aa-4ec2-8b78-e45e7081e539",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 28465,
+              "outputTokens": 17754,
+              "cacheReadTokens": 170368,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 216587,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-d073c610-81b5-4ef6-baa4-764fac03ac80",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 47281,
+              "outputTokens": 14113,
+              "cacheReadTokens": 264192,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 325586,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "32393982-f114-45bc-a32c-6cda41570f25",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-2249b787-2876-4156-8fb2-19531484c7bc",
+            "cutoff": 197,
+            "startedAt": "2026-10-09T07:51:03.027Z",
+            "finishedAt": "2026-10-09T07:52:25.216Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 13,
+            "failedToolResults": 2,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 7,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "087de812-55a2-4c08-aa09-ac64d026c792",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-4e94631f-58aa-4ec2-8b78-e45e7081e539",
+            "cutoff": 280,
+            "startedAt": "2026-10-09T07:52:49.968Z",
+            "finishedAt": "2026-10-09T07:54:12.063Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 17,
+            "failedToolResults": 2,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 7,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "b6abc3b2-feec-4883-8fdb-ce5fe85264ed",
+            "kind": "completion",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-d073c610-81b5-4ef6-baa4-764fac03ac80",
+            "cutoff": 304,
+            "startedAt": "2026-10-09T07:54:18.341Z",
+            "finishedAt": "2026-10-09T07:55:21.172Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 18,
+            "failedToolResults": 2,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 7,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          }
+        ],
+        "totalReportedTokens": 1182938,
+        "toolCalls": 48,
+        "failedToolResults": 6,
+        "repeatedReads": 0,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 0,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 6
+        }
+      },
+      {
+        "name": "candidate",
+        "case": "static",
+        "sessionId": "session-60e41bf7-ccde-448e-b22d-8032a474b5b8",
+        "taskId": "7c44da78-9b95-40ae-9105-5522e559a5eb",
+        "terminal": "complete",
+        "elapsedSeconds": 295.12,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "7833d8bec931bb84fa57ff56c54242cd587f4ca9dd2bc09be8c4e21f3b36b139",
+        "sessions": [
+          {
+            "id": "session-60e41bf7-ccde-448e-b22d-8032a474b5b8",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 62697,
+              "outputTokens": 6310,
+              "cacheReadTokens": 137600,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 206607,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 8,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-b6f12b08-0585-4ad7-b3c6-04af71f114f0",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 16643,
+              "outputTokens": 9480,
+              "cacheReadTokens": 76160,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 102283,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-ac5dd32e-b3c6-448f-b74a-7b77ce94bc98",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 43546,
+              "outputTokens": 21566,
+              "cacheReadTokens": 442240,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 507352,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-0caa2de4-e77c-46bf-80d8-ee9f6b425a2b",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 46975,
+              "outputTokens": 21768,
+              "cacheReadTokens": 492416,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 561159,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "0ced899c-ab6e-41c3-9600-00cc050eaf87",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-b6f12b08-0585-4ad7-b3c6-04af71f114f0",
+            "cutoff": 37,
+            "startedAt": "2026-10-09T07:46:07.092Z",
+            "finishedAt": "2026-10-09T07:46:51.862Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 13,
+            "failedToolResults": 2,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 5,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "00b49ba3-c327-439b-ba0f-a652bd24a6d1",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-ac5dd32e-b3c6-448f-b74a-7b77ce94bc98",
+            "cutoff": 120,
+            "startedAt": "2026-10-09T07:47:16.695Z",
+            "finishedAt": "2026-10-09T07:48:58.501Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 21,
+            "failedToolResults": 4,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 5,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "6fa124d0-5644-4e5c-8aa8-926a1cc0ca80",
+            "kind": "completion",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-0caa2de4-e77c-46bf-80d8-ee9f6b425a2b",
+            "cutoff": 144,
+            "startedAt": "2026-10-09T07:49:05.298Z",
+            "finishedAt": "2026-10-09T07:50:49.366Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 22,
+            "failedToolResults": 3,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 7,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          }
+        ],
+        "totalReportedTokens": 1377401,
+        "toolCalls": 56,
+        "failedToolResults": 9,
+        "repeatedReads": 0,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 0,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 9
+        }
+      },
+      {
+        "name": "independent",
+        "case": "calculation",
+        "sessionId": "session-6be5c991-4dda-48f6-a134-adba75a133b3",
+        "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+        "terminal": "complete",
+        "elapsedSeconds": 657.017,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "ceb8257592ea9db9dd48bbba6db939779432b783bb202ec8d8374222c33aacf2",
+        "sessions": [
+          {
+            "id": "session-6be5c991-4dda-48f6-a134-adba75a133b3",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 59978,
+              "outputTokens": 5411,
+              "cacheReadTokens": 136192,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 201581,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 7,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-c996acaa-415e-45dd-ab81-349781bba084",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 20364,
+              "outputTokens": 16393,
+              "cacheReadTokens": 108032,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 144789,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-7357afd5-e95c-4d69-859c-5db23aea516d",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 100090,
+              "outputTokens": 65147,
+              "cacheReadTokens": 1993856,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 2159093,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-50599cc9-2b56-4f13-b65c-5949ef475165",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 110981,
+              "outputTokens": 48461,
+              "cacheReadTokens": 2040960,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 2200402,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "89a06aee-2d6b-49d5-9a56-94a0df824d4c",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-c996acaa-415e-45dd-ab81-349781bba084",
+            "cutoff": 37,
+            "startedAt": "2026-10-09T07:47:23.297Z",
+            "finishedAt": "2026-10-09T07:48:42.644Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 17,
+            "failedToolResults": 2,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 5,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "57f36a17-7cac-4f1b-b172-243a116fb78f",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-7357afd5-e95c-4d69-859c-5db23aea516d",
+            "cutoff": 104,
+            "startedAt": "2026-10-09T07:49:00.506Z",
+            "finishedAt": "2026-10-09T07:54:07.282Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 56,
+            "failedToolResults": 19,
+            "repeatedReads": 3,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 6,
+            "independentChecks": 2,
+            "independentEvidenceCount": 9
+          },
+          {
+            "id": "232796b2-97d8-4931-8fc3-df15b10f5140",
+            "kind": "completion",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-50599cc9-2b56-4f13-b65c-5949ef475165",
+            "cutoff": 161,
+            "startedAt": "2026-10-09T07:54:14.701Z",
+            "finishedAt": "2026-10-09T07:58:07.558Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 77,
+            "failedToolResults": 14,
+            "repeatedReads": 1,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 8,
+            "independentChecks": 6,
+            "independentEvidenceCount": 13
+          }
+        ],
+        "totalReportedTokens": 4705865,
+        "toolCalls": 150,
+        "failedToolResults": 35,
+        "repeatedReads": 4,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 8,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 22,
+          "task_review_check_plan": 3,
+          "read_task_evidence_index": 2,
+          "read_task_context": 1,
+          "read_task_worker": 2,
+          "task_review_observations": 4,
+          "read_task_call": 1
+        }
+      },
+      {
+        "name": "independent",
+        "case": "negative",
+        "sessionId": "session-6be5c991-4dda-48f6-a134-adba75a133b3",
+        "taskId": "7133b0a7-fd2b-49a5-b2f8-85839b8c2a00",
+        "terminal": "paused",
+        "elapsedSeconds": 283.864,
+        "initialApprovals": 1,
+        "userOperations": 2,
+        "artifactUnchanged": true,
+        "contentCorrect": true,
+        "reward": 1,
+        "sourceSha256": "1110cb70692d5fcb44f5e0a37aaa7614e0addebe45ad5bf5a8e4cb21bbda6ed6",
+        "sessions": [
+          {
+            "id": "session-6be5c991-4dda-48f6-a134-adba75a133b3",
+            "role": "primary",
+            "usage": {
+              "uncachedInputTokens": 77716,
+              "outputTokens": 5177,
+              "cacheReadTokens": 292096,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 374989,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 7,
+            "rootTokensArePerTaskDelta": true
+          },
+          {
+            "id": "task-review-6f893d32-3844-4a1b-9a93-656ea2e5c983",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 13914,
+              "outputTokens": 15357,
+              "cacheReadTokens": 64384,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 93655,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          },
+          {
+            "id": "task-review-e908b485-1658-4852-8bff-2a2278236bb5",
+            "role": "reviewer",
+            "usage": {
+              "uncachedInputTokens": 61498,
+              "outputTokens": 32605,
+              "cacheReadTokens": 836736,
+              "cacheWriteTokens": 0
+            },
+            "reportedTotal": 930839,
+            "routes": [
+              {
+                "provider": "deepseek-codebuddy",
+                "model": "deepseek-v4.1-flash"
+              }
+            ],
+            "requestCountInNativeHistory": 1,
+            "rootTokensArePerTaskDelta": false
+          }
+        ],
+        "jobs": [
+          {
+            "id": "18145923-7abe-4093-bfd4-69eea2874466",
+            "kind": "plan",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-6f893d32-3844-4a1b-9a93-656ea2e5c983",
+            "cutoff": 263,
+            "startedAt": "2026-10-09T07:58:22.593Z",
+            "finishedAt": "2026-10-09T07:59:38.301Z",
+            "verdict": "pass",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 9,
+            "failedToolResults": 1,
+            "repeatedReads": 0,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 6,
+            "independentChecks": 0,
+            "independentEvidenceCount": 0
+          },
+          {
+            "id": "50452e97-de80-4c72-8255-4630470683a3",
+            "kind": "stage",
+            "status": "applied",
+            "attempt": 1,
+            "reviewerSessionId": "task-review-e908b485-1658-4852-8bff-2a2278236bb5",
+            "cutoff": 344,
+            "startedAt": "2026-10-09T08:00:06.678Z",
+            "finishedAt": "2026-10-09T08:02:54.122Z",
+            "verdict": "needs-user",
+            "model": {
+              "provider": "deepseek-codebuddy",
+              "model": "deepseek-v4.1-flash"
+            },
+            "toolCalls": 39,
+            "failedToolResults": 9,
+            "repeatedReads": 1,
+            "faultRetries": 0,
+            "readCorrections": 0,
+            "protocolRepairs": 0,
+            "requirementCount": 6,
+            "independentChecks": 1,
+            "independentEvidenceCount": 7
+          }
+        ],
+        "totalReportedTokens": 1399483,
+        "toolCalls": 48,
+        "failedToolResults": 10,
+        "repeatedReads": 1,
+        "faultRetries": 0,
+        "readCorrections": 0,
+        "independentChecks": 1,
+        "blindFalseAcceptance": null,
+        "blindFalsePause": null,
+        "failedToolCountsByName": {
+          "task_review_decision": 5,
+          "task_review_check_plan": 1,
+          "read_task_evidence_index": 1,
+          "task_review_observations": 1,
+          "read_task_text": 1,
+          "read_task_worker": 1
+        }
+      }
+    ],
+    "paired": [
+      {
+        "case": "static",
+        "baseline": {
+          "reward": 1,
+          "elapsedSeconds": 224.114,
+          "totalReportedTokens": 859816,
+          "toolCalls": 57,
+          "failedToolResults": 2,
+          "repeatedReads": 0,
+          "faultRetries": 0,
+          "readCorrections": 0
+        },
+        "candidate": {
+          "reward": 1,
+          "elapsedSeconds": 295.12,
+          "totalReportedTokens": 1377401,
+          "toolCalls": 56,
+          "failedToolResults": 9,
+          "repeatedReads": 0,
+          "faultRetries": 0,
+          "readCorrections": 0
+        }
+      },
+      {
+        "case": "calculation",
+        "baseline": {
+          "reward": 1,
+          "elapsedSeconds": 242.968,
+          "totalReportedTokens": 1444692,
+          "toolCalls": 70,
+          "failedToolResults": 3,
+          "repeatedReads": 0,
+          "faultRetries": 0,
+          "readCorrections": 0
+        },
+        "candidate": {
+          "reward": 1,
+          "elapsedSeconds": 272.073,
+          "totalReportedTokens": 1182938,
+          "toolCalls": 48,
+          "failedToolResults": 6,
+          "repeatedReads": 0,
+          "faultRetries": 0,
+          "readCorrections": 0
+        }
+      }
+    ],
+    "denominator": 6,
+    "requestMetadataCollectionNote": "Original sealed result collector used data.config; this append-only supplement reads native data.header.config without rerunning models or replacing original results."
+  },
+  "freeze": {
+    "baselineCommit": "6cccfd3c0272118d63389a3e4fffae00f48d1fb5",
+    "candidateModelRuntimeCommit": "52dcbb0",
+    "mode": "log",
+    "order": [
+      "static",
+      "calculation"
+    ],
+    "repeats": 1,
+    "deadlineSeconds": 900,
+    "initialSuccessfulApprovalsPerTask": 1,
+    "rescue": false,
+    "reviewFrequency": "unchanged defaults",
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "protocol": "native OpenAI completions",
+    "endpointOrigin": "http://127.0.0.1:15721",
+    "host": "0.2.0-rc.2",
+    "baselineArtifactSha256": "ec280595ad13674971f1bd28e5b2cac825a89d643cc5392d3b95489ee6b40614",
+    "modelTrialArtifactSha256": "753bd1b385fde3bd80b36b872c990d47afca1a9a0b2d82ea310918f5067ecbf5",
+    "finalArtifactDifference": "Only client.js changed after real-model trials to correctly label a currently user-cancelled review. All six lib/*.mjs backend/executor bytes match the trial archive. Final package was installed in a clean official home and loaded for browser history checks."
+  },
+  "diagnosticRunsExcludedFromComparison": {
+    "reason": "Original runner sent approval while the primary Agent was busy and failed to validate the returned error. Continued the same Sessions after they settled, with unchanged deadline; retained immutable results and deviation record. This delayed approval invalidates fair time comparison. No model replay or rescue prompt. A second Task submission was also rejected while closing work was active and was not delivered to a model.",
+    "baselineStatic": {
+      "terminal": "complete",
+      "reward": 1,
+      "elapsedSeconds": 759.215
+    },
+    "candidateStatic": {
+      "terminal": "deadline",
+      "reward": 0,
+      "elapsedSeconds": 902.036
+    }
+  },
+  "browser": {
+    "finalHostPort": 51230,
+    "twoTasks": true,
+    "uniqueJobs": 6,
+    "resultVisibleWithoutProcess": true,
+    "separateFoldsSurviveReload": true,
+    "unmountedTranscriptsWhenCollapsed": 0,
+    "historyAddedModelRequests": 0,
+    "viewportChecks": [
+      [
+        1280,
+        900
+      ],
+      [
+        600,
+        900
+      ]
+    ],
+    "longReportFixedHeight": false,
+    "nativeToolsAndErrors": "Observed in real reviewer transcript; native returned reasoning follows Host settings",
+    "automaticScroll": "History can be browsed without jumping to the newest job",
+    "historyRequestChecks": [
+      {
+        "sessionId": "session-60e41bf7-ccde-448e-b22d-8032a474b5b8",
+        "before": 8,
+        "after": 8,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-b6f12b08-0585-4ad7-b3c6-04af71f114f0",
+        "before": 1,
+        "after": 1,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-ac5dd32e-b3c6-448f-b74a-7b77ce94bc98",
+        "before": 1,
+        "after": 1,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-0caa2de4-e77c-46bf-80d8-ee9f6b425a2b",
+        "before": 1,
+        "after": 1,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-2249b787-2876-4156-8fb2-19531484c7bc",
+        "before": 1,
+        "after": 1,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-4e94631f-58aa-4ec2-8b78-e45e7081e539",
+        "before": 1,
+        "after": 1,
+        "running": false
+      },
+      {
+        "sessionId": "task-review-d073c610-81b5-4ef6-baa4-764fac03ac80",
+        "before": 1,
+        "after": 1,
+        "running": false
+      }
+    ]
+  },
+  "blindMetrics": {
+    "falseAcceptance": null,
+    "falsePause": null
+  },
+  "limitations": [
+    "One paired repeat of two development fixtures, not an official benchmark or a superiority result.",
+    "Corrected native tool argument errors remain observable and cost tokens; zero-error behavior is not claimed.",
+    "Read-correction allowance counts controller-delivered extra Turns after settled read failures, not every native in-turn self-correction.",
+    "No independent browser/vision executor; unsupported necessary observations remain unverified.",
+    "Windows, other browsers and other DSH versions were not tested."
+  ],
+  "publicRegistry": null
+}

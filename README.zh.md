@@ -31,14 +31,14 @@ kind: "package-bundle"
 <a id="get-started"></a>
 ## 开始使用
 
-下文描述 **0.1.3**，在原生 DSH 模式中创建 Task。此版本增加原生审查过程与有限恢复，见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
+下文描述 **0.1.4**，在原生 DSH 模式中创建 Task。完整审查结果与工具过程独立展示；要求级结果、Task／尝试取证范围及有限读取纠正见[审查体验](docs/review-experience.zh.md)。此前的原生过程与恢复见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
 
 ### 安装到 Web profile
 
 已验证 Node 24 和官方 DSH `0.2.0-rc.2`，无需修改 Host 或原生沙箱。沿用该 profile 的模型配置；安装公开包：
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.3
+dsh plugin --profile web add dsh-task-supervisor@0.1.4
 dsh web
 ```
 
@@ -181,9 +181,9 @@ flowchart TD
 | 编辑要求或产物变化 | 旧版本裁决不能验收新工作；要求用 `/task edit <目标>` 修订，相关产物须重新核对。 |
 | 宿主重启 | 状态从日志恢复，执行等待手动继续，不重复投递。只读打开页面不启动模型；冷 Session 的控制需通过主会话恢复。 |
 
-普通日志审查默认十分钟截止；独立检查使用其配置截止时间，默认三十分钟。协议缺失可在同一作业、Session 和截止点内有限补交，耗尽后按内部故障暂停。用户暂停、关闭、版本变化和宿主退出具有各自取消语义，不把所有取消都自动重试。故障重试与协议补交分别计数，补交不延长本次截止；重试继续使用同一审查 Session、要求、节点尝试、截止点和产物快照。历史只在展开时订阅，查看记录不会启动模型；正在运行默认展开，结束后收起，保留裁决和下一步。
+普通日志审查默认十分钟截止；独立检查使用其配置截止时间，默认三十分钟。协议缺失可在同一作业、Session 和截止点内有限补交，耗尽后按内部故障暂停。用户暂停、关闭、版本变化和宿主退出具有各自取消语义，不把所有取消都自动重试。故障重试与协议补交分别计数，补交不延长本次截止；重试继续使用同一审查 Session、要求、节点尝试、截止点和产物快照。历史过程只在展开时订阅，查看记录不会启动模型；正在运行默认展开，结束后收起过程，完整持久报告仍默认展示，实际下一步来自控制器状态。
 
-新增配置：`reviewFaultRetryAttempts` 默认 `1`（0–3），`reviewFaultRetryDelayMs` 默认 `3000`（0–60000），`resumeAfterReviewRecovery` 默认 `true`，仅沿用仍有效的原许可。审查控制记录升级到 7，旧记录继续读取且不获得新增权限。成功的原始工具读取可恢复证据资格；索引摘要、失败调用与模型自述不能引用。详细交接和边界见[原生审查过程与恢复](docs/review-experience.zh.md)。
+新增配置：`reviewFaultRetryAttempts` 默认 `1`（0–3），`reviewFaultRetryDelayMs` 默认 `3000`（0–60000），`resumeAfterReviewRecovery` 默认 `true`，仅沿用仍有效的原许可。`reviewReadCorrectionAttempts` 默认 `1`（0–1），同作业累计且不延长截止。审查控制记录升级到 8，旧记录继续读取且不获得新增权限。成功的原始工具读取可恢复证据资格；索引摘要、失败调用与模型自述不能引用。详细交接和边界见[原生审查过程与恢复](docs/review-experience.zh.md)。
 
 详见[审查作业生命周期](docs/review-queue.zh.md)及[进度展示](docs/review-progress.zh.md)。
 

@@ -45,6 +45,19 @@ it('does not describe a stopped or historical pending job as currently generatin
   expect(reviewPresentation(job, { ...state, reviewing: false })).toMatchObject({ active: false, label: 'reviewWaitingRecovery' })
   expect(reviewPresentation(job, { ...state, task: newTask('下一项任务') })).toMatchObject({ active: false, canRetry: false })
 })
+it('describes cancellation of the current user-paused review as manual recovery, without offering fault retry', () => {
+  const { job, state } = fixture()
+  job.status = 'failed'
+  state.task!.pendingReview = { jobId: job.id, kind: job.kind, stageId: job.stageId, cutoff: job.cutoff, evidence: job.evidence }
+  state.task!.pauseReason = 'user'
+  state.reviewing = false
+  state.actions = ['resume', 'off']
+  expect(reviewPresentation(job, state)).toMatchObject({ currentFault: true, canRetry: false, active: false })
+  const historical = { ...job, id: randomUUID() }
+  expect(reviewPresentation(historical, state)).toMatchObject({ currentFault: false, canRetry: false })
+  state.task!.pauseReason = 'restart'
+  expect(reviewPresentation(job, state).currentFault).toBe(true)
+})
 it('keeps a stale decision distinct from a current pass and reports only measured finished duration', () => {
   const { job, state } = fixture()
   const decision: ReviewJob['decision'] = { verdict: 'pass', finding: '已核对', evidenceSeqs: [10], imageSeqs: [], decisionSeq: 30 }

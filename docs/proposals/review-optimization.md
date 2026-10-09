@@ -121,3 +121,7 @@ This scope uses existing artifact reads, isolated command execution, public Sess
 4. Controlled regressions, registered real-model/browser checks, a frozen matched comparison, clean installation and the next available patch release.
 
 Each step updates bilingual current-state documentation and evidence, then commits and pushes separately. Daily port 3080 remains running. Review frequencies remain unchanged; missing blind labels keep false-acceptance and false-pause metrics null.
+
+## Complete reports and scoped review
+
+The accepted optimization is implemented through record 8: full reports separate from native process folds, immutable review scope, original-evidence batches, bounded extra correction Turns, requirement outcomes and concrete handoff. Source gates, registered real-model positive/negative cases and the frozen two-fixture baseline comparison are recorded in [0.1.4 acceptance](../releases/0.1.4.md). Release state is reported there; the original runtime and capability boundaries remain.

@@ -8,7 +8,7 @@ Expanding a review retains its own Session and uses native Chat for streaming re
 
 The plugin owns a public shell-slot entry and portals the native view into the primary transcript anchor, avoiding recursion of the same conversation factory. History opens with a durable parent/child address. New reviews record a native child descriptor without granting generic child continuation authority. Older reviews without descriptors remain readable through the compatibility endpoint; viewing never edits history or dispatches a model.
 
-Active processes expand by default and collapse when settled. An explicit fold remains in effect across streaming remounts during that activity; starting another activity restores the default. This bounded UI preference is cleared on plugin unload, not written into task history. Historical Sessions are retained only while expanded. Queued jobs wait for the review Session to exist; reading history never launches a model. Refresh reconstructs the same job and retries do not create a second card.
+Active processes expand by default and collapse when settled. An explicit fold remains in effect across streaming remounts during that activity; starting another activity restores the default. Bounded preferences use optional local browser storage and survive reload; unload clears only in-memory state. They are not written into task history. Historical Sessions are retained only while expanded. Queued jobs wait for the review Session to exist; reading history never launches a model. Refresh reconstructs the same job and retries do not create a second card.
 
 Collapsed headers retain the review kind, node title and status. Native DSH disclosure controls and theme colors distinguish activity, recovery, faults, invalidation and verdicts. Failed jobs show a localized reason. If the current task permits retry, its summary includes Retry review. Historical faults do not expose current-task actions. Expanding still shows the original error.
 
@@ -18,7 +18,7 @@ The primary conversation displays the complete persisted `finding` through nativ
 
 A submitted decision is awaiting application, not a pass. Stale decisions retain their report with an invalidation label. Loading state does not claim activity; only the bound current job and live controller show a running review. The actual current task phase and execution permit determine approval, continuation, completion or manual recovery text. Earlier jobs retain their own outcome.
 
-The first optimization step passed 12 presentation regressions, including a long native Markdown report with headings, a table and code, and strict Host/Client types. Registered-environment browser validation and release remain pending. The accepted remaining scope is tracked in the [overall optimization plan](proposals/review-optimization.md).
+The overall optimization implements full reports, immutable scope, batched original evidence, bounded correction and requirement outcomes. Fifteen presentation regressions cover long Markdown, submitted/stale decisions, subsequent activity and fold persistence. Source, real-model and installation evidence is recorded in [0.1.4 acceptance](releases/0.1.4.md). The [overall optimization plan](proposals/review-optimization.md) retains the accepted scope.
 
 ## Implementation and verification
 
@@ -34,7 +34,7 @@ Formal submissions and manual retries persist first and return promptly. Public 
 
 A completed native Turn without a valid decision permits a bounded supplement within the same job. Read errors followed by successful calls do not block it; the original errors remain in the reviewer Session. A final failed read instead retains the actual tool name, result seq and redacted error for recovery. Supplements do not loosen citation eligibility: index summaries and failed calls cannot support a pass.
 
-Version 7 review records preserve the original permit, recovery policy, consumed retries and fault history. Valid execution approval and versions permit automatic continuation; user pauses, disabling, Host restarts, needs-user and old records without permits remain manual. `resumeAfterReviewRecovery: false` retains the result for manual continuation. Recovery does not grant approval; the first plan still follows the original approval policy.
+Version 8 review records retain version-7 recovery fields and preserve the original permit, recovery policy, consumed retries and fault history. Valid execution approval and versions permit automatic continuation; user pauses, disabling, Host restarts, needs-user and old records without permits remain manual. `resumeAfterReviewRecovery: false` retains the result for manual continuation. Recovery does not grant approval; the first plan still follows the original approval policy.
 
 Recovery rebuilds read eligibility from paired successful native reviewer tool results. Actual event seqs, file hashes, read ranges and truncation markers remain authoritative. An index only locates evidence; failed calls and model claims cannot establish citation eligibility. Independent mode retains the check plan, snapshot and phase boundary. Unreliably recoverable old reads require rereading. Artifact changes reject old verdicts. Pauses, disabling and unload interrupt recovery waits; cleanup waits for work to stop and clears timers.
 
@@ -58,7 +58,7 @@ New controller jobs write version 8 with immutable Task, requirements/plan versi
 
 `reviewReadCorrectionAttempts` defaults to 1 and accepts 0–1. When a settled reviewer ends on a recognized argument, pagination or locator error, the controller can deliver one correction within that job and Session. This counter survives internal retries; correction and protocol supplements do not extend the attempt deadline. Permission denial, stale artifacts and unknown errors do not qualify. Native in-turn corrections remain in the tool history.
 
-Focused controlled-Host tests cover enabled/disabled correction, successful batch items with a failed sibling, same-job read-range recovery, fault retry with real evidence and user-stop recovery. Registered real-model and browser acceptance is pending.
+Focused controlled-Host tests cover enabled/disabled correction, successful batch items with a failed sibling, same-job read-range recovery, fault retry with real evidence and user-stop recovery. Real-model and browser evidence is retained in the 0.1.4 acceptance record.
 
 ## Requirement outcomes and primary-Agent handoff
 
@@ -68,6 +68,6 @@ Plan, node and final decisions cover every applicable criterion and omitted orig
 
 Continuation includes the actual review scope, confirmed and pending requirements, necessary revisions, evidence references and ready nodes. It explicitly distinguishes log inspection from independent artifact checks. The controller determines the effective next action and preserves the original execution permit. Earlier jobs have no fabricated requirement results or new authority. The sidebar reads the same job as the main report.
 
-Focused controlled tests cover static reads, omitted or weakened requirements, unavailable observation, partial original evidence, optional preferences, cross-Task handoff and record identity. Real-model, browser and matched comparison results are recorded separately after execution.
+Focused controlled tests cover static reads, omitted or weakened requirements, unavailable observation, partial original evidence, optional preferences, cross-Task handoff and record identity. The 0.1.4 acceptance record separates controlled regressions, real models, browser observations and the frozen baseline comparison.
 
 [中文](review-experience.zh.md)

@@ -190,3 +190,7 @@ Web presets register filesystem tools in the main Agent scope. Looking only at t
 ## Worker settlement and failed-turn convergence
 
 Workers may report through task_worker_done or a nonempty final text after a normally completed native turn, selected with DSH finalAssistantOutput. Neither path implies acceptance: main integration and independent review still follow. Abnormal or empty reports pause the task and conclude the current main turn. Regressions cover scoped tools, normal final text, empty reports, and no additional model step after failure.
+
+## Complete reports and scoped review
+
+The accepted optimization is implemented through record 8: full reports separate from native process folds, immutable review scope, original-evidence batches, bounded extra correction Turns, requirement outcomes and concrete handoff. Source gates, registered real-model positive/negative cases and the frozen two-fixture baseline comparison are recorded in [0.1.4 acceptance](releases/0.1.4.md). Release state is reported there; the original runtime and capability boundaries remain.

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/proposals/review-optimization.md
-review-optimization.md: 00607c0766cc25a9b799c2cfa570c8b298c18ac5
-review-optimization.zh.md: be5e242ddeec8cda85135a654e6205512a027715
+review-optimization.md: 2438f4f3003a9ea675a2691a7653c4950afbb213
+review-optimization.zh.md: e2ed8deecc1848203ede2c9e2c020ace421c046f

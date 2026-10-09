@@ -31,14 +31,14 @@ Use `/task` to track, pause and rework a goal, follow its DAG, and obtain review
 <a id="get-started"></a>
 ## Get started
 
-This page describes **0.1.3**, which creates Tasks in native DSH modes and adds native review process visibility and bounded recovery. See [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
+This page describes **0.1.4**, which creates Tasks in native DSH modes. Complete reports are separate from tool process details; requirement outcomes, Task/attempt evidence scope and bounded read correction are described in [review experience](docs/review-experience.md). Earlier native-process and recovery changes are in [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
 
 ### Install into a Web profile
 
 Node 24 and official DSH `0.2.0-rc.2` are validated without Host or native sandbox modifications. Retain the profile's model configuration and install the public package:
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.3
+dsh plugin --profile web add dsh-task-supervisor@0.1.4
 dsh web
 ```
 
@@ -181,9 +181,9 @@ After native activity settles, the controller checks task identity, permission, 
 | Requirements edits or artifact changes | Old-version verdicts cannot accept new work. Use `/task edit <objective>` for requirements; changed artifacts need fresh verification. |
 | Host restart | Rebuild state from logs and wait for manual continuation without duplicate dispatch. Viewing does not start models; cold Session controls require restoration through the main conversation. |
 
-Ordinary log review defaults to a ten-minute deadline; independent checks use their configured deadline, default thirty minutes. Missing decision protocol allows bounded supplementation within the same job, Session and cutoff; exhaustion pauses as an internal fault. User stops, disabling, version changes and Host exit have distinct cancellation semantics; not all cancellations retry automatically. Fault retries and protocol supplementation have separate counters; supplementation does not extend the current deadline. Retries retain the reviewer Session, requirements, node attempt, evidence cutoff and artifact snapshot. History subscribes only when expanded; viewing never starts a model. Running reviews expand by default, then collapse while retaining the decision and next step.
+Ordinary log review defaults to a ten-minute deadline; independent checks use their configured deadline, default thirty minutes. Missing decision protocol allows bounded supplementation within the same job, Session and cutoff; exhaustion pauses as an internal fault. User stops, disabling, version changes and Host exit have distinct cancellation semantics; not all cancellations retry automatically. Fault retries and protocol supplementation have separate counters; supplementation does not extend the current deadline. Retries retain the reviewer Session, requirements, node attempt, evidence cutoff and artifact snapshot. History subscribes only when expanded; viewing never starts a model. Running process details expand by default, then collapse while the full recorded report stays visible; the controller supplies the actual next action.
 
-New configuration: `reviewFaultRetryAttempts` defaults to `1` (0–3), `reviewFaultRetryDelayMs` to `3000` (0–60000), and `resumeAfterReviewRecovery` to `true`, reusing only a valid original permit. Review control records use version 7; old records remain readable without gaining permission. Successful original tool reads restore evidence eligibility; index summaries, failed calls and model claims do not. See [native review process and recovery](docs/review-experience.md) for the handoff and boundaries.
+New configuration: `reviewFaultRetryAttempts` defaults to `1` (0–3), `reviewFaultRetryDelayMs` to `3000` (0–60000), and `resumeAfterReviewRecovery` to `true`, reusing only a valid original permit. `reviewReadCorrectionAttempts` defaults to `1` (0–1), cumulatively per job without extending its deadline. Review control records use version 8; old records remain readable without gaining permission. Successful original tool reads restore evidence eligibility; index summaries, failed calls and model claims do not. See [native review process and recovery](docs/review-experience.md) for the handoff and boundaries.
 
 See [review-job lifetime](docs/review-queue.md) and [progress display](docs/review-progress.md).
 

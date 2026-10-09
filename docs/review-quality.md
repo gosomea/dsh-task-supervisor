@@ -40,4 +40,4 @@ Report reward, F2P/P2P, independent coverage, false acceptance, internal faults,
 
 The two Kea failures remain [public grading cases](../eval/deepswe/supervisor-single-20260929/README.zh.md), not generic prompts or controller rules. The validation record above retains implementation and official grading evidence, including successes and failures.
 
-The subsequent [overall review proposal](proposals/review-optimization.md) addresses task attribution, evidence correction, requirement findings and long-horizon validation. Its first display step is implemented; the remaining scope and release are pending. This page retains the existing independent verification boundaries.
+The subsequent [overall review proposal](proposals/review-optimization.md) addresses task attribution, evidence correction, requirement findings and long-horizon validation. Full reports, scope, evidence correction and requirement outcomes are implemented; [0.1.4 acceptance](releases/0.1.4.md) records actual verification and release state. This page retains the existing independent verification boundaries.

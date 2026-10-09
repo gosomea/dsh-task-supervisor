@@ -1,0 +1,2329 @@
+[
+  {
+    "id": "89a06aee-2d6b-49d5-9a56-94a0df824d4c",
+    "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+    "kind": "plan",
+    "cutoff": 37,
+    "nodeAttempt": null,
+    "status": "applied",
+    "scope": {
+      "protocol": 1,
+      "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+      "requirementsVersion": 1,
+      "planVersion": 0,
+      "nodeId": "plan",
+      "nodeAttempt": null,
+      "cutoff": 37,
+      "taskFromSeq": 4,
+      "attemptFromSeq": null,
+      "changesFromSeq": 4,
+      "sources": []
+    },
+    "decision": {
+      "verdict": "pass",
+      "finding": "单节点只读方案完整覆盖四项要求\n\n## 结论与范围\n对 plan 阶段（cutoff 37，planVersion 0，readOnlyTurnsBeforeWrite 0，revision 2）进行计划审查。原始目标（seq 4 任务记录、seq 12 用户消息）：只读验收 input.json 与 result.json；items 各项 qty×price 合计必须为 22；result.json 的 sum 必须等于该合计；用中文给出核算依据；只检查现状、不修改任何文件；用一个节点规划、等待批准后执行，并提交节点与整体审查。拟议计划仅含一个节点 verify-readonly（seq 37），dependsOn=[]、writePaths=[]、criterionIds=[c1,c2,c3,c4]。\n\n## 实际核对\n- 需求枚举：目标含 5 条要求——(1) items 逐项乘积合计=22；(2) result.json 的 sum=该合计；(3) 中文核算依据；(4) 全程只读、不改任何文件；(5) 单节点 + 等待批准 + 提交节点与整体审查。计划 4 条准则一一对应前 4 条，(5) 由控制器语义满足（stages 仅 1 个节点、writePaths 为空、当前 phase=planning 未执行，见 seq 4/27）。\n- 准则与目标一致性：c1/c2/c3/c4 与目标语句逐字对应，数量与主体无误（c2 明确以 result.json 的 sum 为对象，c1 明确以 items 的 qty×price 为对象），provenance 全部 kind=user/reference=objective，无 implementation 冒充用户要求，也未把工作区示例文件 memo.md（seq 33）当作验收项。\n- 顺序与因果：无“先 X 后 Y 的不同调用/轮次”约束，也无“先写产物再回算”的因果倒置；节点仅读，不存在写后无法自证的矛盾。\n- 验证能力：read（读取两文件原文、哈希）+ run（node -e 内联复算）足以判定数值等式；无视觉类要求，criteria 全部 evidenceKind=text 恰当。\n- 现状一致性抽样：seq 31 input.json 为 A(3×4)、B(2×5)；seq 32 result.json 为 {\"sum\":22}；seq 22 工作区含 input.json、result.json、memo.md。节点范围与交付物（中文逐项乘积、求和算式、比对结果、是否满足 22 的判定）可自洽执行。\n- 授权链：seq 19/20 首次 task_create 因引用非人类消息序号失败，随后 seq 26/27 task_status 读取 latestUserMessage.seq=12，任务记录（seq 4/27）的 objective 与用户消息一致，provenance 引用无误。\n\n## 问题与限制\n未发现缺失、矛盾或弱化的要求，不构成 revise。唯一覆盖加强点：c4 覆盖面为“工作区内任何文件”，而节点自述哈希仅针对 input.json 与 result.json，未显式包含 memo.md；因 writePaths 为空且节点明令禁止写入/创建/删除/重命名，实际风险很低。\n\n## 需修订项\n无强制修订。执行要求：节点报告须含逐项乘积（3×4=12、2×5=10）、求和算式（12+10=22）、与 result.json sum=22 的比对结论，并提供可核验的只读证据（写入禁令落实、文件哈希未变）；建议哈希范围扩展到工作区全部文件以完整支撑 c4。",
+      "evidenceSeqs": [
+        4,
+        12,
+        20,
+        21,
+        22,
+        26,
+        27,
+        28,
+        29,
+        31,
+        32,
+        37
+      ],
+      "requiredCapabilities": [
+        "read",
+        "run"
+      ],
+      "requirements": [
+        {
+          "id": "R1",
+          "criterionId": "c1",
+          "requirement": "input.json 的 items 各项 qty × price 合计必须为 22",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "计划准则 c1 逐字对应该要求，并由节点 verify-readonly 承担；节点要求逐项计算后求和，并以 node -e 内联命令独立复算。seq 31 显示 A(3×4=12)、B(2×5=10)，合计 22，目标可判定。",
+          "coverage": "准则映射 + 节点复算步骤 + 原文件内容（seq 31）",
+          "limitations": "计划阶段未独立执行复算，数值判定留待节点执行与节点审查。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 12,
+              "ranges": [
+                [
+                  0,
+                  148
+                ]
+              ],
+              "total": 148,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 31,
+              "ranges": [
+                [
+                  0,
+                  274
+                ]
+              ],
+              "total": 274,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 37,
+              "ranges": [
+                [
+                  0,
+                  943
+                ]
+              ],
+              "total": 943,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "R2",
+          "criterionId": "c2",
+          "requirement": "result.json 的 sum 必须等于该合计（22）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "准则 c2 以 result.json 的 sum 为对象，节点描述明确“求和并与 result.json 的 sum 比对”；seq 32 显示 {\"sum\": 22}，与 c1 的合计主体区分清晰，无对象混淆。",
+          "coverage": "准则映射 + 比对步骤 + 原文件内容（seq 32）",
+          "limitations": "比对结果需在节点执行后核验。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 12,
+              "ranges": [
+                [
+                  0,
+                  148
+                ]
+              ],
+              "total": 148,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 32,
+              "ranges": [
+                [
+                  0,
+                  199
+                ]
+              ],
+              "total": 199,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 37,
+              "ranges": [
+                [
+                  0,
+                  943
+                ]
+              ],
+              "total": 943,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "R3",
+          "criterionId": "c3",
+          "requirement": "用中文给出核算依据",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "准则 c3 要求逐项乘积、求和算式、比对结果；节点交付物明确为中文验收结论并含是否满足 22 的判定，与任务语言 zh-CN 一致。",
+          "coverage": "准则 c3 + 节点交付物定义（seq 37）",
+          "limitations": "交付物为会话内中文报告，不落盘，与只读约束相容。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 12,
+              "ranges": [
+                [
+                  0,
+                  148
+                ]
+              ],
+              "total": 148,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 37,
+              "ranges": [
+                [
+                  0,
+                  943
+                ]
+              ],
+              "total": 943,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "R4",
+          "criterionId": "c4",
+          "requirement": "只检查现状，不修改任何文件（全程只读）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "准则 c4 覆盖只读要求；节点 writePaths=[]、dependsOn=[]，描述明确“禁止写入、创建、删除或重命名任何文件”，并要求执行前后取哈希佐证未修改（seq 37）。规划阶段仅有 ls 与 read 类只读操作（seq 21、28、29），未产生写入。",
+          "coverage": "准则 c4 + 空 writePaths + 写入禁令 + 规划期只读工具调用（seq 21/28/29）与文件清单（seq 22）",
+          "limitations": "节点自述哈希范围仅 input.json 与 result.json，未显式包含 memo.md；建议执行时对工作区全部文件取前后哈希以完整支撑 c4（非阻塞加强项）。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 12,
+              "ranges": [
+                [
+                  0,
+                  148
+                ]
+              ],
+              "total": 148,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 21,
+              "ranges": [
+                [
+                  0,
+                  67
+                ]
+              ],
+              "total": 67,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 22,
+              "ranges": [
+                [
+                  0,
+                  405
+                ]
+              ],
+              "total": 405,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 28,
+              "ranges": [
+                [
+                  0,
+                  116
+                ]
+              ],
+              "total": 116,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 29,
+              "ranges": [
+                [
+                  0,
+                  117
+                ]
+              ],
+              "total": 117,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 37,
+              "ranges": [
+                [
+                  0,
+                  943
+                ]
+              ],
+              "total": 943,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "R5",
+          "criterionId": "c4",
+          "requirement": "用一个节点规划，等待批准后执行，并提交节点与整体审查",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "stages 仅含一个节点 verify-readonly，nodeRuns 状态 pending，approvedPlanVersion=null、phase=planning，符合“单节点 + 先批准后执行 + 提交节点与整体审查”的过程约束。",
+          "coverage": "read_task_context(stages) 与任务状态（seq 4/27/37）",
+          "limitations": "执行需控制器批准；实际节点执行与整体审查尚未发生。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 4,
+              "ranges": [
+                [
+                  0,
+                  677
+                ]
+              ],
+              "total": 677,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 12,
+              "ranges": [
+                [
+                  0,
+                  148
+                ]
+              ],
+              "total": 148,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 27,
+              "ranges": [
+                [
+                  0,
+                  1201
+                ]
+              ],
+              "total": 1201,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 37,
+              "ranges": [
+                [
+                  0,
+                  943
+                ]
+              ],
+              "total": 943,
+              "truncated": false
+            }
+          ]
+        }
+      ],
+      "imageSeqs": [],
+      "decisionSeq": 74
+    },
+    "readCorrections": {
+      "limit": 1,
+      "consumed": 0,
+      "history": []
+    }
+  },
+  {
+    "id": "57f36a17-7cac-4f1b-b172-243a116fb78f",
+    "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+    "kind": "stage",
+    "cutoff": 104,
+    "nodeAttempt": 1,
+    "status": "applied",
+    "scope": {
+      "protocol": 1,
+      "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+      "requirementsVersion": 1,
+      "planVersion": 1,
+      "nodeId": "verify-readonly",
+      "nodeAttempt": 1,
+      "cutoff": 104,
+      "taskFromSeq": 4,
+      "attemptFromSeq": 53,
+      "changesFromSeq": 56,
+      "sources": []
+    },
+    "decision": {
+      "verdict": "pass",
+      "finding": "只读验收通过，四项准则全部满足\n\n## 结论与范围\n对阶段 verify-readonly（唯一节点，attempt 1，cutoff 104）的只读验收结论进行独立复核。原始要求（objective 与 seq 12 用户消息）：items 各项 qty×price 合计必须为 22；result.json 的 sum 必须等于该合计；用中文给出核算依据；全程只读、不改任何文件。结论：c1–c4 均满足。\n\n## 实际检查与证据\n- c1：快照 input.json 为 {\"items\":[{\"label\":\"A\",\"qty\":3,\"price\":4},{\"label\":\"B\",\"qty\":2,\"price\":5}]}，3×4=12、2×5=10，合计 22；在隔离快照内独立执行 Node 脚本（check 646114ff…），输出 SUM = 22、total==22 = true、match = true，退出码 0、stderr 空、changed=[]；与会话 seq 89/90 的复算一致。\n- c2：result.json 全文 {\"sum\": 22}，与复算合计 22 相等。\n- c3：seq 104 的 task_report_stage 报告以中文给出逐项乘积 A: 3×4=12、B: 2×5=10，求和算式 12+10=22，比对 sum===itemsTotal，并附复算命令与输出；seq 103 亦同。\n- c4：write/edit 工具检索为空；bash 仅 pwd/ls（seq 21）、shasum（seq 87，因 locale panic 无输出）、node 内联复算（seq 89）与内联哈希（seq 94/99）。执行前后三文件 SHA-256 一致（input.json 9af92f…、memo.md 7419382…、result.json 43a2975…），与审查快照清单相同，目录条目与 mtime（15:47:13）未变。\n\n## 问题与差异\n报告数值、哈希与目录条目均与快照实际内容相符，无实质差异。唯一过程瑕疵为 shasum -a 256 因 locale（C.UTF-8）panic 未产出哈希，报告已披露并改用 node crypto 内联只读取证。\n\n## 未验证与限制\nc4 依赖 Session 调用记录与快照哈希，无法排除记录之外的带外修改，但前后哈希一致已提供有效交叉约束；四项准则均为文本/数值类，无需视觉能力。\n\n## 必要修订\n无。",
+      "evidenceSeqs": [
+        21,
+        31,
+        32,
+        87,
+        89,
+        94,
+        95,
+        99,
+        100,
+        104
+      ],
+      "criteria": [
+        {
+          "criterionId": "c1",
+          "status": "satisfied",
+          "method": "run",
+          "finding": "3×4=12、2×5=10，逐项合计 12+10=22，满足 qty×price 合计为 22。",
+          "evidenceIds": [
+            "file:input.json",
+            "646114ff-ce34-4310-8564-8e2a56acb941"
+          ],
+          "checkIds": [
+            "k1",
+            "k2"
+          ],
+          "coverage": "读取 input.json 全文并在隔离快照中独立复算（退出码 0，changed=[]）。",
+          "limitations": "仅两条目。"
+        },
+        {
+          "criterionId": "c2",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "result.json 的 sum=22，等于 items 合计 22。",
+          "evidenceIds": [
+            "file:result.json"
+          ],
+          "checkIds": [
+            "k3"
+          ],
+          "coverage": "读取 result.json 全文并与复算输出比对。",
+          "limitations": "仅一个字段。"
+        },
+        {
+          "criterionId": "c3",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "验收结论以中文列出逐项乘积、求和算式 12+10=22 与比对结果 sum===itemsTotal，并附复算命令与输出。",
+          "evidenceIds": [
+            "file:input.json",
+            "file:result.json"
+          ],
+          "checkIds": [
+            "k4"
+          ],
+          "coverage": "读取被审报告全文（seq 104）与节点消息（seq 103）。",
+          "limitations": "文本类证据。"
+        },
+        {
+          "criterionId": "c4",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "无任何写入/编辑操作；三文件 SHA-256 前后逐字节一致，与快照清单相同，mtime 15:47:13 未变。",
+          "evidenceIds": [
+            "file:input.json",
+            "file:result.json"
+          ],
+          "checkIds": [
+            "k5",
+            "k6"
+          ],
+          "coverage": "枚举全部工具调用并交叉核对执行前后哈希、mtime 与快照清单。",
+          "limitations": "shasum 因 locale panic 未产出，改以 node crypto 内联只读取证。"
+        }
+      ],
+      "checks": [
+        {
+          "checkId": "k1",
+          "status": "satisfied",
+          "finding": "input.json 为 A(3,4)、B(2,5)，逐项乘积 12 与 10，合计 22。",
+          "coverage": "读取快照 input.json 全文（87 字节，未截断）。",
+          "limitations": "仅两个条目，无其他乘积项。",
+          "evidenceIds": [
+            "file:input.json"
+          ]
+        },
+        {
+          "checkId": "k2",
+          "status": "satisfied",
+          "finding": "输出 A: 3 x 4 = 12、B: 2 x 5 = 10、SUM = 22、total==22 = true、match = true，退出码 0，stderr 空，changed=[]。",
+          "coverage": "在隔离快照副本中执行独立 Node 求和脚本并读取 stdout/stderr。",
+          "limitations": "小整数运算，无精度风险。",
+          "evidenceIds": [
+            "646114ff-ce34-4310-8564-8e2a56acb941"
+          ]
+        },
+        {
+          "checkId": "k3",
+          "status": "satisfied",
+          "finding": "result.json 为 {\"sum\": 22}，与独立复算合计 22 一致。",
+          "coverage": "读取 result.json 全文（11 字节）。",
+          "limitations": "仅含 sum 字段。",
+          "evidenceIds": [
+            "file:result.json"
+          ]
+        },
+        {
+          "checkId": "k4",
+          "status": "satisfied",
+          "finding": "报告以中文给出 A: 3×4=12、B: 2×5=10、12+10=22 及与 sum=22 的比对，核算依据完整且与文件实际值一致。",
+          "coverage": "读取被审阶段报告全文（task_report_stage 入参 seq 104）及节点消息 seq 103，并与两文件实际值对照。",
+          "limitations": "报告为文本证据，无视觉要求。",
+          "evidenceIds": [
+            "file:input.json",
+            "file:result.json"
+          ]
+        },
+        {
+          "checkId": "k5",
+          "status": "satisfied",
+          "finding": "无写入/编辑调用；bash 仅 pwd/ls、shasum（locale panic 无输出）与 node 内联只读复算/哈希。",
+          "coverage": "检索该任务全部 tool/call（write/edit 为空；bash 6 次），展开关键调用 seq 21/87/89/94/99。",
+          "limitations": "依赖 Session 调用记录，前后哈希一致提供交叉约束。",
+          "evidenceIds": [
+            "file:input.json",
+            "file:result.json"
+          ]
+        },
+        {
+          "checkId": "k6",
+          "status": "satisfied",
+          "finding": "三文件 SHA-256 前后一致且与快照清单相同，目录条目与 mtime 未变。",
+          "coverage": "交叉核对文件读数（seq 31/32）与执行前后哈希、mtime（seq 95/100）及快照清单哈希。",
+          "limitations": "无。",
+          "evidenceIds": [
+            "file:input.json",
+            "file:result.json"
+          ]
+        }
+      ],
+      "requirements": [
+        {
+          "id": "k1",
+          "criterionId": "c1",
+          "requirement": "input.json 的 items 各项 qty×price 合计必须为 22",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "input.json 为 A(3,4)、B(2,5)，逐项乘积 12 与 10，合计 22。",
+          "coverage": "读取快照 input.json 全文（87 字节，未截断）。",
+          "limitations": "仅两个条目，无其他乘积项。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "input.json",
+              "hash": "9af92fb860bb8590e28f736797d52169a961cc77f90ee93d51d8c3e0b19ff8f1",
+              "ranges": [
+                [
+                  0,
+                  87
+                ]
+              ],
+              "total": 87
+            }
+          ]
+        },
+        {
+          "id": "k2",
+          "criterionId": "c1",
+          "requirement": "用可执行算术复算 input.json 的 qty×price 合计",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "derived",
+          "status": "satisfied",
+          "finding": "输出 A: 3 x 4 = 12、B: 2 x 5 = 10、SUM = 22、total==22 = true、match = true，退出码 0，stderr 空，changed=[]。",
+          "coverage": "在隔离快照副本中执行独立 Node 求和脚本并读取 stdout/stderr。",
+          "limitations": "小整数运算，无精度风险。",
+          "method": "run",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "checkId": "646114ff-ce34-4310-8564-8e2a56acb941",
+              "argv": [
+                "node",
+                "probes/sum_check.js"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      83
+                    ]
+                  ],
+                  "total": 83
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k3",
+          "criterionId": "c2",
+          "requirement": "result.json 的 sum 字段等于 22",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "result.json 为 {\"sum\": 22}，与独立复算合计 22 一致。",
+          "coverage": "读取 result.json 全文（11 字节）。",
+          "limitations": "仅含 sum 字段。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "result.json",
+              "hash": "43a297524116a3e1d6af2a43ac20d43a8cb4ab581499c064f54b945f83573bdb",
+              "ranges": [
+                [
+                  0,
+                  11
+                ]
+              ],
+              "total": 11
+            }
+          ]
+        },
+        {
+          "id": "k4",
+          "criterionId": "c3",
+          "requirement": "验收结论须附中文核算依据（逐项乘积、求和算式、比对结果）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "报告以中文给出 A: 3×4=12、B: 2×5=10、12+10=22 及与 sum=22 的比对，核算依据完整且与文件实际值一致。",
+          "coverage": "读取被审阶段报告全文（task_report_stage 入参 seq 104）及节点消息 seq 103，并与两文件实际值对照。",
+          "limitations": "报告为文本证据，无视觉要求。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "input.json",
+              "hash": "9af92fb860bb8590e28f736797d52169a961cc77f90ee93d51d8c3e0b19ff8f1",
+              "ranges": [
+                [
+                  0,
+                  87
+                ]
+              ],
+              "total": 87
+            },
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "result.json",
+              "hash": "43a297524116a3e1d6af2a43ac20d43a8cb4ab581499c064f54b945f83573bdb",
+              "ranges": [
+                [
+                  0,
+                  11
+                ]
+              ],
+              "total": 11
+            }
+          ]
+        },
+        {
+          "id": "k5",
+          "criterionId": "c4",
+          "requirement": "全程只读，工作区内文件内容与哈希未变化",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "无写入/编辑调用；bash 仅 pwd/ls、shasum（locale panic 无输出）与 node 内联只读复算/哈希。",
+          "coverage": "检索该任务全部 tool/call（write/edit 为空；bash 6 次），展开关键调用 seq 21/87/89/94/99。",
+          "limitations": "依赖 Session 调用记录，前后哈希一致提供交叉约束。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "input.json",
+              "hash": "9af92fb860bb8590e28f736797d52169a961cc77f90ee93d51d8c3e0b19ff8f1",
+              "ranges": [
+                [
+                  0,
+                  87
+                ]
+              ],
+              "total": 87
+            },
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "result.json",
+              "hash": "43a297524116a3e1d6af2a43ac20d43a8cb4ab581499c064f54b945f83573bdb",
+              "ranges": [
+                [
+                  0,
+                  11
+                ]
+              ],
+              "total": 11
+            }
+          ]
+        },
+        {
+          "id": "k6",
+          "criterionId": "c4",
+          "requirement": "结论须与实际文件一致且未修改文件",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "derived",
+          "status": "satisfied",
+          "finding": "三文件 SHA-256 前后一致且与快照清单相同，目录条目与 mtime 未变。",
+          "coverage": "交叉核对文件读数（seq 31/32）与执行前后哈希、mtime（seq 95/100）及快照清单哈希。",
+          "limitations": "无。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "input.json",
+              "hash": "9af92fb860bb8590e28f736797d52169a961cc77f90ee93d51d8c3e0b19ff8f1",
+              "ranges": [
+                [
+                  0,
+                  87
+                ]
+              ],
+              "total": 87
+            },
+            {
+              "kind": "artifact",
+              "snapshotId": "6d5b4b32-940a-4e36-81ec-6d549d76c289",
+              "path": "result.json",
+              "hash": "43a297524116a3e1d6af2a43ac20d43a8cb4ab581499c064f54b945f83573bdb",
+              "ranges": [
+                [
+                  0,
+                  11
+                ]
+              ],
+              "total": 11
+            }
+          ]
+        }
+      ],
+      "imageSeqs": [],
+      "decisionSeq": 245
+    },
+    "readCorrections": {
+      "limit": 1,
+      "consumed": 0,
+      "history": []
+    }
+  },
+  {
+    "id": "232796b2-97d8-4931-8fc3-df15b10f5140",
+    "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+    "kind": "completion",
+    "cutoff": 161,
+    "nodeAttempt": null,
+    "status": "applied",
+    "scope": {
+      "protocol": 1,
+      "taskId": "51a0f580-d32a-4542-ba3d-52d3f5537fff",
+      "requirementsVersion": 1,
+      "planVersion": 1,
+      "nodeId": "completion",
+      "nodeAttempt": null,
+      "cutoff": 161,
+      "taskFromSeq": 4,
+      "attemptFromSeq": null,
+      "changesFromSeq": 149,
+      "sources": []
+    },
+    "decision": {
+      "verdict": "pass",
+      "finding": "整体验收合格：核算与只读约束均独立复现\n\n## 结论与范围\n对当前合并交付物（工作区快照 b71cf0a2，含 input.json、result.json、memo.md）与全部原始要求做最终独立复核。c1–c4 四条准则以及原目标中“用一个节点规划、等待批准后执行、提交节点与整体审查”一项均成立，无必要修订。\n\n## 实际检查与证据\n- 独立读取：input.json 全文 {\"items\":[{\"label\":\"A\",\"qty\":3,\"price\":4},{\"label\":\"B\",\"qty\":2,\"price\":5}]}（check b77890e0，87 字节无截断）；result.json 全文 {\"sum\": 22}（check 109a375e）。\n- 独立复算：在隔离快照内执行 node（check f6ff9774），输出 A: 3 x 4 = 12、B: 2 x 5 = 10、total=22、sum=22、equal=true、is22=true，退出码 0、stderr 空、changed=[]；与主 Session seq 90/157 的复算一致。\n- 只读性：枚举 seq 19–161 全部工具调用，无 write/edit/新建/删除/重命名；bash 仅 pwd/ls/ls -lT 与 node 内联只读复算及哈希（不落盘）。执行前（seq 95）与执行后（seq 100）三文件 SHA-256 完全一致，且与本次审查快照 sha256sum（check de556360）及 manifest 一致：input.json 9af92f…、memo.md 741938…、result.json 43a297…；目录恒为三个文件，mtime 均为 15:47:13。\n- 中文核算依据：节点报告（seq 103/104）与整体完成证据（seq 161）原文均给出逐项乘积 3×4=12、2×5=10，求和算式 12+10=22，比对 sum=22 与合计相等，并逐条核销 c1–c4。\n- 流程：stages 仅一个节点 verify-readonly（dependsOn=[]、writePaths=[]、criterionIds=[c1,c2,c3,c4]）；计划审查 verdict=pass 且 approvedPlanVersion=1（seq 68）后才于 seq 80 启动节点（seq 83 返回 running），节点审查 status=passed、verdict=pass（seq 146/148），整体完成请求已提交（seq 161）。\n\n## 问题与差异\n无实质差异。过程瑕疵两处且均已披露、无副作用：seq 43 的 shasum -a 256 因 locale（C.UTF-8）报错未产出哈希，改用 node crypto 内联只读取证；seq 19 首次 task_create 因引用非人类消息序号失败，随后以 seq 12 人类消息重建任务。\n\n## 未验证与限制\n只读性无法排除会话记录之外的带外修改，已用执行前后哈希与审查快照三方一致作为交叉约束；工作区内无独立报告文件，中文核算依据与流程事实以会话事件原文为凭。无视觉类要求，visual 能力不适用。\n\n## 必要修订\n无。",
+      "evidenceSeqs": [
+        12,
+        21,
+        31,
+        32,
+        43,
+        55,
+        68,
+        80,
+        83,
+        87,
+        88,
+        89,
+        90,
+        94,
+        95,
+        99,
+        100,
+        103,
+        104,
+        146,
+        148,
+        156,
+        157,
+        161
+      ],
+      "criteria": [
+        {
+          "criterionId": "c1",
+          "status": "satisfied",
+          "method": "run",
+          "finding": "满足：A: 3×4=12，B: 2×5=10，12+10=22。",
+          "evidenceIds": [
+            "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+            "f6ff9774-560f-404b-a658-ba4200b290d1"
+          ],
+          "checkIds": [
+            "k1"
+          ],
+          "coverage": "完整读取 input.json 并独立复算；与 seq 31/90/157 交叉核对",
+          "limitations": "两项均已完整读取。"
+        },
+        {
+          "criterionId": "c2",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "满足：sum=22，与 items 合计 22 相等（equal=true）。",
+          "evidenceIds": [
+            "109a375e-c0d3-4687-abc1-2df209ebbb8f",
+            "f6ff9774-560f-404b-a658-ba4200b290d1"
+          ],
+          "checkIds": [
+            "k2"
+          ],
+          "coverage": "完整读取 result.json 并与复算合计比对",
+          "limitations": "无。"
+        },
+        {
+          "criterionId": "c3",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "满足：中文逐项乘积、求和算式与比对结果齐备，并逐条核销 c1–c4。",
+          "evidenceIds": [
+            "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+            "109a375e-c0d3-4687-abc1-2df209ebbb8f"
+          ],
+          "checkIds": [
+            "k3",
+            "k6"
+          ],
+          "coverage": "读取节点报告（seq 103/104）与整体完成证据（seq 161）原文，并与实际文件内容比对",
+          "limitations": "结论以会话报告与节点调用参数形式保存，工作区无报告文件；文本引用见 evidence_seqs。"
+        },
+        {
+          "criterionId": "c4",
+          "status": "satisfied",
+          "method": "run",
+          "finding": "满足：全程无写操作调用；三文件哈希在验收前后及审查快照间完全一致，目录条目与 mtime 未变。",
+          "evidenceIds": [
+            "de556360-1d54-4bd5-941d-4797dc06cf23",
+            "9ee1e7f0-4d61-425f-a214-89a628a31d52"
+          ],
+          "checkIds": [
+            "k4",
+            "k7"
+          ],
+          "coverage": "快照哈希/manifest 核对 + 全量工具调用类型核查 + 执行前后哈希对比",
+          "limitations": "带外修改无法从会话记录排除，以多重哈希一致交叉验证。"
+        }
+      ],
+      "checks": [
+        {
+          "checkId": "k1",
+          "status": "satisfied",
+          "finding": "满足。input.json 为 {\"items\":[{\"label\":\"A\",\"qty\":3,\"price\":4},{\"label\":\"B\",\"qty\":2,\"price\":5}]}；check b77890e0 全文 87 字节，check f6ff9774 独立复算输出 A: 3 x 4 = 12、B: 2 x 5 = 10、total=22、is22=true。",
+          "coverage": "完整读取 input.json（87 字节，无截断）并在隔离快照内以 node 独立复算；与 Session seq 31/90/157 原文交叉核对",
+          "limitations": "仅两项，已全部枚举，无截断；Session 侧交叉引用见 evidence_seqs（31/90/157）。",
+          "evidenceIds": [
+            "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+            "f6ff9774-560f-404b-a658-ba4200b290d1"
+          ]
+        },
+        {
+          "checkId": "k2",
+          "status": "satisfied",
+          "finding": "满足。check 109a375e 返回 {\"sum\": 22}；check f6ff9774 输出 sum=22、equal=true。",
+          "coverage": "完整读取 result.json（11 字节，无截断）并与复算合计比对",
+          "limitations": "无。",
+          "evidenceIds": [
+            "109a375e-c0d3-4687-abc1-2df209ebbb8f",
+            "f6ff9774-560f-404b-a658-ba4200b290d1"
+          ]
+        },
+        {
+          "checkId": "k3",
+          "status": "satisfied",
+          "finding": "满足。seq 104 报告与 seq 161 完成证据原文均含中文逐项乘积（A: 3×4=12、B: 2×5=10）、求和算式（12+10=22）与比对（sum=22 等于合计 22），与两次检查读到的实际数据完全一致。",
+          "coverage": "对照主 Session 节点报告（seq 103 助理消息、seq 104 task_report_stage）与整体完成证据（seq 161 task_request_completion）原文核实中文核算表述",
+          "limitations": "报告文本存于会话事件，以 evidence_seqs（103/104/161）为凭；检查仅直接验证其引用的数据。",
+          "evidenceIds": [
+            "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+            "109a375e-c0d3-4687-abc1-2df209ebbb8f"
+          ]
+        },
+        {
+          "checkId": "k4",
+          "status": "satisfied",
+          "finding": "满足。check de556360 输出 input.json 9af92f…、memo.md 741938…、result.json 43a297…，与 manifest 完全一致；check 9ee1e7f0 显示目录内仅三个文件，无新增/缺失。",
+          "coverage": "快照哈希与清单核对（sha256sum 对比 manifest、ls -la）",
+          "limitations": "快照为只读副本，执行期行为另由 k7 核实。",
+          "evidenceIds": [
+            "de556360-1d54-4bd5-941d-4797dc06cf23",
+            "9ee1e7f0-4d61-425f-a214-89a628a31d52"
+          ]
+        },
+        {
+          "checkId": "k5",
+          "status": "satisfied",
+          "finding": "满足。stages 恰为一个节点 verify-readonly（dependsOn=[]、writePaths=[]、criterionIds=[c1,c2,c3,c4]）；approvedPlanVersion=1（seq 68）后才于 seq 80 调 task_start_node，seq 83 返回 running；节点审查 status=passed、verdict=pass（seq 146/148）；整体完成请求已提交（seq 161）。",
+          "coverage": "读取 stages 与计划审查（seq 55/68）、节点启动（seq 80/81/83）、节点审查（seq 146/148）、完成请求（seq 161）原文",
+          "limitations": "lastApproval.userMessageSeq 为 null，无单独用户批准消息，批准以控制器写入的 approvedPlanVersion=1 与“批准后启动”的事件顺序为凭；流程事实引用见 evidence_seqs。",
+          "evidenceIds": [
+            "9ee1e7f0-4d61-425f-a214-89a628a31d52"
+          ]
+        },
+        {
+          "checkId": "k6",
+          "status": "satisfied",
+          "finding": "满足。三段原文均以中文给出逐项乘积、求和算式、比对结论，并逐条核销 c1–c4；其引用的数值与检查读到的 result.json（sum=22）一致。",
+          "coverage": "完整读取 seq 103 助理消息、seq 104 task_report_stage 调用参数、seq 161 task_request_completion 调用参数",
+          "limitations": "证据为会话报告与节点调用参数，工作区无独立报告文件，引用见 evidence_seqs（103/104/161）。",
+          "evidenceIds": [
+            "109a375e-c0d3-4687-abc1-2df209ebbb8f"
+          ]
+        },
+        {
+          "checkId": "k7",
+          "status": "satisfied",
+          "finding": "满足。无 write/edit/新建/删除/重命名调用；bash 仅为 pwd/ls/ls -lT 与 node 内联只读复算及哈希（不落盘）。执行前（seq 95）与执行后（seq 100）三文件 SHA-256 完全一致，且与审查快照（check de556360）及 manifest 一致：input.json 9af92f…、memo.md 741938…、result.json 43a297…；目录条目恒为三项，mtime 均 15:47:13。",
+          "coverage": "枚举 seq 19–161 全部工具调用类型（task_create/task_status/read/task_submit_plan/bash/task_start_node/task_report_stage/task_request_completion）；对比 seq 95/100 前后哈希与审查快照 sha256sum 及 manifest",
+          "limitations": "无法排除会话记录之外的带外修改；以执行前后哈希与审查快照三方一致交叉约束。",
+          "evidenceIds": [
+            "de556360-1d54-4bd5-941d-4797dc06cf23",
+            "9ee1e7f0-4d61-425f-a214-89a628a31d52"
+          ]
+        },
+        {
+          "checkId": "k8",
+          "status": "satisfied",
+          "finding": "满足。计划仅含一个节点 verify-readonly（criterionIds=[c1,c2,c3,c4]）；计划审查 verdict=pass 并记 approvedPlanVersion=1 后才启动节点；节点审查 verdict=pass；整体审查请求已提交。",
+          "coverage": "读取 stages、计划审查 seq 55/68、节点启动 seq 80/81/83、节点审查 seq 146/148、完成请求 seq 161 原文",
+          "limitations": "无单独用户批准消息，批准以 approvedPlanVersion=1 与事件顺序为凭，引用见 evidence_seqs。",
+          "evidenceIds": [
+            "9ee1e7f0-4d61-425f-a214-89a628a31d52"
+          ]
+        }
+      ],
+      "requirements": [
+        {
+          "id": "k1",
+          "criterionId": "c1",
+          "requirement": "input.json 的 items 各项 qty × price 逐项计算后合计为 22",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。input.json 为 {\"items\":[{\"label\":\"A\",\"qty\":3,\"price\":4},{\"label\":\"B\",\"qty\":2,\"price\":5}]}；check b77890e0 全文 87 字节，check f6ff9774 独立复算输出 A: 3 x 4 = 12、B: 2 x 5 = 10、total=22、is22=true。",
+          "coverage": "完整读取 input.json（87 字节，无截断）并在隔离快照内以 node 独立复算；与 Session seq 31/90/157 原文交叉核对",
+          "limitations": "仅两项，已全部枚举，无截断；Session 侧交叉引用见 evidence_seqs（31/90/157）。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+              "argv": [
+                "cat",
+                "input.json"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      87
+                    ]
+                  ],
+                  "total": 87
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            },
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "f6ff9774-560f-404b-a658-ba4200b290d1",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs');const a=JSON.parse(fs.readFileSync('input.json','utf8'));const b=JSON.parse(fs.readFileSync('result.json','utf8'));let t=0;const ls=[];for(const it of a.items){const p=it.qty*it.price;t+=p;ls.push(it.label+': '+it.qty+' x '+it.price+' = '+p);}console.log(ls.join('\\n'));console.log('total='+t);console.log('sum='+b.sum);console.log('equal='+(t===b.sum)+' is22='+(t===22&&b.sum===22));"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      65
+                    ]
+                  ],
+                  "total": 65
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k2",
+          "criterionId": "c2",
+          "requirement": "result.json 的 sum 等于 items 合计",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。check 109a375e 返回 {\"sum\": 22}；check f6ff9774 输出 sum=22、equal=true。",
+          "coverage": "完整读取 result.json（11 字节，无截断）并与复算合计比对",
+          "limitations": "无。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "109a375e-c0d3-4687-abc1-2df209ebbb8f",
+              "argv": [
+                "cat",
+                "result.json"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      11
+                    ]
+                  ],
+                  "total": 11
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            },
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "f6ff9774-560f-404b-a658-ba4200b290d1",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs');const a=JSON.parse(fs.readFileSync('input.json','utf8'));const b=JSON.parse(fs.readFileSync('result.json','utf8'));let t=0;const ls=[];for(const it of a.items){const p=it.qty*it.price;t+=p;ls.push(it.label+': '+it.qty+' x '+it.price+' = '+p);}console.log(ls.join('\\n'));console.log('total='+t);console.log('sum='+b.sum);console.log('equal='+(t===b.sum)+' is22='+(t===22&&b.sum===22));"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      65
+                    ]
+                  ],
+                  "total": 65
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k3",
+          "criterionId": "c3",
+          "requirement": "验收结论附带中文核算依据（逐项乘积、求和算式、比对结果）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。seq 104 报告与 seq 161 完成证据原文均含中文逐项乘积（A: 3×4=12、B: 2×5=10）、求和算式（12+10=22）与比对（sum=22 等于合计 22），与两次检查读到的实际数据完全一致。",
+          "coverage": "对照主 Session 节点报告（seq 103 助理消息、seq 104 task_report_stage）与整体完成证据（seq 161 task_request_completion）原文核实中文核算表述",
+          "limitations": "报告文本存于会话事件，以 evidence_seqs（103/104/161）为凭；检查仅直接验证其引用的数据。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "b77890e0-553c-4b30-8dd3-f1d6d8f36d9a",
+              "argv": [
+                "cat",
+                "input.json"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      87
+                    ]
+                  ],
+                  "total": 87
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            },
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "109a375e-c0d3-4687-abc1-2df209ebbb8f",
+              "argv": [
+                "cat",
+                "result.json"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      11
+                    ]
+                  ],
+                  "total": 11
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k4",
+          "criterionId": "c4",
+          "requirement": "全程只读，工作区内任何文件内容与哈希均未发生变化",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。check de556360 输出 input.json 9af92f…、memo.md 741938…、result.json 43a297…，与 manifest 完全一致；check 9ee1e7f0 显示目录内仅三个文件，无新增/缺失。",
+          "coverage": "快照哈希与清单核对（sha256sum 对比 manifest、ls -la）",
+          "limitations": "快照为只读副本，执行期行为另由 k7 核实。",
+          "method": "run",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "de556360-1d54-4bd5-941d-4797dc06cf23",
+              "argv": [
+                "sha256sum",
+                "input.json",
+                "result.json",
+                "memo.md"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      229
+                    ]
+                  ],
+                  "total": 229
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            },
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "9ee1e7f0-4d61-425f-a214-89a628a31d52",
+              "argv": [
+                "ls",
+                "-la"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      260
+                    ]
+                  ],
+                  "total": 260
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k5",
+          "criterionId": null,
+          "requirement": "用一个节点规划，等待批准后执行，并提交节点与整体审查",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。stages 恰为一个节点 verify-readonly（dependsOn=[]、writePaths=[]、criterionIds=[c1,c2,c3,c4]）；approvedPlanVersion=1（seq 68）后才于 seq 80 调 task_start_node，seq 83 返回 running；节点审查 status=passed、verdict=pass（seq 146/148）；整体完成请求已提交（seq 161）。",
+          "coverage": "读取 stages 与计划审查（seq 55/68）、节点启动（seq 80/81/83）、节点审查（seq 146/148）、完成请求（seq 161）原文",
+          "limitations": "lastApproval.userMessageSeq 为 null，无单独用户批准消息，批准以控制器写入的 approvedPlanVersion=1 与“批准后启动”的事件顺序为凭；流程事实引用见 evidence_seqs。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "9ee1e7f0-4d61-425f-a214-89a628a31d52",
+              "argv": [
+                "ls",
+                "-la"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      260
+                    ]
+                  ],
+                  "total": 260
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k6",
+          "criterionId": "c3",
+          "requirement": "验收结论附带中文核算依据（逐项乘积、求和算式、比对结果）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。三段原文均以中文给出逐项乘积、求和算式、比对结论，并逐条核销 c1–c4；其引用的数值与检查读到的 result.json（sum=22）一致。",
+          "coverage": "完整读取 seq 103 助理消息、seq 104 task_report_stage 调用参数、seq 161 task_request_completion 调用参数",
+          "limitations": "证据为会话报告与节点调用参数，工作区无独立报告文件，引用见 evidence_seqs（103/104/161）。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "109a375e-c0d3-4687-abc1-2df209ebbb8f",
+              "argv": [
+                "cat",
+                "result.json"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      11
+                    ]
+                  ],
+                  "total": 11
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k7",
+          "criterionId": "c4",
+          "requirement": "全程只读，工作区任何文件内容与哈希未变",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。无 write/edit/新建/删除/重命名调用；bash 仅为 pwd/ls/ls -lT 与 node 内联只读复算及哈希（不落盘）。执行前（seq 95）与执行后（seq 100）三文件 SHA-256 完全一致，且与审查快照（check de556360）及 manifest 一致：input.json 9af92f…、memo.md 741938…、result.json 43a297…；目录条目恒为三项，mtime 均 15:47:13。",
+          "coverage": "枚举 seq 19–161 全部工具调用类型（task_create/task_status/read/task_submit_plan/bash/task_start_node/task_report_stage/task_request_completion）；对比 seq 95/100 前后哈希与审查快照 sha256sum 及 manifest",
+          "limitations": "无法排除会话记录之外的带外修改；以执行前后哈希与审查快照三方一致交叉约束。",
+          "method": "run",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "de556360-1d54-4bd5-941d-4797dc06cf23",
+              "argv": [
+                "sha256sum",
+                "input.json",
+                "result.json",
+                "memo.md"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      229
+                    ]
+                  ],
+                  "total": 229
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            },
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "9ee1e7f0-4d61-425f-a214-89a628a31d52",
+              "argv": [
+                "ls",
+                "-la"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      260
+                    ]
+                  ],
+                  "total": 260
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k8",
+          "criterionId": null,
+          "requirement": "用一个节点规划，等待批准后执行，并提交节点与整体审查",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "满足。计划仅含一个节点 verify-readonly（criterionIds=[c1,c2,c3,c4]）；计划审查 verdict=pass 并记 approvedPlanVersion=1 后才启动节点；节点审查 verdict=pass；整体审查请求已提交。",
+          "coverage": "读取 stages、计划审查 seq 55/68、节点启动 seq 80/81/83、节点审查 seq 146/148、完成请求 seq 161 原文",
+          "limitations": "无单独用户批准消息，批准以 approvedPlanVersion=1 与事件顺序为凭，引用见 evidence_seqs。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "b71cf0a2-6f08-48d3-91f4-89698d78c178",
+              "checkId": "9ee1e7f0-4d61-425f-a214-89a628a31d52",
+              "argv": [
+                "ls",
+                "-la"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      260
+                    ]
+                  ],
+                  "total": 260
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "imageSeqs": [],
+      "decisionSeq": 284
+    },
+    "readCorrections": {
+      "limit": 1,
+      "consumed": 0,
+      "history": []
+    }
+  },
+  {
+    "id": "18145923-7abe-4093-bfd4-69eea2874466",
+    "taskId": "7133b0a7-fd2b-49a5-b2f8-85839b8c2a00",
+    "kind": "plan",
+    "cutoff": 263,
+    "nodeAttempt": null,
+    "status": "applied",
+    "scope": {
+      "protocol": 1,
+      "taskId": "7133b0a7-fd2b-49a5-b2f8-85839b8c2a00",
+      "requirementsVersion": 1,
+      "planVersion": 0,
+      "nodeId": "plan",
+      "nodeAttempt": null,
+      "cutoff": 263,
+      "taskFromSeq": 237,
+      "attemptFromSeq": null,
+      "changesFromSeq": 237,
+      "sources": [
+        {
+          "seq": 12,
+          "relation": "earlier-context",
+          "attribution": "needs-check"
+        }
+      ]
+    },
+    "decision": {
+      "verdict": "pass",
+      "finding": "计划覆盖完整，单节点只读核对可批准\n\n结论与范围：审阅对象为 plan 节点提交的单节点计划（nodeId=plan，planVersion=0，cutoff=263），依据当前任务目标（seq 245，另见 seq 237 任务记录）核对，未继承前一任务结论（seq 12 为 earlier-context，内容为同类指令，经原文核对后确认当前目标自足，故仅作上下文、不作为强制来源）。\n\n覆盖核对：目标全部显式要求均已落到 c1–c4 与唯一节点 verify-current-artifacts 的步骤中——(1) 独立复算 items 的 qty×price 合计（c1；节点步骤 1，且限定“不引用先前任务结论”）；(2) 比对 result.json 的 sum 是否等于该合计，并判定“合计为 22 且 sum 等于该合计”这一完整产品要求（c2；节点步骤 2–3）；(3) 未满足时明确报告不一致数值与所在文件、声明等待用户、禁止自行修复（c3）；(4) 全程只读、检查前后工作区文件内容与哈希不变（c4；writePaths=[] 且以 SHA-256 前后对比落实）。\n\n一致性与可执行性：唯一节点 dependsOn=[]，符合“只用一个节点规划”；无下游节点，不存在“下游节点验收自身前驱”的语义死锁；无任何写路径，也没有把“先读后写”之类的因果顺序倒置。目标未提出工具调用顺序或独立轮次要求，因此不存在被遗漏的排序约束。所需验证能力为读取文件（read）与在磁盘上只读复算（run，node -e 内联、不落盘），计划已明确包含；c4 由执行前后的哈希对比落实，不需视觉能力。\n\n现状与风险：会话内只读证据显示 input.json 为 A(3×4)+B(2×5)=22（seq 259），result.json 为 {\"sum\": 23}（seq 258），工作区含 input.json、memo.md、result.json 及基线哈希（seq 251/252）。因此该节点大概率将得出“未满足”，计划已按目标要求规定此时明确列出不一致数值与文件并等待用户，不得自动修复，与目标一致；计划同时说明不以任何先前审查结论为依据（seq 262）。\n\n局限：本判定仅评估计划本身。实际复算结果、哈希前后一致性与最终报告尚未产生，仍须由节点执行后的节点审查与整体审查验证；计划对“工作区全部文件”的哈希覆盖依赖执行时目录枚举，若执行期间有新文件产生亦应一并纳入对比。",
+      "evidenceSeqs": [
+        245,
+        237,
+        262,
+        263,
+        258,
+        259,
+        251,
+        252,
+        12
+      ],
+      "requiredCapabilities": [
+        "read",
+        "run"
+      ],
+      "requirements": [
+        {
+          "id": "r1",
+          "criterionId": "c1",
+          "requirement": "独立复算当前 input.json 中 items 各项 qty × price 的合计（独立验收，不引用先前任务结论）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "由 c1 覆盖，节点步骤(1) 以只读方式从磁盘复算，并明示不引用先前任务结论。",
+          "coverage": "目标原文 seq 245/237 与 c1、节点描述（seq 263）逐条比对。",
+          "limitations": "计划层判定；实际复算数值待执行后核验。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 245,
+              "ranges": [
+                [
+                  0,
+                  159
+                ]
+              ],
+              "total": 159,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 259,
+              "ranges": [
+                [
+                  0,
+                  274
+                ]
+              ],
+              "total": 274,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "criterionId": "c2",
+          "requirement": "产品要求：items 合计必须为 22，且 result.json 的 sum 必须等于该合计",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "由 c2 覆盖两个要件（合计=22 与 sum=合计），并在节点步骤(2)(3) 中比对与判定。",
+          "coverage": "目标原文 seq 245 与 c2、节点描述比对。",
+          "limitations": "判定结果待执行；当前只读证据显示 result.json 为 {\"sum\": 23}（seq 258）。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 245,
+              "ranges": [
+                [
+                  0,
+                  159
+                ]
+              ],
+              "total": 159,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 258,
+              "ranges": [
+                [
+                  0,
+                  199
+                ]
+              ],
+              "total": 199,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "r3",
+          "criterionId": "c3",
+          "requirement": "要求未满足时明确报告，并等待用户（不得自行修复）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "由 c3 覆盖：未满足时列出不一致数值与所在文件、声明等待用户决定、不提出自动修复；节点交付物已写明。",
+          "coverage": "目标原文 seq 245 与 c3、节点描述比对。",
+          "limitations": "报告文本尚未产生，实际措辞待执行后审查。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 245,
+              "ranges": [
+                [
+                  0,
+                  159
+                ]
+              ],
+              "total": 159,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "r4",
+          "criterionId": "c4",
+          "requirement": "只检查当前产物，不能修改文件（全程只读）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "由 c4 与节点约束覆盖：writePaths 为空、禁止写入/创建/删除/重命名，并以 SHA-256 前后对比证明文件未变。",
+          "coverage": "目标原文 seq 245、c4 与节点描述（seq 263）；基线哈希见 seq 251/252。",
+          "limitations": "哈希一致性的实际结论待执行后确认。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 245,
+              "ranges": [
+                [
+                  0,
+                  159
+                ]
+              ],
+              "total": 159,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 251,
+              "ranges": [
+                [
+                  0,
+                  332
+                ]
+              ],
+              "total": 332,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 252,
+              "ranges": [
+                [
+                  0,
+                  634
+                ]
+              ],
+              "total": 634,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "r5",
+          "criterionId": null,
+          "requirement": "只用一个节点规划",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "提交的 stages 仅含唯一节点 verify-current-artifacts（dependsOn=[]），无额外节点。",
+          "coverage": "读取 read_task_context(stages) 与 seq 263 原始提交参数。",
+          "limitations": "无。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            }
+          ]
+        },
+        {
+          "id": "r6",
+          "criterionId": null,
+          "requirement": "与前一任务的审查结论无关（独立验收任务）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "c1 明示不引用先前任务结论，节点要求独立读取并复算；seq 262 亦声明不以先前审查结论为依据。",
+          "coverage": "目标原文 seq 245 与 c1、节点描述及计划提交说明（seq 262/263）比对。",
+          "limitations": "独立性属执行过程属性，须在执行后由日志核验。",
+          "method": "log",
+          "evidence": [
+            {
+              "kind": "session",
+              "seq": 245,
+              "ranges": [
+                [
+                  0,
+                  159
+                ]
+              ],
+              "total": 159,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 262,
+              "ranges": [
+                [
+                  0,
+                  244
+                ]
+              ],
+              "total": 244,
+              "truncated": false
+            },
+            {
+              "kind": "session",
+              "seq": 263,
+              "ranges": [
+                [
+                  0,
+                  1177
+                ]
+              ],
+              "total": 1177,
+              "truncated": false
+            }
+          ]
+        }
+      ],
+      "imageSeqs": [],
+      "decisionSeq": 49
+    },
+    "readCorrections": {
+      "limit": 1,
+      "consumed": 0,
+      "history": []
+    }
+  },
+  {
+    "id": "50452e97-de80-4c72-8255-4630470683a3",
+    "taskId": "7133b0a7-fd2b-49a5-b2f8-85839b8c2a00",
+    "kind": "stage",
+    "cutoff": 344,
+    "nodeAttempt": 1,
+    "status": "applied",
+    "scope": {
+      "protocol": 1,
+      "taskId": "7133b0a7-fd2b-49a5-b2f8-85839b8c2a00",
+      "requirementsVersion": 1,
+      "planVersion": 1,
+      "nodeId": "verify-current-artifacts",
+      "nodeAttempt": 1,
+      "cutoff": 344,
+      "taskFromSeq": 237,
+      "attemptFromSeq": 277,
+      "changesFromSeq": 280,
+      "sources": [
+        {
+          "seq": 12,
+          "relation": "earlier-context",
+          "attribution": "needs-check"
+        }
+      ]
+    },
+    "decision": {
+      "verdict": "needs-user",
+      "finding": "核对结论：报告属实，但产品要求不满足，需用户决定\n\n**范围与结论**：本节点是纯只读验收。我独立读取快照 60055b6a 的 input.json / result.json / memo.md，并用独立 Node 脚本复算，之后才展开主 Session 报告对比。独立结果：items 为 A(qty 3, price 4)、B(qty 2, price 5)，12+10=**22**；result.json 为 `{\"sum\": 23}`，**sum=23 ≠ 合计 22**。因此「合计为 22」成立，但「sum 必须等于该合计」不成立，产品要求整体 **NOT SATISFIED**，与主报告一致。\n\n**实际检查与证据**：k1/k2 逐项复算得 22（主 Session seq 304/307 读取，seq 334/335 复算，我的独立脚本输出相同）；k3 读 result.json 得 23，比对失败（seq 305/308、335）；k4 主报告写明「result.json 的 sum = 23，比 items 合计 22 多 1」并声明不修复、等待用户（seq 343、seq 344 正文「七、后续处置」）；k5 我在快照内对三文件计算 sha256，与 manifest 及主 Session 前后哈希完全一致（input.json 9af92f…、memo.md 741938…、result.json 5ea5b7…），主 Session before/after 两次哈希逐字节相同（seq 329/330、seq 339/340），目录恒为三文件（seq 311），且窗口 237–344 内按 write/edit 工具检索为空；只读门禁要求在写入前完成只读轮，seq 303–316 的只读轮先行完成，节点直到 seq 325 才启动，属只读；k6 memo.md 为会议记录，与验收无关（seq 306/309）。\n\n**问题与限制**：唯一失败项是产物本身——result.json 的 sum=23 与应等于的合计 22 差 1，这是被验收产物的缺陷，不是核对过程缺陷；节点依约无权修改文件，故本审查不能以「报告正确」为由通过验收。限制：只读复核基于不可变快照，无法追溯 result.json 的历史变更动因；该变更发生在本次核对之前，非本节点所为。\n\n**必要处置**：核对与只读约束已达成，但显式产品要求未满足，且只有用户能决定（修正 result.json 的 sum，或接受现状）。请用户给出下一步指示；本审查不授权任何文件修改。",
+      "evidenceSeqs": [
+        12,
+        245,
+        251,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        325,
+        328,
+        329,
+        330,
+        334,
+        335,
+        339,
+        340,
+        343,
+        344
+      ],
+      "criteria": [
+        {
+          "criterionId": "c1",
+          "status": "satisfied",
+          "method": "run",
+          "finding": "独立复算当前 input.json：A 3×4=12，B 2×5=10，合计 22（seq 307 读取、seq 335 主复算均印证）；未引用任何先前任务结论。",
+          "evidenceIds": [
+            "file:input.json",
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ],
+          "checkIds": [
+            "k1",
+            "k2"
+          ],
+          "coverage": "独立读取快照 input.json 全文 + 在隔离快照运行独立 Node 复算脚本（已读 stdout/stderr），并与主 Session 读取与复算输出比对。",
+          "limitations": "基于当前快照（87 字节，无截断）的两条例目；无其它数据来源。"
+        },
+        {
+          "criterionId": "c2",
+          "status": "failed",
+          "method": "read",
+          "finding": "result.json 的 sum=23（seq 305/308），不等于 items 合计 22（差 1）；「合计为 22」成立但「sum 等于该合计」不成立，产品要求整体未满足——与主报告 seq 344 判定一致。",
+          "evidenceIds": [
+            "file:result.json",
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ],
+          "checkIds": [
+            "k3"
+          ],
+          "coverage": "读取 result.json 全文并与独立复算值比较，同时核对主报告的判定文本与 seq 335 复算输出。",
+          "limitations": "产物现状即为不一致；本审查不改动文件，故该失败为产物属性而非核对过程缺陷。"
+        },
+        {
+          "criterionId": "c3",
+          "status": "satisfied",
+          "method": "read",
+          "finding": "报告明确给出不一致的具体数值与文件（result.json 的 sum=23 相对合计 22 多 1），并声明等待用户决定、不自行修复、未修改任何文件。",
+          "evidenceIds": [
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ],
+          "checkIds": [
+            "k4"
+          ],
+          "coverage": "通读 seq 343 用户可见消息与 seq 344 报告载荷全文；结合只读哈希证据（seq 329/330、339/340）确认无修复动作。",
+          "limitations": "报告文本来自 Session 事件 seq 343/344；等待用户的最终落实由控制器后续动作决定。"
+        },
+        {
+          "criterionId": "c4",
+          "status": "satisfied",
+          "method": "run",
+          "finding": "快照内三文件哈希与 manifest 逐一相符，主 Session 执行前后哈希逐字节相同、目录与 mtime 未变，窗口内无写入类工具调用；只读门禁（readOnlyTurnsBeforeWrite=1）在 seq 303–316 只读轮完成后才于 seq 325 启动节点，全程仅读取。",
+          "evidenceIds": [
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb",
+            "file:memo.md"
+          ],
+          "checkIds": [
+            "k5",
+            "k6"
+          ],
+          "coverage": "独立计算快照全部文件 sha256；核对前后哈希与目录列表（seq 311/330/340）；按工具类型检索整个 task 窗口的 tool/call；读取 memo.md 全文（seq 306/309）。",
+          "limitations": "仅覆盖本次核对可观察窗口；不追溯窗口外的历史文件变更。"
+        }
+      ],
+      "checks": [
+        {
+          "checkId": "k1",
+          "status": "satisfied",
+          "finding": "input.json 全文为 {\"items\": [{\"label\": \"A\", \"qty\": 3, \"price\": 4}, {\"label\": \"B\", \"qty\": 2, \"price\": 5}]}，与主 Session read 结果（seq 304/307）一字不差。",
+          "coverage": "完整读取快照 input.json 87 字节（无截断），并与主 Session seq 304/307 读取结果逐字比对。",
+          "limitations": "仅两条例目，文件无单位/币种声明，不影响乘积比较。",
+          "evidenceIds": [
+            "file:input.json"
+          ]
+        },
+        {
+          "checkId": "k2",
+          "status": "satisfied",
+          "finding": "独立 Node 脚本输出 A 3x4=12、B 2x5=10、total=22、total==22 为 true；与主 Session seq 334 命令、seq 335 输出完全一致。",
+          "coverage": "在隔离快照 tree/ 运行独立脚本（exit 0，stdout 319 字符、stderr 空，均已读），未引用任何先前任务结论。",
+          "limitations": "仅依据当前快照的 input.json 数据。",
+          "evidenceIds": [
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ]
+        },
+        {
+          "checkId": "k3",
+          "status": "failed",
+          "finding": "result.json 仅含 {\"sum\": 23}，独立合计为 22，sum≠total（差 1），产品要求「sum 必须等于该合计」未满足；主报告同样判定 NOT SATISFIED。",
+          "coverage": "完整读取快照 result.json 11 字节并与独立复算的 22 比较，同时核对主 Session seq 305/308 读取与 seq 344 报告结论。",
+          "limitations": "文件只有一个 sum 字段，无其它可调和字段；无法确定 23 的来源意图。",
+          "evidenceIds": [
+            "file:result.json",
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ]
+        },
+        {
+          "checkId": "k4",
+          "status": "satisfied",
+          "finding": "报告明确给出不一致的具体数值与文件（result.json 的 sum=23，相对合计 22 多 1），并在「七、后续处置」声明等待用户决定、不提出也不执行自动修复、未修改任何文件；与独立发现一致。",
+          "coverage": "读取主 Session seq 343 用户可见消息与 seq 344 task_report_stage 载荷全文（1541 字符，无截断），并核对 stage 报告全文。",
+          "limitations": "报告文本来自 Session 事件 seq 343/344（以 evidence_seqs 引用）；「等待用户」的最终落实取决于控制器后续动作。",
+          "evidenceIds": [
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ]
+        },
+        {
+          "checkId": "k5",
+          "status": "satisfied",
+          "finding": "快照三文件 sha256 与 manifest 及主 Session before/after 哈希完全一致（9af92f…、741938…、5ea5b7…），执行前后逐字节相同、目录恒为三文件（seq 311）、mtime 未变；窗口 237–344 内按 write/edit 工具检索为空。",
+          "coverage": "对快照全部三个文件计算 sha256 并与 manifest 比对；读 seq 329/330、339/340 前后哈希与 ls 输出，seq 310/311 目录列表；按工具类型检索 task 窗口全部 tool/call。",
+          "limitations": "快照本身为只读副本；未追溯窗口外的历史写入。",
+          "evidenceIds": [
+            "6a66ceb6-0124-4110-98b3-1fdcda81dbcb"
+          ]
+        },
+        {
+          "checkId": "k6",
+          "status": "satisfied",
+          "finding": "memo.md 为会议记录（日期/参与者/下周三提交初稿），与 input.json、result.json 的数值验收无关，不影响结论。",
+          "coverage": "完整读取 memo.md 92 字节并核对主 Session seq 306/309 读取结果。",
+          "limitations": "仅确认其与本次验收范围无关。",
+          "evidenceIds": [
+            "file:memo.md"
+          ]
+        }
+      ],
+      "requirements": [
+        {
+          "id": "k1",
+          "criterionId": "c1",
+          "requirement": "input.json 内容中的 items 各项 qty 与 price，用于独立复算合计",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "input.json 全文为 {\"items\": [{\"label\": \"A\", \"qty\": 3, \"price\": 4}, {\"label\": \"B\", \"qty\": 2, \"price\": 5}]}，与主 Session read 结果（seq 304/307）一字不差。",
+          "coverage": "完整读取快照 input.json 87 字节（无截断），并与主 Session seq 304/307 读取结果逐字比对。",
+          "limitations": "仅两条例目，文件无单位/币种声明，不影响乘积比较。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "path": "input.json",
+              "hash": "9af92fb860bb8590e28f736797d52169a961cc77f90ee93d51d8c3e0b19ff8f1",
+              "ranges": [
+                [
+                  0,
+                  87
+                ]
+              ],
+              "total": 87
+            }
+          ]
+        },
+        {
+          "id": "k2",
+          "criterionId": "c1",
+          "requirement": "items 各项 qty × price 合计是否等于 22（用独立脚本复算，不引用先前任务结论）",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "独立 Node 脚本输出 A 3x4=12、B 2x5=10、total=22、total==22 为 true；与主 Session seq 334 命令、seq 335 输出完全一致。",
+          "coverage": "在隔离快照 tree/ 运行独立脚本（exit 0，stdout 319 字符、stderr 空，均已读），未引用任何先前任务结论。",
+          "limitations": "仅依据当前快照的 input.json 数据。",
+          "method": "run",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "checkId": "6a66ceb6-0124-4110-98b3-1fdcda81dbcb",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs'),cp=require('crypto');const t=JSON.parse(fs.readFileSync('tree/input.json','utf8'));let s=0;for(const it of t.items){const p=it.qty*it.price;s+=p;console.log(it.label+' '+it.qty+'x'+it.price+'='+p);}const r=JSON.parse(fs.readFileSync('tree/result.json','utf8'));console.log('total='+s);console.log('sum='+r.sum);console.log('total==22 ->',s===22);console.log('sum==total ->',r.sum===s);for(const f of ['input.json','result.json','memo.md']){console.log(f+' sha256='+cp.createHash('sha256').update(fs.readFileSync('tree/'+f)).digest('hex'));}"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      319
+                    ]
+                  ],
+                  "total": 319
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k3",
+          "criterionId": "c2",
+          "requirement": "result.json 的 sum 值及其是否等于 items 合计，产品要求是否满足",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "failed",
+          "finding": "result.json 仅含 {\"sum\": 23}，独立合计为 22，sum≠total（差 1），产品要求「sum 必须等于该合计」未满足；主报告同样判定 NOT SATISFIED。",
+          "coverage": "完整读取快照 result.json 11 字节并与独立复算的 22 比较，同时核对主 Session seq 305/308 读取与 seq 344 报告结论。",
+          "limitations": "文件只有一个 sum 字段，无其它可调和字段；无法确定 23 的来源意图。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "path": "result.json",
+              "hash": "5ea5b7e53cb5aeaa0f9929cff0b00865d47979b030a6f284d9f15d37b4cbc683",
+              "ranges": [
+                [
+                  0,
+                  11
+                ]
+              ],
+              "total": 11
+            },
+            {
+              "kind": "check",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "checkId": "6a66ceb6-0124-4110-98b3-1fdcda81dbcb",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs'),cp=require('crypto');const t=JSON.parse(fs.readFileSync('tree/input.json','utf8'));let s=0;for(const it of t.items){const p=it.qty*it.price;s+=p;console.log(it.label+' '+it.qty+'x'+it.price+'='+p);}const r=JSON.parse(fs.readFileSync('tree/result.json','utf8'));console.log('total='+s);console.log('sum='+r.sum);console.log('total==22 ->',s===22);console.log('sum==total ->',r.sum===s);for(const f of ['input.json','result.json','memo.md']){console.log(f+' sha256='+cp.createHash('sha256').update(fs.readFileSync('tree/'+f)).digest('hex'));}"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      319
+                    ]
+                  ],
+                  "total": 319
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k4",
+          "criterionId": "c3",
+          "requirement": "若不一致，报告是否给出具体数值与所在文件，并声明等待用户、未自行修复",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "报告明确给出不一致的具体数值与文件（result.json 的 sum=23，相对合计 22 多 1），并在「七、后续处置」声明等待用户决定、不提出也不执行自动修复、未修改任何文件；与独立发现一致。",
+          "coverage": "读取主 Session seq 343 用户可见消息与 seq 344 task_report_stage 载荷全文（1541 字符，无截断），并核对 stage 报告全文。",
+          "limitations": "报告文本来自 Session 事件 seq 343/344（以 evidence_seqs 引用）；「等待用户」的最终落实取决于控制器后续动作。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "checkId": "6a66ceb6-0124-4110-98b3-1fdcda81dbcb",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs'),cp=require('crypto');const t=JSON.parse(fs.readFileSync('tree/input.json','utf8'));let s=0;for(const it of t.items){const p=it.qty*it.price;s+=p;console.log(it.label+' '+it.qty+'x'+it.price+'='+p);}const r=JSON.parse(fs.readFileSync('tree/result.json','utf8'));console.log('total='+s);console.log('sum='+r.sum);console.log('total==22 ->',s===22);console.log('sum==total ->',r.sum===s);for(const f of ['input.json','result.json','memo.md']){console.log(f+' sha256='+cp.createHash('sha256').update(fs.readFileSync('tree/'+f)).digest('hex'));}"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      319
+                    ]
+                  ],
+                  "total": 319
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k5",
+          "criterionId": "c4",
+          "requirement": "全程只读：快照内文件哈希/内容在检查过程中未变化",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "explicit",
+          "status": "satisfied",
+          "finding": "快照三文件 sha256 与 manifest 及主 Session before/after 哈希完全一致（9af92f…、741938…、5ea5b7…），执行前后逐字节相同、目录恒为三文件（seq 311）、mtime 未变；窗口 237–344 内按 write/edit 工具检索为空。",
+          "coverage": "对快照全部三个文件计算 sha256 并与 manifest 比对；读 seq 329/330、339/340 前后哈希与 ls 输出，seq 310/311 目录列表；按工具类型检索 task 窗口全部 tool/call。",
+          "limitations": "快照本身为只读副本；未追溯窗口外的历史写入。",
+          "method": "run",
+          "evidence": [
+            {
+              "kind": "check",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "checkId": "6a66ceb6-0124-4110-98b3-1fdcda81dbcb",
+              "argv": [
+                "node",
+                "-e",
+                "const fs=require('fs'),cp=require('crypto');const t=JSON.parse(fs.readFileSync('tree/input.json','utf8'));let s=0;for(const it of t.items){const p=it.qty*it.price;s+=p;console.log(it.label+' '+it.qty+'x'+it.price+'='+p);}const r=JSON.parse(fs.readFileSync('tree/result.json','utf8'));console.log('total='+s);console.log('sum='+r.sum);console.log('total==22 ->',s===22);console.log('sum==total ->',r.sum===s);for(const f of ['input.json','result.json','memo.md']){console.log(f+' sha256='+cp.createHash('sha256').update(fs.readFileSync('tree/'+f)).digest('hex'));}"
+              ],
+              "streams": [
+                {
+                  "stream": "stdout",
+                  "ranges": [
+                    [
+                      0,
+                      319
+                    ]
+                  ],
+                  "total": 319
+                },
+                {
+                  "stream": "stderr",
+                  "ranges": [
+                    [
+                      0,
+                      0
+                    ]
+                  ],
+                  "total": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k6",
+          "criterionId": "c4",
+          "requirement": "是否存在其它相关产物（如 memo.md）改变验收结论",
+          "source": {
+            "kind": "objective",
+            "reference": "objective"
+          },
+          "basis": "derived",
+          "status": "satisfied",
+          "finding": "memo.md 为会议记录（日期/参与者/下周三提交初稿），与 input.json、result.json 的数值验收无关，不影响结论。",
+          "coverage": "完整读取 memo.md 92 字节并核对主 Session seq 306/309 读取结果。",
+          "limitations": "仅确认其与本次验收范围无关。",
+          "method": "read",
+          "evidence": [
+            {
+              "kind": "artifact",
+              "snapshotId": "60055b6a-e287-4817-b695-6087b60096bc",
+              "path": "memo.md",
+              "hash": "74193827b884f15340e0ec53394b40318d09dfd799b96eae1851f8b6d4440321",
+              "ranges": [
+                [
+                  0,
+                  42
+                ]
+              ],
+              "total": 42
+            }
+          ]
+        }
+      ],
+      "imageSeqs": [],
+      "decisionSeq": 172
+    },
+    "readCorrections": {
+      "limit": 1,
+      "consumed": 0,
+      "history": []
+    }
+  }
+]
