@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "formal-independent-recovery-applied-and-continued",
+  "capturedAt": "2026-10-09T20:14:58.469982+00:00",
+  "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "reviewJobId": "25e7fcef-5181-43e3-af7a-9680840864c0",
+  "reviewerSessionId": "task-review-255aec22-8551-4435-9e44-049731c10978",
+  "stageId": "n2",
+  "nodeAttempt": 1,
+  "originalTaskDeadline": "2026-10-09T21:46:10.882641+00:00",
+  "persistedTaskDeadline": "2026-10-09T21:46:10.882Z",
+  "freeze": {
+    "runnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+    "pluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+    "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+    "startedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51",
+    "taskBindingSha256": "b86837bfd73e84b0e6b60f05e8fe89e2e04f695211af1d12efb7b9340c90fdac",
+    "privateCaptureSha256": "ead2c5b9feab3cb8f972ecdc980a4ccd53c6316d071ca48720435d1288a2fc67"
+  },
+  "identity": {
+    "requirementsVersion": 1,
+    "planVersion": 1,
+    "taskRevision": 17,
+    "evidenceCutoff": 817,
+    "snapshotId": "c4071cd1-09ea-4c69-b647-94c237b47886",
+    "sameJob": true,
+    "sameReviewerSession": true,
+    "sameSnapshot": true,
+    "sameRequirementsAndPlan": true,
+    "distinctRuntimeInstances": true
+  },
+  "recovery": {
+    "fromAttempt": 1,
+    "toAttempt": 2,
+    "firstDeadlineAt": "2026-10-09T20:02:03.319Z",
+    "retryDeadlineAt": "2026-10-09T20:12:06.429Z",
+    "firstRuntimeId": "255a36ec-db4d-43fa-a6be-cf5eed3ff062",
+    "retryRuntimeId": "fafa7ff7-6fee-4405-a0c2-9473a7f3f1ca",
+    "firstStartedRecordSeq": 960,
+    "retryStartedRecordSeq": 968,
+    "budgetAction": {
+      "id": "review:25e7fcef-5181-43e3-af7a-9680840864c0:2",
+      "kind": "review-fault",
+      "at": "2026-10-09T20:02:03.397Z",
+      "requirementsVersion": 1,
+      "planVersion": 1,
+      "effectId": "fafa7ff7-6fee-4405-a0c2-9473a7f3f1ca",
+      "status": "confirmed",
+      "confirmedAt": "2026-10-09T20:02:06.773Z"
+    },
+    "taskRecoveryCount": 1,
+    "taskDeadlineExtended": false,
+    "initialApprovalActionId": "415a26f3-f0f5-4a02-ae77-f2caa13b6a4a",
+    "initialApprovalReceiptSha256": "4f5d402bcef5f65ff5274318729128650956cf221a7722172594f77026db2b41",
+    "initialApprovalReceiptCount": 1,
+    "humanRescueCount": 0
+  },
+  "inheritedLedgers": {
+    "fileReadRecords": 8,
+    "commandCheckRecords": 24,
+    "checkOutputReadRecords": 23,
+    "checkPlanRevisions": 1,
+    "allPriorRecordsPreservedAtRetryStart": true,
+    "ledgerSha256Before": {
+      "readFiles": "22f882ed0ef010476c26284f16b477aec1fdc3d4f9b27993ade0abc9449c1d00",
+      "checks": "249c0513dc080c19e67bb650c50f318b8aed770679d2827e0fdfcb456495fd4c",
+      "readChecks": "4e174a5878144f0fd7804de8ec8022b6d0a28bafcc4f50a20837a2d2e8480c93",
+      "checkPlan": "234437d9259201ed9003067d47770006c923d154e1994ebc9f3bca92c58010cf"
+    }
+  },
+  "independentObservations": {
+    "successfulSubmission": {
+      "callSeq": 498,
+      "resultSeq": 499,
+      "atUnix": 1791576253.926,
+      "phase": "comparison"
+    },
+    "comparisonRecordSeq": 1002,
+    "comparisonAttempt": 2,
+    "observationsCount": 5,
+    "checkFindingsCount": 8,
+    "failedSubmissions": [
+      {
+        "callSeq": 389,
+        "resultSeq": 390,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 394,
+        "resultSeq": 395,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 399,
+        "resultSeq": 400,
+        "messageSha256": "d87f62ee857b11a4747cd0650f3a377bf1a2f36684d354c35c559687404cdb97"
+      },
+      {
+        "callSeq": 404,
+        "resultSeq": 405,
+        "messageSha256": "ca352fe227751fa2c0ceb112fe0ffdd518b7441d8b4ccb3fe248fc5bc7d50da0"
+      },
+      {
+        "callSeq": 436,
+        "resultSeq": 437,
+        "messageSha256": "d87f62ee857b11a4747cd0650f3a377bf1a2f36684d354c35c559687404cdb97"
+      },
+      {
+        "callSeq": 468,
+        "resultSeq": 469,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 473,
+        "resultSeq": 474,
+        "messageSha256": "45cb4f90e0d94d6804d0fb036dbb94f565f6f22337d13a1821595b0abed52e5d"
+      },
+      {
+        "callSeq": 478,
+        "resultSeq": 479,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 483,
+        "resultSeq": 484,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 488,
+        "resultSeq": 489,
+        "messageSha256": "02f506e4dce0fc9c4a511852069050453a5919e72df6cdf35d36562edc5e68ba"
+      },
+      {
+        "callSeq": 493,
+        "resultSeq": 494,
+        "messageSha256": "86da62f50e8da2adfdf4bace92d779cc8fbdfc743814ebe959e519a817f07943"
+      }
+    ],
+    "phaseAtCapture": "comparison"
+  },
+  "reviewerActivity": {
+    "generation": 4,
+    "lastSeq": 665,
+    "modelSteps": 116,
+    "toolCalls": 149,
+    "toolErrors": 25,
+    "turnEndReasons": [
+      {
+        "seq": 410,
+        "reason": "aborted"
+      },
+      {
+        "seq": 665,
+        "reason": "completed"
+      }
+    ]
+  },
+  "stateAtCapture": {
+    "taskPhase": "active",
+    "jobStatus": "applied",
+    "decisionPresent": true,
+    "nodeStatuses": {
+      "passed": 2,
+      "running": 1,
+      "pending": 1
+    }
+  },
+  "scope": [
+    "This proves the second node passed once after same-job recovery, followed by one actual third-node start under the original permit.",
+    "Whole-task acceptance and official reward remain unproven.",
+    "All fields derive from actual durable records and paired successful tool results; evidence projection corrections do not change frozen execution."
+  ],
+  "application": {
+    "verdict": "pass",
+    "successfulDecisionAcknowledgment": {
+      "callSeq": 662,
+      "resultSeq": 663,
+      "atUnix": 1791576675.471
+    },
+    "durableSubmittedRecordSeq": 1030,
+    "durableAppliedRecordSeq": 1034,
+    "appliedAt": "2026-10-09T20:11:15.566000+00:00",
+    "applicationCount": 1,
+    "reviewElapsedSeconds": 1152.247,
+    "nextNodeStarts": [
+      {
+        "stageId": "n3",
+        "attempt": 1,
+        "callSeq": 1056,
+        "resultSeq": 1059,
+        "atUnix": 1791576684.906
+      }
+    ],
+    "nextNodeStatusAtCapture": "running"
+  },
+  "priorProjectionCorrection": {
+    "priorEvidenceFile": "supervisor-independent-recovery-v6.json",
+    "priorPrivateCaptureSha256": "93a3b729250be4b9825ef7bb60dbc3373b378278d9f9c385ea81ecd48e212b3b",
+    "nodeAttempt": {
+      "actualSource": "reviewJob.nodeAttempt",
+      "priorNullableStageAttemptField": null,
+      "actualValue": 1
+    },
+    "requirementsVersion": {
+      "actualSource": "reviewJob.input.requirementsVersion",
+      "priorNullableTopLevelField": null,
+      "actualValue": 1
+    },
+    "effect": "Corrects public evidence field selection only; original capture, execution, grants and sealed results remain unchanged."
+  }
+}
