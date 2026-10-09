@@ -101,6 +101,20 @@ The later [progress revision and rework of an accepted node](supervisor-rework-a
 
 [Task recovery budget after rework](supervisor-task-recovery-budget-v6.json) then confirms that a progress review during the second n2 attempt reached its 600-second deadline. The original reviewer turn stopped before one retry of the same job, Session, input and evidence cutoff. The retry validly applied `revise` after 41.282 seconds at main seq 1237, followed by an actual main-Agent tool call at seq 1242. The Task retained the recovery preceding rework and added its second: two of three recoveries confirmed, one remaining. Budget creation time, policy and absolute deadline did not change. The review used 644.399 seconds, 23 model steps, 31 tool calls and one tool error, without another grant or human rescue. This proves log progress-review recovery and cumulative budgeting, not independent acceptance of the new node attempt, budget exhaustion or whole-task success.
 
+## Official pass without controller completion
+
+Position eight, Geo/Supervisor, is sealed. The [eight-result snapshot](reports/20261009-212523Z/report.zh.md) records official reward 1, F2P 24/24, P2P 599/599 and all 623 tests passing. Official grading received only the Agent's committed 62,828-byte base..HEAD patch. The evaluator neither committed implementation nor included uncommitted changes. Independent grading and cleanup succeeded.
+
+[Budget exhaustion and official-pass evidence](supervisor-budget-exhaustion-official-pass-v6.json) records the separate controller outcome. Review of the third n2 node attempt reached its own 600-second deadline. Three Task fault recoveries had already been confirmed, so native seq 1956 persisted the budget stop and refused a fourth recovery. The Task paused with only n1 currently accepted; n2/n3/n4 are on attempt three. Earlier n2 acceptance remains historical and cannot accept a new attempt. The original absolute deadline and single initial grant were preserved, without outer rescue or additional prompts.
+
+The position ran for about 155.13 minutes, with 799 model requests, 1,162 tool calls and 99 tool errors. Its 14 reviews comprise one planning observation, two plan reviews, seven progress reviews and four node reviews, without whole-task acceptance. Independent command checks total 141. Cumulative and overlap-merged observed review windows both equal 6032.742 seconds, about 100.55 minutes, including queue, retry and waiting time. This is neither CPU time nor proven main-Agent blocking time.
+
+Five requests lack usage, so total tokens across all Sessions remain null. Reported lower bounds are 2,261,405 uncached input, 1,315,140 output, 68,787,072 cache read and zero cache write. These are cumulative across requests, not a single request's context length. Extra check CPU, false pause and correction benefit remain null. The preceding n2 review rejected six of seven decision submissions before the seventh was recorded and applied as revise. Three repeated errors required fully read original Session evidence; eligibility was not relaxed.
+
+This position proves that the committed artifact passed official tests while review did not reliably converge. Official reward and strict controller success remain separate, with strict success false. It does not establish labeled false pause or condition superiority. The frozen plugin, budgets and review frequency remain unchanged.
+
+This snapshot seals 8/24 positions: six officially scored, with one reward 1 and five reward 0, plus two infrastructure faults retaining null. The ninth actual delivery is original position 11, Geo/Supervisor/r1. The previous seven results, new eighth result and current release digests remain identical. Execution continues in Supervisor-priority order.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

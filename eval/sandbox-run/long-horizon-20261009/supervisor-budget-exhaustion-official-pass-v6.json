@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "formal-task-budget-exhaustion-with-officially-correct-committed-patch",
+  "capturedAt": "2026-10-09T21:27:28.648830+00:00",
+  "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "basis": "original-collected-native-session-events-and-independent-official-grading",
+  "freeze": {
+    "runnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+    "pluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+    "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+    "startedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51"
+  },
+  "sourceSha256": {
+    "result": "8608a9318f0424ab100c3a8a18c481e7ee6512622a9559e0b2fafe9f6a2a4b41",
+    "terminal": "98324a53e41cd16b7fdc8842b72456ed9fce17191f09522e1ac390eeae7d0f3d",
+    "collection": "4f3afef9ac5b65eaf071cecd399f0ea54a2bccf6775606ca15e08829b08caf4a",
+    "sessionArchive": "cc5ab94e5b4b71e809aab37281b8a4e15c9a9600188235ab2e68182256b16aaf",
+    "workspaceArchive": "99ba505cb6be756d7d73e2c044884f63580e522d8a0a3ec23732cc90c965e1a5"
+  },
+  "persistentBudget": {
+    "createdAt": "2026-10-09T18:46:31.534Z",
+    "deadlineAt": "2026-10-09T21:46:10.882Z",
+    "originalDeadlineAtUnix": 1791582370.8826408,
+    "policy": {
+      "taskDeadlineMs": 10800000,
+      "outerDeadlineAt": "2026-10-09T21:46:10.882641Z",
+      "maxTruncationRecoveries": 6,
+      "maxReviewFaultRetries": 3
+    },
+    "revision": 8,
+    "confirmedFaultRecoveries": 3,
+    "nativeBudgetRecordsCompared": 8,
+    "policyDeadlineCreationAndActionIdentityPreserved": true,
+    "actions": [
+      {
+        "id": "review:25e7fcef-5181-43e3-af7a-9680840864c0:2",
+        "kind": "review-fault",
+        "at": "2026-10-09T20:02:03.397Z",
+        "requirementsVersion": 1,
+        "planVersion": 1,
+        "effectId": "fafa7ff7-6fee-4405-a0c2-9473a7f3f1ca",
+        "status": "confirmed",
+        "confirmedAt": "2026-10-09T20:02:06.773Z"
+      },
+      {
+        "id": "review:314c9e84-f65e-44c1-88ee-d1081a87ae25:2",
+        "kind": "review-fault",
+        "at": "2026-10-09T20:39:02.242Z",
+        "requirementsVersion": 1,
+        "planVersion": 1,
+        "effectId": "fa5ac595-493d-4790-88f0-9bafd26f0579",
+        "status": "confirmed",
+        "confirmedAt": "2026-10-09T20:39:05.561Z"
+      },
+      {
+        "id": "review:27c6d9c8-3852-4825-a55f-17386b226e6d:2",
+        "kind": "review-fault",
+        "at": "2026-10-09T21:00:01.983Z",
+        "requirementsVersion": 1,
+        "planVersion": 1,
+        "effectId": "bc1f564c-1c03-4134-9acc-420bf7c1e2c0",
+        "status": "confirmed",
+        "confirmedAt": "2026-10-09T21:00:05.487Z"
+      }
+    ],
+    "stop": {
+      "at": "2026-10-09T21:20:18.011Z",
+      "reason": "review-fault-budget",
+      "actionId": "review:86602c4f-c1e7-4f4b-90c7-0f37369f0321:2"
+    },
+    "stopRecordSeq": 1956,
+    "rejectedRetryWasNotStarted": true,
+    "taskDeadlineExtended": false
+  },
+  "finalReview": {
+    "id": "86602c4f-c1e7-4f4b-90c7-0f37369f0321",
+    "reviewerSessionId": "task-review-3d8bdbe4-8152-4b71-a07c-7f6060dd7583",
+    "stageId": "n2",
+    "nodeAttempt": 3,
+    "cutoff": 1730,
+    "attempt": 1,
+    "startedAt": "2026-10-09T21:10:17.930Z",
+    "deadlineAt": "2026-10-09T21:20:17.930Z",
+    "status": "failed"
+  },
+  "finalReviewFault": {
+    "code": "timeout",
+    "protocolRepairs": 0,
+    "internalRetriesConsumed": 0
+  },
+  "previousReviewDecision": {
+    "jobId": "27c6d9c8-3852-4825-a55f-17386b226e6d",
+    "nodeAttempt": 2,
+    "attempt": 2,
+    "appliedVerdict": "revise",
+    "protocolRepairs": 0,
+    "calls": [
+      {
+        "callSeq": 726,
+        "resultSeq": 727,
+        "isError": true
+      },
+      {
+        "callSeq": 731,
+        "resultSeq": 732,
+        "isError": true
+      },
+      {
+        "callSeq": 736,
+        "resultSeq": 737,
+        "isError": true
+      },
+      {
+        "callSeq": 741,
+        "resultSeq": 742,
+        "isError": true
+      },
+      {
+        "callSeq": 761,
+        "resultSeq": 762,
+        "isError": true
+      },
+      {
+        "callSeq": 788,
+        "resultSeq": 789,
+        "isError": true
+      },
+      {
+        "callSeq": 793,
+        "resultSeq": 794,
+        "isError": false
+      }
+    ],
+    "incompleteOriginalEvidenceErrors": [
+      {
+        "callSeq": 741,
+        "resultSeq": 742,
+        "errorType": "incomplete-original-session-evidence",
+        "messageSha256": "386d462c9b650184b94c0f0165f4a720233be65fbd0b158f39e34961c671021c"
+      },
+      {
+        "callSeq": 761,
+        "resultSeq": 762,
+        "errorType": "incomplete-original-session-evidence",
+        "messageSha256": "386d462c9b650184b94c0f0165f4a720233be65fbd0b158f39e34961c671021c"
+      },
+      {
+        "callSeq": 788,
+        "resultSeq": 789,
+        "errorType": "incomplete-original-session-evidence",
+        "messageSha256": "386d462c9b650184b94c0f0165f4a720233be65fbd0b158f39e34961c671021c"
+      }
+    ]
+  },
+  "finalTask": {
+    "phase": "paused",
+    "revision": 35,
+    "planVersion": 1,
+    "nodeRuns": [
+      {
+        "id": "n1",
+        "attempt": 1,
+        "status": "passed"
+      },
+      {
+        "id": "n2",
+        "attempt": 3,
+        "status": "reviewing"
+      },
+      {
+        "id": "n3",
+        "attempt": 3,
+        "status": "pending"
+      },
+      {
+        "id": "n4",
+        "attempt": 3,
+        "status": "pending"
+      }
+    ]
+  },
+  "authorization": {
+    "initialApprovalReceiptCount": 1,
+    "receiptSha256": "4f5d402bcef5f65ff5274318729128650956cf221a7722172594f77026db2b41",
+    "additionalApprovalCount": 0,
+    "humanRescueCount": 0
+  },
+  "terminal": {
+    "requestFaultEvidence": null,
+    "nativeCompletionEvidence": null,
+    "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+    "firstStopReason": "recovery-budget",
+    "atUnix": 1791580878.840636,
+    "deadlineAtUnix": 1791582370.8826408,
+    "rescueCount": 0,
+    "controllerComplete": false,
+    "finishedBeforeDeadline": false,
+    "infrastructureFault": false
+  },
+  "officialGrade": {
+    "reward": 1,
+    "strictSuccess": false,
+    "F2P": {
+      "total": 24,
+      "passed": 24,
+      "failed": 0,
+      "rate": 1.0
+    },
+    "P2P": {
+      "total": 599,
+      "passed": 599,
+      "failed": 0,
+      "rate": 1.0
+    },
+    "tests": {
+      "tests": 623,
+      "passed": 623,
+      "failed": 0,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0
+    },
+    "gradingFault": null,
+    "independentEnvironment": true,
+    "cleanupConfirmed": true,
+    "evidenceSha256": {
+      "trialResult": "81ba64e6a6cd873d2da1aa1e5f9f6d08ade04076073a7c571142f500a0fbc281",
+      "testReport": "3db6d206876f34c5832f52173a1f2fe212630258e3f5230ba8a357abf4af5270"
+    },
+    "submission": {
+      "source": "committed-base-to-head",
+      "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+      "headCommit": "dbba420c817ce8270233cea01926fde70d7bcf6b",
+      "patchBytes": 62828,
+      "patchSha256": "df3901d12c8c49383dddb3361ea4ab277a51f074dfaa4fb938422ce999fd7b03",
+      "workingTreeSubmitted": false
+    }
+  },
+  "cost": {
+    "wholeElapsedSec": 9307.957995176315,
+    "linkedSessions": 16,
+    "allModelSteps": 798,
+    "requestCount": 799,
+    "allToolCalls": 1162,
+    "allToolErrors": 99,
+    "reviewToolCalls": 902,
+    "reviewReadFailures": 19,
+    "independentCommandChecks": 141,
+    "reviewJobsByKind": {
+      "planning": 1,
+      "plan": 2,
+      "progress": 7,
+      "stage": 4,
+      "completion": 0
+    },
+    "observedReviewJobWindowMs": 6032742,
+    "observedReviewUnionWindowMs": 6032742,
+    "allSessionTokens": null,
+    "unreportedAttempts": 5,
+    "tokensReportedLowerBound": {
+      "uncachedInputTokens": 2261405,
+      "outputTokens": 1315140,
+      "cacheReadTokens": 68787072,
+      "cacheWriteTokens": 0
+    },
+    "extraCheckCpuNs": null
+  },
+  "scope": [
+    "The committed patch passed all official tests; the Supervisor controller did not complete whole-task acceptance.",
+    "The fourth timeout could not consume a fourth Task fault recovery; the original deadline and single grant were preserved.",
+    "Observed review windows include queue, retry and waiting time; they are not CPU time or proof of continuous main-Agent blocking.",
+    "Official reward 1 with a paused Task is mechanically observable; false pause and correction benefit require independent labels and remain null.",
+    "This is one formal position with prior protocol deviations; it does not establish superiority over Goal or Plan."
+  ]
+}
