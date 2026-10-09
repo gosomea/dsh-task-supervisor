@@ -70,3 +70,17 @@ it('preserves record 8 result identity and cannot upgrade an older job to a new 
   expect(foldReviewJobs([], event(value))).toHaveLength(1)
   expect(() => foldReviewJobs([value], event({ ...value, revision: 2, resultProtocol: 1 }))).toThrow()
 })
+
+it('keeps comparison-only ordering evidence as Session evidence without fabricating a snapshot execution', () => {
+  const value = job()
+  value.verification = { snapshot: { id: randomUUID(), workspace: '/source', root: '/snap', baseline: '/snap/base', check: '/snap/check', digest: 'd', excluded: [], entries: [] },
+    phase: 'comparison', observations: [], checks: [], readChecks: [], readFiles: [], checkPlan: [{ revision: 1, recordedAt: '', checks: [
+      { id: 'order', criterionId: 'c', source: requirement.source, fact: '先生成后验证', method: 'log', expected: '两个有序成功调用', coverage: '本次尝试', basis: 'explicit' },
+    ] }] }
+  const finding = { checkId: 'order', status: 'satisfied' as const, finding: '真实有序调用', coverage: '完整原事件', limitations: '日志不是独立执行', evidenceIds: ['seq:10'] }
+  const result = independentRequirementResults(value, [finding], ranges)[0]!
+  expect(result).toMatchObject({ method: 'log', evidence: [{ kind: 'session', seq: 10, ...ranges.get(10) }] })
+  expect(() => independentRequirementResults(value, [finding], new Map())).toThrow('bound comparison')
+  value.verification.phase = 'independent'
+  expect(() => independentRequirementResults(value, [finding], ranges)).toThrow('bound comparison')
+})

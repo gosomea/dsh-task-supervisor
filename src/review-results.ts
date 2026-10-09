@@ -54,13 +54,18 @@ export function logRequirementResults(job: ReviewJob, raw: unknown, ranges: Read
 }
 
 /** Existing independent checks already specify requirement, method and findings. */
-export function independentRequirementResults(job: ReviewJob, findings: CheckFinding[]): RequirementResult[] {
+export function independentRequirementResults(job: ReviewJob, findings: CheckFinding[], ranges?: ReadRanges): RequirementResult[] {
   const state = job.verification
   if (!state?.checkPlan) throw new Error('independent requirement results require an actual check plan')
   return state.checkPlan.flatMap(revision => revision.checks).map(check => {
     const result = findings.find(item => item.checkId === check.id)
     if (!result) throw new Error('missing independent check finding')
     const evidence: RequirementResult['evidence'] = result.evidenceIds.map(id => {
+      if (check.method === 'log') {
+        const seq = /^seq:\d+$/u.test(id) ? Number(id.slice(4)) : NaN, read = ranges?.get(seq)
+        if (state.phase !== 'comparison' || !read || seq > job.cutoff) throw new Error('log evidence is not from this bound comparison')
+        return { kind: 'session', seq, ...read }
+      }
       if (id.startsWith('file:')) {
         const path = id.slice(5), entry = state.snapshot.entries.find(item => item.path === path), read = state.readFiles.find(item => item.path === path)
         if (!entry || !read) throw new Error('artifact evidence is not bound to this snapshot')

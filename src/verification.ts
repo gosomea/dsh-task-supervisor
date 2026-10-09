@@ -69,7 +69,8 @@ export function complete(ranges: [number, number][], total: number): boolean {
 }
 
 /** Reject missing, foreign, partial or modified evidence, while retaining explicit unverified findings. */
-export function validateFindings(state: VerificationState, criterionIds: string[], findings: CriterionFinding[], passing: boolean): void {
+export type ReviewLogRanges = Map<number, { total: number; ranges: [number, number][]; truncated: boolean }>
+export function validateFindings(state: VerificationState, criterionIds: string[], findings: CriterionFinding[], passing: boolean, logRanges?: ReviewLogRanges): void {
   if (findings.length !== criterionIds.length || new Set(findings.map(item => item.criterionId)).size !== findings.length
     || findings.some(item => !criterionIds.includes(item.criterionId))) throw new Error('report every applicable criterion exactly once')
   for (const finding of findings) {
@@ -86,6 +87,15 @@ export function validateFindings(state: VerificationState, criterionIds: string[
     }
     if (passing && finding.status !== 'satisfied') throw new Error('unverified or failed criteria cannot pass')
     if (finding.status === 'unverified') continue
+    if (finding.method === 'log') {
+      if (state.phase !== 'comparison') throw new Error('Session facts remain unverified until independent observations unlock comparison')
+      if (!finding.evidenceIds.length) throw new Error('log facts require fully read original Session evidence')
+      for (const id of finding.evidenceIds) {
+        const read = /^seq:\d+$/u.test(id) ? logRanges?.get(Number(id.slice(4))) : undefined
+        if (!read || read.truncated || !complete(read.ranges, read.total)) throw new Error(`log evidence ${id} is not a fully read original from this review; summaries and failed reads do not qualify`)
+      }
+      continue
+    }
     if (!finding.evidenceIds.length) throw new Error('verified findings require independent evidence')
     for (const id of finding.evidenceIds) {
       if (id.startsWith('file:')) {
@@ -108,9 +118,9 @@ export function validateFindings(state: VerificationState, criterionIds: string[
 
 export const findingParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
   criterionId: { type: 'string', required: true }, status: { type: 'string', required: true, enum: ['satisfied', 'failed', 'unverified'] },
-  method: { type: 'string', required: true, enum: ['read', 'run', 'visual'] }, finding: { type: 'string', required: true },
+  method: { type: 'string', required: true, enum: ['read', 'run', 'visual', 'log'] }, finding: { type: 'string', required: true },
   checkIds: { type: 'array', items: { type: 'string' }, description: 'New independent protocol: all planned check IDs for this criterion.' }, coverage: { type: 'string' }, limitations: { type: 'string' },
-  evidenceIds: { type: 'array', required: true, items: { type: 'string' }, description: 'Full file reads use file:<path>; checks use their returned UUID after reading both output streams.' },
+  evidenceIds: { type: 'array', required: true, items: { type: 'string' }, description: 'Full file reads use file:<path>; checks use their returned UUID after reading both output streams. method=log uses seq:<N> for fully read bound Session originals, only after comparison. Log evidence cannot stand in for independent behavior checks.' },
 } } } as const
 
 /** Install snapshot-only tools. Successful durable observations unlock comparison with the main report. */

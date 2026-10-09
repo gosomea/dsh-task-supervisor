@@ -27,7 +27,7 @@ export function ReviewInspection({ job, t }: { job: ReviewJob; t: SupervisorTran
         const result = findings.find(item => item.checkId === check.id)
         return <Disclosure key={check.id} title={`${result ? { satisfied: '已满足', failed: '未满足', unverified: '未验证' }[result.status] : '待检查'} · ${check.fact}`}>
           <p>依据：{check.source.kind} · {check.source.reference} · {check.basis === 'explicit' ? '明确要求' : '推导假设'}</p>
-          <p>方法：{{ read: '读取产物', run: '独立运行', visual: '观察（当前不可用）' }[check.method]}<br />预期：{check.expected}<br />检查范围：{check.coverage}</p>
+          <p>方法：{{ read: '读取产物', run: '独立运行', visual: '观察（当前不可用）', log: '对照原始执行记录（非独立运行）' }[check.method]}<br />预期：{check.expected}<br />检查范围：{check.coverage}</p>
           {result && <p>结果：{result.finding}<br />实际覆盖：{result.coverage}<br />局限：{result.limitations || '未声明额外局限'}<br />证据：{result.evidenceIds.join('、') || '无独立证据'}</p>}
         </Disclosure>
       })}

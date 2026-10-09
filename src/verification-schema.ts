@@ -17,7 +17,7 @@ export const checkResultSchema = z.object({ id: z.string().uuid(), snapshotId: z
 export type CheckResult = z.infer<typeof checkResultSchema>
 
 export const findingSchema = z.object({ criterionId: z.string().min(1), status: z.enum(['satisfied', 'failed', 'unverified']),
-  method: z.enum(['read', 'run', 'visual']), finding: z.string().min(1), evidenceIds: z.array(z.string().min(1)), checkIds: z.array(z.string().min(1)).optional(), coverage: z.string().optional(), limitations: z.string().optional() }).strict()
+  method: z.enum(['read', 'run', 'visual', 'log']), finding: z.string().min(1), evidenceIds: z.array(z.string().min(1)), checkIds: z.array(z.string().min(1)).optional(), coverage: z.string().optional(), limitations: z.string().optional() }).strict()
 export type CriterionFinding = z.infer<typeof findingSchema>
 export const verificationSchema = z.object({ snapshot: snapshotSchema, phase: z.enum(['independent', 'comparison']),
   observations: z.array(findingSchema),

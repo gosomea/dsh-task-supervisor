@@ -176,3 +176,18 @@ it('retains appended check plans, rejects missing coverage and keeps hypotheses 
   expect(() => checkResultsAsEvidence(value, findings.slice(1), true)).toThrow('every planned')
   expect(() => checkResultsAsEvidence(value, [{ ...findings[0]!, status: 'unverified' }, findings[1]!], true)).toThrow('cannot pass')
 })
+
+it('defers Session-only facts until comparison and never upgrades them to independent execution', () => {
+  const value = state(), evidence = new Map([[7, { total: 10, ranges: [[0, 10]] as [number, number][], truncated: false }]])
+  const log: CriterionFinding = { ...read, method: 'log', evidenceIds: ['seq:7'] }
+  expect(() => validateFindings(value, ['c'], [{ ...log, status: 'unverified', evidenceIds: [] }], false)).not.toThrow()
+  expect(() => validateFindings(value, ['c'], [log], true, evidence)).toThrow('until independent observations')
+  value.phase = 'comparison'
+  expect(() => validateFindings(value, ['c'], [log], true, evidence)).not.toThrow()
+  expect(() => validateFindings(value, ['c'], [log], true, new Map())).toThrow('not a fully read original')
+  expect(() => validateFindings(value, ['c'], [log], true, new Map([[7, { ...evidence.get(7)!, truncated: true }]]))).toThrow('not a fully read original')
+  expect(() => validateFindings(value, ['c'], [log], true, new Map([[7, { total: 10, ranges: [[0, 5]], truncated: false }]]))).toThrow('not a fully read original')
+  expect(() => validateFindings(value, ['c'], [{ ...log, evidenceIds: ['file:code.js'] }], true, evidence)).toThrow('not a fully read original')
+  expect(() => validateFindings(value, ['c'], [{ ...log, method: 'run' }], true, evidence)).toThrow('check evidence')
+  expect(() => validateFindings(value, ['c'], [{ ...log, method: 'read' }], true, evidence)).toThrow('check evidence')
+})

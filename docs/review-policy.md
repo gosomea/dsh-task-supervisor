@@ -86,3 +86,9 @@ Independent snapshots, verification before report comparison, bounded checks and
 Protocol repair, fault versus user-decision classification, failed-review identity and progress observations are implemented; see [implementation status](implementation.md). The [original plan](10-plans/conversation-and-review-recovery/plans.md) retains design scope. Observation benefits still require independent evaluation; frozen scores remain unchanged.
 
 Calibrate watchdog thresholds, severity rules, timeout duration, false-positive suppression, and transient review retries. Verify safe step-boundary scheduling, event pagination, redaction, workspace-copy fidelity, and host user-decision transport in an isolated DSH instance before fixing tool schemas.
+
+### Execution-record requirements during comparison
+
+Operation order, authorization and source facts are authoritative in the bound Session. A check may use `method: log`, remain unverified during independent discovery, then cite `seq:<N>` after fully reading cutoff-bound original events during comparison. Locator summaries, failed reads, partial pages and truncated results cannot support passing this check. Independent observations remain unchanged; final results retain actual read ranges and identify this method as log comparison, not independent execution.
+
+Log references cannot establish independent calculation or behavior checks. `read` still requires complete artifact reads; `run` still requires an actual successful check of the current snapshot and complete outputs. Passing Session references to either method is rejected. This repair addresses an evidence gap encountered when the revision fixture required a later verification tool call; review frequency and execution permissions are unchanged.

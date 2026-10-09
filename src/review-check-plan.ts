@@ -5,7 +5,7 @@ import type { VerificationState, CriterionFinding } from './verification-schema.
 export const reviewCheckSchema = z.object({
   id: z.string().min(1).max(100), criterionId: z.string().min(1).nullable(),
   source: z.object({ kind: z.enum(['objective', 'user-message', 'project-rule']), reference: z.string().min(1) }).strict(),
-  fact: z.string().min(1), method: z.enum(['read', 'run', 'visual']),
+  fact: z.string().min(1), method: z.enum(['read', 'run', 'visual', 'log']),
   expected: z.string().min(1), coverage: z.string().min(1), basis: z.enum(['explicit', 'derived']),
 }).strict()
 export const checkPlanRevisionSchema = z.object({ revision: z.number().int().positive(), recordedAt: z.string(), phase: z.enum(['independent', 'comparison']).optional(), checks: z.array(reviewCheckSchema).min(1).max(100) }).strict()
@@ -45,7 +45,7 @@ export function checkResultsAsEvidence(state: VerificationState, results: CheckF
 export const checkPlanParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
   id: { type: 'string', required: true }, criterionId: { type: 'string', description: 'Applicable criterion ID; omit for an original requirement missing from the main plan.' },
   source: { type: 'object', required: true, additionalProperties: false, properties: { kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule'] }, reference: { type: 'string', required: true, description: 'objective, seq:<direct user event>, or inspected constraint file path' } } },
-  fact: { type: 'string', required: true }, method: { type: 'string', required: true, enum: ['read', 'run', 'visual'] },
+  fact: { type: 'string', required: true }, method: { type: 'string', required: true, enum: ['read', 'run', 'visual', 'log'], description: 'log is only for facts whose authority is the bound Session (operation order, authorization or source). Record unverified during independent discovery; verify only after comparison with fully read originals. It does not verify product behavior.' },
   expected: { type: 'string', required: true }, coverage: { type: 'string', required: true }, basis: { type: 'string', required: true, enum: ['explicit', 'derived'] },
 } } } as const
 export const checkFindingParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
