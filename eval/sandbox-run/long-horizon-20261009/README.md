@@ -83,6 +83,12 @@ The position used 197 model requests, 311 tool calls and about 53 minutes of exe
 
 Position eight, Geo/Supervisor, has [durable plan-revision evidence](supervisor-plan-revision-v6.json). The first plan review's `revise` was validly applied at main seq 220. The main Agent then submitted a changed candidate, and a new review job queued at seq 229. Candidate-plan digests differ while the original objective and requirements version remain identical. No initial grant or human rescue existed at this capture. This proves actual planning intervention and resubmission, not artifact acceptance, official success or labeled correction benefit. Execution input, original deadline and frozen plugin remain unchanged.
 
+## Independent node review and continuation in a formal task
+
+The same position's [first independent node review](supervisor-first-applied-independent-v6.json) then passed and was validly applied at main seq 535. The next node's actual start call is seq 557, with a successful result at seq 560. A check plan preceded deliverable reads, and durable independent findings preceded expanded main-log reads. Nine files have read records, eight fully read. Fourteen command checks support six check findings and this node's one criterion. Review elapsed time was 369.249 seconds; the submission tool returned in 0.031 seconds. This trajectory uses native Standard tools and alone does not establish outer PTC behavior.
+
+The review used 49 model steps, 87 tool calls and 11 tool errors, without internal fault recovery. One initial grant receipt exists, and continuation retained that permit without human rescue. This proves one node's independent inspection, applied decision and continuation. Whole-task acceptance and official grading remain incomplete; file counts, command counts and exit codes alone do not establish whole-task correctness.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
