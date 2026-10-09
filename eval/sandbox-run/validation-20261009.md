@@ -1,6 +1,6 @@
 # Long-horizon runner development validation
 
-2026-10-09. This is development validation; formal holdout delivery remains **0/24**. See the [machine record](validation-20261009.json) and [protocol](protocol.md). Daily 3080 and earlier frozen results were not replaced.
+2026-10-09. This records development validation before formal delivery, when holdout delivery was **0/24**. Current progress belongs to the [formal batch](long-horizon-20261009/README.md). See the [machine record](validation-20261009.json) and [protocol](protocol.md). Daily 3080 and earlier frozen results were not replaced.
 
 ## Implemented handoff
 
@@ -23,6 +23,8 @@ Repair commits: [`1ae7cd6`](https://github.com/gosomea/dsh-task-supervisor/commi
 
 These rewards are fixture outcomes, not public official scores. New runs do not overwrite failures; controller completion does not prove every development gate.
 
+The machine record retains an earlier pending `faultEvidenceRecoveryGate` placeholder and `checks.pythonSandboxPassed=51`. Final development recovery evidence is the actual identity, read-qualification and single-application checks in `development-fault-3.checks`, together with `strictFaultRecoveryPassed=true`; the final Python count is `sandboxPythonTestsPassed=60`. These fields neither overwrite earlier failures nor establish every subsequent formal recovery branch.
+
 ## Regression and browser
 
 The full kernel suite passed 464 checks with 15 environment-dependent skips. Sandbox monitoring/collection passed 60 Python tests; official grading adaptation and score parsing passed 7 each. Four focused protocol tests passed; 144 other tests were filtered out. Host and Client strict typechecks passed. Controlled clocks and barriers cover deadlines, cancellation, budget persistence through replanning/restart, stale decisions, same-job evidence and duplicate grant refusal.
@@ -37,6 +39,12 @@ Uncommitted/untracked artifacts are diagnostic; official submissions contain onl
 
 Fifteen sealed, stopped old P2 containers were released after retaining base image identity, changed-file archives, deleted paths and private configuration. Original result hashes remain unchanged. Recovery materials stay private; container configurations must not enter public Git.
 
+## Coverage gaps exposed by formal execution
+
+The development recovery positives prove passage and continuation for the specified node and completion checks, not every decision branch. Formal execution subsequently reproduced a [plan-revision recovery version mismatch](long-horizon-20261009/supervisor-planning-recovery-gate-v6.json): a recovered revise retains the old plan version, while continuation requires an increment and stops further planning. The next candidate must separately verify recovered pass, revise and needs-user decisions, distinguishing planning permission from implementation permission. The current batch retains its frozen condition; development positives cannot establish that this branch passes.
+
+Formal execution also preserves a [gap between tool acknowledgment and durable decision](long-horizon-20261009/supervisor-first-independent-stage-v6.json), and an [officially passing artifact with exhausted review-recovery budget](long-horizon-20261009/supervisor-budget-exhaustion-official-pass-v6.json). These respectively limit conclusions about durable application and review convergence. Original development outcomes remain unchanged, with new formal results recorded separately. Installation, tests or one successful development task cannot establish reliability of the entire long-horizon workflow.
+
 ## Remaining gates
 
-Strict fault recovery and all four candidate admission gates passed. The 24-position order, installable tarball and runtime dependencies are frozen in the [formal batch](long-horizon-20261009/README.md). Preserved admission failures occurred without model delivery; formal holdouts have not started. After sealing all positions, report official reward, F2P/P2P when available, strict success, full denominator, costs and task-level uncertainty. Unlabelled false acceptance, false pause and correction benefit remain null.
+The specified development recoveries and all four candidate admission gates passed. The 24-position order, installable tarball and runtime dependencies are frozen, and formal execution has started; see the [formal batch](long-horizon-20261009/README.md). Preserved admission failures occurred without model delivery. Per-position status and official results belong to that batch. After sealing all positions, report official reward, F2P/P2P when available, strict success, full denominator, costs and task-level uncertainty. Unlabelled false acceptance, false pause and correction benefit remain null.
