@@ -45,6 +45,8 @@ class TrajectoryTests(unittest.TestCase):
         self.assertEqual(value['supervisorTask']['currentNodeAttemptOrdinalsSum'], 3)
         self.assertEqual(value['supervisorTask']['observedPlanVersions'], [0, 1])
         self.assertEqual(value['supervisorTask']['reviewJobsByKind']['stage'], 1)
+        self.assertEqual(value['supervisorTask']['reviewWindows']['unknownWindows'], 1)
+        self.assertIsNone(value['supervisorTask']['reviewWindows']['totalObservedJobWindowMs'])
         self.assertNotIn('private-canary', json.dumps(value))
 
     def test_missing_binding_or_old_node_runs_does_not_invent_nodes_or_attempts(self):

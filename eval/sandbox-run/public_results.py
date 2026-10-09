@@ -133,7 +133,11 @@ def snapshot(order_path, runs, out):
             started = json.loads((directory / 'started.json').read_text())
             row['execution'] = {key: number(started.get(key)) for key in ('startedAtUnix', 'deadlineAtUnix')}
             row['execution']['sessionId'] = code(started.get('sessionId'))
+    sources = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+               for name in ('public_results.py', 'trajectory.py', 'review_windows.py', 'summarize.py')}
+    sources['session_records.py'] = hashlib.sha256(Path(__file__).resolve().parents[1].joinpath('session_records.py').read_bytes()).hexdigest()
     value.update(exportedAt=datetime.now(timezone.utc).isoformat(), reportOnly=True,
+                 reportProcessorSourceSha256=sources,
                  orderSha256=hashlib.sha256(order_path.read_bytes()).hexdigest())
     out.mkdir(parents=True, exist_ok=False)
     exclusive_json(out / 'summary.json', value)
@@ -172,7 +176,26 @@ def detail_report(value):
             lines.append(f"| {row['id']} | {trace['linkedSessions']} | {trace['allModelSteps']} | "
                          f"{trace['allToolCalls']} | {trace['allToolErrors']} | "
                          f"{trace['allContextCompactions']} | {nodes} | {endings} |")
-    lines += ['', '轨迹由原始收集日志只读计算，重试不是新增执行步；原生 Goal／Plan 与 Supervisor 的节点语义不作等同。',
+    lines += ['', '## 持久审查时间窗', '',
+              '| 位置 | 审查作业 | 作业窗口累计（秒） | 重叠窗口合并（秒） | 时间窗未知作业 |',
+              '|---|---:|---:|---:|---:|']
+    for row in value['positions']:
+        trace = row.get('trajectory')
+        if not trace:
+            continue
+        windows = (trace.get('supervisorTask') or {}).get('reviewWindows')
+        if windows is None:
+            lines.append(f"| {row['id']} | 不适用／无绑定记录 | — | — | — |")
+            continue
+        def seconds(key):
+            value = windows[key]
+            return 'null' if value is None else f'{value / 1000:.3f}'
+        lines.append(f"| {row['id']} | {len(windows['jobs'])} | {seconds('totalObservedJobWindowMs')} | "
+                     f"{seconds('observedUnionWindowMs')} | {windows['unknownWindows']} |")
+    lines += ['', '时间窗从首份持久作业记录到最终尝试的终态记录，包含排队、重试和等待；按作业去重，重叠窗口另行合并。',
+              '这些窗口不是 CPU 时间，也不能据此认定主 Agent 在整个窗口内都被阻塞；缺少边界或未结束时为 null。',
+              '报告处理器源码摘要另存，冻结运行器和原始 result.json 保持不变。',
+              '轨迹由原始收集日志只读计算，重试不是新增执行步；原生 Goal／Plan 与 Supervisor 的节点语义不作等同。',
               '轮次结束原因来自实际 turn/end 的 data.reason.kind，含主 Session 与所属子 Session；单个轮次结束不自动代表整个控制器完成。',
               'max-tokens 表示模型生成截断，不是根据累计 Session 用量推定整个 Task 的 token 预算耗尽。',
               '快照仅导出计数、身份与摘要，不包含模型正文、工具参数、私有路径或凭据。',

@@ -9,6 +9,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from session_records import control_event
+from review_windows import summarize_review_windows
 
 REVIEW_KINDS = ('planning', 'plan', 'progress', 'stage', 'completion')
 NODE_STATUSES = ('pending', 'running', 'reviewing', 'passed', 'needs-revision',
@@ -31,7 +32,7 @@ def summarize_trajectory(sessions, main_id, task_id=None):
         if children <= linked:
             break
         linked |= children
-    tasks, jobs = {}, {}
+    tasks, jobs, job_records = {}, {}, []
     plan_versions = set()
     for stored in sessions[main_id][1:]:
         event = control_event(stored)
@@ -47,6 +48,7 @@ def summarize_trajectory(sessions, main_id, task_id=None):
         elif namespace == 'dsh-task-supervisor-review' and kind == 'job':
             if payload.get('mainSessionId') == main_id:
                 jobs[payload['id']] = payload
+                job_records.append((event, payload))
     reviewer_ids = {job.get('reviewerSessionId') for job in jobs.values()}
     rows = []
     for sid in sorted(linked):
@@ -76,6 +78,7 @@ def summarize_trajectory(sessions, main_id, task_id=None):
             'currentNodeAttemptOrdinalsSum': sum(attempts) if valid_attempts else None,
             'maxCurrentNodeAttempt': max(attempts) if valid_attempts and attempts else None,
             'nodeStatuses': dict(statuses) if isinstance(runs, list) else None,
+            'reviewWindows': summarize_review_windows(job_records, main_id, task_id),
             'reviewJobsByKind': {kind: sum(job.get('taskId') == task_id and job.get('kind') == kind
                 for job in jobs.values()) for kind in REVIEW_KINDS}}
     return {'basis': 'original-collected-native-session-events',
