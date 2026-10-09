@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "developmentCase": "revision-and-evidence",
+  "formalPositionsDelivered": 0,
+  "originalRun": {
+    "id": "development-revision-5",
+    "sessionId": "session-1a6858b3-e384-494e-a0ae-61278783705f",
+    "tarballSha256": "e82d7c9c48be953a152dfe099ee27bf8c1f84434cde8d639fa25748ae6e759f3",
+    "firstStopReason": "infrastructure-fault",
+    "faultCode": "check-private-output-invalidated",
+    "reward": null,
+    "strictSuccess": false,
+    "cleanupAcknowledged": true,
+    "automaticAgentReruns": 0,
+    "initialApprovals": 1,
+    "revisionAuthorizations": 0,
+    "allSessionTokens": null,
+    "tokensReported": {
+      "uncachedInputTokens": 149027,
+      "outputTokens": 115243,
+      "cacheReadTokens": 4871424,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": false,
+    "reviewToolCalls": 124
+  },
+  "fix": {
+    "isolation": "fresh-copy",
+    "capturedModificationsInvalidateEvidence": true,
+    "generatedPathsGrantReadEligibility": false,
+    "originalSeedUnchanged": true,
+    "legacyChangedRecordsRemainInvalid": true
+  },
+  "verification": {
+    "realDockerChecksPassed": 22,
+    "strictHost": true,
+    "strictClient": true,
+    "build": true,
+    "completeRealModelWorkflow": "pending-new-frozen-development-position"
+  }
+}

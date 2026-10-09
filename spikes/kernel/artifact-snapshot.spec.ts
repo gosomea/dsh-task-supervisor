@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, readlink, writeFile, symlink, rm, chmod } fro
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { captureSnapshot, changedArtifacts, snapshotFresh, reviewPath } from '../../src/artifact-snapshot.ts'
+import { captureSnapshot, changedArtifacts, freshCheckCopy, removeCheckCopy, snapshotFresh, reviewPath } from '../../src/artifact-snapshot.ts'
 
 const dirs: string[] = []
 afterEach(async () => {
@@ -15,6 +15,22 @@ afterEach(async () => {
 })
 const limits = { files: 100, bytes: 10000, excluded: ['.git'] }
 const signal = new AbortController().signal
+it('starts each check with captured contents and probes, without carrying generated output or repairs forward', async () => {
+  const { workspace, storage } = await fixture()
+  const snapshot = await captureSnapshot(workspace, storage, limits, signal)
+  await writeFile(join(snapshot.check, 'probes/assert.mjs'), 'console.log(7)')
+  const first = await freshCheckCopy(snapshot, signal)
+  await writeFile(join(first.check, 'tree/report.json'), '{"sum":7}')
+  await writeFile(join(first.check, 'tree/untracked.mjs'), 'repaired')
+  expect(await changedArtifacts(first)).toEqual(['untracked.mjs', 'report.json'])
+  const second = await freshCheckCopy(snapshot, signal)
+  expect(await changedArtifacts(second)).toEqual([])
+  expect(await readFile(join(second.check, 'probes/assert.mjs'), 'utf8')).toBe('console.log(7)')
+  expect(await readFile(join(second.check, 'tree/untracked.mjs'), 'utf8')).toContain('value = 7')
+  await expect(readFile(join(second.check, 'tree/report.json'))).rejects.toThrow()
+  await removeCheckCopy(first.check); await removeCheckCopy(second.check)
+  expect(await changedArtifacts(snapshot)).toEqual([])
+})
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), 'dsh-snapshot-test-')); dirs.push(root)
   const workspace = join(root, 'workspace'), storage = join(root, 'storage')

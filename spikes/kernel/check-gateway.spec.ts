@@ -77,7 +77,8 @@ it.skipIf(!native || process.platform === 'win32')('runs with administrator-owne
   expect(result.exitCode, result.stderr).toBe(0); expect(result.changed).toEqual([])
   const owned = JSON.parse(await readFile(join(f.privateStorage, `snapshot-${f.snapshot.id}.json`), 'utf8'))
   expect(owned.root).not.toBe(f.snapshot.root)
-  expect(await readFile(join(owned.check, 'output/checked'), 'utf8')).toBe('ok')
+  expect(await readdir(join(owned.check, 'output'))).toEqual([])
+  expect(result.isolation).toBe('fresh-copy')
   expect(await readdir(join(f.snapshot.check, 'output'))).toEqual([])
   expect(JSON.parse(await readFile(join(f.snapshot.root, `check-${result.id}.json`), 'utf8')).id).toBe(result.id)
   await recoverCheckContainers(f.ctx, f.snapshot, f.policy, new AbortController().signal)
@@ -88,7 +89,10 @@ async function readiness(privateStorage: string, snapshotId: string) {
   while (Date.now() < deadline) {
     try {
       const owned = JSON.parse(await readFile(join(privateStorage, `snapshot-${snapshotId}.json`), 'utf8'))
-      if (await readFile(join(owned.check, 'output/ready'), 'utf8') === 'ready') return
+      for (const file of await readdir(owned.root)) if (/^container-[a-f0-9-]{36}\.json$/.test(file)) {
+        const ledger = JSON.parse(await readFile(join(owned.root, file), 'utf8'))
+        if (ledger.checkCopy && await readFile(join(ledger.checkCopy, 'output/ready'), 'utf8') === 'ready') return
+      }
     } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
     await new Promise(resolve => setTimeout(resolve, 50))
   }
@@ -115,12 +119,21 @@ it.skipIf(!native || process.platform === 'win32')('a restart recovers only the 
   await writeFile(join(f.snapshot.check, 'tree/code.mjs'), 'changed')
   await expect(runCheck(f.ctx, f.snapshot, SessionId('gateway-rewrite'), ['node', '-e', '0'], 'tree', f.policy, new AbortController().signal)).rejects.toThrow('differs')
 })
-it.skipIf(!native || process.platform === 'win32')('refuses replaced probe directories before copying another probe', async () => {
+it.skipIf(!native || process.platform === 'win32')('a check cannot poison the seed probe directory used by the next invocation', async () => {
   const f = await fixture(), close = await openGateway(f.ctx, f.config); closers.push(close)
   await runCheck(f.ctx, f.snapshot, SessionId('gateway-probe-path'), ['node', '-e',
     "const fs=require('fs');fs.rmdirSync('../probes');fs.symlinkSync('/outside','../probes')"], 'tree', f.policy, new AbortController().signal)
   await writeFile(join(f.snapshot.check, 'probes/assert.mjs'), 'console.log(7)')
-  await expect(runCheck(f.ctx, f.snapshot, SessionId('gateway-probe-path'), ['node', '../probes/assert.mjs'], 'tree', f.policy, new AbortController().signal)).rejects.toThrow('private probe directory')
+  const next = await runCheck(f.ctx, f.snapshot, SessionId('gateway-probe-path'), ['node', '../probes/assert.mjs'], 'tree', f.policy, new AbortController().signal)
+  expect(next.exitCode, next.stderr).toBe(0); expect(next.stdout).toContain('7')
+})
+it.skipIf(!native || process.platform === 'win32')('generated artifacts do not invalidate the private seed or later gateway checks', async () => {
+  const f = await fixture(), close = await openGateway(f.ctx, f.config); closers.push(close)
+  const result = await runCheck(f.ctx, f.snapshot, SessionId('gateway-generated'), ['node', '-e', "require('fs').writeFileSync('report.json','7');console.log(7)"], 'tree', f.policy, new AbortController().signal)
+  expect(result).toMatchObject({ exitCode: 0, isolation: 'fresh-copy', changed: [], generated: ['report.json'] })
+  await recoverCheckContainers(f.ctx, f.snapshot, f.policy, new AbortController().signal)
+  const next = await runCheck(f.ctx, f.snapshot, SessionId('gateway-generated'), ['node', '-e', "require('assert').equal(require('fs').existsSync('report.json'),false)"], 'tree', f.policy, new AbortController().signal)
+  expect(next.exitCode, next.stderr).toBe(0)
 })
 
 /** A real Unix frame round trip must preserve typed input errors across the process boundary. */

@@ -41,6 +41,8 @@ it('rejects foreign, modified, incomplete, failed or timed-out execution as acce
   value.readChecks = [{ id, stream: 'stdout', ranges: [[0, 0]], total: 0 }, { id, stream: 'stderr', ranges: [[0, 0]], total: 0 }]
   expect(() => validateFindings(value, ['c'], [finding], true)).not.toThrow()
   const check = value.checks[0]!
+  check.isolation = 'fresh-copy'; check.generated = ['report.json']
+  expect(() => validateFindings(value, ['c'], [finding], true)).not.toThrow()
   check.exitCode = 1
   expect(() => validateFindings(value, ['c'], [finding], true)).toThrow('failed check')
   check.exitCode = 0; check.changed = ['code.js']

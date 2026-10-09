@@ -142,6 +142,46 @@ export async function snapshotFresh(snapshot: ArtifactSnapshot, limits: Snapshot
   return (await scan(snapshot.workspace, { ...limits, excluded: snapshot.excluded }, signal)).digest === snapshot.digest
 }
 
+/** Each invocation starts from the unmodified seed; generated files never leak into later checks. */
+export async function freshCheckCopy(snapshot: ArtifactSnapshot, signal: AbortSignal): Promise<ArtifactSnapshot> {
+  if ((await changedArtifacts(snapshot)).length) throw new Error('CHECK_INFRASTRUCTURE: check seed differs from captured artifacts')
+  const check = await mkdtemp(join(snapshot.root, 'invocation-'))
+  try {
+    await mkdir(join(check, 'tree'))
+    for (const entry of snapshot.entries) {
+      signal.throwIfAborted()
+      const target = join(check, 'tree', entry.path)
+      if (entry.kind === 'directory') await mkdir(target)
+      else if (entry.kind === 'link') await symlink(entry.target!, target)
+      else { await copyFile(join(snapshot.check, 'tree', entry.path), target); await chmod(target, entry.mode & 0o700) }
+    }
+    for (const name of ['home', 'tmp', 'probes', 'output']) await mkdir(join(check, name))
+    const probes = join(snapshot.check, 'probes')
+    if (!(await lstat(probes)).isDirectory() || await realpath(probes) !== probes) throw new Error('CHECK_INFRASTRUCTURE: probe seed was redirected')
+    for (const name of await readdir(probes)) {
+      signal.throwIfAborted()
+      const source = join(probes, name)
+      if (!(await lstat(source)).isFile()) throw new Error('CHECK_INFRASTRUCTURE: probes must be regular files')
+      await copyFile(source, join(check, 'probes', name))
+      await chmod(join(check, 'probes', name), 0o600)
+    }
+    const copy = { ...snapshot, check }
+    if ((await changedArtifacts(copy)).length || (await changedArtifacts(snapshot)).length) throw new Error('CHECK_INFRASTRUCTURE: check seed changed during copy')
+    return copy
+  } catch (error) { await removeCheckCopy(check); throw error }
+}
+
+/** Called only after the owned container has stopped; links are removed without following them. */
+export async function removeCheckCopy(check: string): Promise<void> {
+  async function writable(path: string): Promise<void> {
+    if (!(await lstat(path)).isDirectory()) return
+    await chmod(path, 0o700)
+    for (const name of await readdir(path)) await writable(join(path, name))
+  }
+  await writable(check)
+  await rm(check, { recursive: true, force: true })
+}
+
 /** Changed or missing captured source entries invalidate checks even when the command exits zero. */
 export async function changedArtifacts(snapshot: ArtifactSnapshot): Promise<string[]> {
   const tree = join(snapshot.check, 'tree')

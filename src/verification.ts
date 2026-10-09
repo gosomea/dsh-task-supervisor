@@ -167,7 +167,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { snapshotId: state.snapshot.id, path: `probes/${args.name}` }
     },
   }))
-  ctx.tools.register(defineTool({ name: 'run_review_check', description: 'Run structured argv with cwd tree or probes in the bound isolated check copy. No network or source-workspace access. CHECK_INPUT means correct argv/cwd and retry; a nonzero exit is failed command evidence, not acceptance. Read both streams to diagnose it. Keep captured tree intact; never delete or repair source to make a check pass.',
+  ctx.tools.register(defineTool({ name: 'run_review_check', description: 'Run structured argv with cwd tree or probes in a fresh isolated copy of the bound snapshot. Each invocation discards generated files and caches afterwards; run producer and assertion together in one probe when needed. Generated paths are metadata, not read evidence. No network or source-workspace access. CHECK_INPUT means correct argv/cwd and retry; a nonzero exit is failed command evidence, not acceptance. Read both streams. Never delete or repair captured source to make a check pass.',
     parameters: { argv: { type: 'array', required: true, items: { type: 'string' } }, cwd: { type: 'string', required: true }, timeout_ms: { type: 'integer' } }, output,
     async execute(args, exec) {
       requirePlan()
@@ -187,8 +187,8 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       }
       const { stdout: _stdout, stderr: _stderr, ...summary } = result
       state.checks.push(summary); await persist()
-      const { runtime, ...fields } = summary
-      return { ...fields, ...runtime ? { runtime } : {}, stdoutChars: result.stdout.length, stderrChars: result.stderr.length }
+      const { runtime, isolation, generated, ...fields } = summary
+      return { ...fields, ...runtime ? { runtime } : {}, ...isolation ? { isolation } : {}, ...generated ? { generated } : {}, stdoutChars: result.stdout.length, stderrChars: result.stderr.length }
     },
   }))
   ctx.tools.register(defineTool({ name: 'read_review_evidence', description: 'Page host-owned native check stdout or stderr by returned check ID. Read every page of both streams before claiming this evidence supports a criterion.',

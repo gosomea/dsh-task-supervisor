@@ -1,12 +1,12 @@
 /** Plugin-owned Docker confinement with native DSH subprocess ownership. */
 import { randomUUID } from 'node:crypto'
 import { lstat, readFile, realpath, writeFile, readdir, mkdir } from 'node:fs/promises'
-import { isAbsolute, join, relative, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, sep } from 'node:path'
 import { homedir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import { changedArtifacts, reviewPath, type ArtifactSnapshot } from './artifact-snapshot.ts'
+import { changedArtifacts, freshCheckCopy, removeCheckCopy, reviewPath, type ArtifactSnapshot } from './artifact-snapshot.ts'
 import { checkResultSchema, type CheckResult } from './verification-schema.ts'
 import { checkRequest } from './check-channel.ts'
 import { CheckInputError } from './check-errors.ts'
@@ -99,14 +99,24 @@ export async function recoverCheckContainers(ctx: Context, snapshot: ArtifactSna
   for (const file of pending) {
     signal.throwIfAborted()
     const id = file.slice(10, -5)
-    try { await lstat(join(snapshot.root, `removed-${id}.json`)); continue } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
-    const record = JSON.parse(await readFile(join(snapshot.root, file), 'utf8')) as { name: string; endpoint: string; snapshotId: string }
+    let removed = false
+    try { await lstat(join(snapshot.root, `removed-${id}.json`)); removed = true } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
+    const record = JSON.parse(await readFile(join(snapshot.root, file), 'utf8')) as { name: string; endpoint: string; snapshotId: string; checkCopy?: string }
     if (record.snapshotId !== snapshot.id || record.name !== `dsh-review-${id}` || !record.endpoint.startsWith('unix:///') || record.endpoint.includes('\0')) throw new Error('CHECK_INFRASTRUCTURE: invalid interrupted container identity')
-    const subprocess = ctx.get('subprocess')
-    if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
-    const docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
-    await removeOwned(ctx, [docker, '--host', record.endpoint], record.name, snapshot, env, policy)
-    await writeFile(join(snapshot.root, `removed-${id}.json`), JSON.stringify({ name: record.name, removed: true, recovery: true }), { flag: 'wx', mode: 0o600 })
+    if (!removed) {
+      const subprocess = ctx.get('subprocess')
+      if (!subprocess) throw new Error('CHECK_INFRASTRUCTURE: native subprocess is required')
+      const docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
+      await removeOwned(ctx, [docker, '--host', record.endpoint], record.name, snapshot, env, policy)
+      await writeFile(join(snapshot.root, `removed-${id}.json`), JSON.stringify({ name: record.name, removed: true, recovery: true }), { flag: 'wx', mode: 0o600 })
+    }
+    if (record.checkCopy) {
+      if (dirname(record.checkCopy) !== snapshot.root || !/^invocation-[A-Za-z0-9]+$/.test(basename(record.checkCopy))) throw new Error('CHECK_INFRASTRUCTURE: invalid interrupted copy identity')
+      try {
+        if (!(await lstat(record.checkCopy)).isDirectory() || await realpath(record.checkCopy) !== record.checkCopy) throw new Error('CHECK_INFRASTRUCTURE: interrupted copy was redirected')
+        await removeCheckCopy(record.checkCopy)
+      } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
+    }
   }
 }
 
@@ -135,6 +145,17 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
     }
     throw error
   }
+  const copy = await freshCheckCopy(snapshot, signal)
+  const result = await runFreshCheck(ctx, copy, sessionId, argv, cwd, policy, signal)
+  // A lost cleanup acknowledgement retains the copy and ledger for recovery.
+  await removeCheckCopy(copy.check)
+  return result
+}
+
+/** The seed and control records are not mounted; only this invocation's writable copy is exposed. */
+async function runFreshCheck(ctx: Context, snapshot: ArtifactSnapshot, sessionId: SessionId, argv: string[], cwd: string, policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult> {
+  const subprocess = ctx.get('subprocess')!
+  const workingDirectory = await reviewPath(snapshot.check, cwd)
   const env = checkEnvironment(snapshot, policy), docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
   const timer = AbortSignal.timeout(policy.commandMs), combined = AbortSignal.any([signal, timer])
   const context = await managed(ctx, [docker, 'context', 'inspect', policy.container.context], snapshot.check, env, policy, combined)
@@ -144,7 +165,7 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
   if (!endpoint.startsWith('unix:///') || endpoint.includes('\0')) throw new Error('CHECK_INFRASTRUCTURE: host-backed snapshots require a local Unix Docker endpoint')
   const prefix = [docker, '--host', endpoint], id = randomUUID(), name = `dsh-review-${id}`, startedAt = new Date().toISOString()
   // This durable identity allows a cancelled/restarted review to trace its exact daemon resource.
-  await writeFile(join(snapshot.root, `container-${id}.json`), JSON.stringify({ name, endpoint, image: policy.container.image, snapshotId: snapshot.id, sessionId }), { flag: 'wx', mode: 0o600 })
+  await writeFile(join(snapshot.root, `container-${id}.json`), JSON.stringify({ name, endpoint, image: policy.container.image, snapshotId: snapshot.id, sessionId, checkCopy: snapshot.check }), { flag: 'wx', mode: 0o600 })
   let outcome: Awaited<ReturnType<typeof managed>> | undefined, state: { ExitCode: number; OOMKilled: boolean; Error: string } | undefined
   try {
     const check = await realpath(snapshot.check)
@@ -171,10 +192,12 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
     await removeOwned(ctx, prefix, name, snapshot, env, policy)
     await writeFile(join(snapshot.root, `removed-${id}.json`), JSON.stringify({ name, removed: true }), { flag: 'wx', mode: 0o600 })
   }
+  const changes = await changedArtifacts(snapshot), captured = new Set(snapshot.entries.map(entry => entry.path))
   const result: CheckResult = { id, snapshotId: snapshot.id, argv, cwd, startedAt, finishedAt: new Date().toISOString(),
     runtime: { kind: 'docker', context: policy.container.context, image: policy.container.image, containerName: name },
     exitCode: state?.ExitCode ?? null, signal: null, timedOut: timer.aborted || state?.ExitCode === 124, cancelled: signal.aborted,
-    stdout: outcome?.stdout.text ?? '', stderr: outcome?.stderr.text ?? '', outputIncomplete: !outcome || outcome.stdout.lossy || outcome.stderr.lossy, changed: await changedArtifacts(snapshot) }
+    stdout: outcome?.stdout.text ?? '', stderr: outcome?.stderr.text ?? '', outputIncomplete: !outcome || outcome.stdout.lossy || outcome.stderr.lossy,
+    isolation: 'fresh-copy', changed: changes.filter(path => path === '.' || captured.has(path)), generated: changes.filter(path => path !== '.' && !captured.has(path)) }
   await writeFile(join(snapshot.root, `check-${id}.json`), JSON.stringify(result), { flag: 'wx', mode: 0o600 })
   return result
 }

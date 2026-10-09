@@ -12,7 +12,8 @@ export type ArtifactSnapshot = z.infer<typeof snapshotSchema>
 export const checkResultSchema = z.object({ id: z.string().uuid(), snapshotId: z.string().uuid(), argv: z.array(z.string()).min(1),
   cwd: z.string(), startedAt: z.string(), finishedAt: z.string(), exitCode: z.number().int().nullable(), signal: z.string().nullable(),
   runtime: z.object({ kind: z.literal('docker'), context: z.string(), image: z.string(), containerName: z.string() }).strict().optional(),
-  timedOut: z.boolean(), cancelled: z.boolean(), stdout: z.string(), stderr: z.string(), outputIncomplete: z.boolean(), changed: z.array(z.string()) }).strict()
+  timedOut: z.boolean(), cancelled: z.boolean(), stdout: z.string(), stderr: z.string(), outputIncomplete: z.boolean(), changed: z.array(z.string()),
+  isolation: z.literal('fresh-copy').optional(), generated: z.array(z.string()).optional() }).strict()
 export type CheckResult = z.infer<typeof checkResultSchema>
 
 export const findingSchema = z.object({ criterionId: z.string().min(1), status: z.enum(['satisfied', 'failed', 'unverified']),
