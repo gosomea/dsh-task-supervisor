@@ -46,3 +46,27 @@ During implementation of position two, controlled state replay exposed another r
 The current freeze is [repair-v4.json](repair-v4.json), from runner source `bc45ef6`. All 24 specifications, package bytes, route and execution order are unchanged. Position two reconnected its original Session and reached collection/grading after valid normal-finish evidence. Its original initial-grant receipt remains the only grant. This predicate repair is a separate protocol deviation; earlier releases and results are not overwritten.
 
 Subsequent public snapshots retain native completion event sequence, turn, timestamp and controller source digest in `terminal.nativeCompletionEvidence`, without event bodies. Report export does not modify the frozen runner or original results. Controller completion and official reward remain separate outcomes.
+
+## Environment handoff and resumption
+
+Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
+
+Read the frozen release/order, batch owner events and position records, then verify the actual process's complete command line and original sandbox. A lock file or old PID alone is not liveness evidence. Observe an active owner without launching another monitor. After the original owner has stopped, resume with the same private release and runs directories:
+
+```sh
+<SDK Python> <release>/runner/sandbox-run/batch.py <release> <runs> --python <SDK Python> --domain localhost:8090
+```
+
+`<release>` must be the complete digest-verified freeze; the public redacted `release.json` cannot replace private execution configuration. The command validates files, service identity and an exclusive lease, then selects the next operation from durable records:
+
+| Existing record | Next operation |
+|---|---|
+| `started.json`, no terminal | Reconnect the original sandbox/Session and observe; never redeliver the Agent |
+| `terminal.json`, collection incomplete | Resume original collection after stopping and resource convergence |
+| `collection-complete.json`, no result | Resume separate grading of the original Agent's committed patch |
+| `result.json` | Sealed and read-only; continue the fixed order |
+| Only `delivery-intent.json`, delivery uncertain | Reconcile the original request and Session; never create a replacement position |
+
+`terminal.json` records a stopping condition; `collection-complete.json` records completed artifact/log collection; only `result.json` counts as sealed. Reconcile original actions when admission, collection, resource or grading faults occur. Do not delete records or append `resume` to force progress. A repair needs a separate freeze and reported protocol deviation; delivered specifications and sealed results remain unchanged.
+
+The committed `public_results.py` reads original results and collected logs into a new non-overwritable output directory. Report processing may have a different version from frozen execution; record that distinction without changing inputs, grants or official rewards. Keep private logs, model text, credentials and grading materials in the registered environment. Publish only redacted counters and evidence digests.

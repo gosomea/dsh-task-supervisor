@@ -46,3 +46,27 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 当前冻结见 [repair-v4.json](repair-v4.json)，运行器源码为 `bc45ef6`。24 个 spec、安装包、模型路由和运行顺序未改变，第二位置从原 Session 接续并取得有效正常完成记录后进入收集及评分。首次批准只保留原回执；此判定修复作为单独协议偏差报告，不覆盖早先 release 或结果。
 
 后续公开快照在 `terminal.nativeCompletionEvidence` 中保留原生完成的事件编号、轮次、时间及控制器源码摘要；只导出实际持久证据，不包含事件正文。报告导出不修改冻结运行器或原始结果，控制器完成与官方评分分别展示。
+
+## 环境交接与断点接续
+
+执行环境使用登记的 `colima-dsh-eval-rosetta` Docker context 和 `localhost:8090` OpenSandbox 服务。原生 DSH、模型路由、镜像、运行器、安装包及评分器身份均以冻结材料为准；不要在线选择最新依赖。日常 3080 不属于本批次资源。
+
+接手时先读取冻结 release／order、批次 owner 事件与逐位置记录，再核对实际进程完整命令行及原沙盒。锁文件或旧 PID 不能单独证明监控器仍在运行。存在活跃 owner 时只观察，不启动第二个监控器。原 owner 已结束后，使用同一私有 release 根目录与 runs 目录接续：
+
+```sh
+<SDK Python> <release>/runner/sandbox-run/batch.py <release> <runs> --python <SDK Python> --domain localhost:8090
+```
+
+`<release>` 必须是已经校验摘要的完整冻结目录；公开脱敏 `release.json` 不能代替私有执行配置。上述命令重新核对文件、服务身份及独占租约，按持久记录选择下一操作：
+
+| 当前记录 | 下一操作 |
+|---|---|
+| `started.json`，无终态 | 连接原沙盒／Session，继续观察；不重新投递 Agent |
+| `terminal.json`，尚未完成收集 | 停止与资源收敛后接续收集原位置 |
+| `collection-complete.json`，无结果 | 使用原 Agent 已提交补丁接续独立评分 |
+| `result.json` | 已封口，只读；继续固定顺序中的下一位置 |
+| 只有 `delivery-intent.json`，交付结果未知 | 核对原请求与 Session；禁止创建替代位置 |
+
+`terminal.json` 仅代表停止条件已记录；`collection-complete.json` 代表产物与日志收集完成；只有 `result.json` 才计入封口数。准入、收集、资源或评分故障需要核对原动作后处理，不能通过删除记录或追加 `resume` 推进。新修复必须另行冻结并报告协议偏差，不修改已投递 spec 或已封口结果。
+
+结果导出使用当前已提交的 `public_results.py`，只读原始结果和收集日志，输出一个新的不可覆盖目录。报告处理版本可与冻结执行版本不同；这种差异必须记录，不能改变输入、批准或官方成绩。私有原日志、模型正文、凭据及评分材料留在原登记环境，公开包只保留脱敏计数与证据摘要。
