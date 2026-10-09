@@ -11,6 +11,7 @@ import { evidenceRecord } from './evidence.ts'
 import { reviewActivity } from './review-activity.ts'
 import type { RepairController } from './repair-runtime.ts'
 import type { ConsultationMode } from './consultation.ts'
+import type { ExecutionBudget } from './execution-budget.ts'
 import { createTaskHistoryCollector, taskOf, taskProjection, type TaskProjection } from './state.ts'
 
 const PATH = '/api/task-supervisor'
@@ -63,7 +64,7 @@ async function taskHistory(ctx: Context, sessionId: string, agent: Agent | undef
 }
 
 /** Register the panel route only when a Web Connection exists. */
-export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[]; reviewVerification?: 'log' | 'independent' }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
+export function installPanelApi(ctx: Context, controls: (agent: Agent) => { armed: boolean; reviewing: boolean; actions: string[]; reviewVerification?: 'log' | 'independent'; executionBudget?: ExecutionBudget | null }, consultation: { open(main: Agent): Promise<Agent>; promote(main: Agent, id: string, version: number): Promise<unknown>; mode(main: Agent): ConsultationMode; setMode(main: Agent, mode: ConsultationMode): Promise<void> }, repairs?: RepairController): void {
   const details = (agent: Agent) => {
     const events = agent.session.snapshotEvents()
     const primaryStart = events.findLast(event => event.type === 'turn/start')
@@ -71,9 +72,14 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')
     const active = projection?.reviewJobs.findLast(job => job.taskId === projection.current?.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
     const reviewer = active?.reviewerSessionId ? ctx.agents.get(SessionId(active.reviewerSessionId)) : undefined
+    const budget = projection?.budgets.find(item => item.taskId === projection.current?.id)
+    const activity = active ? reviewActivity(active, reviewer?.session.snapshotEvents() ?? [], reviewer?.status === 'running') : null
+    const lastMain = budget ? events.findLast(event => event.time >= Date.parse(budget.createdAt)
+      && ['assistant/message', 'tool/call', 'tool/result', 'turn/start', 'turn/end', 'step/start'].includes(event.type)) : undefined
     return { primaryTurnEnded: primaryEnd !== undefined && (primaryStart?.seq ?? -1) < primaryEnd.seq,
       entryActive: projection?.entry?.active === true && projection.entry.mainSessionId === agent.id, draft: draftOf(ctx, agent), reviews: projection?.reviews ?? [], reviewJobs: projection?.reviewJobs ?? [], reworks: projection?.reworks ?? [], repairs: projection?.repairs ?? [],
-      reviewActivity: active ? reviewActivity(active, reviewer?.session.snapshotEvents() ?? [], reviewer?.status === 'running') : null }
+      executionActivityAt: Math.max(lastMain?.time ?? 0, activity?.lastActivityAt ?? 0) || null,
+      reviewActivity: activity }
   }
   ctx.inject(['connection'], web => {
     web.effect(() => web.connection.fetch.register({
@@ -123,7 +129,7 @@ export function installPanelApi(ctx: Context, controls: (agent: Agent) => { arme
           const projected = await coldState(ctx, sessionId, request.signal)
           if (projected === null) return response({ error: 'Session not found' }, 404)
           if (projected.failure !== null) return response({ error: projected.failure }, 409)
-          return response({ task: projected.current, entryActive: projected.entry?.active === true && projected.entry.mainSessionId === sessionId, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks, repairs: projected.repairs })
+          return response({ task: projected.current, executionBudget: projected.budgets.find(item => item.taskId === projected.current?.id) ?? null, entryActive: projected.entry?.active === true && projected.entry.mainSessionId === sessionId, live: false, armed: false, reviewing: false, actions: [], draft: projected.draft?.mainSessionId === sessionId ? projected.draft : null, reviews: projected.reviews, reviewJobs: projected.reviewJobs, reworks: projected.reworks, repairs: projected.repairs })
         }
         if (agent === undefined) return response({ error: 'Open the Session before using controls' }, 409)
         let body: unknown

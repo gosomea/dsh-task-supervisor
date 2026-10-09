@@ -1,5 +1,9 @@
 # 督导会话与恢复设计
 
+**当前持久路径（2026-10-09）：** 插件使用公开原生 Inbox 控制记录，不修改 Host。长程预算属于独立命名空间 `dsh-task-supervisor-execution-budget`，保存 Task／主 Session、冻结策略、绝对截止、动作预留／确认与停止历史。预算修订不改变 Task 修订及审查截止点；Task 记录 16、投影缓存 22。每次恢复先核对原动作；未知结果停止自动投递。旧任务不补造预算或权限。下方早期扩展模块建议保留为历史设计；当前实现以[实现状态](implementation.zh.md)及[长程协议](../eval/sandbox-run/protocol.zh.md)为准。
+
+## 早期设计依据
+
 **状态：设计建议，已有部分实现。** 本文负责持久记录、恢复权限、动作交付、日志读取和故障验收；[实现状态](implementation.zh.md)说明已运行的行为，任务含义见[任务生命周期](task-lifecycle.zh.md)，早期缺口见[内核试验](host-spike.zh.md)。未来可以把这些职责整理成同仓库的 `supervisor-session` 模块；当前原型由插件代码和隔离 DSH 宿主扩展实现。
 
 ## 建议结构

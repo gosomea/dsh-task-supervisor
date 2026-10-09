@@ -18,6 +18,7 @@ for (const side of ['host', 'client']) {
     jsx: ts.JsxEmit.ReactJSX, typeRoots: [resolve(source, 'scripts/types'), resolve(source, 'node_modules/@types')],
     paths: { ...parsed.options.paths, vitest: [resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.d.ts')] } }
   const program = ts.createProgram({ rootNames: side === 'host' ? [
+    resolve(project, 'spikes/kernel/execution-budget.spec.ts'),
     resolve(project, 'spikes/kernel/execution-policy.spec.ts'), resolve(project, 'spikes/kernel/planning-review.spec.ts'), resolve(project, 'spikes/kernel/recovery.spec.ts'), resolve(project, 'spikes/kernel/capabilities.spec.ts'), resolve(project, 'spikes/kernel/supervisor.spec.ts'), resolve(project, 'src/index.ts'),
     resolve(project, 'spikes/kernel/artifact-snapshot.spec.ts'), resolve(project, 'spikes/kernel/review-check.spec.ts'), resolve(project, 'spikes/kernel/verification.spec.ts'),
     resolve(project, 'src/check-gateway.ts'), resolve(project, 'spikes/kernel/check-gateway.spec.ts'),
@@ -31,7 +32,7 @@ for (const side of ['host', 'client']) {
     resolve(project, 'spikes/kernel/provenance-findings.spec.ts'),
     resolve(project, 'spikes/kernel/evidence.spec.ts'), resolve(project, 'spikes/kernel/review-read-ledger.spec.ts'), resolve(project, 'spikes/kernel/review-scope.spec.ts'),
     resolve(project, 'spikes/kernel/review-results.spec.ts'),
-  ] : [resolve(project, 'src/client/index.tsx'), resolve(project, 'spikes/kernel/review-presentation.spec.ts'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
+  ] : [resolve(project, 'src/client/index.tsx'), resolve(project, 'spikes/kernel/execution-budget-presentation.spec.ts'), resolve(project, 'spikes/kernel/review-presentation.spec.ts'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
     options, projectReferences: parsed.projectReferences })
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
   if (diagnostics.length) {

@@ -13,8 +13,8 @@ import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
   type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 15
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+export const RECORD_VERSION = 16
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
@@ -22,6 +22,7 @@ import { DRAFT_NAMESPACE, draftSchema, foldDraft, type TaskDraft } from './draft
 import { REVIEW_NAMESPACE, reviewJobSchema, foldReviewJobs, type ReviewJob } from './review-records.ts'
 import { taskSchema, reviewSchema, type TaskSnapshot, type TaskStage, type TaskCriterion } from './state-schema.ts'
 import { REPAIR_NAMESPACE, repairProposalSchema, foldRepairs, reopenTask, type RepairProposal } from './repairs.ts'
+import { BUDGET_NAMESPACE, executionBudgetSchema, foldExecutionBudgets, type ExecutionBudget } from './execution-budget.ts'
 
 export const entrySchema = z.object({ active: z.boolean(), mainSessionId: z.string().min(1) }).strict()
 
@@ -37,9 +38,11 @@ export interface TaskProjection {
   repairs: RepairProposal[]
   archivedTasks: TaskHistoryEntry[]
   currentSeq: number
+  budgets: ExecutionBudget[]
 }
 
 export interface TaskHistoryEntry {
+  executionBudget?: ExecutionBudget
   task: TaskSnapshot
   reviews: z.infer<typeof reviewSchema>[]
   reworks: ReworkRecord[]
@@ -55,12 +58,12 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 21,
+  stateVersion: 22,
   stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
-    repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),
+    repairs: z.array(repairProposalSchema), budgets: z.array(executionBudgetSchema), currentSeq: z.number().int().nonnegative(),
     archivedTasks: z.array(z.object({ task: taskSchema, reviews: z.array(reviewSchema), reworks: z.array(reworkRecordSchema), lastSeq: z.number().int().nonnegative() })) }),
-  init: (): TaskProjection => ({ entry: null, current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [], repairs: [], archivedTasks: [], currentSeq: 0 }),
+  init: (): TaskProjection => ({ entry: null, current: null, failure: null, reviews: [], reviewJobs: [], draft: null, reworks: [], pendingReworks: [], repairs: [], archivedTasks: [], currentSeq: 0, budgets: [] }),
   apply(state: TaskProjection, event: SessionEvent): TaskProjection {
     event = controlEvent(event)
     if (state.failure !== null) return state
@@ -73,7 +76,7 @@ export const taskProjection = {
       return { ...state, pendingReworks: state.pendingReworks.filter(item => item.callId !== pending.callId),
         reworks: record ? [...state.reworks, record].slice(-50) : state.reworks }
     }
-    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE, REPAIR_NAMESPACE].includes(event.data.namespace)) return state
+    if (event.type !== 'extension/record' || ![NAMESPACE, REVIEW_NAMESPACE, DRAFT_NAMESPACE, REPAIR_NAMESPACE, BUDGET_NAMESPACE].includes(event.data.namespace)) return state
     try {
       if (event.data.namespace === NAMESPACE && event.data.kind === 'entry') {
         if (event.data.schemaVersion !== 1) throw new Error('unsupported task entry record')
@@ -82,6 +85,11 @@ export const taskProjection = {
       if (event.data.namespace === REPAIR_NAMESPACE) return { ...state, repairs: foldRepairs(state.repairs, event) }
       if (event.data.namespace === DRAFT_NAMESPACE) return { ...state, draft: foldDraft(state.draft, event) }
       if (event.data.namespace === REVIEW_NAMESPACE) return { ...state, reviewJobs: foldReviewJobs(state.reviewJobs, event) }
+      if (event.data.namespace === BUDGET_NAMESPACE) {
+        const budget = executionBudgetSchema.parse(event.data.payload)
+        if (budget.taskId !== state.current?.id && !state.archivedTasks.some(entry => entry.task.id === budget.taskId)) throw new Error('execution budget belongs to an unknown Task')
+        return { ...state, budgets: foldExecutionBudgets(state.budgets, event.data.schemaVersion, event.data.kind, event.data.payload) }
+      }
       if (!READABLE_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'state') {
         throw new Error('unsupported Supervisor record')
       }
@@ -140,6 +148,7 @@ export function createTaskHistoryCollector() {
       const current = projection.current && terminal(projection.current)
         ? [{ task: projection.current, reviews: projection.reviews, reworks: projection.reworks, lastSeq: projection.currentSeq }] : []
       return [...projection.archivedTasks.filter(entry => terminal(entry.task)), ...current].sort((a, b) => b.lastSeq - a.lastSeq)
+        .map(entry => { const budget = projection.budgets.find(item => item.taskId === entry.task.id); return { ...entry, ...budget ? { executionBudget: budget } : {} } })
     },
   }
 }
@@ -162,7 +171,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     ...state.reopenedFromProposalId === undefined ? {} : { reopenedFromProposalId: state.reopenedFromProposalId },
     ...state.repairHistory === undefined ? {} : { repairHistory: JSON.parse(JSON.stringify(state.repairHistory)) as JsonValue },
     ...state.recovery === undefined ? {} : { recovery: { ...state.recovery, evidenceSeqs: [...state.recovery.evidenceSeqs] } },
-    ...state.planning === undefined ? {} : { planning: { ...state.planning, facts: [...state.planning.facts], unknowns: [...state.planning.unknowns], evidenceSeqs: [...state.planning.evidenceSeqs] } },
+    ...state.planning === undefined ? {} : { planning: JSON.parse(JSON.stringify(state.planning)) as JsonValue },
     objective: state.objective,
     ...state.creationRequestId === undefined ? {} : { creationRequestId: state.creationRequestId },
     ...state.responseLanguage === undefined ? {} : { responseLanguage: state.responseLanguage },

@@ -1,5 +1,6 @@
 /** Fresh, read-only reviewer over a fixed main Session evidence cutoff. */
 import { controlEvent } from './session-records.ts'
+import { ExecutionBudgetError } from './execution-budget.ts'
 
 import { restoreReviewReads } from './review-read-ledger.ts'
 import { transientReviewFault, waitReviewRetry, type FaultRecoveryPolicy } from './review-recovery.ts'
@@ -42,7 +43,15 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
+export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1
+  taskDeadlineAt?: string
+  beforeFaultRetry?: (job: ReviewJob, runtimeId: string) => Promise<void>
+  faultRetryStarted?: (job: ReviewJob) => Promise<void>
+}
+
+function reviewDeadline(policy: ReviewPolicy, deadlineMs: number): string {
+  return new Date(Math.min(Date.now() + deadlineMs, policy.taskDeadlineAt ? Date.parse(policy.taskDeadlineAt) : Infinity)).toISOString()
+}
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -169,7 +178,7 @@ export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: kind === 'planning' ? null : runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
     kind, cutoff, reviewerSessionId: `task-review-${randomUUID()}`,
-    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
+    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: reviewDeadline(policy, limits.deadlineMs),
     startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
@@ -226,10 +235,19 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
       if (!job || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
       const actual = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
       if (!actual?.enabled || actual.id !== task.id || actual.revision !== taskRevision) throw error
-      prior = { ...job, revision: job.revision + 1, status: 'queued', recovery: { ...strategy,
+      const retryRuntimeId = randomUUID()
+      try { await policy.beforeFaultRetry?.(job, retryRuntimeId) } catch (budgetError) {
+        // The owning controller has recorded a budget stop. Preserve the failed review.
+        if (budgetError instanceof ExecutionBudgetError) throw error
+        throw budgetError
+      }
+      signal.throwIfAborted()
+      const reservedTask = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
+      if (!reservedTask?.enabled || reservedTask.id !== task.id || reservedTask.revision !== taskRevision) throw error
+      prior = { ...job, revision: job.revision + 1, status: 'queued', runtimeId: retryRuntimeId, recovery: { ...strategy,
         consumed: strategy.consumed + 1, nextRetryAt: new Date(Date.now() + strategy.delayMs).toISOString() } }
       await recordReview(ctx, main, prior)
-      try { await waitReviewRetry(strategy.delayMs, signal) }
+      try { await waitReviewRetry(Math.min(strategy.delayMs, policy.taskDeadlineAt ? Math.max(0, Date.parse(policy.taskDeadlineAt) - Date.now()) : strategy.delayMs), signal) }
       catch (cause) {
         const fault = { ...error.fault, code: 'cancelled' as const, retryable: false, message: 'Review recovery cancelled before the next attempt.',
           cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' }
@@ -255,9 +273,9 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     ...previous.recovery ? { recovery: { ...previous.recovery, manualPending: false, nextRetryAt: null } } : {},
     trigger: queued ? previous.trigger : previous.recovery?.nextRetryAt ? 'fault-retry' : 'manual-retry',
     attempt: previous.attempt + (queued ? 0 : 1), repairLimit: limits.repairAttempts,
-    runtimeId: queued ? previous.runtimeId : randomUUID(),
+    runtimeId: queued || previous.recovery?.nextRetryAt ? previous.runtimeId : randomUUID(),
     attemptStartedAt: new Date().toISOString(),
-    deadlineAt: queued ? previous.deadlineAt : new Date(Date.now() + limits.deadlineMs).toISOString() }
+    deadlineAt: queued ? previous.deadlineAt : reviewDeadline(policy, limits.deadlineMs) }
     : createReviewJob(main, task, stageId, evidence, kind, policy)
   const deadline = new AbortController()
   const timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')),
@@ -275,7 +293,8 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     }
     job.model ??= reviewerOptions(ctx, main, fixedModel).model
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
-    const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job, verification)
+    const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job, verification,
+      job.trigger === 'fault-retry' ? policy.faultRetryStarted : undefined)
     return { ...decision, jobId: job.id }
   } catch (error) {
     const fault = !signal.aborted && error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
@@ -303,6 +322,7 @@ async function runReviewStage(
   reviewKind: ReviewJob['kind'],
   job: ReviewJob,
   verification?: VerificationPolicy,
+  retryStarted?: ReviewPolicy['faultRetryStarted'],
 ): Promise<ReviewDecision> {
   signal.throwIfAborted()
   if (!await ctx.sessions.flush(main.session)) throw new Error('main Session is not durable')
@@ -622,6 +642,8 @@ async function runReviewStage(
   const abort = () => handle.agent.cancel({ kind: 'parent' })
   signal.addEventListener('abort', abort, { once: true })
   try {
+    signal.throwIfAborted()
+    await retryStarted?.(job)
     signal.throwIfAborted()
     if (exists && job.verification) await recordReview(ctx, main, { ...job, revision: ++job.revision })
     handle.agent.followup(createUserMessage({

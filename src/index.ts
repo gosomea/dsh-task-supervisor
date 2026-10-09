@@ -24,6 +24,9 @@ import { approvalMessage, approvedTask, controlActions } from './decisions.ts'
 import { languagePolicy, resolveLanguage, continuationContext } from './task-context.ts'
 import { policyApproval } from './execution-policy.ts'
 import { recoveryBoundary } from './recovery.ts'
+import { planningEvidenceFingerprint } from './progress-evidence.ts'
+import { longHorizonSchema, ExecutionBudgetError, type LongHorizonConfig, type BudgetActionKind } from './execution-budget.ts'
+import { installExecutionBudget } from './execution-budget-runtime.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
 import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { changedAttempts } from './rework-records.ts'
@@ -57,6 +60,7 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Deployment policy for supervised tasks, review and optional independent checks. */
 export interface Config {
+  longHorizon?: LongHorizonConfig
   /** Opt-in restore of Sessions created with 0.1.1 Supervisor preset identities. */
   legacyPresets?: boolean
   repairMaxFiles?: number
@@ -125,6 +129,7 @@ function reply(title: string, task: TaskSnapshot | null, armed: boolean): Comman
 
 /** Register one independently owned workflow on public DSH seams. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
+  const longHorizon = config.longHorizon === undefined ? undefined : longHorizonSchema.parse(config.longHorizon)
   const reviewerPolicy = reviewPolicy({ ...config.reviewReadCorrectionAttempts === undefined ? {} : { readCorrectionAttempts: config.reviewReadCorrectionAttempts }, ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   const recoveryPolicy = faultRecoveryPolicy(config.reviewFaultRetryAttempts, config.reviewFaultRetryDelayMs, config.resumeAfterReviewRecovery)
@@ -266,7 +271,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   /** The idle maintenance lock holds a queued followup until both records are durable. */
-  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string, delivery?: ReturnType<typeof inputFor>): Promise<void> {
+  async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string, delivery?: ReturnType<typeof inputFor>, action?: { kind: BudgetActionKind; id: string }): Promise<void> {
     await agent.runMaintenance(async signal => {
       signal.throwIfAborted()
       if (disposed) throw new Error('Supervisor is unloaded')
@@ -274,17 +279,25 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (actual?.id !== expected?.id || actual?.revision !== expected?.revision) {
         throw new Error('task changed before the action could be admitted')
       }
+      if (actual && !['complete', 'cleared'].includes(actual.phase)) budgets.requireTime(agent)
       await beforeCommit?.()
       signal.throwIfAborted()
       if (current(agent)?.id !== expected?.id || current(agent)?.revision !== expected?.revision) throw new Error('task changed during admission')
-      const committed = appendTask(ctx, agent, typeof next === 'function' ? next() : next)
+      const proposed = typeof next === 'function' ? next() : next
+      if (proposed.id === expected?.id) budgets.requireTime(agent)
+      const message = delivery ?? (commandInput === undefined ? inputFor(proposed, instruction) : createUserMessage({ content: [{ type: 'text', text: commandInput }], source: { kind: 'user' } }))
+      if (action) await budgets.reserve(agent, proposed, action.kind, action.id, message.id)
+      signal.throwIfAborted()
+      if (current(agent)?.id !== expected?.id || current(agent)?.revision !== expected?.revision) throw new Error('task changed during budget reservation')
+      const committed = appendTask(ctx, agent, proposed)
+      if (committed.id !== expected?.id) budgets.initialize(agent, committed)
       ownContinuation(agent)
       await flush(agent)
       signal.throwIfAborted()
       const persisted = current(agent)
       if (disposed || persisted?.id !== committed.id || persisted.revision !== committed.revision || hasPending(agent)) throw new Error('task or inbox changed before delivery')
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
-      const message = delivery ?? (commandInput === undefined ? inputFor(committed, instruction) : createUserMessage({ content: [{ type: 'text', text: commandInput }], source: { kind: 'user' } }))
+      budgets.requireTime(agent)
       agent.followup(message)
       try {
         await flush(agent)
@@ -292,9 +305,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         const delivered = current(agent)
         if (disposed || delivered?.id !== committed.id || delivered.revision !== committed.revision
           || [...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(item => item.id !== message.id && item.source.kind !== 'task-supervisor-record')) throw new Error('task or inbox changed during delivery')
+        if (action) await budgets.confirm(agent, committed.id, action.id, message.id)
       } catch (error) {
         agent.inbox.remove(message.id)
         runtime(agent).armed = false
+        if (action) budgets.uncertain(agent, action.id)
         throw error
       }
     })
@@ -302,6 +317,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   /** User edits can arrive during a model turn or review; replace the objective before waiting for cancellation. */
   async function replaceAndWake(agent: Agent, expected: TaskSnapshot, next: TaskSnapshot, instruction: string): Promise<void> {
+    budgets.requireTime(agent)
     const actual = current(agent)
     if (disposed || actual?.id !== expected.id || actual.revision !== expected.revision) {
       throw new Error('task changed before the edit could be admitted')
@@ -313,6 +329,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       signal.throwIfAborted()
       const latest = current(agent)
       if (disposed || latest?.id !== committed.id || latest.revision !== committed.revision) return
+      budgets.requireTime(agent)
       runtime(agent).armed = true
       agent.followup(inputFor(committed, instruction))
       await flush(agent)
@@ -320,6 +337,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   ctx.sessionProjections.register(taskProjection)
+  const budgets = installExecutionBudget(ctx, longHorizon, withdrawOwned)
   installTaskToolPresentation(ctx, agent => {
     const task = taskOf(ctx, agent)
     if (task?.phase === 'complete') return ['task_status', 'task_create', 'task_propose_repair', 'read', 'glob', 'grep', 'read_image']
@@ -388,6 +406,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (inTurn || ctx.agents.currentInitiator() === agent && agent.status === 'running') {
       // Already executing in this Agent: maintenance would wait for its own turn.
       appendTask(ctx, agent, grant())
+      budgets.initialize(agent, next)
       ownContinuation(agent)
       await flush(agent)
       if (disposed || current(agent)?.id !== next.id || current(agent)?.revision !== next.revision) throw new Error('task changed during creation')
@@ -429,7 +448,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const repairs = installRepairs(ctx, commitAndWake, repairLimits)
   const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
   installPanelApi(ctx, agent => ({ reviewVerification: effectiveVerification, armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
-    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
+    executionBudget: budgets.budgetOf(agent) ?? null,
+    actions: current(agent)?.pauseReason === 'task-deadline' ? ['off'] : controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent, new Error('Supervisor unloaded'))
@@ -471,7 +491,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   function reviewPolicyFor(agent: Agent, armed = runtime(agent).armed) {
-    return { ...selectedReviewPolicy, faultRecovery: { ...recoveryPolicy, armed } }
+    const budget = budgets.budgetOf(agent)
+    return { ...selectedReviewPolicy, faultRecovery: { ...recoveryPolicy, armed },
+      ...budget ? { taskDeadlineAt: budget.deadlineAt,
+        beforeFaultRetry: async (job: ReviewJob, runtimeId: string) => {
+          const task = current(agent)
+          if (!task || task.id !== job.taskId || task.requirementsVersion !== job.input.requirementsVersion
+            || task.planVersion !== job.planVersion || (runsOf(task).find(run => run.id === job.stageId)?.attempt ?? null) !== job.nodeAttempt) throw new Error('retry Task identity changed')
+          await budgets.reserve(agent, task, 'review-fault', `review:${job.id}:${job.attempt + 1}`, runtimeId)
+        },
+        faultRetryStarted: async (job: ReviewJob) => { await budgets.confirm(agent, job.taskId, `review:${job.id}:${job.attempt}`, job.runtimeId!) },
+      } : {} }
   }
   function canContinueReview(agent: Agent, jobId: string, task: TaskSnapshot) {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === jobId)
@@ -540,11 +570,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const sameSummary = planning && latest.planning && decision.planning
         && JSON.stringify([...latest.planning.facts].sort()) === JSON.stringify([...decision.planning.facts].sort())
         && JSON.stringify([...latest.planning.unknowns].sort()) === JSON.stringify([...decision.planning.unknowns].sort())
-      const planningProgress = decision.planning?.progress === true && !sameSummary
+      const evidence = planning && budgets.budgetOf(agent) ? planningEvidenceFingerprint(agent.session.snapshotEvents(), latest, decision.cutoff) : null
+      const planningProgress = decision.planning?.progress === true && !sameSummary && (evidence === null || evidence.hasEvidence && evidence.fingerprint !== latest.planning?.progressFingerprint)
       const noProgress = planning && !planningProgress ? (latest.planning?.noProgress ?? 0) + 1 : 0
       const stalled = planning && noProgress >= planningLimit
       const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
         ...planning && decision.planning ? { planning: { ...decision.planning, progress: planningProgress, requirementsVersion: latest.requirementsVersion,
+          ...evidence ? { progressFingerprint: evidence.fingerprint } : {},
           cutoff: decision.cutoff, jobId: decision.jobId, evidenceSeqs: decision.evidenceSeqs, noProgress } } : {},
         phase: decision.verdict === 'needs-user' || stalled ? 'paused' : planning ? 'planning' : 'active', roundsSinceReview: 0,
         reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : stalled ? 'planning-stalled' : null,
@@ -572,6 +604,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
     const task = taskOf(ctx, agent)
     if (task === null) return next()
+    if (!['complete', 'cleared'].includes(task.phase)) {
+      try { budgets.requireTime(agent) } catch (error) { if (error instanceof ExecutionBudgetError) return { kind: 'reject' }; throw error }
+    }
     ownContinuation(agent)
     const owned = messages.some(message => message.source.kind === 'task-supervisor')
     const life = runtime(agent)
@@ -664,6 +699,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     current,
     pendingInput: hasPending,
     async admitted(agent, task) {
+      budgets.requireTime(agent)
       const pending = task.pendingReview!
       pending.jobId = randomUUID()
       const parsed = pending.kind === 'plan' ? planInput.parse(JSON.parse(pending.evidence)) : undefined
@@ -773,7 +809,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             const provisional = { ...latest, revision: latest.revision + 1 }
             const delivery = inputFor(provisional, instruction)
             const next: TaskSnapshot = { ...provisional, recovery: { endSeq: boundary.endSeq, turn: boundary.turn, evidenceSeqs: boundary.evidenceSeqs, progressFingerprint: boundary.progressFingerprint, noProgress, messageId: delivery.id, instruction } }
-            await commitAndWake(agent, latest, next, instruction, undefined, undefined, delivery)
+            await commitAndWake(agent, latest, next, instruction, undefined, undefined, delivery,
+              { kind: 'truncation', id: `truncation:${boundary.endSeq}` })
             return
           }
         }
@@ -818,6 +855,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     const task = taskOf(ctx, exec.agent)
     if (task === null || task.phase === 'cleared') return undefined
     if (exec.name === 'task_status' || exec.name === 'task_create' && task.phase === 'complete' && task.enabled) return undefined
+    if (!['complete', 'cleared'].includes(task.phase)) {
+      try { budgets.requireTime(exec.agent) } catch (error) { if (error instanceof ExecutionBudgetError) return error.message; throw error }
+    }
     if (task.phase === 'complete') {
       // A completed task has no execution grant, including before the model
       // proposes repair or after the user declines it. Generic executors can write.
@@ -941,6 +981,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           return reply('Supervisor on; use /task resume to continue', next, false)
         }
         if (input === 'resume') {
+          budgets.requireTime(agent)
           if (task.pauseReason !== 'review-fault' && task.pendingReview?.jobId && boundReview(agent, task)?.owner === 'controller' && !life.armed && !reviewAbort.has(agent)) {
             await retryReview(agent, task, signal, true)
             return reply('原审查恢复已提交；用户暂停或宿主重启后的实施仍需手动恢复。', current(agent), false)
@@ -963,7 +1004,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
               ? `Review interrupted for ${interruptedReview.stageId}. Verify current state, then resubmit ${['planning', 'plan'].includes(interruptedReview.kind) ? 'task_submit_plan' : interruptedReview.kind === 'stage' ? 'task_report_stage' : 'task_request_completion'} with evidence: ${interruptedReview.evidence}`
               : next.phase === 'planning' ? `Resume planning: ${next.objective}. Submit the plan with task_submit_plan.`
                 : executionPrompt(agent, next,
-                  'Resume the approved task. Check the current workspace before repeating any uncertain effects.'))
+                  'Resume the approved task. Check the current workspace before repeating any uncertain effects.'), undefined, undefined, undefined,
+            { kind: 'manual-resume', id: budgets.manualId(agent) })
           return reply('Task resumed', next, true)
         }
         if (input.startsWith('edit ')) {
@@ -1014,6 +1056,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const source = latestUser?.type === 'user/message' ? { seq: latestUser.seq, text: latestUser.data.content.filter(block => block.type === 'text').map(block => block.text).join('\n') } : null
       return task === null ? { task: null, supervision: entryActive(agent) ? 'awaiting-objective' : 'not-enabled', latestUserMessage: source, availableActions: ['task_create'] } : { ...taskJson({ ...task, nodeRuns: runsOf(task) }) as Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>,
         currentTaskId: live?.id ?? null,
+        executionBudget: JSON.parse(JSON.stringify(budgets.budgetOf(agent, task.id) ?? null)) as import('@deepseek-ai/dsh-util-values').JsonValue,
         latestUserMessage: source,
         continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',
         reviewVerification: effectiveVerification,
@@ -1199,17 +1242,22 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }
 
   async function retryReview(agent: Agent, expected: TaskSnapshot, commandSignal: AbortSignal, interrupted = false): Promise<void> {
+    budgets.requireTime(agent)
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === (expected.pendingReview?.jobId ?? expected.reviewFault?.jobId))
     const stopped = interrupted && job?.owner === 'controller' && expected.pendingReview?.jobId === job.id
       && (job.status === 'queued' || job.status === 'started' || job.status === 'submitted' || job.status === 'failed' && job.fault?.code === 'cancelled'
         && ['user', 'restart'].includes(expected.pauseReason ?? ''))
     if (!job || !expected.enabled || reviewAbort.has(agent)
       || !(stopped && ['paused', 'reviewing'].includes(expected.phase)
-        || job.status === 'failed' && expected.phase === 'paused' && expected.pauseReason === 'review-fault' && job.fault?.retryable)) throw new Error('no retryable review fault')
+        || job.status === 'failed' && expected.phase === 'paused' && ['review-fault', 'execution-budget'].includes(expected.pauseReason ?? '') && job.fault?.retryable)) throw new Error('no retryable review fault')
     if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
     commandSignal.throwIfAborted()
+    const actionId = budgets.manualId(agent), effectId = `${job.id}:manual:${job.revision + 1}`
+    await budgets.reserve(agent, expected, 'manual-resume', actionId, effectId)
+    commandSignal.throwIfAborted()
+    if (current(agent)?.id !== expected.id || current(agent)?.revision !== expected.revision) throw new Error('Task changed before manual retry')
     const strategy = job.recovery ?? { retryLimit: 0, delayMs: 0, resume: false, consumed: 0, protocolRepairs: 0,
       permit: { armed: false, requirementsVersion: job.input.requirementsVersion, planVersion: job.planVersion,
         approvedPlanVersion: job.input.approvedPlanVersion }, manualOnly: true, manualPending: false, nextRetryAt: null, failures: [] }
@@ -1221,7 +1269,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     appendTask(ctx, agent, reviewing)
     runtime(agent).armed = false
     await flush(agent)
+    budgets.requireTime(agent)
     queuedReviews.schedule(agent, reviewing)
+    await budgets.confirm(agent, expected.id, actionId, effectId)
   }
 
   async function performRecovery(agent: Agent, expected: TaskSnapshot, job: ReviewJob, commandSignal: AbortSignal) {
@@ -1231,9 +1281,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const signal = AbortSignal.any([commandSignal, abort.signal])
       try {
         const decision = job.status === 'submitted'
-          ? await savedReviewDecision(ctx, agent, job, selectedReviewPolicy, signal)
+          ? await savedReviewDecision(ctx, agent, job, reviewPolicyFor(agent), signal)
           : await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
-            config.reviewerModel, job.kind, selectedReviewPolicy, job, true)
+            config.reviewerModel, job.kind, reviewPolicyFor(agent), job, true)
         const actual = current(agent)
         if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled || hasPending(agent)) {
           await finishReviewRecord(agent, decision.jobId, 'stale')

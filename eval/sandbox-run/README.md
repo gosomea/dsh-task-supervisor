@@ -9,7 +9,7 @@ This directory implements the [long-horizon protocol](protocol.md) with a new de
 
 ## Implementation status
 
-The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Durable budgets, deterministic monitoring, development regressions and final freezing remain pending.
+The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Task-wide durable budgets and controlled Host/UI regression are implemented. Deterministic monitoring, real development regressions and final freezing remain pending.
 
 | Entry point | Purpose |
 | --- | --- |

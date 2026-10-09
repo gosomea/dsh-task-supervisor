@@ -7,6 +7,7 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { PropsRuntime, PropsRenderFactories } from '@deepseek-ai/dsh-client-ui-slots'
 import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore, type PanelState } from './task-store.ts'
+import { ExecutionBudgetStatus } from './execution-budget.tsx'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 import { displayedPlan, executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
 import { ReviewReport } from './review-report.tsx'
@@ -95,7 +96,7 @@ function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; s
   const { state, busy, store } = useTask(sessionId)
   const task = entry.task
   const stage = task.stages.find(item => item.id === selected) ?? task.stages[task.stageIndex] ?? task.stages[0]
-  const historicalState: PanelState = { task, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews, reworks: entry.reworks }
+  const historicalState: PanelState = { task, executionBudget: entry.executionBudget ?? null, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews, reworks: entry.reworks }
   return <>
     <section className="dsh-task-section"><h3>任务目标</h3><p className="dsh-task-objective">{task.objective}</p>
       <p className="dsh-task-muted">{task.phase === 'complete' ? '已完成' : '已清除'} · 记录 seq {entry.lastSeq}</p></section>
@@ -236,6 +237,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
       {state && <ReviewProgress state={state} t={t} />}
+      {state && <ExecutionBudgetStatus state={state} t={t} />}
       {(reviewId || reviewJob) && <Button size="sm" variant="toolbar" onClick={() => {
         const job = reviewId ? state?.reviewJobs?.find(item => item.reviewerSessionId === reviewId) : reviewJob
         setReviewNavigationError('')

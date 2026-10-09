@@ -1,5 +1,9 @@
 /** Compact Supervisor navigation and proposal actions use the native locale service. */
 export const zh = {
+  taskDeadline: '任务截止', taskTruncations: '截断续行', taskFaultRetries: '任务故障重试', taskManualRounds: '手动恢复', taskLastActivity: '最近活动',
+  taskDeadlineStopped: '任务预算时间已到，自动执行与审查已停止。恢复不能延长原截止时间。',
+  taskBudgetStopped: '自动恢复预算已耗尽。可核对现场后手动恢复一轮；原截止和累计次数保持不变。',
+  taskUnknownAction: '先前动作的投递结果不确定，已停止自动投递。请核对原 Session 后手动恢复，避免重复操作。',
   requirementResults: '要求级结果', requirementSource: '要求来源', explicitRequirement: '明确要求', derivedRequirement: '推导假设',
   partialPages: '部分页面',
   'requirementStatus.satisfied': '已满足', 'requirementStatus.failed': '未满足', 'requirementStatus.unverified': '未验证',
@@ -46,6 +50,10 @@ export const zh = {
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
 export const en: Record<SupervisorKey, string> = {
+  taskDeadline: 'Task deadline', taskTruncations: 'Truncation continuations', taskFaultRetries: 'Task fault retries', taskManualRounds: 'Manual recoveries', taskLastActivity: 'Last activity',
+  taskDeadlineStopped: 'The Task deadline has expired. Execution and review stopped. Recovery cannot extend the original deadline.',
+  taskBudgetStopped: 'Automatic recovery budget exhausted. Inspect the existing state before manually recovering a round; the original deadline and counters remain unchanged.',
+  taskUnknownAction: 'An earlier delivery has an unknown outcome. Automatic dispatch stopped. Inspect the original Session before manual recovery to avoid duplicate effects.',
   requirementResults: 'Requirement outcomes', requirementSource: 'Requirement source', explicitRequirement: 'Explicit requirement', derivedRequirement: 'Derived assumption',
   partialPages: 'Partial pages',
   'requirementStatus.satisfied': 'Satisfied', 'requirementStatus.failed': 'Not satisfied', 'requirementStatus.unverified': 'Unverified',

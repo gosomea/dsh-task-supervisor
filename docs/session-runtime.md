@@ -1,5 +1,9 @@
 # Supervisor session and recovery
 
+**Current persistence path (2026-10-09):** Public native Inbox control records require no Host changes. The separate `dsh-task-supervisor-execution-budget` namespace binds the Task/main Session, frozen policy, absolute deadline, action reservations/confirmations and stop history. Its revisions do not change Task revision or review evidence cutoffs. Task records use version 16 and projection cache 22. Recovery reconciles original actions; unknown outcomes stop automatic dispatch. Legacy Tasks acquire no invented budget or authority. Earlier extension-module recommendations below are historical; current behavior is specified in [implementation status](implementation.md) and the [long-horizon protocol](../eval/sandbox-run/protocol.md).
+
+## Earlier design rationale
+
 **Status: design recommendation with a partial implementation.** This page owns durable records, recovery authority, action delivery, evidence reads, and fault acceptance; [implementation status](implementation.md) identifies the behavior already running, [task lifecycle](task-lifecycle.md) owns task semantics, and [kernel experiments](host-spike.md) record the earlier gap. A future same-repository `supervisor-session` module may separate these responsibilities; this prototype currently implements them inside the plugin and an isolated DSH host extension.
 
 ## Recommended structure

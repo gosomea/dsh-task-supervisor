@@ -5,8 +5,11 @@ import type { TaskSnapshot } from '../state-schema.ts'
 import type { TaskDraft } from '../drafts.ts'
 import type { ReworkRecord } from '../rework-records.ts'
 import type { ReviewActivity } from '../review-activity.ts'
+import type { ExecutionBudget } from '../execution-budget.ts'
 
 export interface PanelState {
+  executionBudget?: ExecutionBudget | null
+  executionActivityAt?: number | null
   primaryTurnEnded?: boolean
   entryActive?: boolean
   task: TaskSnapshot | null

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "kind": "long-horizon-budget-validation",
+  "baselineCommit": "de75f7a632b5f43c6a460b00fcb0aaccf9d0dcb9",
+  "candidateTarballSha256": "e82d7c9c48be953a152dfe099ee27bf8c1f84434cde8d639fa25748ae6e759f3",
+  "recordVersions": {
+    "task": 16,
+    "executionBudget": 1,
+    "projection": 22
+  },
+  "regression": {
+    "nativeHostPassed": 143,
+    "nativeHostSkipped": 1,
+    "focusedPassed": 107,
+    "hostStrictTypes": true,
+    "clientStrictTypes": true,
+    "build": true
+  },
+  "nativeInstall": {
+    "passed": true,
+    "modelRequests": 0,
+    "permission": "workspace-write",
+    "enforcement": "full",
+    "nativeRead": true,
+    "workspaceWrite": true,
+    "externalWriteDenied": true,
+    "ownedWorkerDestroyed": true,
+    "receiptSha256": "67a672f5eb495f344fe9be3704acd6e6df1e5dc5ce4d268bd8546dfe363d19ff",
+    "probeSha256": "3fbc93ccd895603a7b2b24c20693c18e12722b99000572c2907c2b1ce38eaeff"
+  },
+  "retainedFailure": {
+    "candidateAttempt": 1,
+    "category": "stale-compiled-probe-missing-native-read",
+    "modelRequests": 0,
+    "resultOverwritten": false
+  },
+  "covered": [
+    "separate-budget-revision",
+    "reserve-before-effect-and-unknown-stop",
+    "absolute-deadline-and-review-cancellation",
+    "cross-replan-and-restart-budget-retention",
+    "manual-resume-without-refill",
+    "same-job-retry-and-evidence-inheritance",
+    "global-fault-budget",
+    "pause-before-retry",
+    "legacy-no-fabricated-budget",
+    "durable-novelty-fingerprint",
+    "main-and-sidebar-localized-budget-render"
+  ],
+  "notYetValidated": [
+    "deterministic-monitor",
+    "real-model-development-run",
+    "revision-barrier-and-approval",
+    "browser-live-state",
+    "formal-frozen-clean-install"
+  ],
+  "formalPositionsStarted": 0,
+  "formalPositionsPlanned": 24
+}

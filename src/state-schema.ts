@@ -77,6 +77,7 @@ export const taskSchema = z.object({
     progressFingerprint: z.string(), messageId: z.string(), instruction: z.string() }).strict().optional(),
   responseLanguage: z.string().min(1).optional(),
   planning: planningSummarySchema.extend({ requirementsVersion: z.number().int().positive(),
+    progressFingerprint: z.string().optional(),
     cutoff: z.number().int().nonnegative(), jobId: z.string().uuid(),
     noProgress: z.number().int().nonnegative(), evidenceSeqs: z.array(z.number().int().nonnegative()) }).strict().optional(),
   approvalPolicy: z.object({ mode: z.enum(['manual', 'after-review']), source: z.enum(['profile', 'user-command']),
@@ -99,7 +100,7 @@ export const taskSchema = z.object({
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
   reviewFault: reviewFaultSchema.nullable().optional(),
-  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled', 'planning-stalled']).nullable().optional(),
+  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled', 'planning-stalled', 'execution-budget', 'task-deadline']).nullable().optional(),
 }).strict()
 
 export type TaskSnapshot = z.infer<typeof taskSchema>

@@ -34,6 +34,7 @@ import { installRepairs } from '../../src/repair-runtime.ts'
 import { artifactIdentity } from '../../src/artifact-identity.ts'
 import { recordReview } from '../../src/review-records.ts'
 import { confirmedPtcTimeout } from '../../src/review-transport-recovery.ts'
+import { budgetCounts } from '../../src/execution-budget.ts'
 import { appendTask, taskOf, newTask, taskProjection, NAMESPACE } from '../../src/state.ts'
 
 class ScriptedAdapter extends LlmAdapter {
@@ -2079,6 +2080,154 @@ it('continues a native truncated planning turn once and stops at manual approval
   await agent.whenIdle(); expect(adapter.requests).toBe(requests)
 })
 
+it('persists truncation budget across replan, manual recovery and native restart without refilling it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-restart-')); roots.push(root)
+  const truncated: StreamChunk[] = [{ type: 'finish', reason: { kind: 'max-tokens' } }]
+  const config = { longHorizon: { taskDeadlineMs: 600000, maxTruncationRecoveries: 1 }, maxRecoveryWithoutProgress: 10 }
+  const adapter = new ScriptedAdapter({ scripted: [truncated, truncated, textResponse('manual planning round'), truncated] })
+  const ctx = await host(root, adapter, true, undefined, true, 3, false, [], config)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-native-restart'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task Build import', [], signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('execution-budget'))
+  await agent.whenIdle()
+  let budget = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!
+  const taskId = taskOf(ctx, agent)!.id, deadline = budget.deadlineAt
+  expect(adapter.requests).toBe(2)
+  expect(budget.actions).toMatchObject([{ kind: 'truncation', status: 'confirmed' }])
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.id === budget.actions[0]!.effectId)).toHaveLength(1)
+  expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
+  await agent.whenIdle()
+  budget = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!
+  expect(budgetCounts(budget)).toEqual({ truncation: 1, reviewFault: 0, manual: 1 })
+  await ctx.commands.execute(agent, '/task edit Updated import objective', [], signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('execution-budget'))
+  await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.requirementsVersion).toBe(2)
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!.deadlineAt).toBe(deadline)
+  await ctx.fiber.dispose()
+  const restoredAdapter = new ScriptedAdapter(), restored = await host(root, restoredAdapter, true, undefined, true, 3, false, [], { longHorizon: { taskDeadlineMs: 9999999 } })
+  const handle = await restored.agents.resume({ resumeSessionId: agent.id })
+  await handle.agent.whenIdle()
+  expect(restoredAdapter.requests).toBe(0)
+  expect(taskOf(restored, handle.agent)?.id).toBe(taskId)
+  const recovered = restored.sessionProjections.stateOf(handle.agent.session, 'taskSupervisor')!.budgets[0]!
+  expect(budgetCounts(recovered)).toEqual({ truncation: 1, reviewFault: 0, manual: 1 })
+  expect(recovered.policy.maxTruncationRecoveries).toBe(1)
+  expect(recovered.deadlineAt).toBe(deadline)
+})
+
+it('restores a legacy Task without inventing execution budget or new automatic permission', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-legacy-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-native-legacy'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task Legacy objective', [], new AbortController().signal); await agent.whenIdle()
+  await ctx.fiber.dispose()
+  const adapter = new ScriptedAdapter(), restored = await host(root, adapter, true, undefined, true, 3, false, [], { longHorizon: { taskDeadlineMs: 100 } })
+  const handle = await restored.agents.resume({ resumeSessionId: agent.id })
+  await handle.agent.whenIdle()
+  expect(restored.sessionProjections.stateOf(handle.agent.session, 'taskSupervisor')?.budgets).toEqual([])
+  expect(adapter.requests).toBe(0)
+})
+
+it('clips review deadlines to the Task and cancels an active reviewer at that absolute cutoff', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-cutoff-')); roots.push(root)
+  const entered = Promise.withResolvers<void>()
+  class Adapter extends ScriptedAdapter {
+    reviewerRequests = 0
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer') {
+        this.reviewerRequests++; entered.resolve()
+        await new Promise<void>(resolve => options.signal?.aborted ? resolve() : options.signal?.addEventListener('abort', () => resolve(), { once: true }))
+        options.signal?.throwIfAborted()
+      }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter(), ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { longHorizon: { taskDeadlineMs: 10000 }, reviewDeadlineMs: 600000 })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-review-cutoff'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  try {
+    await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
+    await ctx.tools.execute({ agent, signal, callId: ToolCallId('budget-deadline-plan'), name: 'task_submit_plan', arguments: smallPlan })
+    await entered.promise
+    const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
+    expect(projection.reviewJobs[0]!.deadlineAt).toBe(projection.budgets[0]!.deadlineAt)
+    await vi.advanceTimersByTimeAsync(10000); await agent.whenIdle()
+    expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'task-deadline', everApproved: false })
+    expect(adapter.reviewerRequests).toBe(1)
+    const before = adapter.requests
+    expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
+    expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
+    expect(adapter.requests).toBe(before)
+    expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!.stops.at(-1)?.reason).toBe('task-deadline')
+  } finally { vi.useRealTimers() }
+})
+
+it('limits faults over distinct review jobs and retains evidence plus a single same-job retry', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-faults-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    reviewerRequests = 0
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer' && ++this.reviewerRequests === 2) throw new LlmError('temporary connection failure', 'TRANSPORT')
+      if (options.model === 'reviewer' && this.reviewerRequests === 4) throw new LlmError('new job transient failure', 'TRANSPORT')
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ reviewer: coverageChecks() }), ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewFaultRetryDelayMs: 0, longHorizon: { taskDeadlineMs: 600000, maxReviewFaultRetries: 1 } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-fault-jobs'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('budget-fault-plan'), name: 'task_submit_plan', arguments: smallPlan })
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval')); await agent.whenIdle()
+  const firstJob = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(firstJob).toMatchObject({ status: 'applied', attempt: 2, recovery: { consumed: 1 } })
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!.actions).toMatchObject([{ kind: 'review-fault', status: 'confirmed', effectId: firstJob.runtimeId }])
+  await ctx.commands.execute(agent, '/task approve', [], signal); await agent.whenIdle()
+  await ctx.tools.execute({ agent, signal, callId: ToolCallId('budget-fault-stage'), name: 'task_report_stage', arguments: { stage_id: 'n', evidence: 'Actual fixture evidence' } })
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('execution-budget')); await agent.whenIdle()
+  expect(adapter.reviewerRequests).toBe(4)
+  const state = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
+  expect(budgetCounts(state.budgets[0]!)).toEqual({ truncation: 0, reviewFault: 1, manual: 0 })
+  expect(state.reviewJobs[1]).toMatchObject({ status: 'failed', attempt: 1 })
+  expect(state.budgets[0]!.stops.at(-1)?.reason).toBe('review-fault-budget')
+})
+
+it('stops on an uncertain durable reservation without replaying its native continuation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-uncertain-')); roots.push(root)
+  const truncated: StreamChunk[] = [{ type: 'finish', reason: { kind: 'max-tokens' } }]
+  const adapter = new ScriptedAdapter({ scripted: [truncated] }), ctx = await host(root, adapter, true, undefined, true, 3, false, [], { longHorizon: { taskDeadlineMs: 600000 } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-uncertain-delivery'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const original = ctx.sessions.flush.bind(ctx.sessions)
+  let rejected = false
+  vi.spyOn(ctx.sessions, 'flush').mockImplementation(async session => {
+    const budget = ctx.sessionProjections.stateOf(session, 'taskSupervisor')?.budgets[0]
+    if (!rejected && budget?.actions.at(-1)?.kind === 'truncation') { rejected = true; return false }
+    return original(session)
+  })
+  await ctx.commands.execute(agent, '/task Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('execution-budget')); await agent.whenIdle()
+  const budget = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!
+  expect(budget.actions).toMatchObject([{ kind: 'truncation', status: 'reserved' }])
+  expect(budget.stops.at(-1)?.reason).toBe('action-unknown')
+  expect(adapter.requests).toBe(1)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.id === budget.actions[0]!.effectId)).toEqual([])
+  ctx.emit('agent/status', { agent, status: 'idle' }); await agent.whenIdle()
+  expect(adapter.requests).toBe(1)
+})
+
+it('does not count main or reviewer planning claims as novel durable progress in long-horizon mode', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-claims-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ scripted: [textResponse('Claim: many findings'), textResponse('Claim: more findings')], reviewer: [...planningChecks(true), ...planningChecks(true)] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, false, [], { planningSupervision: true, longHorizon: { taskDeadlineMs: 600000 } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-claims'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('planning-stalled')); await agent.whenIdle()
+  expect(taskOf(ctx, agent)?.planning).toMatchObject({ progress: false, noProgress: 2 })
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(2)
+})
+
 it('bounds repeated native planning truncations without new facts', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-planning-stalled-')); roots.push(root)
   const truncated: StreamChunk[] = [{ type: 'finish', reason: { kind: 'max-tokens' } }]
@@ -3062,7 +3211,7 @@ it.each([true, false])('preserves an approved stage permit after internal recove
 })
 
 
-it('user pause cancels a scheduled fault retry and leaves execution manually disarmed', async () => {
+it.each([false, true])('user pause cancels a scheduled fault retry and leaves execution manually disarmed (budget=%s)', async budgeted => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-review-fault-pause-')); roots.push(root)
   class Adapter extends ScriptedAdapter {
     reviewerRequests = 0
@@ -3071,7 +3220,7 @@ it('user pause cancels a scheduled fault retry and leaves execution manually dis
       yield* super.stream(options)
     }
   }
-  const adapter = new Adapter(), ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewFaultRetryDelayMs: 60000 })
+  const adapter = new Adapter(), ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true, [], { reviewFaultRetryDelayMs: 60000, ...budgeted ? { longHorizon: { taskDeadlineMs: 600000 } } : {} })
   const { agent } = await ctx.agents.create({ sessionId: SessionId('fault-retry-pause'), agentOptions: { provider: 'scripted', model: 'main' } })
   const signal = new AbortController().signal
   await ctx.commands.execute(agent, '/task Build import', [], signal); await agent.whenIdle()
@@ -3081,6 +3230,7 @@ it('user pause cancels a scheduled fault retry and leaves execution manually dis
   expect(adapter.reviewerRequests).toBe(1)
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'user' })
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({ status: 'failed', recovery: { manualOnly: true, consumed: 1, nextRetryAt: null }, fault: { code: 'cancelled' } })
+  if (budgeted) expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.budgets[0]!.actions).toMatchObject([{ kind: 'review-fault', status: 'reserved' }])
 })
 
 

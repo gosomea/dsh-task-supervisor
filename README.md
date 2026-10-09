@@ -257,3 +257,21 @@ Keep the original Host for 0.1.0 private-extension logs; this version does not r
 None.
 
 </details>
+## Task-wide long-horizon execution policy
+
+The current source optionally accepts `longHorizon` without registering a new mode. Unconfigured legacy Tasks retain their behavior; only newly created Tasks receive a durable budget. Example:
+
+```yaml
+longHorizon:
+  taskDeadlineMs: 10800000
+  maxTruncationRecoveries: 6
+  maxReviewFaultRetries: 3
+```
+
+The absolute deadline starts at Task creation. An optional `outerDeadlineAt` can shorten it. Planning, approval, review, retries and continuation all count. `reviewFaultRetryAttempts` still bounds each job (default one); the Task-wide fault retry limit defaults to three. Existing consecutive no-progress limits remain two. Planning progress additionally requires a novel fingerprint of successful, deduplicated tool output; model claims are insufficient. Novel output does not establish acceptance.
+
+Native Inbox control records persist the budget separately from Task revisions. Reserve and flush an action before delivery, then confirm the handoff. Unknown delivery outcomes retain their identity and consumption and stop automatic dispatch, without refund or redelivery. Replanning, restart and manual recovery do not reset counters or extend the deadline. Manual recovery is separately recorded and can start a round without replenishing automatic budgets. Legacy Sessions acquire no invented budget or permit; forks cannot execute under the original Session's budget.
+
+The main DAG summary and sidebar share the actual deadline, cumulative truncation/fault counts, manual recoveries and recent durable activity. Exhaustion explains the stop and manual inspection entry; expiration cannot be extended by recovery. Complete decisions and native review processes retain their existing presentation.
+
+The outer Python monitor only performs frozen initial approval and development revision authorization, renews resources, collects and seals results. It neither retries plugin work nor supplies rescue prompts. An independent official scorer evaluates Agent-committed patches elsewhere. The full runner and real development regressions remain in progress; none of the 24 formal positions has been delivered. See the [OpenSandbox long-horizon protocol](eval/sandbox-run/protocol.md).
