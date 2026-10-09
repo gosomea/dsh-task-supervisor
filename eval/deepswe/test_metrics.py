@@ -1,9 +1,24 @@
 import unittest
 
-from metrics import collect, usage_coverage
+from metrics import collect, usage_coverage, read_home
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
 class MetricTests(unittest.TestCase):
+    def test_plain_native_generations_and_ambiguous_identity(self):
+        with TemporaryDirectory() as directory:
+            home = Path(directory)
+            session = home / 'sessions/main'; session.mkdir(parents=True)
+            (session / 'session.jsonl').write_text(json.dumps({'type': 'session', 'id': 'old'}) + '\n')
+            (session / 'session.v4.jsonl').write_text(json.dumps({'type': 'session', 'id': 'current'}) + '\n')
+            sessions, _, _ = read_home(home)
+            self.assertEqual(set(sessions), {'current'})
+            (session / 'session.v4.jsonl.zstd').write_bytes(b'not-read-because-ambiguous')
+            with self.assertRaisesRegex(ValueError, 'Ambiguous'):
+                read_home(home)
+
     def test_native_synthetic_zero_on_provider_failure_is_not_free(self):
         events = [{'type': 'step/start', 'data': {'turn': 1, 'step': 1}},
                   {'type': 'assistant/attempt', 'data': {'turn': 1, 'step': 1,

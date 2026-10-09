@@ -18,13 +18,22 @@ from launch import LaunchError, launch_from_receipts
 from opensandbox_runtime import SDK_VERSION, OpenSandboxRuntime
 from policy import Observation, decide
 from probe import prepare_baseline, probe_snapshot
+from preflight import native_preflight
+from records import exclusive_json
 
 
 def _write_receipt(path: Path, payload: dict) -> None:
-    if path.exists():
-        raise SystemExit(f"refusing to overwrite {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    exclusive_json(path, payload)
+
+
+def _preflight(args: argparse.Namespace) -> None:
+    runtime = _runtime(args)
+    try:
+        result = native_preflight(runtime, image=args.image, tarball=args.tarball,
+            tarball_sha256=args.tarball_sha256, probe=args.probe, out=args.out)
+    finally:
+        runtime.close()
+    print(json.dumps({'passed': result['passed'], 'modelRequests': 0, 'out': str(args.out)}))
 
 
 def _runtime(args: argparse.Namespace) -> OpenSandboxRuntime:
@@ -100,6 +109,14 @@ def main() -> None:
     parser.add_argument("--direct", action="store_true",
                         help="Reach sandbox endpoints directly. Omit this when the client cannot route to container IPs.")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    admission = sub.add_parser('preflight', help='keyless native DSH permission admission; requires frozen artifacts')
+    admission.add_argument('--image', required=True)
+    admission.add_argument('--tarball', type=Path, required=True)
+    admission.add_argument('--tarball-sha256', required=True)
+    admission.add_argument('--probe', type=Path, required=True)
+    admission.add_argument('--out', type=Path, required=True)
+    admission.set_defaults(func=_preflight)
 
     probe = sub.add_parser("probe", help="create, snapshot, restore, and destroy without a model")
     probe.add_argument("--image", required=True)

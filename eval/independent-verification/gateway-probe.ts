@@ -18,6 +18,7 @@ export interface Config {
   argv: string[]
   runtimeLinkTargets: string[]
   cancelFlag?: string
+  startedOutput?: string
   maxFiles: number
   maxBytes: number
 }
@@ -37,6 +38,7 @@ export function apply(ctx: Context, config: Config): void {
         { files: config.maxFiles, bytes: config.maxBytes, excluded: ['.git'], runtimeLinkTargets: config.runtimeLinkTargets }, controller.signal)
       result.snapshot = { id: snapshot.id, entries: snapshot.entries.length, bytes: snapshot.entries.reduce((sum, entry) => sum + entry.bytes, 0),
         digest: snapshot.digest, untrackedCaptured: snapshot.entries.some(entry => entry.path === '.dsh-untracked-probe') }
+      if (config.startedOutput) await writeFile(config.startedOutput, JSON.stringify({ snapshotId: snapshot.id }), { flag: 'wx', mode: 0o600 })
       const policy = checkPolicy({ gatewaySocket: config.gatewaySocket, commandMs: config.deadlineMs,
         container: { context: 'default', image: config.image, cpus: 2, memoryMiB: 8192, pids: 256 } })
       if (config.cancelFlag) cancellation = setInterval(() => {

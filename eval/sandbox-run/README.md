@@ -1,50 +1,49 @@
+---
+description: "OpenSandbox evaluation entry point for frozen environments, deterministic monitoring and independent grading."
+kind: "scratch"
+---
+
 # OpenSandbox long-horizon evaluation
 
-This directory is the supervisor's separate runner. It does not join the frozen denominators in `deepswe/` or `swebench-pro-v2/`. The decision record is the [OpenSandbox evaluation note](../../.agents/notes/proposed/feature/2026-10-09-opensandbox-eval.md).
+This directory implements the [long-horizon protocol](protocol.md) with a new denominator of 24 positions. Python owns external monitoring, the Task controller owns continuation and recovery, and the official scorer independently evaluates committed patches. Earlier DeepSWE and SWE-bench results remain unchanged.
 
-## Commands available now
+## Implementation status
 
-| Command | What it does |
+The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Durable budgets, deterministic monitoring, development regressions and final freezing remain pending.
+
+| Entry point | Purpose |
 | --- | --- |
-| `probe` | No model: create a sandbox, write a marker, snapshot, restore, destroy both sandboxes, keep the snapshot |
-| `baseline` | Place the public `revision-and-evidence` files in `/workspace` and snapshot that tree before any model runs |
-| `decide` | Emit one closed action for an observation JSON. It does not start a sandbox |
-| `launch` | Restore a baseline snapshot, start the worker DSH inside it, and start a plugin-free supervising DSH on this machine |
+| `preflight` | Explicit image, tarball, digest and compiled probe; verify native reads, workspace writes and boundary refusal without a model |
+| `probe` | Model-free snapshot/restore; retain the snapshot and destroy the owned source/restored sandboxes |
+| `baseline` | Prepare clean public development fixtures before credentials or model delivery |
+| `controls.py` | Unchanged official empty/reference scoring with separate-environment and cleanup evidence |
+| `route_preflight.py` | Calibrate actual main and bound-reviewer HTTP requests and durable Session lineage |
 
-`launch` allows egress and records that on the receipt. `probe` and `baseline` still deny it.
+Legacy `launch`/`decide` contain a second model supervisor and external rescue rules. They are **not used by this protocol** and do not establish completion of the new runner. The subsequent implementation adds `run`, `observe`, `collect`, `grade` and `summarize` to the same entry point.
 
-## Local check
+## Admission commands
 
-```bash
-python3 -m unittest discover -s eval/sandbox-run -v
+Use the requirements-pinned Python 3.13 environment. This workstation's existing Python 3.14/Pydantic installation cannot import the SDK; that failure is not plugin evidence.
+
+```sh
+python3.13 -m unittest discover -s eval/sandbox-run -p 'test_*.py' -v
+python3.13 eval/sandbox-run/run.py --domain localhost:8090 preflight \
+  --image FROZEN_IMAGE --tarball FROZEN_TARBALL --tarball-sha256 SHA256 \
+  --probe COMPILED_NATIVE_PROBE --out NEW_PRIVATE_RECEIPT_DIRECTORY
 ```
 
-## Against a real OpenSandbox
+`Dockerfile.runtime` installs fixed Node 24.21.0, pnpm 11.7.0 and public DSH 0.2.0-rc.2 before model admission. Supply the baseline image and the official Node archive digest, then freeze the resulting image digest. `Dockerfile.gateway` adds Docker CLI only to the administrator service and contains no model credentials.
 
-The service must already be listening on `OPEN_SANDBOX_DOMAIN` (default `localhost:8080`). Python 3.14 cannot import `opensandbox` 1.1.0; use 3.11 or 3.13:
+## Isolation and transport
 
-```bash
-python3.13 -m pip install -r eval/sandbox-run/requirements.txt
-python3.13 eval/sandbox-run/run.py probe --image ubuntu:24.04 --out /tmp/sandbox-run-probe.json
-python3.13 eval/sandbox-run/run.py baseline --case revision-and-evidence --image ubuntu:24.04 \
-  --out /tmp/sandbox-run-baseline.json
-```
+Consult the isolated-test skill registry first. This run uses a dedicated Colima profile and retains DSH `workspace-write`. OpenSandbox 1.1.0's `bootstrap.execd.isolation` enables nested namespaces; an actual native DSH external write is still refused.
 
-An existing output path is refused. Sandbox creation denies egress by default. A failed probe or baseline does not send a model.
+DSH retains its loopback listener and native token/cookie authentication. OpenSandbox's server proxy filters application cookies, so `RuntimeDshRpc` calls the public localhost API inside the sandbox. The monitor receives no authentication token. Browser access requires separate validation.
 
-A trial on 2026-10-09 used Colima profile `dsh-eval-rosetta`. The server container is `opensandbox-eval-server` on port 8090, with config at `~/.opensandbox-eval/config.toml`. The VM's DNS was timing out, so `/etc/resolv.conf` inside the guest was temporarily set to `8.8.8.8` and `1.1.1.1` before the probe. Probe snapshot `19ce8380-2963-4f16-aa63-5304897b99ba`, baseline snapshot `2c2d2c46-7a6b-4177-b91e-c4712ed84b26`, receipts at `/tmp/sandbox-run-probe.json` and `/tmp/sandbox-run-baseline.json`. Both probe sandboxes were destroyed; the server container is still running. The PyPI `opensandbox-server` package was missing a generated module, so this trial used image `opensandbox/server:release-1.1.0`.
+The administrator gateway owns Docker socket access, private check copies and cleanup. The execution sandbox mounts only its snapshot volume and read-only private socket channel. Checks use a frozen image, cannot write the source workspace and cannot access external grading materials. Model-free checks cover untracked artifacts, private-copy mutation and synchronized cancellation. Complete Task/Session binding is further verified in the development flow.
 
-`launch` restores that baseline and connects the two DSHs. Parent flags come before the subcommand:
+## Results and limitations
 
-```bash
-python3.13 eval/sandbox-run/run.py --domain localhost:8090 launch \
-  --baseline /tmp/sandbox-run-baseline.json --out /tmp/sandbox-run-launch.json
-```
+Receipts use exclusive creation, atomic publication and directory fsync; results cannot be overwritten. SDK `connect` does not acquire destruction ownership or create another Agent. Sandbox renewal cannot extend Task deadlines, and snapshot creation no longer renews implicitly.
 
-The same trial's launch left sandbox `82857ad4-cbe5-49a1-a42d-c5b5a4861d0f` running, with egress allowed. The worker is DSH 0.2.0-rc.2 on Node v24.21.0, bound to `127.0.0.1:8787` and reached through the OpenSandbox proxy; `dsh web` refuses `--host 0.0.0.0`, and the proxy's Host is `host.docker.internal`, so the worker is started with `--trusted-host host.docker.internal`. `bwrap` is unusable in that container. The permission preset stays `workspace-write`, and the receipt records that. The model proxy returned HTTP 200. `/task new` created the case task. DSH 0.2 writes `session.v4.jsonl`; the phase read there is `planning`, and the closed policy issued no command. The supervising DSH has no supervisor plugin and uses `/tmp/sandbox-run-supervisor`. Receipt: `/tmp/sandbox-run-launch.json`. The baseline snapshot was kept. This connection does not finish the case.
-
-`decide` does not need the service:
-
-```bash
-echo '{"phase":"awaiting-approval","planReviewPassed":true}' | python3 eval/sandbox-run/run.py decide --observation -
-```
+Admission retains four pre-model failures and their causes. Routing calibration deliberately stops review after observing actual main/reviewer requests; it proves routing and lineage, not a decision or independent-stage acceptance. Browser display, candidate-wide artifact integration, peak capacity and storage enforcement remain subsequent gates.

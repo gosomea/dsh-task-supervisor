@@ -135,6 +135,8 @@ class RpcTests(unittest.TestCase):
             value = DshRpc(f"http://127.0.0.1:{port}", dialect="slash").create_workspace("/workspace")
         finally:
             server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
         self.assertEqual(seen["path"], "/api/workspace/create")
         self.assertEqual(seen["args"], {"request": {"path": "/workspace"}})
         self.assertEqual(value["workspace"]["workspaceId"], "ws")

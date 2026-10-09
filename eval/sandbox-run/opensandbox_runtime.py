@@ -1,6 +1,6 @@
 """OpenSandbox adapter. Imported only when a real probe or baseline runs."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from runtime import SandboxRef, SnapshotRef
 
@@ -18,11 +18,13 @@ class OpenSandboxRuntime:
         )
         self._manager = SandboxManagerSync.create(self._config)
         self._boxes = {}
+        self._owned: set[str] = set()
 
     def create(self, *, image: str | None, snapshot_id: str | None, metadata: dict[str, str],
                network_policy: str = "deny", timeout_minutes: int = 20,
-               cpu: str = "1", memory: str = "2Gi") -> SandboxRef:
-        from opensandbox.models.sandboxes import NetworkPolicy
+               cpu: str = "1", memory: str = "2Gi", platform: str | None = None,
+               volumes: list[dict] | None = None, native_isolation: bool = True) -> SandboxRef:
+        from opensandbox.models.sandboxes import NetworkPolicy, Volume
         from opensandbox.sync.sandbox import SandboxSync
 
         if network_policy not in {"allow", "deny"}:
@@ -36,9 +38,35 @@ class OpenSandboxRuntime:
             timeout=timedelta(minutes=timeout_minutes),
             ready_timeout=timedelta(seconds=120),
             resource={"cpu": cpu, "memory": memory},
+            platform=platform,
+            volumes=[Volume.model_validate(volume) for volume in volumes] if volumes else None,
+            # OpenSandbox 1.1.0 documents this bootstrap extension for nested
+            # bwrap namespaces. DSH still enforces workspace-write itself.
+            extensions={"bootstrap.execd.isolation": "enable"} if native_isolation else None,
         )
         self._boxes[sandbox.id] = sandbox
+        self._owned.add(sandbox.id)
         return SandboxRef(sandbox.id)
+
+    def connect(self, sandbox_id: str) -> SandboxRef:
+        """Reconnect without taking ownership or starting another worker."""
+        from opensandbox.sync.sandbox import SandboxSync
+
+        if sandbox_id not in self._boxes:
+            self._boxes[sandbox_id] = SandboxSync.connect(
+                sandbox_id, connection_config=self._config,
+                connect_timeout=timedelta(seconds=120),
+            )
+        return SandboxRef(sandbox_id)
+
+    def info(self, sandbox: SandboxRef) -> dict:
+        return self._boxes[sandbox.id].get_info().model_dump(mode="json")
+
+    def renew_until(self, sandbox: SandboxRef, expires_at: datetime) -> None:
+        remaining = expires_at - datetime.now(timezone.utc)
+        if remaining.total_seconds() <= 0:
+            raise ValueError("cannot renew to an expired deadline")
+        self._boxes[sandbox.id].renew(remaining)
 
     def write(self, sandbox: SandboxRef, path: str, data: bytes, mode: int = 644) -> None:
         from opensandbox.models.filesystem import WriteEntry
@@ -68,7 +96,6 @@ class OpenSandboxRuntime:
 
     def create_snapshot(self, sandbox: SandboxRef, name: str) -> SnapshotRef:
         box = self._boxes[sandbox.id]
-        box.renew(timedelta(minutes=20))
         info = box.create_snapshot(name=name)
         return SnapshotRef(info.id, info.status.state, info.status.message)
 
@@ -78,15 +105,28 @@ class OpenSandboxRuntime:
 
     def detach(self, sandbox: SandboxRef) -> None:
         """Forget a sandbox without destroying it. The caller keeps it running."""
-        self._boxes.pop(sandbox.id, None)
+        box = self._boxes.pop(sandbox.id, None)
+        self._owned.discard(sandbox.id)
+        if box is not None:
+            box.close()
 
     def destroy(self, sandbox: SandboxRef) -> None:
-        box = self._boxes.pop(sandbox.id, None)
+        box = self._boxes.get(sandbox.id)
         if box is None:
             return
         box.destroy()
+        self.detach(sandbox)
 
     def close(self) -> None:
+        failures = []
         for sandbox in list(self._boxes):
-            self.destroy(SandboxRef(sandbox))
+            try:
+                if sandbox in self._owned:
+                    self.destroy(SandboxRef(sandbox))
+                else:
+                    self.detach(SandboxRef(sandbox))
+            except Exception as error:
+                failures.append(error)
         self._manager.close()
+        if failures:
+            raise RuntimeError(f"failed to clean up {len(failures)} sandbox handles") from failures[0]

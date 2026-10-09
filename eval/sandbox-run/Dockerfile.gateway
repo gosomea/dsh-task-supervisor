@@ -1,0 +1,8 @@
+# Administrator service only. No model credentials or grading material.
+ARG RUNTIME_IMAGE
+FROM ${RUNTIME_IMAGE}
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends docker.io \
+ && docker --version \
+ && dpkg-query -W > /opt/dsh-gateway-dpkg.txt \
+ && rm -rf /var/lib/apt/lists/*

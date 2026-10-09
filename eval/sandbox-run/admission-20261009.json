@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "kind": "long-horizon-environment-admission",
+  "baselineCommit": "de75f7a632b5f43c6a460b00fcb0aaccf9d0dcb9",
+  "baselineTarballSha256": "e35394e370a70a9b6d22dc49a19023f1f4b431578f94c271a3e07fa3a0643d82",
+  "runtimeImage": "dsh-long-horizon@sha256:aeec954bf7e4636afacbba529085bb929ce37aa723c544eddb89a1da28fc7a78",
+  "dsh": "0.2.0-rc.2",
+  "node": "v24.21.0",
+  "sdk": "1.1.0",
+  "server": "release-1.1.0",
+  "vm": {
+    "context": "colima-dsh-eval-rosetta",
+    "cpu": 6,
+    "memoryGiB": 24,
+    "diskGiB": 100
+  },
+  "nativePermission": {
+    "passed": true,
+    "mode": "workspace-write",
+    "enforcement": "full",
+    "sessionBoundWorkspace": "/workspace",
+    "externalWriteDenied": true
+  },
+  "gateway": {
+    "passed": true,
+    "untrackedCaptured": true,
+    "sourceWriteProtected": true,
+    "dockerSocketAbsentFromWorker": true,
+    "checkExitCode": 0,
+    "cancelledCheckStopped": true,
+    "ownedResourcesRemoved": true,
+    "storageRetained": true
+  },
+  "baselineRestore": {
+    "passed": true,
+    "afterSourceDestroyed": true
+  },
+  "route": {
+    "mainActualRequestVerified": true,
+    "reviewerActualRequestVerified": true,
+    "durableLineageVerified": true,
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "requests": 6,
+    "reviewerCancellation": "explicit calibration stop after routing evidence, not a review performance outcome",
+    "decisionVerified": false,
+    "independentStageVerified": false
+  },
+  "selectedCandidates": [
+    "updo-policy-alerting",
+    "geo-shapeindex-serialization",
+    "superjson-error-stack-serialization",
+    "koota-pair-relation-tracking"
+  ],
+  "officialControls": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "agent": "nop",
+      "reward": 0,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "agent": "oracle",
+      "reward": 1,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "agent": "nop",
+      "reward": 0,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "agent": "oracle",
+      "reward": 1,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "agent": "nop",
+      "reward": 0,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "agent": "oracle",
+      "reward": 1,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "agent": "nop",
+      "reward": 0,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "agent": "oracle",
+      "reward": 1,
+      "passed": true,
+      "cleanupConfirmed": true,
+      "separateEnvironmentObserved": true,
+      "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54"
+    }
+  ],
+  "preModelFailures": [
+    {
+      "attempt": 1,
+      "category": "network-policy-prevented-install"
+    },
+    {
+      "attempt": 2,
+      "category": "network-policy-prevented-install"
+    },
+    {
+      "attempt": 3,
+      "category": "unsupported-DSH-listener-address"
+    },
+    {
+      "attempt": 4,
+      "category": "OpenSandbox-proxy-host-address"
+    }
+  ],
+  "publicAttemptsStarted": 0,
+  "plannedPublicAttempts": 24,
+  "formalModelAdmitted": false,
+  "remainingGates": [
+    "persistent-execution-budget",
+    "deterministic-monitor",
+    "development-revision-and-fault-runs",
+    "candidate-native-runtime-and-snapshots",
+    "peak-capacity-and-storage-enforcement",
+    "browser-check",
+    "frozen-clean-package-install"
+  ],
+  "evidenceSha256": {
+    "admission-native-5/native-result.json": "709d16050af678eb781920b180a51a97a98da55147f754d56e8b80048e5d4163",
+    "gateway-admission-2/probe-result.json": "fbe6062556d1c6cba9b9f4652edd8d6178a8753e8065057bb41fad4d2c117906",
+    "gateway-admission-2/cancellation/result.json": "31e8bcdc386ad24aa641a0360986581eca70e1d8ef4e7e66a3b05f8f4ab8a8d8",
+    "gateway-admission-2/gateway-cleanup.json": "a375f7a8b3640f9e91e9244499836e6cb45e7588412b1c2909feeb2271797ad6",
+    "dev-baseline.json": "737f2345f1e3315e9a70f4e018629e983854a86d96caa4c7062c1dfcd85e1626",
+    "route-calibration-1/route-evidence.json": "971403c9755a348c3eb95b157124832dcef940cb308b2f68e64532a079c8da29",
+    "candidate-selection.json": "c8e9c763e6b6105645ab0e4b49e89a0e4fda1213ba7bdcb0a3abd8f83af41b96",
+    "official-controls/geo-shapeindex-serialization-nop-1/result.json": "98ed65fdc10d730659f0e24983339644d99e64a4a0f8b2cf92ca61d3f7f684e9",
+    "official-controls/geo-shapeindex-serialization-oracle-1/result.json": "1de24ccf56cfc91b2e9ffff13d443344b8f3b7f27df43ec801b737765712ca21",
+    "official-controls/koota-pair-relation-tracking-nop-1/result.json": "3bb46da3b1d7feb160d34a7dc5dd1c25f4b93435c24dd624185838354b88f758",
+    "official-controls/koota-pair-relation-tracking-oracle-1/result.json": "5e46d7e14a21f614082734663781e686a6107b92e5de5579f32f76794d98a2ae",
+    "official-controls/superjson-error-stack-serialization-nop-1/result.json": "328fddcefc7f7f86f82d1a90df28881c9a8e5cecdd5f8c04a725976e9022e547",
+    "official-controls/superjson-error-stack-serialization-oracle-1/result.json": "4638638868d173376cad8fe0c89ecdc1bbb5e926da1ead6381c48034ff433727",
+    "official-controls/updo-policy-alerting-nop-1/result.json": "91fcc901e2b857575c3749b05db2d22ae4bea8e75d98834ec9d88effbb2a51b3",
+    "official-controls/updo-policy-alerting-oracle-1/result.json": "2df9253430452aa778d6f7ad81e29728925bd8eabeb0b7995d7f26b3e41fc131"
+  }
+}

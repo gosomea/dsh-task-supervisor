@@ -1,0 +1,24 @@
+# Build before model admission, then freeze the resulting image digest.
+# The caller must supply the official task image (or the development image)
+# and a SHA-256 verified Node archive matching that image's architecture.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+USER root
+ARG NODE_VERSION=v24.21.0
+ARG NODE_ARCH
+ARG NODE_SHA256
+RUN test -n "$NODE_ARCH" && test -n "$NODE_SHA256" \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates curl xz-utils bubblewrap python3 make g++ git \
+ && curl -fsSL "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o /tmp/dsh-node.tar.xz \
+ && echo "${NODE_SHA256}  /tmp/dsh-node.tar.xz" | sha256sum -c - \
+ && tar -xJf /tmp/dsh-node.tar.xz -C /usr/local --strip-components=1 \
+ && rm /tmp/dsh-node.tar.xz \
+ && npm install -g pnpm@11.7.0 \
+ && npm install -g --allow-scripts=@deepseek-ai/dsh-subprocess-local,koffi,node-pty,@google/genai,protobufjs @deepseek-ai/dsh@0.2.0-rc.2 \
+ && node --version && dsh --version \
+ && dpkg-query -W > /opt/dsh-runtime-dpkg.txt \
+ && npm ls -g --all --json > /opt/dsh-runtime-npm.json \
+ && rm -rf /var/lib/apt/lists/*
+ENV DSH_TELEMETRY_DISABLED=1

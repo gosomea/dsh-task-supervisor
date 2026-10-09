@@ -136,13 +136,18 @@ def collect(sessions, projections, main_id):
 
 def read_home(home):
     latest = {}
-    for path in (home / 'sessions').glob('**/session.v*.jsonl.zstd'):
-        match = re.fullmatch(r'session\.v(\d+)\.jsonl\.zstd', path.name)
-        if match and (path.parent not in latest or int(match[1]) > latest[path.parent][0]):
-            latest[path.parent] = (int(match[1]), path)
+    for path in (home / 'sessions').glob('**/session*.jsonl*'):
+        match = re.fullmatch(r'session(?:\.v(\d+))?\.jsonl(?:\.zstd)?', path.name)
+        if not match:
+            continue
+        generation = int(match[1] or 0)
+        if path.parent in latest and generation == latest[path.parent][0]:
+            raise ValueError('Ambiguous native Session generation')
+        if path.parent not in latest or generation > latest[path.parent][0]:
+            latest[path.parent] = (generation, path)
     sessions, projections, hashes = {}, {}, []
     for _, path in latest.values():
-        raw = subprocess.check_output(['zstd', '-dc', str(path)], timeout=30)
+        raw = subprocess.check_output(['zstd', '-dc', str(path)], timeout=30) if path.suffix == '.zstd' else path.read_bytes()
         events = [json.loads(line) for line in raw.splitlines() if line.strip()]
         if not events or events[0].get('type') != 'session':
             raise ValueError('Missing native Session header')
