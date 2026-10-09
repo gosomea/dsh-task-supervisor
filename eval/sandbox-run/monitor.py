@@ -280,6 +280,10 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                     now = clock()
                     reason = terminal_reason(view, started, now)
                     fault_pending = bool(view.get('nativeRequestFault'))
+                    if fault_pending and reason == 'controller-complete':
+                        # A current settled request failure outranks an earlier
+                        # response; still allow the normal two-observation wait.
+                        reason = None
                     if not reason and confirmed_fault(journal, view.get('nativeRequestFault'), now):
                         reason = 'native-upstream-fault'
                     if started['condition'] == 'plan':
@@ -320,6 +324,7 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                     'completionEvidence': completion,
                     'infrastructureFault': reason in ('infrastructure-fault', 'sandbox-lost', 'execution-side-exit', 'storage-limit', 'native-upstream-fault') or not cleanup['acknowledged'],
                     'requestFaultEvidence': (view or {}).get('nativeRequestFault'),
+                    'nativeCompletionEvidence': (view or {}).get('nativeCompletionEvidence'),
                     'cleanup': cleanup, 'rescueCount': 0})
             ticks += 1
             if max_ticks is not None and ticks >= max_ticks:

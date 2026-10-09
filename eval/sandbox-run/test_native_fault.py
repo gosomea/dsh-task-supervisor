@@ -62,6 +62,23 @@ class NativeFaultTests(unittest.TestCase):
             self.assertEqual(terminal['requestFaultEvidence']['seq'], 50)
             self.assertEqual(terminal['rescueCount'], 0)
 
+    def test_stale_completion_cannot_mask_current_settled_request_failure(self):
+        events, values = fixture()
+        values['plan']['active'] = False
+        proof = native_request_fault(events, values, 'plan', 'a' * 64)
+        view = {'idle': True, 'nativeTerminal': 'controller-complete', 'nativeRequestFault': proof}
+        started = {'id': 'position', 'sessionId': 'session-a', 'condition': 'plan', 'deadlineAtUnix': 1000}
+        with tempfile.TemporaryDirectory() as directory:
+            journal = Journal(directory)
+            result = observe(journal, started, lambda _: view,
+                lambda _: self.fail('do not grant'), lambda *_: self.fail('do not declare completion'),
+                clock=lambda: 10, max_ticks=1)
+            self.assertTrue(result['pending'])
+            terminal = observe(Journal(directory), started, lambda _: view,
+                lambda _: self.fail('do not rescue'), lambda *_: {'acknowledged': True}, clock=lambda: 70)
+            self.assertEqual(terminal['firstStopReason'], 'native-upstream-fault')
+            self.assertFalse(terminal['controllerComplete'])
+
 
 if __name__ == '__main__':
     unittest.main()

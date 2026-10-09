@@ -23,6 +23,7 @@ from monitor import Journal, fold, observe, parse_events, renew
 from runtime import SandboxRef
 from runtime_rpc import RuntimeDshRpc
 from native_fault import native_request_fault
+from native_completion import plan_completion_evidence
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from control_flow import controller_overlay, observe as native_observe, projection_values
@@ -279,6 +280,13 @@ def read_view(runtime, box, rpc, started, spec, gateway=None):
         if spec['condition'] == 'goal': proof = goal_stop_evidence(events, values, spec.get('nativeControllerSha256', ''))
         else: proof = plan_stop_evidence(events, values, spec.get('nativeControllerSha256', ''))
     state = native_observe(spec['condition'], values, session['running'], approved, proof)
+    completion = None
+    if spec['condition'] == 'plan':
+        completion = plan_completion_evidence(events, values, spec.get('nativeControllerSha256', '')) if idle else None
+        if state['status'] == 'native-complete' and completion is None:
+            # An earlier response is not a finish signal for a queued, failed
+            # or newer turn. Preserve the native Agent and observe it again.
+            state.update(status='running', nativeFinished=False)
     terminals = {'native-complete': 'controller-complete', 'native-blocked': 'native-blocked',
         'native-stopped': 'native-stop', 'controller-conflict': 'controller-conflict', 'controller-off': 'controller-off'}
     plan = next((row for row in pending if row['kind'] == 'native-plan-approval'), None)
@@ -286,7 +294,7 @@ def read_view(runtime, box, rpc, started, spec, gateway=None):
         and event.get('data', {}).get('namespace') == 'dsh-long-horizon-eval'
         and event['data'].get('kind') == 'native-plan-grant']
     return with_resources({'task': None, 'idle': idle, 'hostExited': raw['hostExited'], 'nativeTerminal': terminals.get(state['status']),
-        'nativeState': state, 'questions': decisions,
+        'nativeState': state, 'questions': decisions, 'nativeCompletionEvidence': completion,
         'nativeRequestFault': native_request_fault(events, values, spec['condition'],
             spec.get('nativeControllerSha256', '')) if idle else None,
         'planApprovalReady': {'sessionId': started['sessionId'], 'questionId': plan['id'],
