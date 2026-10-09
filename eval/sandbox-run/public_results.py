@@ -174,6 +174,7 @@ def detail_report(value):
                          f"{trace['allContextCompactions']} | {nodes} | {endings} |")
     lines += ['', '轨迹由原始收集日志只读计算，重试不是新增执行步；原生 Goal／Plan 与 Supervisor 的节点语义不作等同。',
               '轮次结束原因来自实际 turn/end 的 data.reason.kind，含主 Session 与所属子 Session；单个轮次结束不自动代表整个控制器完成。',
+              'max-tokens 表示模型生成截断，不是根据累计 Session 用量推定整个 Task 的 token 预算耗尽。',
               '快照仅导出计数、身份与摘要，不包含模型正文、工具参数、私有路径或凭据。',
               '未封口位置不代表失败；当前成功数与完整分母同时保留，最终比较等待全部位置封口。',
               'Token 总和包含独立列出的 uncached/cache-read/cache-write/output；缺失用量不补为零。',
