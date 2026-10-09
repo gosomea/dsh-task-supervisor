@@ -86,6 +86,12 @@ function safeText(text: string, maxLength: number): string {
   return page.truncated ? `${page.text}… [truncated; read_task_context or read_task_text for remaining text]` : page.text
 }
 
+/** Only the latest tool outcome can block protocol repair; earlier errors remain in the Session. */
+function endingToolError(events: readonly SessionEvent[], turn: number | undefined) {
+  const result = events.findLast(event => event.type === 'tool/result' && event.data.turn === turn)
+  return result?.type === 'tool/result' && result.data.message.isError === true ? result : undefined
+}
+
 /** A settled latest request, not the sticky turn reason alone, permits truncation repair. */
 export function reviewTruncationBoundary(events: readonly SessionEvent[]): { endSeq: number; turn: number } | null {
   if (events.some((event, index) => !Number.isSafeInteger(event.seq) || event.seq < 0
@@ -340,7 +346,8 @@ async function runReviewStage(
         ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'task_review_check_plan'] : []].includes(exec.name)
         ? undefined : 'reviewers may only inspect evidence and submit a decision')
       agentCtx.tools.register(defineTool({ name: 'read_task_evidence_index', description: 'Locate relevant bound main Session events by type, tool and errors, with paired call/result seqs and redacted truncation-aware summaries. Available after independent findings. Index summaries are NOT citable evidence: expand originals with read_task_call/read_task_text before citing.',
-        parameters: { from_seq: { type: 'integer' }, limit: { type: 'integer' }, types: { type: 'array', items: { type: 'string' } }, tool: { type: 'string' }, errors_only: { type: 'boolean' } },
+        parameters: { from_seq: { type: 'integer', description: 'First Session seq, nonnegative; default 0.' },
+          limit: { type: 'integer', description: 'Entry count, 1–50; default 20.' }, types: { type: 'array', items: { type: 'string' } }, tool: { type: 'string' }, errors_only: { type: 'boolean' } },
         output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
         async execute(args) {
           assertComparison()
@@ -408,7 +415,7 @@ async function runReviewStage(
           name,
           description: name === 'read_task_call'
             ? 'Read a redacted arguments page of an already-seen tool call. Follow nextOffset until all required evidence is inspected.'
-            : 'Read a redacted text page of an already-seen event. Offsets address redacted UTF-16 text; non-text attachments are not inspected by this tool.',
+            : 'Read a redacted text page of an already-seen event. First locate its seq with read_task_evidence_index or read_task_evidence. Offsets address redacted UTF-16 text; non-text attachments are not inspected by this tool.',
           parameters: {
             seq: { type: 'integer', required: true },
             offset: { type: 'integer', description: 'Character offset, default 0.' },
@@ -601,7 +608,7 @@ async function runReviewStage(
       signal.throwIfAborted()
       const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
-      const errorResult = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
+      const errorResult = endingToolError(events, last?.type === 'turn/end' ? last.data.turn : undefined)
       const errorCall = errorResult?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === errorResult.data.message.source.callId) : undefined
       const truncated = reviewTruncationBoundary(events)
       const repairable = last?.type === 'turn/end' && (last.data.reason.kind === 'completed' || truncated !== null)
@@ -623,7 +630,7 @@ async function runReviewStage(
     if (submitted === undefined) {
       const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
-      const invalid = events.findLast(event => event.type === 'tool/result' && event.data.turn === last?.data.turn && event.data.message.isError === true)
+      const invalid = endingToolError(events, last?.type === 'turn/end' ? last.data.turn : undefined)
       const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
       const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
         : last?.type === 'turn/end' && last.data.reason.kind === 'aborted' ? 'cancelled'
@@ -632,7 +639,8 @@ async function runReviewStage(
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
         ...provider ? { providerCode: provider.code, ...provider.status === undefined ? {} : { providerStatus: provider.status } } : {},
         message: code === 'protocol-missing' ? `reviewer ended without a valid structured decision; native reason ${last?.type === 'turn/end' ? last.data.reason.kind : 'unknown'}, repair ${job.attempt - firstAttempt}/${job.repairLimit}`
-          : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message : `review failed: ${code}`,
+          : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message
+            : `review failed: ${code}${call?.type === 'tool/call' && invalid ? `; ${call.data.name} result seq ${invalid.seq}: ${safeText(eventText(invalid), 1000)}` : ''}`,
         retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })
     }
     const events = handle.agent.session.snapshotEvents().map(controlEvent)

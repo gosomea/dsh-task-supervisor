@@ -1,0 +1,67 @@
+import { expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { newTask } from '../../src/state.ts'
+import { reviewJobSchema, type ReviewJob } from '../../src/review-schema.ts'
+import type { PanelState } from '../../src/client/task-store.ts'
+import { reviewPresentation, reviewFaultDescription, createReviewDisclosureState } from '../../src/client/review-presentation.ts'
+
+function fixture() {
+  const task = newTask('读取输入并核对总数')
+  const job = reviewJobSchema.parse({ id: randomUUID(), revision: 1, mainSessionId: 'main', taskId: task.id,
+    taskRevision: 1, planVersion: 0, stageId: 'node', nodeAttempt: 1, kind: 'stage', cutoff: 20,
+    reviewerSessionId: 'review', model: null, runtimeId: randomUUID(), owner: 'controller', status: 'started',
+    attempt: 1, repairLimit: 1, startedAt: '2026-10-09T00:00:00Z', finishedAt: null, trigger: 'stage',
+    input: task, evidence: '核对总数', fault: null, decision: null })
+  const state: PanelState = { task, live: true, armed: true, reviewing: true, actions: ['pause', 'off'] }
+  return { job, state }
+}
+it.each(['queued', 'started', 'repairing', 'submitted'] as const)('keeps the %s activity visible while process details are collapsed', status => {
+  const { job, state } = fixture()
+  const labels = { queued: 'reviewQueuedAction', started: 'reviewRunning', repairing: 'reviewRecoveringAction', submitted: 'reviewApplyingAction' }
+  expect(reviewPresentation({ ...job, status }, state)).toMatchObject({ active: true, tone: 'active', label: labels[status], canRetry: false, duration: null })
+})
+it('shows a current fault and permits retry only for the bound live task and job', () => {
+  const { job, state } = fixture()
+  job.status = 'failed'
+  job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: 'review', code: 'protocol-missing', message: 'missing decision',
+    attempt: 1, retryable: true, outcomeKnown: true, errorSeq: null }
+  state.task!.reviewFault = job.fault
+  state.reviewing = false
+  state.actions = ['retry-review', 'off']
+  expect(reviewPresentation(job, state)).toMatchObject({ label: 'reviewFailed', tone: 'error', active: false, canRetry: true, currentFault: true })
+  expect(reviewFaultDescription(job.fault)).toBe('reviewFaultProtocol')
+  expect(reviewPresentation(job, { ...state, live: false }).canRetry).toBe(false)
+  expect(reviewPresentation(job, { ...state, actions: ['off'] }).canRetry).toBe(false)
+  expect(reviewPresentation(job, { ...state, task: { ...state.task!, reviewFault: { ...job.fault, jobId: randomUUID() } } }).currentFault).toBe(false)
+  expect(reviewPresentation(job, { ...state, task: newTask('下一项任务') })).toMatchObject({ currentFault: false, canRetry: false })
+})
+it('does not describe a stopped or historical pending job as currently generating', () => {
+  const { job, state } = fixture()
+  expect(reviewPresentation(job, { ...state, live: false })).toMatchObject({ active: false, label: 'reviewWaitingRecovery' })
+  expect(reviewPresentation(job, { ...state, reviewing: false })).toMatchObject({ active: false, label: 'reviewWaitingRecovery' })
+  expect(reviewPresentation(job, { ...state, task: newTask('下一项任务') })).toMatchObject({ active: false, canRetry: false })
+})
+it('keeps a stale decision distinct from a current pass and reports only measured finished duration', () => {
+  const { job, state } = fixture()
+  const decision: ReviewJob['decision'] = { verdict: 'pass', finding: '已核对', evidenceSeqs: [10], imageSeqs: [], decisionSeq: 30 }
+  const ended = { ...job, status: 'applied' as const, decision, finishedAt: '2026-10-09T00:03:13Z' }
+  expect(reviewPresentation(ended, state)).toMatchObject({ label: 'reviewVerdict.pass', tone: 'success', active: false, duration: 193 })
+  expect(reviewPresentation({ ...ended, status: 'stale' }, state)).toMatchObject({ label: 'reviewStale', tone: 'warning' })
+  expect(reviewPresentation({ ...ended, finishedAt: 'invalid' }, state).duration).toBeNull()
+})
+
+it('retains explicit collapse across streaming remounts, resets for a new activity and bounds history', () => {
+  const choices = createReviewDisclosureState(2)
+  expect(choices.open('a', true)).toBe(true)
+  choices.set('a', true, false)
+  expect(choices.open('a', true)).toBe(false)
+  expect(choices.open('a', false)).toBe(false)
+  expect(choices.open('a', true)).toBe(true)
+  choices.set('a', false, true)
+  choices.set('b', false, true)
+  choices.set('c', false, true)
+  expect(choices.open('a', false)).toBe(false)
+  expect(choices.open('b', false)).toBe(true)
+  choices.clear()
+  expect(choices.open('b', false)).toBe(false)
+})

@@ -217,6 +217,53 @@ it('does not use truncation to rescue a failed evidence tool', async () => {
   expect(adapter.requests.filter(request => request.model === 'reviewer')).toHaveLength(2)
 })
 
+it.each(['planning', 'plan', 'progress', 'stage', 'completion'] as const)('allows bounded %s decision repair after evidence reads recover', async kind => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  const cutoff = agent.session.seq - 1
+  adapter.scripts.reviewer = [
+    toolResponse('read_task_text', { seq }),
+    toolResponse('read_task_evidence_index', { from_seq: 0, limit: 60 }),
+    toolResponse('read_task_evidence_index', { from_seq: 0, limit: 50 }),
+    toolResponse('read_task_text', { seq }), textResponse('Inspection ended without a decision'),
+    toolResponse('task_review_decision', { verdict: 'revise', finding: '继续核对要求', evidence_seqs: [seq],
+      ...kind === 'planning' ? { planning } : {} }),
+  ]
+  const decision = await reviewStage(ctx, agent, task, kind, '观察', new AbortController().signal, selected, kind)
+  expect(decision).toMatchObject({ verdict: 'revise', cutoff, evidenceSeqs: [seq] })
+  const jobs = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
+    .map(event => reviewJobSchema.parse(event.type === 'extension/record' ? event.data.payload : null))
+  expect(jobs.filter(job => job.status === 'repairing')).toHaveLength(1)
+  expect(jobs.find(job => job.status === 'repairing')?.fault?.code).toBe('protocol-missing')
+  expect(new Set(jobs.map(job => job.reviewerSessionId)).size).toBe(1)
+  expect(new Set(jobs.map(job => job.deadlineAt)).size).toBe(1)
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(2)
+    expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'read_task_text')).toHaveLength(2)
+    expect(events.filter(event => event.type === 'turn/start')).toHaveLength(2)
+  } finally { await reader.close() }
+})
+
+it('bounds text-only repair after a corrected read and retains the final protocol fault', async () => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  adapter.scripts.reviewer = [toolResponse('read_task_text', { seq }),
+    toolResponse('read_task_evidence_index', { from_seq: 0, limit: 50 }), toolResponse('read_task_text', { seq }),
+    textResponse('No decision'), textResponse('Still no decision'), textResponse('Must not be requested')]
+  await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning'))
+    .rejects.toMatchObject({ fault: { code: 'protocol-missing', attempt: 2 } })
+  expect(adapter.requests.filter(request => request.model === 'reviewer')).toHaveLength(5)
+})
+
+it('does not turn an index-only read into valid decision evidence during repair', async () => {
+  const { ctx, agent, adapter, seq, task } = await fixture()
+  adapter.scripts.reviewer = [toolResponse('read_task_evidence_index', { from_seq: 0, limit: 50 }),
+    textResponse('No decision'), toolResponse('task_review_decision', { verdict: 'pass', finding: 'Not actually read', evidence_seqs: [seq], planning }),
+    textResponse('End')]
+  await expect(reviewStage(ctx, agent, task, 'planning', '观察', new AbortController().signal, selected, 'planning'))
+    .rejects.toMatchObject({ fault: { code: 'decision-invalid', attempt: 2, message: expect.stringContaining('task_review_decision result seq') } })
+})
+
 it.each(['blocked', 'aborted', 'error'] as const)('never repairs a native %s reviewer ending', async reason => {
   const { ctx, agent, adapter, task } = await fixture()
   if (reason === 'error') adapter.scripts.reviewer = [[{ type: 'finish', reason: { kind: 'error', failure: { code: 'TEST_PROVIDER', message: 'provider unavailable' } } }]]

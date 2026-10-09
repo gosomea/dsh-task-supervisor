@@ -30,7 +30,7 @@ for (const side of ['host', 'client']) {
     resolve(project, 'spikes/kernel/provenance-probe.spec.ts'),
     resolve(project, 'spikes/kernel/provenance-findings.spec.ts'),
     resolve(project, 'spikes/kernel/evidence.spec.ts'), resolve(project, 'spikes/kernel/review-read-ledger.spec.ts'),
-  ] : [resolve(project, 'src/client/index.tsx'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
+  ] : [resolve(project, 'src/client/index.tsx'), resolve(project, 'spikes/kernel/review-presentation.spec.ts'), ...parsed.fileNames.filter(path => path.endsWith('css-modules.d.ts'))],
     options, projectReferences: parsed.projectReferences })
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)]
   if (diagnostics.length) {

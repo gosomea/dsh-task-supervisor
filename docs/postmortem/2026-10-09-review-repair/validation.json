@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-09",
+  "scope": "corrected evidence reads, bounded protocol supplement and native review presentation; log mode only",
+  "host": {
+    "version": "@deepseek-ai/dsh@0.2.0-rc.2",
+    "registryId": "supervisor-release-012-20261008",
+    "candidateTarballSha256": "2e662d9da1b30f7ec8d6bfcc1b592225ddbec4b07a3d5012a97b9ac4211cb7c2",
+    "installedFilesMatchTarball": true,
+    "publicNpmRelease": false
+  },
+  "regressions": {
+    "targetedTests": 72,
+    "recoveryAndLedgerTests": 52,
+    "filteredOutTests": 117,
+    "hostStrictTypes": "passed",
+    "clientStrictTypes": "passed",
+    "build": "passed",
+    "pack": "passed"
+  },
+  "tasks": [
+    {
+      "injection": "plan final failed read; stage two corrected read errors followed by completed prose without decision",
+      "sessionId": "session-1a468939-7f75-4c3e-8889-b899977c5894",
+      "taskId": "d50e8871-727d-4a1d-8909-4128b6f04f64",
+      "phase": "complete",
+      "model": "deepseek-codebuddy/deepseek-v4.1-flash",
+      "dailyPortUntouched": 3080,
+      "approvalCount": 1,
+      "jobs": [
+        {
+          "id": "67dd1b75-897d-411d-9b3f-dfde9c03a4e5",
+          "kind": "plan",
+          "status": "applied",
+          "reviewerSessionId": "task-review-d0623190-5091-4d3c-94a7-e34c94ad7703",
+          "attempt": 2,
+          "cutoff": 42,
+          "verdict": "pass",
+          "protocolRepairs": 0,
+          "faultRetries": 0,
+          "successfulToolResults": 7,
+          "failedToolResults": 2,
+          "decisionCalls": 2,
+          "turnEndings": [
+            "completed",
+            "completed"
+          ],
+          "tokens": {
+            "uncachedInputTokens": 14212,
+            "outputTokens": 8102,
+            "cacheReadTokens": 54144,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:40:39.954Z",
+          "finishedAt": "2026-10-09T02:42:16.198Z"
+        },
+        {
+          "id": "66e4cede-8c85-477e-80ab-3ccd041309f7",
+          "kind": "stage",
+          "status": "applied",
+          "reviewerSessionId": "task-review-3752b28c-ceb1-4e43-8f9e-3f73fe25c17d",
+          "attempt": 2,
+          "cutoff": 118,
+          "verdict": "pass",
+          "protocolRepairs": 1,
+          "faultRetries": 0,
+          "successfulToolResults": 16,
+          "failedToolResults": 3,
+          "decisionCalls": 2,
+          "turnEndings": [
+            "completed",
+            "completed"
+          ],
+          "tokens": {
+            "uncachedInputTokens": 37420,
+            "outputTokens": 12265,
+            "cacheReadTokens": 237568,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:42:58.921Z",
+          "finishedAt": "2026-10-09T02:44:06.912Z"
+        },
+        {
+          "id": "55c6a286-d3f0-4aff-b11a-c2a892f55901",
+          "kind": "completion",
+          "status": "applied",
+          "reviewerSessionId": "task-review-576afd67-280d-497f-aaf4-6c7991c06e24",
+          "attempt": 1,
+          "cutoff": 149,
+          "verdict": "pass",
+          "protocolRepairs": 0,
+          "faultRetries": 0,
+          "successfulToolResults": 23,
+          "failedToolResults": 1,
+          "decisionCalls": 2,
+          "turnEndings": [
+            "completed"
+          ],
+          "tokens": {
+            "uncachedInputTokens": 48030,
+            "outputTokens": 14545,
+            "cacheReadTokens": 357888,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:44:14.755Z",
+          "finishedAt": "2026-10-09T02:45:43.602Z"
+        }
+      ]
+    },
+    {
+      "sessionId": "session-1a468939-7f75-4c3e-8889-b899977c5894",
+      "taskId": "d6613b91-6f1e-4048-a7ac-9c2d503c6a87",
+      "phase": "complete",
+      "model": "deepseek-codebuddy/deepseek-v4.1-flash",
+      "approvalCount": 1,
+      "injection": null,
+      "jobs": [
+        {
+          "id": "066fe06a-6374-4681-bc80-392757c93f6d",
+          "kind": "plan",
+          "status": "applied",
+          "reviewerSessionId": "task-review-3662a6ed-f2f8-4d0b-b188-6a44dda46ade",
+          "attempt": 1,
+          "cutoff": 202,
+          "verdict": "pass",
+          "protocolRepairs": 0,
+          "faultRetries": 0,
+          "successfulToolResults": 10,
+          "failedToolResults": 0,
+          "tokens": {
+            "uncachedInputTokens": 35766,
+            "outputTokens": 9258,
+            "cacheReadTokens": 150912,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:49:36.479Z",
+          "finishedAt": "2026-10-09T02:50:29.765Z"
+        },
+        {
+          "id": "3af8cb6b-4b09-4227-9586-139d4e07d163",
+          "kind": "stage",
+          "status": "applied",
+          "reviewerSessionId": "task-review-29bf9baf-203d-4f5c-9bee-f417e3f9d393",
+          "attempt": 1,
+          "cutoff": 263,
+          "verdict": "pass",
+          "protocolRepairs": 0,
+          "faultRetries": 0,
+          "successfulToolResults": 20,
+          "failedToolResults": 2,
+          "tokens": {
+            "uncachedInputTokens": 39006,
+            "outputTokens": 20254,
+            "cacheReadTokens": 310016,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:55:50.211Z",
+          "finishedAt": "2026-10-09T02:57:37.998Z"
+        },
+        {
+          "id": "88aed451-9c4a-4bda-882c-e70c2c2b387d",
+          "kind": "completion",
+          "status": "applied",
+          "reviewerSessionId": "task-review-9ef30819-d8eb-452b-ab75-7ec04c9f29c4",
+          "attempt": 1,
+          "cutoff": 287,
+          "verdict": "pass",
+          "protocolRepairs": 0,
+          "faultRetries": 0,
+          "successfulToolResults": 25,
+          "failedToolResults": 2,
+          "tokens": {
+            "uncachedInputTokens": 40234,
+            "outputTokens": 16947,
+            "cacheReadTokens": 434304,
+            "cacheWriteTokens": 0
+          },
+          "startedAt": "2026-10-09T02:57:42.971Z",
+          "finishedAt": "2026-10-09T02:59:15.685Z"
+        }
+      ]
+    }
+  ],
+  "ui": {
+    "nativeHistoryProof": {
+      "failedReadsVisible": true,
+      "open": "true",
+      "visibleComposer": false
+    },
+    "afterRefresh": [
+      {
+        "id": "67dd1b75-897d-411d-9b3f-dfde9c03a4e5",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      },
+      {
+        "id": "66e4cede-8c85-477e-80ab-3ccd041309f7",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      },
+      {
+        "id": "55c6a286-d3f0-4aff-b11a-c2a892f55901",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      },
+      {
+        "id": "066fe06a-6374-4681-bc80-392757c93f6d",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      },
+      {
+        "id": "3af8cb6b-4b09-4227-9586-139d4e07d163",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      },
+      {
+        "id": "88aed451-9c4a-4bda-882c-e70c2c2b387d",
+        "open": "false",
+        "processAttached": false,
+        "retryButton": false,
+        "status": "applied"
+      }
+    ],
+    "streamingCollapse": {
+      "verified": true,
+      "beforeSuccessfulReads": 15,
+      "afterSuccessfulReads": 19
+    },
+    "narrowViewport": {
+      "width": 760,
+      "height": 900,
+      "horizontalSummaryOverflow": false
+    },
+    "viewportRestored": true,
+    "historyViewNoDispatch": {
+      "unchangedReviewerSeqs": true,
+      "runningSessions": 0
+    }
+  },
+  "sessionTokens": {
+    "task-review-9ef30819-d8eb-452b-ab75-7ec04c9f29c4": {
+      "uncachedInputTokens": 40234,
+      "outputTokens": 16947,
+      "cacheReadTokens": 434304,
+      "cacheWriteTokens": 0
+    },
+    "task-review-29bf9baf-203d-4f5c-9bee-f417e3f9d393": {
+      "uncachedInputTokens": 39006,
+      "outputTokens": 20254,
+      "cacheReadTokens": 310016,
+      "cacheWriteTokens": 0
+    },
+    "task-review-3662a6ed-f2f8-4d0b-b188-6a44dda46ade": {
+      "uncachedInputTokens": 35766,
+      "outputTokens": 9258,
+      "cacheReadTokens": 150912,
+      "cacheWriteTokens": 0
+    },
+    "session-1a468939-7f75-4c3e-8889-b899977c5894": {
+      "uncachedInputTokens": 106876,
+      "outputTokens": 7534,
+      "cacheReadTokens": 242304,
+      "cacheWriteTokens": 0
+    },
+    "task-review-576afd67-280d-497f-aaf4-6c7991c06e24": {
+      "uncachedInputTokens": 48030,
+      "outputTokens": 14545,
+      "cacheReadTokens": 357888,
+      "cacheWriteTokens": 0
+    },
+    "task-review-3752b28c-ceb1-4e43-8f9e-3f73fe25c17d": {
+      "uncachedInputTokens": 37420,
+      "outputTokens": 12265,
+      "cacheReadTokens": 237568,
+      "cacheWriteTokens": 0
+    },
+    "task-review-d0623190-5091-4d3c-94a7-e34c94ad7703": {
+      "uncachedInputTokens": 14212,
+      "outputTokens": 8102,
+      "cacheReadTokens": 54144,
+      "cacheWriteTokens": 0
+    }
+  },
+  "tokenQualification": "Includes the explicitly injected boundary responses; aggregate Session usage is usability evidence, not benchmark cost.",
+  "dailyHost": {
+    "port": 3080,
+    "restarted": false,
+    "originalReviewRetried": false
+  }
+}

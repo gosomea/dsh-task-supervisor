@@ -22,6 +22,7 @@ import { zh, en, type SupervisorTranslate } from './locales.ts'
 import { reviewDefinition } from './review-events.ts'
 import { createReviewPortals, ReviewPortalHost, type ReviewPortalProps } from './review-portals.tsx'
 import { ReviewConversation, ReviewSession, type ReviewNodeProps } from './review-session.tsx'
+import { createReviewDisclosureState } from './review-presentation.ts'
 import type { ReviewJob } from '../review-records.ts'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
 
@@ -338,8 +339,9 @@ export function apply(ctx: ClientContext): void {
   const Inline = (props: PanelProps) => <InlineTask {...props} open={open} t={t} />
   const Notes = (props: TailProps) => <><ReviewNotes {...props} open={open} /><DraftNotes {...props} t={t} /></>
   const portals = createReviewPortals()
-  ctx.effect(() => () => portals.dispose())
-  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} portals={portals} t={t} />
+  const disclosures = createReviewDisclosureState()
+  ctx.effect(() => () => { portals.dispose(); disclosures.clear() })
+  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} portals={portals} disclosures={disclosures} t={t} />
   const ReviewHost = (props: ReviewPortalProps) => <ReviewPortalHost {...props} portals={portals} sessions={ctx.sessions} />
   ctx.effect(() => ctx.uiConversation.events.register(reviewDefinition), 'task-supervisor:reviews')
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'task-supervisor/review-portals',

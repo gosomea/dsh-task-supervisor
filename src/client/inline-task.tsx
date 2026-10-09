@@ -25,6 +25,9 @@ export function TaskOverview({ sessionId, state, task, actions, error, open, t }
   const plan = displayedPlan(state)!
   const graphTask = plan.task
   const stage = task.stages[task.stageIndex]
+  const previousReviewJob = state.reviewJobs?.find(job => job.id === task.lastReview?.jobId)
+  const previousReviewTitle = task.lastReview ? task.stages.find(item => item.id === task.lastReview!.stageId)?.title
+    ?? (previousReviewJob ? t(`reviewKind.${previousReviewJob.kind}`) : task.lastReview.stageId) : ''
   const rework = stage ? nodeRework(task, stage.id, state.reworks) : undefined
   const actors = executionActors(task, sessionId)
   const mainNode = runsOf(task).find(run => !run.sessionId || run.sessionId === sessionId)
@@ -62,7 +65,7 @@ export function TaskOverview({ sessionId, state, task, actions, error, open, t }
       {task.recovery && <small>Supervisor · 生成截断后继续{task.phase === 'planning' ? '规划' : '任务'} · 无进展恢复 {task.recovery.noProgress} 次</small>}
       {task.pauseReason === 'recovery-stalled' && <small>连续恢复未产生可核实的新进展，等待手动恢复。</small>}
       {state.reviewing && reviewJob?.verification && <small>Supervisor · 已运行 {reviewJob.verification.checks.length} 次独立检查</small>}
-      {!state.reviewing && task.lastReview && <small title={task.lastReview.finding}>Supervisor · {headline(task.lastReview.finding, 80)}</small>}
+      {!state.reviewing && task.lastReview && <small title={task.lastReview.finding}>Supervisor · {t('reviewLastOutcome')} · {headline(previousReviewTitle, 40)} · {headline(task.lastReview.finding, 80)}</small>}
     </div></div>
     {state.repairs?.some(item => item.taskId === task.id && ['pending', 'confirmed'].includes(item.status)) && <div className="dsh-task-inline-summary"><span>修复提案待确认 · 任务仍为已完成</span><Button size="sm" variant="toolbar" onClick={() => open()}>查看影响范围</Button></div>}
     {actions && <div className="dsh-task-inline-controls">{actions}</div>}
