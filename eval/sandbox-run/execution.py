@@ -5,6 +5,7 @@ Model delivery is distinct from preparation so every gate can fail keylessly.
 """
 from datetime import datetime, timezone
 import hashlib
+import ipaddress
 import json
 import re
 from pathlib import Path
@@ -60,6 +61,13 @@ def validate_spec(spec):
         raise ValueError('frozen image, baseline and positive deadline required')
     if hashlib.sha256(spec['instruction'].encode()).hexdigest() != spec['instructionSha256']:
         raise ValueError('instruction changed')
+    registry = spec.get('bootstrapRegistryIpv4')
+    if registry is not None:
+        if not isinstance(registry, list) or not 1 <= len(registry) <= 8:
+            raise ValueError('invalid frozen registry IPv4 list')
+        for address in registry:
+            if str(ipaddress.IPv4Address(address)) != address:
+                raise ValueError('invalid frozen registry IPv4 address')
     if spec.get('formal') and spec.get('revision'):
         raise ValueError('formal positions cannot contain requirement revisions')
     if spec.get('formal') and (not spec.get('nativePresetSha256') or
@@ -73,6 +81,13 @@ def checked(runtime, box, command, timeout=30):
         # Raw provider/bootstrap output stays private; do not expose auth URLs.
         raise RuntimeError('sandbox preparation command failed with exit ' + str(code))
     return output
+
+
+def bind_registry(runtime, box, spec):
+    """Use a verified frozen bootstrap address without altering native policy."""
+    if spec.get('bootstrapRegistryIpv4'):
+        address = str(ipaddress.IPv4Address(spec['bootstrapRegistryIpv4'][0]))
+        checked(runtime, box, "printf '%s\\n' " + shlex.quote(address + ' registry.npmjs.org') + ' >> /etc/hosts')
 
 
 def prepare(runtime, spec, journal):
@@ -118,6 +133,7 @@ def prepare(runtime, spec, journal):
             runtime.write(box, '/opt/eval/' + filename, Path(path).read_bytes())
         for filename in ('loopback_relay.py', 'export_state.py'):
             runtime.write(box, '/opt/eval/' + filename, Path(__file__).with_name(filename).read_bytes())
+        bind_registry(runtime, box, spec)
         checked(runtime, box, 'mkdir -p /opt/eval/home && ln -s /usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules /opt/eval/node_modules')
         install = ('add --config.strict-peer-dependencies=false /opt/eval/plugin.tgz'
                    if spec['condition'] == 'supervisor-independent' else 'list')

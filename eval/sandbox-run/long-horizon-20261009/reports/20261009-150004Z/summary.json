@@ -1,0 +1,658 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-long-horizon-public-comparison",
+  "seed": "dsh-opensandbox-long-horizon-v1",
+  "planned": 24,
+  "sealed": 1,
+  "complete": false,
+  "conditions": {
+    "goal": {
+      "planned": 8,
+      "sealed": 0,
+      "notDelivered": 8,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 0,
+      "rewardZero": 0,
+      "rewardUnknown": 0,
+      "firstStopReasons": {},
+      "infrastructureFaults": 0,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 0,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": null,
+      "metrics": {
+        "requestCount": null,
+        "reviewToolCalls": null,
+        "repeatedExactReads": null,
+        "reviewReadFailures": null,
+        "recordedIndependentCheckResults": null,
+        "taskFaultRetryReservations": null,
+        "taskTruncationReservations": null,
+        "reviewProtocolSubmissions": null,
+        "checkWaitMs": null,
+        "wholeElapsedSec": null,
+        "protocolUserActions": null,
+        "toolCallsAllSessions": null,
+        "contextCompactions": null,
+        "contextCompactionAttempts": null
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "plan": {
+      "planned": 8,
+      "sealed": 1,
+      "notDelivered": 7,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 0,
+      "rewardZero": 0,
+      "rewardUnknown": 1,
+      "firstStopReasons": {
+        "native-upstream-fault": 1
+      },
+      "infrastructureFaults": 1,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 0,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 84648,
+        "outputTokens": 18995,
+        "cacheReadTokens": 1954560,
+        "cacheWriteTokens": 0
+      },
+      "metrics": {
+        "requestCount": 42,
+        "reviewToolCalls": 0,
+        "repeatedExactReads": 0,
+        "reviewReadFailures": 0,
+        "recordedIndependentCheckResults": 0,
+        "taskFaultRetryReservations": 0,
+        "taskTruncationReservations": 0,
+        "reviewProtocolSubmissions": 0,
+        "checkWaitMs": null,
+        "wholeElapsedSec": 3482.850354194641,
+        "protocolUserActions": 1,
+        "toolCallsAllSessions": 52,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-independent": {
+      "planned": 8,
+      "sealed": 0,
+      "notDelivered": 8,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 0,
+      "rewardZero": 0,
+      "rewardUnknown": 0,
+      "firstStopReasons": {},
+      "infrastructureFaults": 0,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 0,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": null,
+      "metrics": {
+        "requestCount": null,
+        "reviewToolCalls": null,
+        "repeatedExactReads": null,
+        "reviewReadFailures": null,
+        "recordedIndependentCheckResults": null,
+        "taskFaultRetryReservations": null,
+        "taskTruncationReservations": null,
+        "reviewProtocolSubmissions": null,
+        "checkWaitMs": null,
+        "wholeElapsedSec": null,
+        "protocolUserActions": null,
+        "toolCallsAllSessions": null,
+        "contextCompactions": null,
+        "contextCompactionAttempts": null
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    }
+  },
+  "pairedTasks": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-10-geo-shapeindex-serialization-goal-r2",
+            "lh-20-geo-shapeindex-serialization-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-01-geo-shapeindex-serialization-plan-r2",
+            "lh-04-geo-shapeindex-serialization-plan-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+            "lh-11-geo-shapeindex-serialization-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-13-koota-pair-relation-tracking-goal-r2",
+            "lh-16-koota-pair-relation-tracking-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-03-koota-pair-relation-tracking-plan-r2",
+            "lh-22-koota-pair-relation-tracking-plan-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+            "lh-18-koota-pair-relation-tracking-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-09-superjson-error-stack-serialization-goal-r1",
+            "lh-24-superjson-error-stack-serialization-goal-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-02-superjson-error-stack-serialization-plan-r1",
+            "lh-17-superjson-error-stack-serialization-plan-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+            "lh-23-superjson-error-stack-serialization-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-14-updo-policy-alerting-goal-r2",
+            "lh-21-updo-policy-alerting-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-05-updo-policy-alerting-plan-r1",
+            "lh-15-updo-policy-alerting-plan-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-06-updo-policy-alerting-supervisor-independent-r2",
+            "lh-12-updo-policy-alerting-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    }
+  ],
+  "comparisons": {
+    "goal": {
+      "pairedTaskCount": 0,
+      "taskDifferences": [],
+      "meanStrictSuccessDifference": null,
+      "taskClusterBootstrap95Percent": null,
+      "interpretation": "exploratory small sample; four tasks, repetitions are paired, no general long-horizon claim"
+    },
+    "plan": {
+      "pairedTaskCount": 0,
+      "taskDifferences": [],
+      "meanStrictSuccessDifference": null,
+      "taskClusterBootstrap95Percent": null,
+      "interpretation": "exploratory small sample; four tasks, repetitions are paired, no general long-horizon claim"
+    }
+  },
+  "positions": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "00507ba4decfb1660871ac6418d67bff2abd70df013affb62ee8b4a0e163d12e",
+      "id": "lh-01-geo-shapeindex-serialization-plan-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-01-geo-shapeindex-serialization-plan-r2",
+        "condition": "plan",
+        "taskId": "geo-shapeindex-serialization",
+        "repeat": 2,
+        "formal": true,
+        "reward": null,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": {
+            "kind": "settled-native-request-fault",
+            "condition": "plan",
+            "errorCode": "SERVER",
+            "controllerSourceSha256": "2f2d425c3bf6ed553cf8488ee699a9121d48b65c9b160cd99aefc5a73a5b656d",
+            "basis": "native-turn-error-and-empty-queues",
+            "seq": 250,
+            "turn": 1,
+            "nativeStoppedAtUnix": 1791554967.387
+          },
+          "sessionId": "session-b7306e79-cd29-4416-a652-12002f1a66c8",
+          "firstStopReason": "native-upstream-fault",
+          "atUnix": 1791557833.1800802,
+          "deadlineAtUnix": 1791565150.329726,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": true
+        },
+        "officialGrade": {
+          "scored": false,
+          "cleanupConfirmed": false,
+          "separateEnvironmentObserved": false,
+          "reward": null,
+          "fault": null,
+          "tests": null,
+          "execution": null,
+          "evidenceSha256": {},
+          "officialFilesSha256": {},
+          "imageDigest": null,
+          "architecture": null,
+          "F2P": null,
+          "P2P": null
+        },
+        "metrics": {
+          "unreportedAttempts": 6,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 42,
+          "toolCallsAllSessions": 52,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 3482.850354194641,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 84648,
+            "outputTokens": 18995,
+            "cacheReadTokens": 1954560,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-b7306e79-cd29-4416-a652-12002f1a66c8",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 84648,
+                "outputTokens": 18995,
+                "cacheReadTokens": 1954560,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 42,
+                "unreportedAttempts": 6,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "d5d369cd31666c4d94803e80b92aecacc3f46c5275e5d80c513e672aafe7247d",
+          "session-evidence.tar": "ae37701361de6de3b5a5b9861a727a02cc78ce16ccd6e029eed3cdb69164ce48",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "734b69ce883aef8fe356667723e67f9472a1a65eca1c37ac9d27e8b5f2a61750"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "a60a6ac134be74b6ee88af0745a1f9ec4479abe5da808b0ec1cc62403a78c1ff"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "03e8d19db2df31fb20f830f6d464ee78c67a9b8c85aa23f6be590ebc8a3adc2b",
+      "id": "lh-02-superjson-error-stack-serialization-plan-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "0c914f76f25035ed63aba49408b9cc66de5ed52899ca8aea5b4510018feffbf1",
+      "id": "lh-03-koota-pair-relation-tracking-plan-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "0f41c27c214ede7ddf72d83ad5d2bb323680015ef473c3a0b07887fe130e48be",
+      "id": "lh-04-geo-shapeindex-serialization-plan-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "1e7cd2412a284c4670f8b8fa01c85923541a28087d0253eb10de3a3e318fcf21",
+      "id": "lh-05-updo-policy-alerting-plan-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "22f3300159e183b4e8f7e0c8e88e8353bfb44c77815046d8752dbb097cbac4f2",
+      "id": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "239b8a18a8e2f198a1a20f91cffce579891378067febb5bdb219e242377ccab5",
+      "id": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "2726f406cea8a40daab8181e4263e42a5267483fcf2f66db7587caa801a333ad",
+      "id": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "457782e86ed58806a784c4725e87ee3195569f2eeb0f37ee26401f12ea6defbe",
+      "id": "lh-09-superjson-error-stack-serialization-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "4b266a96c3877c029ca0870da05ccea50023d1613cdb13ef0ff221d4d4d92d0a",
+      "id": "lh-10-geo-shapeindex-serialization-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "6002d124fcadd81f3bcd86aa563eaa8f3f9c98a24de3a548e0ceab77d957aaee",
+      "id": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "68d3aadeb49760be497dfee9aac80f984f8bf418772ac532ec00881317960170",
+      "id": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "6d57166fdad70d249f0eb8fd7b4dcbc684bcdf5077242064a1a93826c35ab154",
+      "id": "lh-13-koota-pair-relation-tracking-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "75269796231953649c53d7da677bf3256aa857c6edbe3d47ce0ce82e7401567d",
+      "id": "lh-14-updo-policy-alerting-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "7c896545b2c16310029a14570a18eada094d90971487159041a4e5a93015d3bb",
+      "id": "lh-15-updo-policy-alerting-plan-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "8790d32a92f2a1b547886aca534cfa5e6f6b3f7d10841a444ffedade3c77c40c",
+      "id": "lh-16-koota-pair-relation-tracking-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "b24fd982adf82f37df8c269751b2dacca01d580cdfa9eb5051faed84f7151d08",
+      "id": "lh-17-superjson-error-stack-serialization-plan-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "d0fd870ae434b05146942107360da92ed5f490f89eaea42828d51e85a006ffeb",
+      "id": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "d796298c402edecf20b0d7be4c436d1a7a356308f337426f78c0bcdf610d5387",
+      "id": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "d7f377603667253ccb8e39a6a2a1ab623a13afcd3d86b894a1a90131f2b50474",
+      "id": "lh-20-geo-shapeindex-serialization-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "dc0de994c54c212eb766176ea12fd063ff5f2930b597076b1e63c62188230c56",
+      "id": "lh-21-updo-policy-alerting-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "ee98b4f464ec0fcb15eeaf8508cab876ad79defcea958ed453ca8e6dd2db03e1",
+      "id": "lh-22-koota-pair-relation-tracking-plan-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "f13f256df4241698d268e4dfeaaf880240578750e0df9ff18c64ef11b539ec0b",
+      "id": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "f384965fb6cb9214dc9f7c77a71759473d7cdeb8c9d910463ff2a9061136ca41",
+      "id": "lh-24-superjson-error-stack-serialization-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    }
+  ],
+  "falseAcceptanceRate": null,
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "exportedAt": "2026-10-09T15:00:04.302015+00:00",
+  "reportOnly": true,
+  "orderSha256": "f9a83a9aa239c911874913fa2416434d426db661839c1c948874f93a3afe5109"
+}
