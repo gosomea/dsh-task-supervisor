@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "formal-task-recovery-budget-persists-across-node-rework",
+  "capturedAt": "2026-10-09T20:43:13.975395+00:00",
+  "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "freeze": {
+    "runnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+    "pluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+    "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+    "startedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51",
+    "privateCaptureSha256": "ed05c8bd523f1581fb7b4bdd6e3cc826c8e19f1465571bf90abf87ee0ba57d0f"
+  },
+  "identity": {
+    "jobId": "314c9e84-f65e-44c1-88ee-d1081a87ae25",
+    "reviewerSessionId": "task-review-66fb59fb-03ae-4882-ba97-4fa617b52e5c",
+    "requirementsVersion": 1,
+    "planVersion": 1,
+    "taskRevision": 24,
+    "stageId": "n2",
+    "nodeAttempt": 2,
+    "evidenceCutoff": 1216,
+    "sameJobSessionInputAndCutoff": true,
+    "firstRuntimeId": "0c631ce1-c552-48ff-afb4-cb7e41eca151",
+    "retryRuntimeId": "fa5ac595-493d-4790-88f0-9bafd26f0579"
+  },
+  "recovery": {
+    "firstDeadlineAt": "2026-10-09T20:39:02.147Z",
+    "retryDeadlineAt": "2026-10-09T20:49:05.261Z",
+    "timeoutRecordSeq": 1221,
+    "retryStartedRecordSeq": 1227,
+    "oldInstanceStoppedBeforeRetry": true,
+    "reviewerTurnEnds": [
+      {
+        "seq": 128,
+        "atUnix": 1791578342.188,
+        "reason": "aborted"
+      },
+      {
+        "seq": 150,
+        "atUnix": 1791578386.524,
+        "reason": "completed"
+      }
+    ],
+    "decisionCalls": [
+      {
+        "callSeq": 137,
+        "resultSeq": 138,
+        "atUnix": 1791578368.59,
+        "isError": true
+      },
+      {
+        "callSeq": 147,
+        "resultSeq": 148,
+        "atUnix": 1791578386.523,
+        "isError": false
+      }
+    ],
+    "appliedRecordSeq": 1237,
+    "appliedAt": "2026-10-09T20:39:46.551000+00:00",
+    "applicationCount": 1,
+    "verdict": "revise",
+    "totalReviewElapsedSeconds": 644.399,
+    "retryToApplicationSeconds": 41.282
+  },
+  "persistentBudget": {
+    "priorEvidenceFile": "supervisor-rework-after-acceptance-v6.json",
+    "priorPrivateCaptureSha256": "6b44f9223d409c2190bfe895fc4578071f7957e58e9357b4ffc288f18b3637bd",
+    "createdAt": "2026-10-09T18:46:31.534Z",
+    "originalDeadlineAt": "2026-10-09T21:46:10.882641+00:00",
+    "persistedDeadlineAt": "2026-10-09T21:46:10.882Z",
+    "policy": {
+      "taskDeadlineMs": 10800000,
+      "outerDeadlineAt": "2026-10-09T21:46:10.882641Z",
+      "maxTruncationRecoveries": 6,
+      "maxReviewFaultRetries": 3
+    },
+    "priorBudgetRevision": 3,
+    "currentBudgetRevision": 5,
+    "priorConfirmedFaultRecoveries": 1,
+    "currentConfirmedFaultRecoveries": 2,
+    "priorActionPreserved": true,
+    "newAction": {
+      "id": "review:314c9e84-f65e-44c1-88ee-d1081a87ae25:2",
+      "kind": "review-fault",
+      "at": "2026-10-09T20:39:02.242Z",
+      "requirementsVersion": 1,
+      "planVersion": 1,
+      "effectId": "fa5ac595-493d-4790-88f0-9bafd26f0579",
+      "status": "confirmed",
+      "confirmedAt": "2026-10-09T20:39:05.561Z"
+    },
+    "remainingTaskFaultRecoveries": 1,
+    "taskDeadlineExtended": false,
+    "stops": []
+  },
+  "continuation": {
+    "firstMainToolCallAfterApplied": {
+      "seq": 1242,
+      "name": "bash",
+      "at": "2026-10-09T20:40:06.351000+00:00"
+    },
+    "initialApprovalReceiptCount": 1,
+    "initialApprovalActionId": "415a26f3-f0f5-4a02-ae77-f2caa13b6a4a",
+    "initialApprovalReceiptSha256": "4f5d402bcef5f65ff5274318729128650956cf221a7722172594f77026db2b41",
+    "additionalApprovalCount": 0,
+    "humanRescueCount": 0
+  },
+  "reviewerActivity": {
+    "generation": 4,
+    "modelSteps": 23,
+    "toolCalls": 31,
+    "toolErrors": 1
+  },
+  "stateAtCapture": {
+    "taskPhase": "active",
+    "taskRevision": 25,
+    "nodeStatuses": {
+      "passed": 1,
+      "running": 1,
+      "pending": 2
+    }
+  },
+  "scope": [
+    "This proves a second task-wide fault recovery after node rework without resetting the earlier recovery or absolute deadline.",
+    "The original progress-review job resumed only after the prior reviewer turn stopped, applied revise once and was followed by actual main-Agent tool execution under the original permit.",
+    "This is log progress review, not renewed independent node acceptance, whole-task completion or official reward. Budget exhaustion is not demonstrated by this capture."
+  ]
+}
