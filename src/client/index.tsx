@@ -9,6 +9,7 @@ import { TaskGraph, GRAPH_CSS } from './task-graph.tsx'
 import { taskStore, type PanelState } from './task-store.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 import { displayedPlan, executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
+import { ReviewReport } from './review-report.tsx'
 import { ReviewProgress } from './review-progress.tsx'
 import { Button, Menu, Modal, IconEllipsisOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
@@ -87,7 +88,7 @@ function InlineTask({ sessionId, open, t }: PanelProps & { open: (params?: TaskN
     actions={state.actions.length ? <Actions sessionId={sessionId} /> : null} open={open} t={t} />
 }
 
-function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sessionId: string }): ReactNode {
+function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; sessionId: string; t: SupervisorTranslate }): ReactNode {
   const [selected, setSelected] = useState<string | null>(null)
   const { state, busy, store } = useTask(sessionId)
   const task = entry.task
@@ -111,7 +112,7 @@ function HistoricalDetails({ entry, sessionId }: { entry: TaskHistoryEntry; sess
     {entry.reviews.length > 0 && <section className="dsh-task-section dsh-task-card"><h3>审查记录 · {entry.reviews.length} 项</h3>
       {entry.reviews.slice().reverse().map(review => <Disclosure key={`${review.stageId}:${review.cutoff}`}
         title={`${review.stageId} · ${VERDICT[review.verdict]} · ${headline(review.finding, 36)}`}>
-        <p className="dsh-task-review">{review.finding}</p><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 审查 Session {review.reviewerSessionId ?? '未记录'}</p>
+        <ReviewReport finding={review.finding} t={t} /><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 审查 Session {review.reviewerSessionId ?? '未记录'}</p>
       </Disclosure>)}
     </section>}
   </>
@@ -166,7 +167,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
   const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情">
           {state?.reviewing && review.reviewerSessionId !== reviewJob?.reviewerSessionId && <p className="dsh-task-meta">{t('reviewPreviousDecision')}</p>}
           <h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
-          <p className="dsh-task-review">{review.finding}</p><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
+          <ReviewReport finding={review.finding} t={t} /><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
   function openConsultation() {
     setTab('consultation')
     if (consultation || opening || !state?.live) return
@@ -213,7 +214,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
     <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title={t('help')} closeLabel={t('close')}><p>{t('helpText')}</p></Modal>
     {showHistory && <div ref={historyBody} className="dsh-task-body dsh-task-history" aria-label="历史任务">
       {historicalTask ? <><Button size="sm" variant="toolbar" onClick={() => selectHistory(null)}>返回历史列表</Button>
-        <HistoricalDetails key={historicalTask.task.id} entry={historicalTask} sessionId={sessionId} /></> : <>
+        <HistoricalDetails key={historicalTask.task.id} entry={historicalTask} sessionId={sessionId} t={t} /></> : <>
         <section className="dsh-task-section"><Button size="sm" variant="primary" disabled={!state?.live}
           onClick={() => { closeHistory(); openConsultation() }}>讨论新任务</Button></section>
         <section className="dsh-task-section"><h3>已结束 · {historyEntries?.length ?? 0} 项</h3>
@@ -263,7 +264,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
         <RepairPanel key={task.id} task={task} state={state} busy={busy} store={store} />
         {!reviewId && reviewSection}
         {(state.reviews?.length ?? 0) > 1 && <section className="dsh-task-section"><Disclosure title={`审查历史 · 最近 ${state.reviews?.length} 项`}>
-          {state.reviews?.slice().reverse().map(item => <Disclosure key={`${item.stageId}:${item.cutoff}`} title={`${item.stageId} · ${VERDICT[item.verdict]} · ${headline(item.finding, 34)}`}><p className="dsh-task-review">{item.finding}</p>
+          {state.reviews?.slice().reverse().map(item => <Disclosure key={`${item.stageId}:${item.cutoff}`} title={`${item.stageId} · ${VERDICT[item.verdict]} · ${headline(item.finding, 34)}`}><ReviewReport finding={item.finding} t={t} />
             {item.reviewerSessionId && <Button size="sm" variant="toolbar" onClick={() => {
               const job = state.reviewJobs?.find(value => value.reviewerSessionId === item.reviewerSessionId)
               setReviewNavigationError('')

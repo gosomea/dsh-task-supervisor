@@ -11,6 +11,7 @@ import type { SupervisorTranslate } from './locales.ts'
 import { taskStore } from './task-store.ts'
 import type { ReviewPortals } from './review-portal-store.ts'
 import { ReviewProgress } from './review-progress.tsx'
+import { ReviewReport } from './review-report.tsx'
 import { reviewPresentation, reviewFaultDescription, type createReviewDisclosureState } from './review-presentation.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -47,6 +48,7 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
   const ready = active ? state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null || !!job.recovery?.failures.length : job.model !== null
   const [, refresh] = useState(0)
   const open = disclosures.open(job.id, active)
+  const reportOpen = disclosures.open(`result:${job.id}`, true)
   const [target, setTarget] = useState<HTMLDivElement | null>(null)
   useEffect(() => {
     if (open && ready && target && job.reviewerSessionId) return portals.attach({ key: job.id, sessionId: job.reviewerSessionId, parentSessionId: job.mainSessionId, element: target })
@@ -55,19 +57,18 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
   const title = job.input.stages.find(stage => stage.id === job.stageId)?.title
   if (props.sessionId !== job.mainSessionId) return null
   return <section id={`task-review-${job.id}`} className="dsh-task-review-session" data-review-job={job.id} data-review-status={job.status} data-review-tone={summary.tone}>
-    <DisclosureRow className="dsh-task-review-heading" titleClassName="dsh-task-review-title"
-      icon={<span className="dsh-task-review-indicator" aria-hidden="true" />}
-      title={`Supervisor · ${t(`reviewKind.${job.kind}`)}${title ? ` · ${title}` : ''}`}
-      open={open} expandable expandOnRowClick running={active} keepContentWhenOpen
-      collapsedContent={<strong className="dsh-task-review-badge">{t(summary.label)}</strong>} onToggle={() => { disclosures.set(job.id, active, !open); refresh(value => value + 1) }} />
+    <header className="dsh-task-review-identity"><span className="dsh-task-review-indicator" aria-hidden="true" />
+      <strong>Supervisor · {t(`reviewKind.${job.kind}`)}{title ? ` · ${title}` : ''}</strong>
+      <strong className="dsh-task-review-badge">{t(summary.label)}</strong></header>
     <p className="dsh-task-meta">
       {job.nodeAttempt !== null && <>{t('reviewNodeAttempt')} {job.nodeAttempt} · </>}{t('reviewAttempt')} {job.attempt}
       {summary.duration !== null && <> · {t('reviewElapsed')} {Math.floor(summary.duration / 60)}{t('minute')} {summary.duration % 60}{t('second')}</>}</p>
     {active && state?.reviewActivity?.jobId === job.id && <ReviewProgress state={state} t={t} />}
     {job.decision && <>
-      <p><strong>{t(`reviewVerdict.${job.decision.verdict}`)}</strong> · {job.decision.finding.split(/\r?\n/u)[0]?.slice(0, 240)}</p>
-      {job.status === 'applied' && <p className="dsh-task-meta">{t(job.decision.verdict === 'needs-user' ? 'reviewUserNext' : job.decision.verdict === 'revise' ? 'reviewRevisionNext' : job.kind === 'completion' ? 'reviewTaskComplete' : job.kind === 'plan' ? 'reviewNextPlan' : job.kind === 'planning' ? 'reviewNextPlanning' : 'reviewNextNode')}</p>}
-      {job.status === 'stale' && <p className="dsh-task-meta">{t('reviewStale')}</p>}
+      <DisclosureRow icon={null} className="dsh-task-review-heading" title={t('reviewReport')} open={reportOpen} expandable expandOnRowClick
+        onToggle={() => { disclosures.set(`result:${job.id}`, true, !reportOpen); refresh(value => value + 1) }} />
+      {reportOpen && <ReviewReport finding={job.decision.finding} t={t} />}
+      {summary.next && <p className="dsh-task-next">{t(summary.next)}</p>}
     </>}
     {job.fault && <p role={summary.canRetry ? 'alert' : 'status'}>{t(reviewFaultDescription(job.fault))}</p>}
     {job.status === 'failed' && <div className="dsh-task-review-recovery">
@@ -77,6 +78,8 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     {!!job.recovery?.protocolRepairs && <p className="dsh-task-meta">{t('reviewProtocolRepairs')} {job.recovery.protocolRepairs}/{job.repairLimit}</p>}
     {summary.canRetry && error && <p role="alert">{error}</p>}
+    <DisclosureRow icon={null} className="dsh-task-review-heading" title={t('reviewProcess')} open={open} expandable expandOnRowClick running={active}
+      onToggle={() => { disclosures.set(job.id, active, !open); refresh(value => value + 1) }} />
     {open && <div className="dsh-task-review-process">
       {job.fault && <p className="dsh-task-meta">{job.fault.message}</p>}
       {open && !ready && <p className="dsh-task-meta">{t('reviewQueued')}</p>}

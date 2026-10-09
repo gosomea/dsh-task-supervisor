@@ -14,6 +14,8 @@ const aliases = Object.entries(loaded.config.compilerOptions.paths).map(([name, 
   find: new RegExp(`^${name.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace('*', '(.*)')}$`),
   replacement: resolve(source, paths[0]).replace('*', '$1'),
 }))
+const requireFromChat = createRequire(resolve(source, 'packages/client/ui-chat/package.json'))
+aliases.push({ find: /^react-dom\/server$/, replacement: requireFromChat.resolve('react-dom/server') })
 aliases.push({ find: /^vitest$/, replacement: resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.js') })
 
 export default {

@@ -1,3 +1,7 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { ReviewReport } from '../../src/client/review-report.tsx'
+import { zh } from '../../src/client/locales.ts'
 import { expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { newTask } from '../../src/state.ts'
@@ -12,13 +16,13 @@ function fixture() {
     reviewerSessionId: 'review', model: null, runtimeId: randomUUID(), owner: 'controller', status: 'started',
     attempt: 1, repairLimit: 1, startedAt: '2026-10-09T00:00:00Z', finishedAt: null, trigger: 'stage',
     input: task, evidence: '核对总数', fault: null, decision: null })
-  const state: PanelState = { task, live: true, armed: true, reviewing: true, actions: ['pause', 'off'] }
+  const state: PanelState = { task, live: true, armed: true, reviewing: true, actions: ['pause', 'off'], reviewJobs: [job] }
   return { job, state }
 }
 it.each(['queued', 'started', 'repairing', 'submitted'] as const)('keeps the %s activity visible while process details are collapsed', status => {
   const { job, state } = fixture()
-  const labels = { queued: 'reviewQueuedAction', started: 'reviewRunning', repairing: 'reviewRecoveringAction', submitted: 'reviewApplyingAction' }
-  expect(reviewPresentation({ ...job, status }, state)).toMatchObject({ active: true, tone: 'active', label: labels[status], canRetry: false, duration: null })
+  const labels = { queued: 'reviewQueuedAction', started: 'reviewRunning', repairing: 'reviewRecoveringAction', submitted: 'reviewSubmitted' }
+  expect(reviewPresentation({ ...job, status }, state)).toMatchObject({ active: true, tone: status === 'submitted' ? 'neutral' : 'active', label: labels[status], canRetry: false, duration: null })
 })
 it('shows a current fault and permits retry only for the bound live task and job', () => {
   const { job, state } = fixture()
@@ -64,4 +68,41 @@ it('retains explicit collapse across streaming remounts, resets for a new activi
   expect(choices.open('b', false)).toBe(true)
   choices.clear()
   expect(choices.open('b', false)).toBe(false)
+})
+
+it('does not invent running status before the controller state loads', () => {
+  const { job } = fixture()
+  expect(reviewPresentation(job, null)).toMatchObject({ active: false, label: 'reading', tone: 'neutral' })
+})
+it('does not show a submitted pass as applied, and derives the next action from actual authorization', () => {
+  const { job, state } = fixture()
+  job.decision = { verdict: 'pass', finding: '完整结论\n\n正文末尾', evidenceSeqs: [10], imageSeqs: [], decisionSeq: 30 }
+  job.status = 'submitted'
+  expect(reviewPresentation(job, state)).toMatchObject({ tone: 'neutral', label: 'reviewSubmitted', next: 'reviewSubmitted' })
+  job.status = 'applied'
+  state.task!.phase = 'awaiting-approval'
+  expect(reviewPresentation(job, state).next).toBe('reviewAwaitApproval')
+  state.task!.phase = 'active'; state.armed = false
+  expect(reviewPresentation(job, state).next).toBe('reviewManualRecovery')
+  state.armed = true
+  expect(reviewPresentation(job, state).next).toBe('reviewContinuing')
+})
+it('keeps the report visible when process details are collapsed, including after remounts', () => {
+  const choices = createReviewDisclosureState()
+  choices.set('job', false, false)
+  expect(choices.open('result:job', true)).toBe(true)
+  choices.set('result:job', true, false)
+  expect(choices.open('result:job', true)).toBe(false)
+  expect(choices.open('job', true)).toBe(true)
+  expect(choices.open('result:job', true)).toBe(false)
+})
+
+it('renders the entire recorded tool-only report using native Markdown without truncating its tail', () => {
+  const finding = '# 完整审查\n\n- 实际读取\n\n| 要求 | 结果 |\n| --- | --- |\n| 总数 | 通过 |\n\n```js\nconst n = 3;\n```\n\n' + '长正文。'.repeat(2000) + '\n\n末尾未验证事项'
+  const html = renderToStaticMarkup(createElement(ReviewReport, { finding, t: key => zh[key] }))
+  expect(html).toContain('<h1')
+  expect(html).toContain('<table')
+  expect(html).toContain('末尾未验证事项')
+  expect(html).toContain('const')
+  expect(html).not.toContain('max-height')
 })

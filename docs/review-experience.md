@@ -12,6 +12,14 @@ Active processes expand by default and collapse when settled. An explicit fold r
 
 Collapsed headers retain the review kind, node title and status. Native DSH disclosure controls and theme colors distinguish activity, recovery, faults, invalidation and verdicts. Failed jobs show a localized reason. If the current task permits retry, its summary includes Retry review. Historical faults do not expose current-task actions. Expanding still shows the original error.
 
+## Full reports and truthful status
+
+The primary conversation displays the complete persisted `finding` through native DSH Markdown, independently of the collapsible native tool process. Reports default open; user folds survive streaming remounts. No extra model request generates a summary, and no review is copied into a primary Agent message. Tool-only reviews therefore retain their full result.
+
+A submitted decision is awaiting application, not a pass. Stale decisions retain their report with an invalidation label. Loading state does not claim activity; only the bound current job and live controller show a running review. The actual current task phase and execution permit determine approval, continuation, completion or manual recovery text. Earlier jobs retain their own outcome.
+
+The first optimization step passed 12 presentation regressions, including a long native Markdown report with headings, a table and code, and strict Host/Client types. Registered-environment browser validation and release remain pending. The accepted remaining scope is tracked in the [overall optimization plan](proposals/review-optimization.md).
+
 ## Implementation and verification
 
 Step one connects the native conversation node. Step two distinguishes queuing, response generation, evidence reads, checks and decision application, showing the current tool, last record age and deadline. Failed tools are not successful reads. Outstanding parallel calls remain visible until settled.

@@ -1,5 +1,7 @@
 /** Compact Supervisor navigation and proposal actions use the native locale service. */
 export const zh = {
+  reviewReport: '审查结果', reviewSubmitted: '裁决已提交，等待应用', reviewContinuing: '控制器接续主 Agent 执行。',
+  copy: '复制', copied: '已复制', code: '代码', wrap: '换行', unwrap: '取消换行', footnotes: '脚注',
   chat: '对话', details: '详情', more: '更多任务操作', history: '历史任务', back: '返回当前任务',
   help: '使用帮助', close: '关闭', reading: '正在读取…', ended: '已结束的任务',
   waiting: '等待输入目标', idle: '询问进度、修改目标，或描述新任务',
@@ -38,6 +40,8 @@ export const zh = {
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
 export const en: Record<SupervisorKey, string> = {
+  reviewReport: 'Review result', reviewSubmitted: 'Decision submitted; awaiting application', reviewContinuing: 'The controller continues the primary Agent.',
+  copy: 'Copy', copied: 'Copied', code: 'Code', wrap: 'Wrap', unwrap: 'Unwrap', footnotes: 'Footnotes',
   chat: 'Chat', details: 'Details', more: 'More task actions', history: 'Task history', back: 'Back to current task',
   help: 'Help', close: 'Close', reading: 'Loading…', ended: 'Finished tasks',
   waiting: 'Waiting for an objective', idle: 'Ask about progress, revise an objective, or describe a new task',
