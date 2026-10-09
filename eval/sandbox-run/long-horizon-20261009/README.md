@@ -69,6 +69,16 @@ Position seven, Koota/Supervisor, has [bound its actual original instruction](li
 
 The subsequent plan review reached its own 600-second deadline and the plugin retried it once. [Same-job recovery evidence](supervisor-plan-recovery-v6.json) records the second attempt's passing decision validly applied at seq 173. Task, reviewer Session, plan version and evidence cutoff remained identical across nine durable job revisions. The Task budget confirmed one fault recovery without extending the original 10800-second deadline. No initial grant had been issued when this evidence was captured. This proves actual-model plan-review recovery, not independent artifact acceptance or a passing official score.
 
+## First officially scored Supervisor result
+
+Position seven, Koota/Supervisor, is sealed. The [result snapshot](reports/20261009-184711Z/report.zh.md) reports official reward 0, F2P 0/38 and P2P 172/172, without grading or infrastructure faults. Node review timed out after one automatic retry and paused the Task; no rescue followed. The Agent made no new commit, so official grading received an empty patch. Uncommitted implementation and tests remain diagnostic material and were not committed by the evaluator.
+
+The [independent review audit](supervisor-first-independent-stage-v6.json) confirms a check plan before deliverable reads and durable independent findings before successful main-log reads. The reviewer read seven files, ran 23 command checks and recorded seven independent check findings. These cover two node criteria, not whole-task acceptance. Recovery preserved the reviewer Session, cutoff, snapshot and prior read/check ledgers. The Task reserved two fault recoveries and received only one initial grant.
+
+This run also exposed a gap between tool acknowledgment and durable decision recording. The last `task_review_decision` returned `recorded:true` at reviewer seq 455, only 3.664 seconds before the review deadline. The job subsequently recorded a timeout with no durable decision or node release. Source order waits for reviewer shutdown, log flush and snapshot freshness after the tool returns, then writes the decision. Current evidence proves that acknowledgment and persistence did not complete together; the acknowledgment cannot establish acceptance. This product issue remains part of the frozen condition's result and trajectory. Neither the score nor the plugin is changed mid-batch.
+
+The position used 197 model requests, 311 tool calls and about 53 minutes of execution. One request lacks usage, so total tokens across all Sessions remain null, with reported lower bounds listed separately. This snapshot seals 7/24 positions: five officially scored and two infrastructure faults. Position eight, Geo/Supervisor, subsequently started. Incomplete condition coverage does not support a comparative conclusion.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

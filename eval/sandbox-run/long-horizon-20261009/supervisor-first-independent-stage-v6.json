@@ -1,0 +1,1372 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-formal-independent-stage-review-audit",
+  "atUnix": 1791571839.758154,
+  "position": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+  "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+  "taskId": "c0083607-d6b5-46c6-8e77-325786701512",
+  "jobId": "bdf768f9-4d07-4347-99bb-87d37f6ccdb2",
+  "reviewerSessionId": "task-review-9b497efd-e9a5-422c-ae0e-b31b861bd9df",
+  "identity": {
+    "taskId": "c0083607-d6b5-46c6-8e77-325786701512",
+    "taskRevision": 8,
+    "mainSessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+    "reviewerSessionId": "task-review-9b497efd-e9a5-422c-ae0e-b31b861bd9df",
+    "kind": "stage",
+    "stageId": "s1-pair-modifier-surface",
+    "nodeAttempt": 1,
+    "planVersion": 1,
+    "cutoff": 376
+  },
+  "identityUnchangedAcrossDurableRevisions": true,
+  "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+  "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+  "snapshotEntries": 15149,
+  "history": [
+    {
+      "seq": 377,
+      "revision": 1,
+      "status": "queued",
+      "attempt": 1,
+      "phase": null,
+      "snapshotId": null,
+      "snapshotDigest": null,
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 385,
+      "revision": 2,
+      "status": "started",
+      "attempt": 1,
+      "phase": null,
+      "snapshotId": null,
+      "snapshotDigest": null,
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 387,
+      "revision": 3,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 389,
+      "revision": 4,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 391,
+      "revision": 5,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 393,
+      "revision": 6,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 0,
+      "checkCount": 0,
+      "faultCode": null
+    },
+    {
+      "seq": 395,
+      "revision": 7,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 0,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 397,
+      "revision": 8,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 1,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 399,
+      "revision": 9,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 1,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 401,
+      "revision": 10,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 2,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 403,
+      "revision": 11,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 3,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 405,
+      "revision": 12,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 4,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 407,
+      "revision": 13,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 4,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 409,
+      "revision": 14,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 5,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 411,
+      "revision": 15,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 6,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 413,
+      "revision": 16,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 415,
+      "revision": 17,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 417,
+      "revision": 18,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 419,
+      "revision": 19,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 1,
+      "faultCode": null
+    },
+    {
+      "seq": 421,
+      "revision": 20,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 2,
+      "faultCode": null
+    },
+    {
+      "seq": 423,
+      "revision": 21,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 2,
+      "faultCode": null
+    },
+    {
+      "seq": 425,
+      "revision": 22,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 2,
+      "faultCode": null
+    },
+    {
+      "seq": 427,
+      "revision": 23,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 3,
+      "faultCode": null
+    },
+    {
+      "seq": 429,
+      "revision": 24,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 3,
+      "faultCode": null
+    },
+    {
+      "seq": 431,
+      "revision": 25,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 4,
+      "faultCode": null
+    },
+    {
+      "seq": 433,
+      "revision": 26,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 4,
+      "faultCode": null
+    },
+    {
+      "seq": 435,
+      "revision": 27,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 5,
+      "faultCode": null
+    },
+    {
+      "seq": 437,
+      "revision": 28,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 5,
+      "faultCode": null
+    },
+    {
+      "seq": 439,
+      "revision": 29,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 5,
+      "faultCode": null
+    },
+    {
+      "seq": 441,
+      "revision": 30,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 6,
+      "faultCode": null
+    },
+    {
+      "seq": 443,
+      "revision": 31,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 6,
+      "faultCode": null
+    },
+    {
+      "seq": 445,
+      "revision": 32,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 7,
+      "faultCode": null
+    },
+    {
+      "seq": 447,
+      "revision": 33,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 8,
+      "faultCode": null
+    },
+    {
+      "seq": 449,
+      "revision": 34,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 8,
+      "faultCode": null
+    },
+    {
+      "seq": 451,
+      "revision": 35,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 8,
+      "faultCode": null
+    },
+    {
+      "seq": 453,
+      "revision": 36,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 9,
+      "faultCode": null
+    },
+    {
+      "seq": 455,
+      "revision": 37,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 10,
+      "faultCode": null
+    },
+    {
+      "seq": 457,
+      "revision": 38,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 10,
+      "faultCode": null
+    },
+    {
+      "seq": 459,
+      "revision": 39,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 10,
+      "faultCode": null
+    },
+    {
+      "seq": 461,
+      "revision": 40,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 11,
+      "faultCode": null
+    },
+    {
+      "seq": 463,
+      "revision": 41,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 11,
+      "faultCode": null
+    },
+    {
+      "seq": 465,
+      "revision": 42,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 12,
+      "faultCode": null
+    },
+    {
+      "seq": 467,
+      "revision": 43,
+      "status": "started",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 12,
+      "faultCode": null
+    },
+    {
+      "seq": 469,
+      "revision": 44,
+      "status": "failed",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 13,
+      "faultCode": "timeout"
+    },
+    {
+      "seq": 473,
+      "revision": 45,
+      "status": "queued",
+      "attempt": 1,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 13,
+      "faultCode": "timeout"
+    },
+    {
+      "seq": 475,
+      "revision": 46,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 13,
+      "faultCode": null
+    },
+    {
+      "seq": 477,
+      "revision": 47,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 13,
+      "faultCode": null
+    },
+    {
+      "seq": 481,
+      "revision": 48,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 13,
+      "faultCode": null
+    },
+    {
+      "seq": 483,
+      "revision": 49,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 14,
+      "faultCode": null
+    },
+    {
+      "seq": 485,
+      "revision": 50,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 14,
+      "faultCode": null
+    },
+    {
+      "seq": 487,
+      "revision": 51,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 15,
+      "faultCode": null
+    },
+    {
+      "seq": 489,
+      "revision": 52,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 15,
+      "faultCode": null
+    },
+    {
+      "seq": 491,
+      "revision": 53,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 16,
+      "faultCode": null
+    },
+    {
+      "seq": 493,
+      "revision": 54,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 17,
+      "faultCode": null
+    },
+    {
+      "seq": 495,
+      "revision": 55,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 17,
+      "faultCode": null
+    },
+    {
+      "seq": 497,
+      "revision": 56,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 17,
+      "faultCode": null
+    },
+    {
+      "seq": 499,
+      "revision": 57,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 17,
+      "faultCode": null
+    },
+    {
+      "seq": 501,
+      "revision": 58,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 17,
+      "faultCode": null
+    },
+    {
+      "seq": 503,
+      "revision": 59,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 18,
+      "faultCode": null
+    },
+    {
+      "seq": 505,
+      "revision": 60,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 18,
+      "faultCode": null
+    },
+    {
+      "seq": 507,
+      "revision": 61,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 19,
+      "faultCode": null
+    },
+    {
+      "seq": 509,
+      "revision": 62,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 19,
+      "faultCode": null
+    },
+    {
+      "seq": 511,
+      "revision": 63,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 19,
+      "faultCode": null
+    },
+    {
+      "seq": 513,
+      "revision": 64,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 515,
+      "revision": 65,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 517,
+      "revision": 66,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 519,
+      "revision": 67,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 521,
+      "revision": 68,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 523,
+      "revision": 69,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 525,
+      "revision": 70,
+      "status": "started",
+      "attempt": 2,
+      "phase": "independent",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 527,
+      "revision": 71,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 20,
+      "faultCode": null
+    },
+    {
+      "seq": 529,
+      "revision": 72,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 21,
+      "faultCode": null
+    },
+    {
+      "seq": 531,
+      "revision": 73,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 21,
+      "faultCode": null
+    },
+    {
+      "seq": 533,
+      "revision": 74,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 21,
+      "faultCode": null
+    },
+    {
+      "seq": 535,
+      "revision": 75,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 22,
+      "faultCode": null
+    },
+    {
+      "seq": 537,
+      "revision": 76,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 22,
+      "faultCode": null
+    },
+    {
+      "seq": 539,
+      "revision": 77,
+      "status": "started",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 23,
+      "faultCode": null
+    },
+    {
+      "seq": 541,
+      "revision": 78,
+      "status": "failed",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 23,
+      "faultCode": "timeout"
+    },
+    {
+      "seq": 546,
+      "revision": 79,
+      "status": "failed",
+      "attempt": 2,
+      "phase": "comparison",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "snapshotDigest": "32539decfba94d66ff895b54caf8018c15114b07107963eb7153404b34d9e253",
+      "readFileCount": 7,
+      "checkCount": 23,
+      "faultCode": "timeout"
+    }
+  ],
+  "recovery": {
+    "consumed": 1,
+    "retryLimit": 1,
+    "failureCodes": [
+      "timeout",
+      "timeout"
+    ],
+    "readFileLedgerPreserved": true,
+    "checkLedgerPreserved": true,
+    "checksBeforeRecovery": 13,
+    "filesBeforeRecovery": 7
+  },
+  "sequence": {
+    "firstCheckPlanResultSeq": 45,
+    "firstDeliverableReadCallSeq": 56,
+    "independentObservationsResultSeq": 327,
+    "firstSuccessfulMainLogReadCallSeq": 333,
+    "planningBeforeDeliverableReads": true,
+    "discoveryBeforeMainLogReads": true
+  },
+  "checks": [
+    {
+      "id": "4a7dbf97-3be8-4cbd-85d6-e4bf1dc128b5",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "c05f3a90-f671-4292-b31e-6f4dc3bc8d97",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 1,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "e133989e-d4d8-4f02-8fbb-d0dbaa6ddb98",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "37ad7d20-03bf-4a4b-ab52-99f0c177b9bc",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "21670183-07de-4129-83c6-112c5c1e640c",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 1
+    },
+    {
+      "id": "1c7bf14e-35bd-44d9-abde-410adff36dc4",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 1
+    },
+    {
+      "id": "f9811a36-603b-4e1b-8360-9be2634ce716",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "58243445-9139-4693-9ae2-186573da0855",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "2786b7fb-d28a-4ce3-9960-ed8e2cc82da4",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "c946f02f-4d54-40c8-8056-8e3c739560dd",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "41bd1a6c-f937-477e-9a7f-5394eb3d7fc0",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "d7c37f3e-d371-4c05-8666-9f15a8398185",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 1,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "6e341fea-4d9c-4f7e-abb4-3d910eb57a82",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": null,
+      "timedOut": false,
+      "cancelled": true,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "756a8d1b-cf1e-4460-8f42-f0d8bf12850c",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "f26c1b5d-f946-4b18-badf-0d37f71cc35d",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "2644fb21-23dc-4169-bd7f-a42b24889b2b",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "1cbcfd9e-901f-4ead-bd74-33c663cd1737",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "c92db8f6-5663-47d7-b632-a76c6063374c",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "e181237d-70b0-4fed-9134-255f1c53cb44",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "021642fa-4618-4f82-97cd-fa50c0c71d99",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "63ac1513-c1db-4c20-8c19-2723490fc8ba",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "93d0af42-138e-4be2-a42a-a099ae724afe",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 0,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    },
+    {
+      "id": "c3d6812c-1aa1-445c-ab3e-1c01aff27042",
+      "snapshotId": "69aa58be-1966-4aa2-a5fc-61fbf7d55902",
+      "exitCode": 1,
+      "timedOut": false,
+      "cancelled": false,
+      "outputIncomplete": false,
+      "changedCount": 0
+    }
+  ],
+  "independentCheckPlanCount": 7,
+  "independentCheckFindingCount": 7,
+  "applicableCriterionFindingCount": 2,
+  "toolErrors": [
+    {
+      "callSeq": 32,
+      "resultSeq": 33,
+      "name": "read_task_context",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "058f6e91a4918d12ecd09c51cebfb446d87b76586af60f008b8dffc198f0d286"
+    },
+    {
+      "callSeq": 39,
+      "resultSeq": 40,
+      "name": "task_review_check_plan",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "7f36dd541ff1ccf7388050d14eedd9cee0953731160d464add07d683ff649358"
+    },
+    {
+      "callSeq": 196,
+      "resultSeq": 197,
+      "name": "run_review_check",
+      "isError": true,
+      "categories": [
+        "timeout"
+      ],
+      "messageSha256": "b4d121fe352e7cb81f8f39aeef89eba917696359961c8ce2bed9da6f48febde8"
+    },
+    {
+      "callSeq": 228,
+      "resultSeq": 229,
+      "name": "read_task_evidence_index",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "058f6e91a4918d12ecd09c51cebfb446d87b76586af60f008b8dffc198f0d286"
+    },
+    {
+      "callSeq": 247,
+      "resultSeq": 248,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "661572ae0cf9e1c9d66207cf5e23f9a4766cf2e4c442314ea49eff675fa1d2ec"
+    },
+    {
+      "callSeq": 252,
+      "resultSeq": 253,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "artifact-unread"
+      ],
+      "messageSha256": "d87f62ee857b11a4747cd0650f3a377bf1a2f36684d354c35c559687404cdb97"
+    },
+    {
+      "callSeq": 257,
+      "resultSeq": 258,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "check-streams-unread"
+      ],
+      "messageSha256": "ca352fe227751fa2c0ceb112fe0ffdd518b7441d8b4ccb3fe248fc5bc7d50da0"
+    },
+    {
+      "callSeq": 269,
+      "resultSeq": 270,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "check-unusable"
+      ],
+      "messageSha256": "22d379267de27fb12e9330f33da547553ceac307c0fa9dee348a3f18d214b827"
+    },
+    {
+      "callSeq": 305,
+      "resultSeq": 306,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "check-streams-unread"
+      ],
+      "messageSha256": "ca352fe227751fa2c0ceb112fe0ffdd518b7441d8b4ccb3fe248fc5bc7d50da0"
+    },
+    {
+      "callSeq": 321,
+      "resultSeq": 322,
+      "name": "task_review_observations",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "1a739fb0862922f13a9bad7fd7fbc027c61b790ab28ee55b3c5540cc3247a0b3"
+    },
+    {
+      "callSeq": 397,
+      "resultSeq": 398,
+      "name": "read_task_text",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "896cbbedb75c56761242f87b864dd9beec9b82f07fd68be1eda1d5ffec2a5518"
+    },
+    {
+      "callSeq": 423,
+      "resultSeq": 424,
+      "name": "task_review_decision",
+      "isError": true,
+      "categories": [
+        "planned-check-count"
+      ],
+      "messageSha256": "96ce203624d71701ba24519d994af55525c7b510c6ce14a9e0f91c6c00f351b3"
+    },
+    {
+      "callSeq": 428,
+      "resultSeq": 429,
+      "name": "task_review_decision",
+      "isError": true,
+      "categories": [
+        "unclassified"
+      ],
+      "messageSha256": "456f9fe0a5dbfbd20ad7c86bae1866aafd3c1d25b3a442a8145da99453f486a9"
+    }
+  ],
+  "reviewerModelSteps": 70,
+  "reviewerToolCalls": 114,
+  "reviewerToolResults": 114,
+  "reviewerToolErrors": 13,
+  "decisionSubmissionCalls": 3,
+  "decisionToolAcknowledgments": [
+    {
+      "callSeq": 454,
+      "resultSeq": 455,
+      "atUnix": 1791570982.863,
+      "recorded": true,
+      "cutoff": 376
+    }
+  ],
+  "durableDecisionRecords": 0,
+  "status": "failed",
+  "faultCode": "timeout",
+  "taskPhase": "paused",
+  "taskFaultRecoveries": 2,
+  "taskDeadlineAt": "2026-10-09T20:44:03.453Z",
+  "initialApprovalReceipts": 1,
+  "humanRescueActions": 0,
+  "artifactAcceptanceComplete": false,
+  "officialReward": 0,
+  "committedPatchBytes": 0,
+  "strictSuccess": false,
+  "resultSha256": "27a355628a52a88f43cec0614a182b3771c5b5974a8f2b002bd77651fcd16a0a",
+  "evidenceSha256": {
+    "mainSession": "48bd7f10cd4e92bfb98ca0f5792eb0a51f8289ae41fe71e3b3c6be37266aa3cd",
+    "reviewerSession": "23960a6d611b28b09cacbd97a433f07e5ba03227cbf7edf5b837346a9445bfce",
+    "sessionArchive": "c98519fadcd75d1f843a99d898e8307d70ce91c58a3861c89eb70d4425412376"
+  },
+  "scope": "node review actually read and ran independent checks, preserved same-job evidence and unlocked comparison; the final tool acknowledged recorded=true, but no durable job decision or application was recorded before timeout and whole Task did not complete"
+}
