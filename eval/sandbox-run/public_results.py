@@ -12,6 +12,7 @@ from pathlib import Path
 
 from records import exclusive_json
 from summarize import report, summarize
+from trajectory import read_trajectory
 
 NUMERIC_METRICS = (
     'unreportedAttempts', 'excludedUnrelatedSessions', 'reviewToolCalls',
@@ -126,6 +127,7 @@ def snapshot(order_path, runs, out):
         if row['result']:
             row['privateResultSha256'] = hashlib.sha256((directory / 'result.json').read_bytes()).hexdigest()
             row['result'] = result(row['result'])
+            row['trajectory'] = read_trajectory(directory, row['result']['terminal']['sessionId'])
         elif (directory / 'started.json').exists():
             started = json.loads((directory / 'started.json').read_text())
             row['execution'] = {key: number(started.get(key)) for key in ('startedAtUnix', 'deadlineAtUnix')}
@@ -153,10 +155,23 @@ def detail_report(value):
         def bucket(key):
             data = outcome['officialGrade'][key]
             return 'null' if data is None else f"{data['passed']}/{data['total']}"
+        reward = 'null' if outcome['reward'] is None else str(outcome['reward'])
         lines.append(f"| {row['id']} | sealed | {outcome['terminal']['firstStopReason']} | "
-                     f"{outcome['reward']} | {bucket('F2P')} | {bucket('P2P')} | "
+                     f"{reward} | {bucket('F2P')} | {bucket('P2P')} | "
                      f"{cost['requestCount']} | {token_text} | {cost['protocolUserActions']} |")
-    lines += ['', '快照仅导出计数、身份与摘要，不包含模型正文、工具参数、私有路径或凭据。',
+    lines += ['', '## 实际执行轨迹', '',
+              '| 位置 | Session 数 | 模型执行步 | 工具调用 | 工具错误 | 压缩次数 | Supervisor 节点 |',
+              '|---|---:|---:|---:|---:|---:|---:|']
+    for row in value['positions']:
+        trace = row.get('trajectory')
+        if trace:
+            task = trace['supervisorTask']
+            nodes = task['declaredNodes'] if task else '不适用／无绑定记录'
+            lines.append(f"| {row['id']} | {trace['linkedSessions']} | {trace['allModelSteps']} | "
+                         f"{trace['allToolCalls']} | {trace['allToolErrors']} | "
+                         f"{trace['allContextCompactions']} | {nodes} |")
+    lines += ['', '轨迹由原始收集日志只读计算，重试不是新增执行步；原生 Goal／Plan 与 Supervisor 的节点语义不作等同。',
+              '快照仅导出计数、身份与摘要，不包含模型正文、工具参数、私有路径或凭据。',
               '未封口位置不代表失败；当前成功数与完整分母同时保留，最终比较等待全部位置封口。',
               'Token 总和包含独立列出的 uncached/cache-read/cache-write/output；缺失用量不补为零。',
               '各 Session 用量、审查阶段耗时、读取失败、独立检查与资源限制见机器记录及冻结 release。']
