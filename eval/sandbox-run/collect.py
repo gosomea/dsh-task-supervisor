@@ -205,8 +205,19 @@ def execution_metrics(sessions, started, terminal, journal):
         'taskFaultRetryReservations': sum(action.get('kind') == 'review-fault' for action in actions),
         'taskTruncationReservations': sum(action.get('kind') == 'truncation' for action in actions),
         'wholeElapsedSec': max(0, terminal['atUnix'] - started['startedAtUnix']),
-        'protocolUserActions': sum(path.name.endswith('-receipt.json') for path in (journal.root / 'actions').glob('*.json')),
+        **protocol_action_metrics(journal),
         'humanRescueActions': 0}
+
+
+def protocol_action_metrics(journal):
+    receipts = [json.loads(path.read_text()) for path in (journal.root / 'actions').glob('*-receipt.json')]
+    # /goal is both the original submission and execution authorization. Count
+    # its single operation once, while preserving separate approval counters.
+    explicit = sum(row.get('transport') != 'native-goal-command' for row in receipts)
+    delivered = journal.read('delivery-receipt.json') is not None
+    return {'protocolControlReceipts': len(receipts),
+        'protocolInstructionSubmissions': 1 if delivered else None,
+        'protocolUserActions': explicit + 1 if delivered else None}
 
 
 def development_grade(spec, journal, collection, sessions):
