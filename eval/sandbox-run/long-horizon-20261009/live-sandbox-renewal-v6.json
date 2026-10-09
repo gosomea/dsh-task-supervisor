@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "live-sandbox-lifetime",
+  "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "sandboxId": "27f82003-3d69-4681-a876-456615574946",
+  "observedAt": "2026-10-09T19:50:12.171879+00:00",
+  "source": "OpenSandbox SDK get_info on original sandbox plus native observation projection",
+  "controller": {
+    "pid": 48250,
+    "verifiedRunning": true,
+    "commandSha256": "9c438794f14b0c61dd690bfebbb90422ae707afd9e92e81295eed476c53da1c9",
+    "runnerSourceCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe"
+  },
+  "freeze": {
+    "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+    "originalStartedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51",
+    "taskBindingSha256": "b86837bfd73e84b0e6b60f05e8fe89e2e04f695211af1d12efb7b9340c90fdac",
+    "privateCaptureSha256": "f9ecbda323d70a98323d89cd3680d351d43ca4d3f5824e6fe4eb76bfd430b2cf",
+    "initialApprovalReceiptSha256": "4f5d402bcef5f65ff5274318729128650956cf221a7722172594f77026db2b41"
+  },
+  "lifetime": {
+    "initialLifetimeSeconds": 3600,
+    "renewalThresholdRemainingSeconds": 900,
+    "originalTaskDeadline": "2026-10-09T21:46:10.882641+00:00",
+    "persistedTaskDeadline": "2026-10-09T21:46:10.882Z",
+    "actualSandboxExpiresAt": "2026-10-09T21:56:10.882645Z",
+    "fixedCollectionWindowSeconds": 600,
+    "coversOriginalDeadlineAndCollection": true,
+    "deadlineExtensionSeconds": 0,
+    "remainingSandboxSecondsAtCapture": 7559
+  },
+  "state": {
+    "sandboxState": "Running",
+    "taskPhase": "active",
+    "budgetRevision": 1,
+    "recoveryActions": 0,
+    "budgetStops": 0,
+    "initialApprovalReceipts": 1,
+    "rescueCount": 0,
+    "terminalRecordExists": false,
+    "nativeLastSeq": 782,
+    "initialApprovalActionId": "415a26f3-f0f5-4a02-ae77-f2caa13b6a4a"
+  },
+  "observerActions": [
+    "connect",
+    "get_info",
+    "read existing native observation",
+    "read local receipts",
+    "verify actual controller process"
+  ],
+  "observerMutations": [],
+  "limits": [
+    "This verifies sandbox lifetime, not task completion or official reward.",
+    "Expiry renewal cannot replenish recovery budgets or execution permission.",
+    "The frozen monitor remains the sole controller; this capture does not renew or resume anything."
+  ]
+}

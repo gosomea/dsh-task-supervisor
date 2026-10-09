@@ -93,6 +93,8 @@ The review used 49 model steps, 87 tool calls and 11 tool errors, without intern
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
 
+[Actual sandbox lifetime](live-sandbox-renewal-v6.json) records position eight's original sandbox after its initial 60 minutes. The SDK returned expiry `2026-10-09T21:56:10.882645Z`, covering the original Task deadline `21:46:10.882641Z` and the fixed 600-second collection window. The durable Task deadline, recovery allowance and single initial grant were not increased. The original monitor process was live, and observation did not renew or resume the Task. This verifies infrastructure renewal, not whole-task completion or a passing score.
+
 Read the frozen release/order, batch owner events and position records, then verify the actual process's complete command line and original sandbox. A lock file or old PID alone is not liveness evidence. Observe an active owner without launching another monitor. After the original owner has stopped, resume with the same private release and runs directories:
 
 ```sh
