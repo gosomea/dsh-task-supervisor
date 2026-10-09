@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "formal-progress-revision-and-rework-of-accepted-node",
+  "capturedAt": "2026-10-09T20:30:43.652640+00:00",
+  "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+  "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+  "taskId": "32db1c1d-be25-4b45-a977-61b491556a8c",
+  "freeze": {
+    "runnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+    "pluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+    "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+    "startedSha256": "50bf890e372eb1f40f54290ae8342f2b31bf6c45a0b0dc0961d89c407a9f5d51",
+    "taskBindingSha256": "b86837bfd73e84b0e6b60f05e8fe89e2e04f695211af1d12efb7b9340c90fdac",
+    "privateCaptureSha256": "6b44f9223d409c2190bfe895fc4578071f7957e58e9357b4ffc288f18b3637bd"
+  },
+  "originalTaskDeadline": "2026-10-09T21:46:10.882641+00:00",
+  "persistedTaskDeadline": "2026-10-09T21:46:10.882Z",
+  "progressReview": {
+    "jobId": "42672b49-396a-4082-b680-6c5ff83e000f",
+    "reviewerSessionId": "task-review-86a26e1d-9b34-4b33-805a-91936a2a1cc8",
+    "stageId": "n3",
+    "verdict": "revise",
+    "evidenceCutoff": 1132,
+    "appliedRecordSeq": 1141,
+    "applicationCount": 1,
+    "findingSha256": "d256f1b096be8b5762c263849cc7cc89f0e0248607c70370f6751a195a8f64f9"
+  },
+  "rework": {
+    "initiator": "main-agent",
+    "stageId": "n2",
+    "callSeq": 1153,
+    "resultSeq": 1156,
+    "at": "2026-10-09T20:22:58.242000+00:00",
+    "reasonChars": 583,
+    "reasonSha256": "fa5910da41a6536990661e9bc230dd36aa3433dc7c2e1eeb4233afa621f518de",
+    "beforeRevision": 21,
+    "afterRevision": 22,
+    "changedAttempts": [
+      {
+        "id": "n2",
+        "attempt": 1,
+        "status": "passed",
+        "nextAttempt": 2,
+        "reviewSeq": 1032
+      },
+      {
+        "id": "n3",
+        "attempt": 1,
+        "status": "running",
+        "nextAttempt": 2
+      },
+      {
+        "id": "n4",
+        "attempt": 1,
+        "status": "pending",
+        "nextAttempt": 2
+      }
+    ],
+    "readyNodeIdsAfterRework": [
+      "n2"
+    ],
+    "unaffectedNode": "n1",
+    "unaffectedNodeRetained": true,
+    "priorIndependentReviewJobId": "25e7fcef-5181-43e3-af7a-9680840864c0",
+    "priorAcceptedNodeAttempt": 1,
+    "priorAppliedPassRetainedAsHistory": true,
+    "newAttemptRequiresNewReview": true
+  },
+  "actualReworkStarts": [
+    {
+      "callSeq": 1168,
+      "resultSeq": 1171,
+      "stageId": "n2",
+      "attempt": 2,
+      "at": "2026-10-09T20:24:00.536000+00:00"
+    }
+  ],
+  "authorization": {
+    "requirementsVersion": 1,
+    "planVersion": 1,
+    "approvedPlanVersion": 1,
+    "initialApprovalActionId": "415a26f3-f0f5-4a02-ae77-f2caa13b6a4a",
+    "initialApprovalReceiptCount": 1,
+    "initialApprovalReceiptSha256": "4f5d402bcef5f65ff5274318729128650956cf221a7722172594f77026db2b41",
+    "humanRescueCount": 0,
+    "additionalApprovalCount": 0,
+    "taskDeadlineExtended": false,
+    "taskFaultRecoveryActions": 1
+  },
+  "stateAtCapture": {
+    "source": "actual-native-main-session",
+    "generation": 4,
+    "lastSeq": 1220,
+    "taskPhase": "active",
+    "taskRevision": 24,
+    "nodeRuns": [
+      {
+        "id": "n1",
+        "attempt": 1,
+        "status": "passed",
+        "reviewSeq": 533
+      },
+      {
+        "id": "n2",
+        "attempt": 2,
+        "status": "running",
+        "reviewSeq": null
+      },
+      {
+        "id": "n3",
+        "attempt": 2,
+        "status": "pending",
+        "reviewSeq": null
+      },
+      {
+        "id": "n4",
+        "attempt": 2,
+        "status": "pending",
+        "reviewSeq": null
+      }
+    ],
+    "nodeStatuses": {
+      "passed": 1,
+      "running": 1,
+      "pending": 2
+    }
+  },
+  "scope": [
+    "The progress revise was validly applied before the main Agent reopened an accepted upstream node and its dependent attempts.",
+    "Prior node acceptance remains historical and cannot accept the second attempt. Original requirements, plan permit and absolute deadline remain.",
+    "This does not establish the defect validity, labeled correction benefit, whole-task acceptance or official reward."
+  ]
+}
