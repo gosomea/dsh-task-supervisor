@@ -65,6 +65,8 @@ Position six was the first Supervisor run. Its instruction file ends with a newl
 
 The current runner freeze is [repair-v6.json](repair-v6.json), source `f328155`, preserving v5's Supervisor priority. New start records retain both raw-instruction and native-objective digests with an explicit ECMAScript trim rule. Content or interior-format changes still reject; legacy records keep their previous protocol. All 38 focused regressions passed. Original-log replay reproduced the old rejection and verified corrected binding without granting approval; seven inputs matched actual Node `trim()`. All 24 specifications and the original package remain unchanged, 32 existing record digests were verified, and fault resources were actually released. The freeze acknowledges only the exact previous fault result, without redelivering position six. Any new infrastructure or scoring fault still stops later delivery.
 
+Position seven, Koota/Supervisor, has [bound its actual original instruction](live-identity-confirmation-v6.json). Its first [planning observation review](supervisor-first-review-v6.json) was validly applied at native event seq 121, after which the main Agent continued planning without an initial grant or rescue. This checkpoint uses log review. Independent artifact checks and final official grading still require actual completion; this does not establish whole-task acceptance.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

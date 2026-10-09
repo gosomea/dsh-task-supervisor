@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-supervisor-planning-review-applied",
+  "atUnix": 1791568279.807961,
+  "position": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+  "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+  "taskId": "c0083607-d6b5-46c6-8e77-325786701512",
+  "jobId": "0e6cff22-8fa6-4e18-9fa1-8452decc5c61",
+  "reviewerSessionId": "task-review-7bf4942a-690c-47d5-afa9-7619d17615a1",
+  "reviewKind": "planning",
+  "verificationMode": "log",
+  "status": "applied",
+  "verdict": "pass",
+  "nativeAppliedEventSeq": 121,
+  "evidenceSha256": "541be71b8e485096438c8b62f9848e790d827adaf6e10141eb57f32404967ebe",
+  "mainModelStepsAfterReview": 16,
+  "artifactAcceptanceComplete": false,
+  "scope": "planning observation via logs; independent artifact acceptance has not yet completed",
+  "humanRescueActions": 0
+}
