@@ -28,3 +28,5 @@ The full 24-position denominator includes undelivered positions and reasons. Inf
 Missing Session usage yields null total tokens with reported lower bounds. Unmeasured check CPU time is null. Unlabelled false acceptance, false pause and correction benefit remain null; mechanically observable announced-complete-but-official-failure is separate. Paired uncertainty uses four task clusters, not repeats as additional independent tasks. Long time limits alone do not demonstrate long-horizon advantage.
 
 See [development validation](../validation-20261009.md) for gates and preserved failures, and the [protocol](../protocol.md) for roles and authorization. Formal evidence is appended after collection and grading; existing results are never overwritten.
+
+Ongoing progress is retained in [immutable result snapshots](reports/); execution inputs remain frozen.

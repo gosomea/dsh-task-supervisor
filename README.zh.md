@@ -274,4 +274,4 @@ longHorizon:
 
 主 Session 的 DAG 摘要和侧栏使用同一预算：真实截止、累计截断续行、全任务故障重试、手动恢复及最近持久活动。耗尽显示原因与手动核对入口；截止后不允许恢复延长时间。完整裁决与原生审查过程保持现有展示。
 
-外层 Python 监控器仅执行冻结协议指定的初始批准与开发修订授权，维护资源寿命、收集并封口；不负责插件重试或救场。官方评分器在另一环境检查 Agent 已提交的补丁。本轮 runner 已实现，修订开发回归已完成并经外部夹具验收；严格故障恢复及四题准入已通过；[正式批次](eval/sandbox-run/long-horizon-20261009/README.zh.md)已冻结 24 个位置，尚未投递。协议及环境证据见 [OpenSandbox 长程评测](eval/sandbox-run/protocol.zh.md)。
+外层 Python 监控器仅执行冻结协议指定的初始批准与开发修订授权，维护资源寿命、收集并封口；不负责插件重试或救场。官方评分器在另一环境检查 Agent 已提交的补丁。本轮 runner 已实现，修订开发回归已完成并经外部夹具验收；严格故障恢复及四题准入已通过；[正式批次](eval/sandbox-run/long-horizon-20261009/README.zh.md)已冻结 24 个位置并开始执行；封口进度见[结果快照](eval/sandbox-run/long-horizon-20261009/reports/)。协议及环境证据见 [OpenSandbox 长程评测](eval/sandbox-run/protocol.zh.md)。
