@@ -1,5 +1,11 @@
 /** Compact Supervisor navigation and proposal actions use the native locale service. */
 export const zh = {
+  requirementResults: '要求级结果', requirementSource: '要求来源', explicitRequirement: '明确要求', derivedRequirement: '推导假设',
+  partialPages: '部分页面',
+  'requirementStatus.satisfied': '已满足', 'requirementStatus.failed': '未满足', 'requirementStatus.unverified': '未验证',
+  checkMethod: '检查方法', coverage: '覆盖范围', limitations: '局限', evidence: '实际证据',
+  legacyRequirementResults: '旧作业未记录要求级结果，保留原证据级别。',
+  'checkMethod.log': '日志核对', 'checkMethod.read': '读取产物', 'checkMethod.run': '独立运行', 'checkMethod.visual': '独立观察（当前不可用）',
   reviewReport: '审查结果', reviewSubmitted: '裁决已提交，等待应用', reviewContinuing: '控制器接续主 Agent 执行。',
   copy: '复制', copied: '已复制', code: '代码', wrap: '换行', unwrap: '取消换行', footnotes: '脚注',
   chat: '对话', details: '详情', more: '更多任务操作', history: '历史任务', back: '返回当前任务',
@@ -40,6 +46,12 @@ export const zh = {
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
 export const en: Record<SupervisorKey, string> = {
+  requirementResults: 'Requirement outcomes', requirementSource: 'Requirement source', explicitRequirement: 'Explicit requirement', derivedRequirement: 'Derived assumption',
+  partialPages: 'Partial pages',
+  'requirementStatus.satisfied': 'Satisfied', 'requirementStatus.failed': 'Not satisfied', 'requirementStatus.unverified': 'Unverified',
+  checkMethod: 'Method', coverage: 'Coverage', limitations: 'Limitations', evidence: 'Actual evidence',
+  legacyRequirementResults: 'This older job has no requirement outcomes; its original evidence level is retained.',
+  'checkMethod.log': 'Log inspection', 'checkMethod.read': 'Artifact read', 'checkMethod.run': 'Independent execution', 'checkMethod.visual': 'Independent observation (unavailable)',
   reviewReport: 'Review result', reviewSubmitted: 'Decision submitted; awaiting application', reviewContinuing: 'The controller continues the primary Agent.',
   copy: 'Copy', copied: 'Copied', code: 'Code', wrap: 'Wrap', unwrap: 'Unwrap', footnotes: 'Footnotes',
   chat: 'Chat', details: 'Details', more: 'More task actions', history: 'Task history', back: 'Back to current task',

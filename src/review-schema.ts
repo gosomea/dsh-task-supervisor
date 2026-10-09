@@ -4,6 +4,7 @@ import { planningSummarySchema, reviewFaultSchema, taskSchema } from './state-sc
 import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
 import { reviewScopeSchema } from './review-scope-schema.ts'
+import { requirementResultSchema } from './review-results.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
 export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -40,15 +41,19 @@ export const reviewJobSchema = z.object({
   verification: verificationSchema.optional(),
   verificationMode: z.enum(['log', 'independent']).optional(),
   requirementsProtocol: z.literal(1).optional(),
+  resultProtocol: z.literal(1).optional(),
   checkProtocol: z.literal(1).optional(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
     requiredCapabilities: z.array(z.enum(['read', 'run', 'visual'])).optional(),
     programs: z.array(z.string().min(1)).optional(),
     planning: planningSummarySchema.optional(),
     criteria: z.array(findingSchema).optional(), checks: z.array(checkFindingSchema).optional(),
+    requirements: z.array(requirementResultSchema).min(1).max(100).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict().superRefine((job, ctx) => {
   if (job.readCorrections && !job.scope) ctx.addIssue({ code: 'custom', message: 'read corrections require a bound review scope' })
+  if (job.resultProtocol && !job.scope) ctx.addIssue({ code: 'custom', message: 'requirement results require a bound review scope' })
+  if (job.resultProtocol && job.decision && ['plan', 'stage', 'completion'].includes(job.kind) && !job.decision.requirements) ctx.addIssue({ code: 'custom', message: 'requirement results are missing' })
   if (job.scope && (job.scope.taskId !== job.taskId || job.scope.cutoff !== job.cutoff || job.scope.planVersion !== job.planVersion
     || job.scope.requirementsVersion !== job.input.requirementsVersion || job.scope.nodeId !== job.stageId
     || job.scope.nodeAttempt !== job.nodeAttempt)) ctx.addIssue({ code: 'custom', message: 'review scope does not bind this job' })

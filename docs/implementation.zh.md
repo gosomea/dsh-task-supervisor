@@ -1,5 +1,7 @@
 # 实现状态
 
+2026-10-09：完整持久报告与原生工具过程独立展示。第 8 版新作业绑定 Task／尝试范围、原文读取范围和一次有限读取纠正；要求级结果及具体主 Agent 交接保留实际证据级别。旧作业保持原协议与权限。针对性宿主测试、严格检查与构建完成后，再执行真实模型／浏览器验收和发布。见[审查体验](review-experience.zh.md)。
+
 2026-10-08：主对话复用审查 Session 原生过程，状态区分当前动作和历史裁决。控制器支持默认一次内部故障重试、快速手动重试提交、原许可续行及真实读取资格继承；审查记录 7、投影缓存 20，旧作业保持手动恢复。见[原生审查过程与恢复](review-experience.zh.md)。下方早期验收记录保留当时行为，不代表当前恢复默认值。 本轮真实模型、原生浏览器和官方干净安装结果见[0.1.3 发布验收](releases/0.1.3.zh.md)。
 
 2026-10-07：正式裁决后重置主 Agent 观察窗口，防止审查耗时立即触发多余的规划检查。两处任务视图展示待审 DAG、实际审查活动和下一交接；读取不批准或恢复任务。验证与日常部署见[审查进度](review-progress.zh.md)。
@@ -47,7 +49,7 @@ F 修复浏览器才暴露的重复插槽加载错误，失败审查原始记录
 
 ## 独立产物检查与两阶段审查
 
-本节描述快照与运行器配置。显式 `reviewVerification: independent` 启用当前通用协议：先制定要求检查方案，再按需要读取或运行，发现持久化后对照主汇报。仅有旧 `independentVerification` 配置时保留旧协议。计划与进展仍为日志审查。当前证据见[通用验收](../eval/independent-verification/generic-quality-20260930/README.zh.md)，早期验收见[原记录](independent-verification-validation.zh.md)。
+本节描述快照与运行器配置。显式 `reviewVerification: independent` 启用当前通用协议：先制定要求检查方案，再按需要读取或运行，发现持久化后对照主汇报。新作业在独立模式使用当前协议；恢复旧作业仍保留其记录的协议。计划与进展仍为日志审查。当前证据见[通用验收](../eval/independent-verification/generic-quality-20260930/README.zh.md)，早期验收见[原记录](independent-verification-validation.zh.md)。
 
 | 配置 | 含义 |
 | --- | --- |

@@ -123,13 +123,6 @@ function reply(title: string, task: TaskSnapshot | null, armed: boolean): Comman
   ].join('\n') }
 }
 
-function inputFor(task: TaskSnapshot, instruction: string) {
-  return createUserMessage({
-    content: [{ type: 'text', text: continuationContext(task, instruction) }],
-    source: { kind: 'task-supervisor', taskId: task.id, revision: task.revision },
-  })
-}
-
 /** Register one independently owned workflow on public DSH seams. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const reviewerPolicy = reviewPolicy({ ...config.reviewReadCorrectionAttempts === undefined ? {} : { readCorrectionAttempts: config.reviewReadCorrectionAttempts }, ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
@@ -168,8 +161,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
-  const selectedReviewPolicy = { ...reviewerPolicy, scopeProtocol: 1 as const, verificationMode: effectiveVerification,
-    ...config.reviewVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
+  const selectedReviewPolicy = { ...reviewerPolicy, scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
+    ...effectiveVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,
     mode: progressReviewMode, rounds: maxAutomaticRoundsWithoutReport, inTurn: config.observeLongTurns !== false } }
@@ -187,6 +180,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const reviewAbort = new Map<Agent, AbortController>()
   const scheduling = new Set<Agent>()
   let disposed = false
+
+  function inputFor(task: TaskSnapshot, instruction: string) {
+    const agent = [...knownAgents].find(agent => taskOf(ctx, agent)?.id === task.id)
+    const job = agent && ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === task.lastReview?.jobId && job.taskId === task.id)
+    return createUserMessage({ content: [{ type: 'text', text: continuationContext(task, instruction, job || undefined) }],
+      source: { kind: 'task-supervisor', taskId: task.id, revision: task.revision } })
+  }
 
   function runtime(agent: Agent): Runtime {
     let current = lifetimes.get(agent)

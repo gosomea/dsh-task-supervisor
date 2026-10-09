@@ -28,6 +28,7 @@ import { snapshotFresh } from './artifact-snapshot.ts'
 import { checkResultsAsEvidence, checkFindingSchema, checkFindingParameters } from './review-check-plan.ts'
 import { reviewCapabilities } from './review-capabilities.ts'
 import { findingSchema, type CriterionFinding } from './verification-schema.ts'
+import { independentRequirementResults, logRequirementResults, logRequirementsParameters, type RequirementResult } from './review-results.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -41,7 +42,7 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { scopeProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
+export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -63,6 +64,7 @@ export interface ReviewDecision {
   reviewerSessionId: string
   checks?: ReturnType<typeof checkFindingSchema.parse>[]
   criteria?: CriterionFinding[]
+  requirements?: RequirementResult[]
   planning?: PlanningSummary
   requiredCapabilities?: ('read' | 'run' | 'visual')[]
   programs?: string[]
@@ -172,6 +174,7 @@ export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
     ...scope ? { scope, readCorrections: { limit: limits.readCorrectionAttempts, consumed: 0, history: [] } } : {},
+    ...scope && policy.resultProtocol ? { resultProtocol: policy.resultProtocol } : {},
     ...policy.faultRecovery ? { recovery: { retryLimit: policy.faultRecovery.attempts, delayMs: policy.faultRecovery.delayMs,
       resume: policy.faultRecovery.resume, consumed: 0, protocolRepairs: 0,
       permit: { armed: policy.faultRecovery.armed, requirementsVersion: task.requirementsVersion,
@@ -202,6 +205,7 @@ export async function savedReviewDecision(ctx: Context, main: Agent, job: Review
     imageSeqs: decision.imageSeqs, jobId: job.id, cutoff: job.cutoff, model, reviewerSessionId: job.reviewerSessionId,
     ...decision.checks === undefined ? {} : { checks: decision.checks },
     ...decision.criteria === undefined ? {} : { criteria: decision.criteria },
+    ...decision.requirements === undefined ? {} : { requirements: decision.requirements },
     ...decision.planning === undefined ? {} : { planning: decision.planning },
     ...decision.requiredCapabilities === undefined ? {} : { requiredCapabilities: decision.requiredCapabilities },
     ...decision.programs === undefined ? {} : { programs: decision.programs } }
@@ -314,7 +318,7 @@ async function runReviewStage(
   }
   const { options, model } = reviewerOptions(ctx, main, boundModel)
   const reviewerSessionId = SessionId(job.reviewerSessionId!)
-  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs' | 'checks'> | undefined
+  let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs' | 'checks' | 'requirements'> | undefined
   const observedSeqs = new Set<number>()
   const locatedSeqs = new Set<number>()
   const workerEvents = new Set<string>()
@@ -504,6 +508,9 @@ async function runReviewStage(
           required_capabilities: { type: 'array', ...reviewKind === 'plan' && job.requirementsProtocol ? { required: true as const } : {}, items: { type: 'string', enum: ['read', 'run', 'visual'] }, description: 'For plan review, independently determine capabilities needed to verify ORIGINAL requirements, regardless of main evidenceKind or task category. read=artifact content; run=calculations or observable behavior; visual=independent browser observation (unavailable). Empty only if no product verification applies.' },
           programs: { type: 'array', items: { type: 'string' }, description: 'Executable names needed for necessary independent run checks, e.g. node. Do not invent tools for read-only requirements.' },
           checks: { ...checkFindingParameters, description: 'For new independent protocol, final results for every planned check, including supplementary comparison checks. Cite only actually inspected evidence and describe coverage/limitations.' },
+          ...job.resultProtocol && !job.verification && ['plan', 'stage', 'completion'].includes(reviewKind) ? {
+            requirements: { ...logRequirementsParameters, required: true as const, description: 'Requirement-level LOG results. Include every applicable criterion and omitted original requirement. Identify its original source, actual evidence, coverage and limitations. This is log inspection, not independent execution. Use criterionId only for applicable criteria; omit for omitted original requirements. Failed/unverified explicit requirements cannot pass; derived preferences are nonblocking.' },
+          } : {},
           criteria: { ...findingParameters, description: 'Independent reviews require one final finding per applicable criterion, with inspected snapshot evidence. Omit only for legacy log-based reviews.' },
           ...reviewKind === 'planning' ? { planning: { type: 'object', required: true as const, additionalProperties: false,
             description: 'Required for planning reviews only. Every fact must be supported by original Session events already read and included in evidence_seqs; separate unknowns from confirmed facts. Progress describes new relevant findings or resolved unknowns, never time or token counts.',
@@ -523,8 +530,8 @@ async function runReviewStage(
           if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
           // Validate against delivered native results, including truncation, rather than
           // the reader's in-memory success before Host output materialization.
-          if (job.scope && exec.agent) {
-            const actual = restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+          const actual = exec.agent ? restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent)) : undefined
+          if (job.scope && actual) {
             observedSeqs.clear()
             for (const seq of actual.observed) observedSeqs.add(seq)
             if (job.verification) { job.verification.readFiles = actual.files; job.verification.readChecks = actual.checks }
@@ -541,7 +548,9 @@ async function runReviewStage(
               validateFindings(basic, facts.map(item => item.criterionId), facts, false)
               state = { ...state, checkFindings: results }
             }
-            validateFindings(state, applicable.map(item => item.id), findings, args.verdict === 'pass')
+            validateFindings(state, applicable.map(item => item.id), findings, args.verdict === 'pass' && !job.resultProtocol)
+            if (job.resultProtocol && args.verdict === 'pass' && applicable.some(item => item.provenance?.kind !== 'implementation'
+              && findings.find(finding => finding.criterionId === item.id)?.status !== 'satisfied')) throw new Error('unverified or failed original criteria cannot pass')
             for (const criterion of job.checkProtocol ? [] : applicable) {
               const finding = findings.find(item => item.criterionId === criterion.id)!
               if (finding.status === 'satisfied' && criterion.evidenceKind === 'runtime' && finding.method !== 'run') throw new Error('runtime criteria require independent execution')
@@ -562,7 +571,23 @@ async function runReviewStage(
           if (args.verdict !== 'pass' && !args.finding.trim()) {
             throw new Error('a corrective review needs a concrete finding')
           }
+          let requirements: RequirementResult[] | undefined
+          if (job.resultProtocol && ['plan', 'stage', 'completion'].includes(reviewKind)) {
+            if (job.verification) {
+              requirements = independentRequirementResults(job, (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)))
+              if (!requirements.some(item => item.basis === 'explicit' && item.source.kind === 'objective')) throw new Error('independent checks must cover the original objective, including omitted requirements')
+            } else {
+              if (!actual) throw new Error('actual native read results are unavailable')
+              requirements = logRequirementResults(job, args.requirements?.map(item => ({ ...item, criterionId: item.criterionId ?? null })), actual.ranges, args.verdict === 'pass')
+              for (const item of requirements) if (item.source.kind === 'user-message') {
+                const seq = Number(item.source.reference.replace(/^seq:/, ''))
+                const source = main.session.snapshotEvents().map(controlEvent).find(event => event.seq === seq)
+                if (source?.type !== 'user/message' || source.data.source.kind !== 'user') throw new Error('requirement source is not a direct user message')
+              }
+            }
+          }
           submitted = { verdict: args.verdict, finding: args.finding.trim(), evidenceSeqs,
+            ...requirements ? { requirements } : {},
             ...planning ? { planning } : {},
             ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
             ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
@@ -604,6 +629,7 @@ async function runReviewStage(
       content: [{ type: 'text', text: [
         languagePolicy(task),
         ...job.scope ? [`Bound review scope: ${JSON.stringify(job.scope)}. Default indexes prefer this task; current-attempt and changes narrow location only. Earlier-context and all remain available. Earlier messages marked needs-check are not inherited requirements: establish applicability from their originals. Current task objective remains authoritative. Read sources with read_task_input; index summaries cannot be cited.`] : [],
+        ...job.resultProtocol ? [`Review responsibility (${reviewKind}): ${reviewKind === 'planning' ? 'Objective convergence, reduced unknowns and the next planning output.' : reviewKind === 'plan' ? 'Original requirement coverage, effective dependency order and necessary verification capabilities.' : reviewKind === 'progress' ? 'Work drift, concrete blockers, new defects and necessary plan changes; do not claim node acceptance.' : reviewKind === 'stage' ? 'This node attempt and its relevant upstream/downstream relationships.' : 'The current combined deliverable, all original requirements and relationships between parts; prior node passes alone do not establish completion.'} Plan/node/final decisions retain requirement-level results. In log mode submit requirements; in independent mode existing checks and criteria are normalized automatically. Describe actual coverage and limitations, never upgrade a file's existence, process exit or test count into satisfaction. No unrelated preference may block explicit requirements.`] : [],
         ...reviewKind === 'planning' ? [
           'PLANNING PROGRESS REVIEW. First read the original main Session using read_task_evidence, and correlate relevant tool inputs, results and public replies. Investigate whether research is converging on the original objective: new relevant facts, resolved unknowns, compatible draft dependencies, and whether evidence is sufficient to submit a plan. There may be no plan, criteria or DAG yet. Do not invent a current node, require artifact validation, or treat tentative ideas as an approved plan.',
           'Pass means continue planning only, revise means correct the investigation, and needs-user means wait for a decision only the user can make. None of these decisions approves implementation or completes a task. Preserve the original scope and constraints. Necessary research can take time; long reasoning, elapsed time, token growth or tool counts alone do not establish stagnation. Lack of a report is not lack of progress.',
@@ -639,6 +665,7 @@ async function runReviewStage(
         `Main Session: ${main.id}; cutoff: ${cutoff}; task revision: ${task.revision}.`,
         `Objective: ${safeText(task.objective, 3000)}`,
         ...reviewKind === 'planning' ? [] : [`Criteria: ${safeText(JSON.stringify(task.criteria), 10000)}`,
+          `Applicable criterion IDs: ${JSON.stringify(reviewKind === 'plan' || reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds ?? [])}`,
           `Controller readOnlyTurnsBeforeWrite: ${task.readOnlyTurnsBeforeWrite ?? 0}.`],
         `Earlier failed reviews in this task: ${job.verification ? 'locked until independent observations' : safeText(JSON.stringify(failedReviews), 10000)}.`,
         `${reviewKind === 'planning' ? 'Planning observation' : reviewKind === 'plan' ? 'Proposed plan' : reviewKind === 'completion' ? 'Completion' : reviewKind === 'progress' ? 'Progress' : 'Stage'}: ${stageId}; reported evidence: ${job.verification ? 'locked until independent observations; then read_task_context(report)' : safeText(reportedEvidence, 5000)}`,

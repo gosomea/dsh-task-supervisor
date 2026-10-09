@@ -1,6 +1,8 @@
 /** Task language and bounded continuation context, restored from durable state. */
 import { acceptedNodes, readyNodes, runsOf } from './graph.ts'
 import type { TaskSnapshot } from './state.ts'
+import type { ReviewJob } from './review-schema.ts'
+import { reviewHandoff } from './review-handoff.ts'
 
 export function resolveLanguage(objective: string, configured = 'auto', fallback = 'zh-CN'): string {
   if (configured !== 'auto') return Intl.getCanonicalLocales(configured)[0] ?? fallback
@@ -23,12 +25,12 @@ function excerpt(text: string, limit: number): string {
   return text.length <= limit ? text : `${text.slice(0, limit)}… [summary truncated; use task_status for the full record]`
 }
 
-export function continuationContext(task: TaskSnapshot, instruction: string): string {
+export function continuationContext(task: TaskSnapshot, instruction: string, job?: ReviewJob): string {
   const stage = task.stages[task.stageIndex]
   return [
     languagePolicy(task),
     'Use short human-readable node titles (roughly 12 Chinese characters or 6 English words); put file ownership, implementation steps and acceptance details in description and criteria. Before submitting a plan, stage report or completion request, give a concise user-facing explanation in your normal assistant message with a short heading. Do not duplicate the full tool payload or claim independent acceptance before the reviewer decides.',
-    'The supervised DAG is the task progress record. Do not create a second todo_write checklist or activate native Goal/Plan for this supervised task.',
+    'The supervised DAG is the task progress and acceptance record. Native Goal/Plan/Todo may organize implementation, but must not enable a second automatic continuation controller or replace Task approval and acceptance.',
     'Before implementing a node yourself, call task_start_node with its exact stage_id and current attempt. Do not start nodes during ordinary progress questions. Report or rework the running node before switching to another. task_delegate_nodes records worker starts separately.',
     `Task ${task.id}; requirements v${task.requirementsVersion}; plan v${task.planVersion}; state v${task.revision}.`,
     task.approvalPolicy?.mode === 'after-review' ? 'Approval: controller after formal plan pass.' : 'Approval: wait for the user.',
@@ -39,10 +41,11 @@ export function continuationContext(task: TaskSnapshot, instruction: string): st
       : `Current node: ${stage.id} — ${stage.title}${stage.description ? `\nDetails: ${excerpt(stage.description, 2000)}` : ''}`,
     `Ready nodes: ${readyNodes(task).join(', ') || 'none'}. Node attempts: ${JSON.stringify(runsOf(task))}`,
     `Current acceptance: ${JSON.stringify(task.criteria.filter(item => stage?.criterionIds.includes(item.id)))}`,
-    task.lastReview === null ? 'No independent review yet.'
-      : `Latest independent review: ${task.lastReview.stageId}; ${task.lastReview.verdict}; evidence cutoff ${task.lastReview.cutoff}.\n${excerpt(task.lastReview.finding, 1600)}`,
+    task.lastReview === null ? 'No Supervisor review yet.'
+      : `Latest Supervisor review (${job?.taskId === task.id && job.id === task.lastReview.jobId ? job.verification ? 'independent artifact checks' : 'log inspection' : 'legacy evidence scope'}): ${task.lastReview.stageId}; ${task.lastReview.verdict}; evidence cutoff ${task.lastReview.cutoff}.\n${excerpt(task.lastReview.finding, 1400)}`,
+    ...reviewHandoff(task, job) ? [`Review handoff (actual confirmed/pending requirements and evidence): ${reviewHandoff(task, job)}`] : [],
     ...task.planning?.requirementsVersion === task.requirementsVersion ? [`Planning facts: ${JSON.stringify(task.planning.facts)}\nUnresolved questions: ${JSON.stringify(task.planning.unknowns)}\nPlanning next action: ${task.planning.nextAction}\nSource evidence seqs: ${task.planning.evidenceSeqs.join(', ')}`] : [],
-    'Only accepted nodes are verified. Inspect existing work before repeating uncertain effects. Original user constraints remain authoritative. Use task_status for full plan and findings.',
+    'Accepted nodes retain their actual review evidence level and coverage; a separate Session or log pass is not independent artifact verification. Inspect existing work before repeating uncertain effects. Original user constraints remain authoritative. Use task_status for full plan and findings.',
     `Next action: ${instruction}`,
   ].join('\n\n')
 }

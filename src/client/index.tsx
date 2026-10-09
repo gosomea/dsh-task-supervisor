@@ -10,6 +10,8 @@ import { taskStore, type PanelState } from './task-store.ts'
 import { milestoneDefinition, type Milestone } from './milestones.ts'
 import { displayedPlan, executorLabel, nodeLabel, headline, progress, taskStatus, VERDICT } from './presentation.ts'
 import { ReviewReport } from './review-report.tsx'
+import { ReviewRequirements } from './review-requirements.tsx'
+import { currentReviewJob, reviewPresentation } from './review-presentation.ts'
 import { ReviewProgress } from './review-progress.tsx'
 import { Button, Menu, Modal, IconEllipsisOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Disclosure } from './disclosure.tsx'
@@ -157,7 +159,9 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
   const index = Math.max(0, graphTask?.stages.findIndex(item => item.id === selected) ?? -1)
   const stage = graphTask?.stages[selected === null ? graphTask.stageIndex : index]
   const review = reviewId ? state?.reviews?.find(item => item.reviewerSessionId === reviewId) : task?.lastReview
-  const reviewJob = state?.reviewJobs?.filter(item => item.taskId === task?.id).findLast(item => reviewId ? item.reviewerSessionId === reviewId : true)
+  const reviewJob = reviewId ? state?.reviewJobs?.find(item => item.reviewerSessionId === reviewId)
+    : currentReviewJob(state) ?? state?.reviewJobs?.find(item => item.taskId === task?.id && item.id === task?.lastReview?.jobId)
+  const outcomeJob = state?.reviewJobs?.find(item => item.taskId === task?.id && item.reviewerSessionId === review?.reviewerSessionId && item.cutoff === review.cutoff)
   const historicalTask = historyEntries?.find(entry => entry.task.id === historySelection)
   useEffect(() => {
     if (showHistory && historySelection === task?.id && task && !['complete', 'cleared'].includes(task.phase)) {
@@ -166,8 +170,8 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
   }, [showHistory, historySelection, task?.id, task?.phase])
   const reviewSection = review && <section className="dsh-task-section dsh-task-card" aria-label="审查详情">
           {state?.reviewing && review.reviewerSessionId !== reviewJob?.reviewerSessionId && <p className="dsh-task-meta">{t('reviewPreviousDecision')}</p>}
-          <h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {VERDICT[review.verdict]}</h3>
-          <ReviewReport finding={review.finding} t={t} /><Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
+          <h3>Supervisor · {review.stageId === 'planning' ? '规划进展审查' : review.stageId === 'plan' ? '计划审查' : review.stageId === 'completion' ? task?.phase === 'complete' && state?.repairs?.some(p => p.taskId === task.id && ['pending', 'confirmed'].includes(p.status)) ? '此前完成审查' : '完成审查' : '节点审查'} · {outcomeJob ? t(reviewPresentation(outcomeJob, state).label) : VERDICT[review.verdict]}</h3>
+          <ReviewReport finding={review.finding} t={t} />{outcomeJob && <ReviewRequirements job={outcomeJob} t={t} />}<Disclosure title="证据来源"><p className="dsh-task-meta">主 Session 截至 seq {review.cutoff} · 证据 {review.evidenceSeqs?.join(', ')}<br />审查 Session {review.reviewerSessionId}</p></Disclosure></section>
   function openConsultation() {
     setTab('consultation')
     if (consultation || opening || !state?.live) return

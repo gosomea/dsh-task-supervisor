@@ -35,7 +35,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
     || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
     || job.owner !== previous.owner || job.checkProtocol !== previous.checkProtocol || JSON.stringify(job.scope) !== JSON.stringify(previous.scope)
-    || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol
+    || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol || job.resultProtocol !== previous.resultProtocol
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
   if (previous?.recovery) {
@@ -48,6 +48,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (previous?.readCorrections && (!job.readCorrections || job.readCorrections.limit !== previous.readCorrections.limit
     || job.readCorrections.consumed < previous.readCorrections.consumed
     || JSON.stringify(job.readCorrections.history.slice(0, previous.readCorrections.history.length)) !== JSON.stringify(previous.readCorrections.history))) throw new Error('read correction history changed')
+  if (previous?.decision && JSON.stringify(job.decision) !== JSON.stringify(previous.decision)) throw new Error('recorded decision changed')
   const priorPlan = previous?.verification?.checkPlan ?? [], plan = job.verification?.checkPlan ?? []
   if (JSON.stringify(plan.slice(0, priorPlan.length)) !== JSON.stringify(priorPlan) || plan.some((entry, index) => entry.revision !== index + 1)) throw new Error('check plan history changed')
   if (previous?.verification?.phase === 'comparison' && JSON.stringify(previous.verification.checkFindings) !== JSON.stringify(job.verification?.checkFindings)) throw new Error('independent check findings changed')

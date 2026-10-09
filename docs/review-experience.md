@@ -60,4 +60,14 @@ New controller jobs write version 8 with immutable Task, requirements/plan versi
 
 Focused controlled-Host tests cover enabled/disabled correction, successful batch items with a failed sibling, same-job read-range recovery, fault retry with real evidence and user-stop recovery. Registered real-model and browser acceptance is pending.
 
+## Requirement outcomes and primary-Agent handoff
+
+New record-8 jobs save normalized requirement outcomes: source and explicit/derived basis, method, actual evidence, status, coverage and limitations. Log decisions submit `requirements`; independent decisions reuse their recorded check plan and findings rather than duplicate them. Planning checks retain facts, unknowns and the next output; progress checks assess drift and blockers without accepting a node.
+
+Plan, node and final decisions cover every applicable criterion and omitted original requirements. Failed or unverified explicit requirements prevent a pass; optional derived preferences cannot block otherwise satisfied requirements. Independent final acceptance binds the current combined snapshot, not a sum of prior node passes. Original evidence ranges, snapshot hashes and executed-check identities remain attached to each outcome.
+
+Continuation includes the actual review scope, confirmed and pending requirements, necessary revisions, evidence references and ready nodes. It explicitly distinguishes log inspection from independent artifact checks. The controller determines the effective next action and preserves the original execution permit. Earlier jobs have no fabricated requirement results or new authority. The sidebar reads the same job as the main report.
+
+Focused controlled tests cover static reads, omitted or weakened requirements, unavailable observation, partial original evidence, optional preferences, cross-Task handoff and record identity. Real-model, browser and matched comparison results are recorded separately after execution.
+
 [中文](review-experience.zh.md)

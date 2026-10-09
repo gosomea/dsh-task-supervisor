@@ -1,5 +1,7 @@
 # Implementation status
 
+2026-10-09: The complete durable report is separate from native tool process details. New record-8 jobs bind Task/attempt scopes, original read ranges and one bounded read correction; requirement outcomes and specific primary-Agent handoffs retain their actual evidence level. Existing jobs keep their original protocol and permissions. Focused Host tests, strict checks and builds precede real-model/browser validation and release. See [review experience](review-experience.md).
+
 2026-10-08: The primary conversation embeds the native reviewer Session process and distinguishes current activity from prior verdicts. Controller recovery defaults to one fault retry, queues manual retry promptly, preserves original continuation permission and restores real read eligibility. Review records use version 7 and projection cache 20; old jobs remain manual. See [native review process and recovery](review-experience.md). Earlier evidence below preserves behavior at that time, rather than current recovery defaults. Real-model, native-browser and clean official installation results are recorded in [0.1.3 release acceptance](releases/0.1.3.md).
 
 2026-10-07: Reset main-Agent observation after formal verdicts so reviewer time cannot immediately trigger a redundant planning check. Both task surfaces show the proposal DAG, measured review activity and next handoff; reads do not approve or resume. See [review progress](review-progress.md) for validation and daily deployment.
@@ -47,7 +49,7 @@ The workspace digest binds a proposal to confirmation; this step adds no indepen
 
 ## Independent artifact checks and two-stage review
 
-This section describes snapshot and runner configuration. Explicit `reviewVerification: independent` enables the current generic protocol: plan requirement checks, read or run as needed, persist findings, then compare main reports. Existing `independentVerification`-only configurations retain the legacy protocol. Plan and progress remain log reviews. See [current generic validation](../eval/independent-verification/generic-quality-20260930/README.md) and [earlier evidence](independent-verification-validation.md).
+This section describes snapshot and runner configuration. Explicit `reviewVerification: independent` enables the current generic protocol: plan requirement checks, read or run as needed, persist findings, then compare main reports. New jobs in independent mode use the current protocol; recovering older jobs preserves their recorded protocol. Plan and progress remain log reviews. See [current generic validation](../eval/independent-verification/generic-quality-20260930/README.md) and [earlier evidence](independent-verification-validation.md).
 
 | Configuration | Meaning |
 | --- | --- |

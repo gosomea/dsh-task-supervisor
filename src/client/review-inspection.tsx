@@ -2,6 +2,7 @@
 import type { ReviewJob } from '../review-records.ts'
 import { Disclosure } from './disclosure.tsx'
 import type { SupervisorKey, SupervisorTranslate } from './locales.ts'
+import { ReviewRequirements } from './review-requirements.tsx'
 
 export function inspectionPhase(job: ReviewJob): SupervisorKey {
   if (job.status === 'queued') return 'reviewQueuedAction'
@@ -20,7 +21,8 @@ export function ReviewInspection({ job, t }: { job: ReviewJob; t: SupervisorTran
     <h3>{t('reviewProcess')} · {t(phase)}</h3>
     <p className="dsh-task-muted">{t(state ? 'independentScope' : 'logScope')}{state && ` · ${t('executedChecks')} ${state.checks.length}`} · {t('sessionEvidenceBoundary')}</p>
     <ol className="dsh-task-review-phases" aria-label={t('reviewProcess')}>{phases.map(name => <li key={name} aria-current={name === phase ? 'step' : undefined}>{t(name)}</li>)}</ol>
-    {checks.length ? <Disclosure title={`要求检查 · ${checks.length} 项`}>
+    <ReviewRequirements job={job} t={t} />
+    {!job.decision?.requirements && checks.length ? <Disclosure title={`要求检查 · ${checks.length} 项`}>
       {checks.map(check => {
         const result = findings.find(item => item.checkId === check.id)
         return <Disclosure key={check.id} title={`${result ? { satisfied: '已满足', failed: '未满足', unverified: '未验证' }[result.status] : '待检查'} · ${check.fact}`}>

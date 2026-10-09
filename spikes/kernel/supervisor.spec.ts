@@ -57,7 +57,19 @@ class ScriptedAdapter extends LlmAdapter {
             try { const data = JSON.parse(block.text); return data.events?.filter((event: { text?: string }) => typeof event.text === 'string') ?? [] } catch { return [] }
           }))
           const seq = reads.find((event: { seq: number }) => event.seq === 0)?.seq ?? reads[0]?.seq
-          if (typeof seq === 'number') { args.evidence_seqs = [seq]; serialized = JSON.stringify(args) }
+          if (typeof seq === 'number') {
+            args.evidence_seqs = [seq]
+            const prompt = options.messages.flatMap(message => message.role === 'user' ? message.content.flatMap(block => block.type === 'text' ? [block.text] : []) : [])
+              .findLast(text => text.includes('Bound review scope:'))
+            if (prompt && !args.planning && !args.criteria) {
+              const ids = JSON.parse(/^Applicable criterion IDs: (.+)$/mu.exec(prompt)?.[1] ?? '[]') as string[]
+              const criteria = JSON.parse(/^Criteria: (.+)$/mu.exec(prompt)?.[1] ?? '[]') as { id: string; text: string }[]
+              args.requirements ??= (ids.length ? ids : [null]).map(id => ({ id: id ?? 'objective', criterionId: id,
+                requirement: criteria.find(item => item.id === id)?.text ?? 'Original objective', source: { kind: 'objective', reference: 'objective' }, basis: 'explicit',
+                status: args.verdict === 'pass' ? 'satisfied' : 'unverified', finding: args.finding, coverage: 'Controlled lifecycle fixture', limitations: 'Scripted model; does not assess product correctness', evidenceSeqs: [seq] }))
+            }
+            serialized = JSON.stringify(args)
+          }
         }
       }
       for (const chunk of response) {
@@ -1217,10 +1229,12 @@ it.each(['complete', 'off', 'empty'])('runs disjoint native workers with file ow
   scripts.main = [toolResponse('bash', {}, 'integration'), textResponse('integrated')]
   main.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Integrate outputs' }] })); await main.whenIdle()
   const result = main.session.snapshotEvents().map(controlEvent).find(e => e.type === 'tool/result' && e.data.message.source.callId === 'integration')!
+  const requirement = { id: 'c', criterionId: 'c', requirement: 'A and B integrate', source: { kind: 'objective', reference: 'objective' }, basis: 'explicit',
+    status: 'satisfied', finding: 'The recorded integration result is consistent with the request', coverage: 'Worker output and main integration log', limitations: 'Log inspection only', evidenceSeqs: [result.seq] }
   scripts.reviewer = [toolResponse('read_task_evidence', { from_seq: result.seq, limit: 1 }, 'main-check'),
     toolResponse('task_review_decision', { verdict: 'pass', finding: 'premature', evidence_seqs: [result.seq] }, 'no-worker'),
     toolResponse('read_task_worker', { node_id: 'a', from_seq: 0, limit: 30 }, 'worker-check'),
-    toolResponse('task_review_decision', { verdict: 'pass', finding: 'A output independently read with main integration', evidence_seqs: [result.seq] }, 'accept')]
+    toolResponse('task_review_decision', { verdict: 'pass', finding: 'A output read with main integration', evidence_seqs: [result.seq], requirements: [requirement] }, 'accept')]
   expect((await report()).isError).toBe(false)
   expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'a')?.status).toBe('passed')
   expect(taskOf(ctx, main)?.nodeRuns?.find(run => run.id === 'join')?.status).toBe('pending')
