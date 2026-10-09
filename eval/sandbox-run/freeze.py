@@ -50,6 +50,8 @@ def freeze(config, out):
         and [candidates[task]['language'] for task in tasks].count('typescript') == 2, 'two Go and two TypeScript tasks required')
     require(not set(tasks) & set(selection['excludedTaskIds']), 'an exposed task was selected')
     template = read(config['templateSpec'])
+    for key in ('protocolControls', 'routeAudit', 'modelPatch'):
+        require(digest(template[key]) == template[key + 'Sha256'], 'template runtime bytes changed')
     gates = []
     def gate(path):
         gates.append({'sha256': digest(path), 'privateSource': str(Path(path).resolve())})
@@ -67,7 +69,7 @@ def freeze(config, out):
     official_images = {}
     for task in tasks:
         baseline = gate(config['baselines'][task])
-        require(baseline.get('passed') is True and baseline['modelRequests'] == 0
+        require(baseline.get('passed') is True and baseline['taskId'] == task and baseline['modelRequests'] == 0
             and baseline['sourceUnchanged'] is True and baseline['dockerSocketMounted'] is False
             and baseline['baselineHasGatewayMounts'] is False and baseline['baselineHasCredentials'] is False,
             'candidate snapshot/check admission failed')
@@ -78,7 +80,7 @@ def freeze(config, out):
         baselines[task] = baseline
         for agent, expected in (('nop', 0), ('oracle', 1)):
             control = gate(config['officialControls'][task][agent])
-            require(control['passed'] is True and control['reward'] == expected and control['modelRequests'] == 0,
+            require(control['passed'] is True and control['taskId'] == task and control['reward'] == expected and control['modelRequests'] == 0,
                 'official empty/reference control failed')
             previous = official_images.setdefault(task, control['imageDigest'])
             require(previous == control['imageDigest'], 'official control image differs')
@@ -109,6 +111,7 @@ def freeze(config, out):
     for position in order['positions']:
         task = position['taskId']; candidate = candidates[task]; baseline = baselines[task]
         instruction = (dataset / 'tasks' / task / 'instruction.md').read_text()
+        require(hashlib.sha256(instruction.encode()).hexdigest() == candidate['instructionSha256'], 'literal UTF-8 instruction differs')
         spec = {key: template[key] for key in ('schemaVersion', 'cwd', 'adminImage', 'adminPlatform',
             'dockerContext', 'credential', 'hostGateway')}
         spec.update(**position, formal=True, dataset=str(dataset.resolve()), pierBin=config['pierBin'],
@@ -119,7 +122,7 @@ def freeze(config, out):
             instruction=instruction, instructionSha256=candidate['instructionSha256'],
             officialImageDigest=official_images[task], **artifacts,
             nativePresetSha256=config['nativePresetSha256'],
-            mainWritableLimitBytes=candidate['storageMiB'] * 1024 * 1024,
+            storageLimitBytes=candidate['storageMiB'] * 1024 * 1024,
             checkStorageLimitBytes=4 * 1024 ** 3)
         if position['condition'] != 'supervisor-independent':
             spec['nativeControllerSha256'] = config['nativeControllerSha256'][position['condition']]

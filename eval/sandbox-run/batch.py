@@ -23,6 +23,9 @@ def validate_release(release, root):
         path = Path(filename)
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise ValueError('frozen runtime input differs')
+    for gate in release.get('gates', []):
+        if hashlib.sha256(Path(gate['privateSource']).read_bytes()).hexdigest() != gate['sha256']:
+            raise ValueError('frozen admission evidence changed')
     server = release.get('runtimeInventory', {}).get('server')
     if server:
         row = json.loads(subprocess.check_output(['docker', '--context', release['capacity']['dockerContext'],
