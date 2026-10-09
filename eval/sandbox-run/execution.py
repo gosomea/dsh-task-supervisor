@@ -21,6 +21,7 @@ from launch import select_model_patch
 from monitor import Journal, fold, observe, parse_events, renew
 from runtime import SandboxRef
 from runtime_rpc import RuntimeDshRpc
+from native_fault import native_request_fault
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from control_flow import controller_overlay, observe as native_observe, projection_values
@@ -270,6 +271,8 @@ def read_view(runtime, box, rpc, started, spec, gateway=None):
         and event['data'].get('kind') == 'native-plan-grant']
     return with_resources({'task': None, 'idle': idle, 'hostExited': raw['hostExited'], 'nativeTerminal': terminals.get(state['status']),
         'nativeState': state, 'questions': decisions,
+        'nativeRequestFault': native_request_fault(events, values, spec['condition'],
+            spec.get('nativeControllerSha256', '')) if idle else None,
         'planApprovalReady': {'sessionId': started['sessionId'], 'questionId': plan['id'],
             'callId': plan['callId'], 'planSha256': plan['planSha256']} if plan else None,
         'nativePlanGrant': grants[-1] if grants else None, 'nativePlanApplied': approved}, box.id, spec)

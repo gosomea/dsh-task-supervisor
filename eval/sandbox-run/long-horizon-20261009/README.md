@@ -30,3 +30,7 @@ Missing Session usage yields null total tokens with reported lower bounds. Unmea
 See [development validation](../validation-20261009.md) for gates and preserved failures, and the [protocol](../protocol.md) for roles and authorization. Formal evidence is appended after collection and grading; existing results are never overwritten.
 
 Ongoing progress is retained in [immutable result snapshots](reports/); execution inputs remain frozen.
+
+## Post-freeze monitor repair
+
+The first Plan position exhausted native request retries (transport failure followed by upstream 502). Its error turn ended without queued continuation, but the original monitor did not classify this state. New delivery was stopped with the original Session retained. A separately frozen monitor repair recognizes the same settled request-fault event in two observations before infrastructure sealing; it sends no rescue prompt and grants no permission. The original release, position and deadline remain recorded. This deviation is reported separately from product failure; no Agent rerun replaces the position.

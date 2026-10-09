@@ -67,6 +67,13 @@ def metrics(value):
     return out
 
 
+def safe_request_fault(value):
+    if not isinstance(value, dict):
+        return None
+    return {**{key: code(value.get(key)) for key in ('kind', 'condition', 'errorCode', 'controllerSourceSha256', 'basis')},
+            **{key: number(value.get(key)) for key in ('seq', 'turn', 'nativeStoppedAtUnix')}}
+
+
 def result(value):
     terminal, official = value['terminal'], value['officialGrade']
     grade = {key: official.get(key) is True for key in
@@ -88,6 +95,7 @@ def result(value):
         'reward': number(value.get('reward')), 'strictSuccess': value.get('strictSuccess') is True,
         'gradingFault': code(value.get('gradingFault')),
         'terminal': {
+            'requestFaultEvidence': safe_request_fault(terminal.get('requestFaultEvidence')),
             'sessionId': code(terminal.get('sessionId')),
             'firstStopReason': code(terminal.get('firstStopReason')),
             **{key: number(terminal.get(key)) for key in ('atUnix', 'deadlineAtUnix', 'rescueCount')},

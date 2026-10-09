@@ -15,6 +15,7 @@ import time
 import uuid
 
 from records import exclusive_json
+from native_fault import confirmed_fault
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from session_records import control_event
@@ -278,6 +279,9 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                     view = reader(started)
                     now = clock()
                     reason = terminal_reason(view, started, now)
+                    fault_pending = bool(view.get('nativeRequestFault'))
+                    if not reason and confirmed_fault(journal, view.get('nativeRequestFault'), now):
+                        reason = 'native-upstream-fault'
                     if started['condition'] == 'plan':
                         intent = journal.read('actions/initial-approval-intent.json')
                         grant = view.get('nativePlanGrant') or {}
@@ -287,9 +291,9 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                                 'atUnix': clock(), 'transport': 'native-user-questions', 'reconciledFromNativeState': True})
                         if intent and view.get('planApprovalReady') and intent.get('questionId') != view['planApprovalReady']['questionId']:
                             reason = 'user-decision'
-                    if not reason and started['condition'] == 'supervisor-independent':
+                    if not reason and not fault_pending and started['condition'] == 'supervisor-independent':
                         protocol_actions(journal, started, view, send, revision=revision, clock=clock)
-                    elif not reason and started['condition'] == 'plan' and view.get('planApprovalReady'):
+                    elif not reason and not fault_pending and started['condition'] == 'plan' and view.get('planApprovalReady'):
                         action_once(journal, 'initial-approval', view['planApprovalReady'], send, clock=clock)
             except Exception as error:
                 journal.write('faults/' + uuid.uuid4().hex + '.json', {'atUnix': now,
@@ -297,7 +301,8 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                 reason = 'infrastructure-fault'
             journal.write('observations/' + uuid.uuid4().hex + '.json', {
                 'atUnix': now, 'reason': reason, 'taskId': ((view or {}).get('task') or {}).get('id'),
-                'phase': ((view or {}).get('task') or {}).get('phase'),
+                'phase': ((view or {}).get('task') or {}).get('phase') or ((view or {}).get('nativeState') or {}).get('taskPhase'),
+                'nativeRequestFault': (view or {}).get('nativeRequestFault'),
                 'budget': (view or {}).get('budget'), 'resources': (view or {}).get('resources'), 'rescueCount': 0})
             if reason:
                 try:
@@ -313,7 +318,8 @@ def observe(journal, started, reader, send, quiesce, *, revision=None, tick=60,
                     'controllerComplete': completed,
                     'finishedBeforeDeadline': completed and (bool(completion) or now < started['deadlineAtUnix']),
                     'completionEvidence': completion,
-                    'infrastructureFault': reason in ('infrastructure-fault', 'sandbox-lost', 'execution-side-exit', 'storage-limit') or not cleanup['acknowledged'],
+                    'infrastructureFault': reason in ('infrastructure-fault', 'sandbox-lost', 'execution-side-exit', 'storage-limit', 'native-upstream-fault') or not cleanup['acknowledged'],
+                    'requestFaultEvidence': (view or {}).get('nativeRequestFault'),
                     'cleanup': cleanup, 'rescueCount': 0})
             ticks += 1
             if max_ticks is not None and ticks >= max_ticks:
