@@ -89,6 +89,8 @@ The same position's [first independent node review](supervisor-first-applied-ind
 
 The review used 49 model steps, 87 tool calls and 11 tool errors, without internal fault recovery. One initial grant receipt exists, and continuation retained that permit without human rescue. This proves one node's independent inspection, applied decision and continuation. Whole-task acceptance and official grading remain incomplete; file counts, command counts and exit codes alone do not establish whole-task correctness.
 
+The second node's first review reached its 600-second deadline, and the plugin automatically retried the original job, reviewer Session, node attempt, cutoff and snapshot once. [Independent-review recovery evidence](supervisor-independent-recovery-v6.json) verifies that eight file-read records, 24 command-check records, output-read records and check-plan records were preserved at retry startup. The second attempt durably recorded independent findings and entered comparison. Only one Task fault recovery was confirmed, without increasing the original Task deadline or single grant. No valid node decision had been applied at this capture. Failed observation submissions and error digests remain visible; check counts and a started recovery cannot establish acceptance.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
