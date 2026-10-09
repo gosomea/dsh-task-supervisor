@@ -25,9 +25,9 @@ These rewards are fixture outcomes, not public official scores. New runs do not 
 
 ## Regression and browser
 
-The full kernel suite passed 464 checks with 15 environment-dependent skips. Sandbox monitoring/collection passed 55 Python tests; official grading adaptation and score parsing passed 7 each. Four focused protocol tests passed; 144 other tests were filtered out. Host and Client strict typechecks passed. Controlled clocks and barriers cover deadlines, cancellation, budget persistence through replanning/restart, stale decisions, same-job evidence and duplicate grant refusal.
+The full kernel suite passed 464 checks with 15 environment-dependent skips. Sandbox monitoring/collection passed 60 Python tests; official grading adaptation and score parsing passed 7 each. Four focused protocol tests passed; 144 other tests were filtered out. Host and Client strict typechecks passed. Controlled clocks and barriers cover deadlines, cancellation, budget persistence through replanning/restart, stale decisions, same-job evidence and duplicate grant refusal.
 
-The browser verified complete decision bodies in the main Session, collapsed finished processes, separation of current review from previous decisions, real deadlines and fault counters. Actual reviews completed after more than 120 seconds. Screenshots and raw logs remain in the private registered environment; authentication URLs and credentials are not committed. A 480×900 viewport was checked for activity, deadlines, recovery counts and DAG scrolling. Final frozen installation remains pending.
+The browser verified complete decision bodies in the main Session, collapsed finished processes, separation of current review from previous decisions, real deadlines and fault counters. Actual reviews completed after more than 120 seconds. Screenshots and raw logs remain in the private registered environment; authentication URLs and credentials are not committed. A 480×900 viewport was checked for activity, deadlines, recovery counts and DAG scrolling. All four candidates passed native installation with the same final tarball, actual snapshot/check execution and credential-free, gateway-mount-free baselines.
 
 ## Resources and collection
 
@@ -39,4 +39,4 @@ Fifteen sealed, stopped old P2 containers were released after retaining base ima
 
 ## Remaining gates
 
-Strict fault recovery passed. Actual snapshot/check integration and mount-free baselines for all four candidates, then final tarball freeze and clean installation must pass before the 24-position batch starts. After sealing all positions, report official reward, F2P/P2P when available, strict success, full denominator, costs and task-level uncertainty. Unlabelled false acceptance, false pause and correction benefit remain null.
+Strict fault recovery and all four candidate admission gates passed. The 24-position order, installable tarball and runtime dependencies are frozen in the [formal batch](long-horizon-20261009/README.md). Preserved admission failures occurred without model delivery; formal holdouts have not started. After sealing all positions, report official reward, F2P/P2P when available, strict success, full denominator, costs and task-level uncertainty. Unlabelled false acceptance, false pause and correction benefit remain null.

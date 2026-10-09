@@ -1,6 +1,6 @@
 # Implementation status
 
-2026-10-09: The deterministic runner now connects native approval, revision barriers, absolute deadlines, original-run reconnection, resource archival and external grading. Revision development passed; strict fault inheritance passed; final candidate integration remains pending, with 0/24 formal deliveries. Check-copy contamination, stale confirmations and log-method handling were fixed with failures retained. See [runner validation](../eval/sandbox-run/validation-20261009.md).
+2026-10-09: The deterministic runner now connects native approval, revision barriers, absolute deadlines, original-run reconnection, resource archival and external grading. Revision development passed; strict fault inheritance passed; four-task final installation, snapshot and independent checking passed and the runtime/order are frozen, with 0/24 formal deliveries. Check-copy contamination, stale confirmations and log-method handling were fixed with failures retained. See [runner validation](../eval/sandbox-run/validation-20261009.md).
 
 2026-10-09: The check-copy contamination found in long-horizon development is fixed. Every command receives a fresh invocation; generated reports and modified captured files are distinct, while legacy rejection rules remain. The original run was sealed as an infrastructure fault with reward null. See [check invocation isolation](check-invocation-isolation.md).
 

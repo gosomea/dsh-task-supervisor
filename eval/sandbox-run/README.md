@@ -9,7 +9,7 @@ This directory implements the [long-horizon protocol](protocol.md) with a new de
 
 ## Implementation status
 
-The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Task-wide budgets, deterministic monitoring, collection and grading are implemented. The revision development fixture completed with external fixture reward=1. Strict fault injection and final candidate snapshot integration remain under validation; formal execution is not frozen. Initial failures and fixes remain recorded in [runner validation](validation-20261009.md).
+The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal delivery is still **0/24**. Task-wide budgets, deterministic monitoring, collection and grading are implemented. The revision development fixture completed with external fixture reward=1. Strict fault recovery, final installation and snapshot integration passed for all four candidates. The [formal batch](long-horizon-20261009/README.md) freezes all 24 positions. Initial failures and fixes remain recorded in [runner validation](validation-20261009.md).
 
 | Entry point | Purpose |
 | --- | --- |

@@ -1,0 +1,30 @@
+# 2026-10-09 长程公开题对照：冻结批次
+
+本批次使用 DeepSWE v1.1 固定提交 `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`，四道未投递候选题：两道 Go（updo-policy-alerting、geo-shapeindex-serialization），两道 TypeScript（superjson-error-stack-serialization、koota-pair-relation-tracking）。Goal、Plan、Supervisor-independent 各重复两次，共 **24 个位置**。本记录创建时正式投递 **0/24**；开发夹具 reward 不属于这批官方结果。
+
+## 冻结材料
+
+- [release.json](release.json)：脱敏运行摘要、安装包与源码身份、运行依赖索引摘要、准入证据摘要。
+- [order.json](order.json)：种子 `dsh-opensandbox-long-horizon-v1` 的固定顺序，第一位置为 geo / Plan / r2。
+- [admission.json](admission.json)：四题原生权限、未跟踪快照、离线独立命令检查与无挂载干净 baseline；官方空补丁 0／参考补丁 1；真实主 Agent 与审查者路由证明。冻结前无模型准入失败及修复一并保留。
+- [冻结安装包](artifacts/dsh-task-supervisor-frozen.tgz)：SHA-256 `cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366`。插件源码提交 `44b2a42`，监控及用量口径提交 `2796533`。
+
+安装包内部版本仍为 0.1.4，是本轮明确冻结的实验包；npm 已发布的 0.1.4 不能代替它。将下载后的绝对路径代入 `dsh plugin add /absolute/path/dsh-task-supervisor-frozen.tgz`，并先核对 SHA-256。四题实际安装检查使用相同字节；本轮不发布 npm，也不更换日常 3080。
+
+私有 release 包含完整文件索引、原始日志位置与运行配置，留在登记环境，不提交凭据、认证 URL 或评分材料。首个无模型 release 在投递前被 v2 取代，仅修正用户动作计数；原记录保留，未重新投递 Agent。
+
+## 固定协议
+
+使用原始题目文本、相同当天 CodeBuddy deepseek-v4.1-flash 路由及冻结推理／工具配置。每位置独立 Session、干净基线，串行执行。官方 10800 秒预算从启动计时，包含规划、批准、审查、重试及续行；评分另有官方 1800 秒上限。正式题只允许协议内一次初始批准，不注入故障、修改要求、追加提示、补提交或自动恢复暂停。
+
+主环境 2 CPU／8 GiB，独立检查 2 CPU／8 GiB，管理员 1 CPU／1 GiB；每次新投递检查实际 5 CPU／17 GiB 容量、Docker 30 GiB 与宿主 8 GiB 余量。写层 20 GiB、私有检查存储 4 GiB 采用每 60 秒采样后停止，**不是硬配额**。Go 缓存在无模型、无网络环境预热，改动输入仍按正常缓存规则重新编译。执行侧没有 Docker socket，检查侧无评分材料与源工作区写权限。
+
+Python 监控器是唯一外层控制器；插件负责有界恢复及调度。有启动记录就接续原位置，不重新投递；最终结果独占创建。正常产品失败继续下一位置；确定的运行器、资源或评分故障停止新投递，保留原现场与协议偏差。只有 Agent 已 commit 的 base..HEAD 补丁进入官方评分，未提交产物仅用于诊断。
+
+## 用量与结论边界
+
+24 个位置始终保留完整分母，未投递位置列原因。基础设施和评分故障不伪记产品 reward=0。严格成功要求截止前控制器完成、官方 reward=1 且无基础设施／评分异常。用户动作计数包含原始题目提交与显式批准，Goal 的原生创建控制记录不重复计为第二次提交；不把开发修订用例的旧计数改写为正式成绩。
+
+全部 Session 用量缺失时总 token 为 null，并另列已报告下界；检查 CPU 时间缺少可靠记录时为 null。无人工标注的误验收、误暂停及纠偏收益保持 null；“宣布完成但官方失败”可机械核对并单列。四题的小样本配对分析以题为单位，两次重复不当成新增独立题。长时限本身不证明长程优势。
+
+开发门槛、失败及真实恢复证据见[开发验收](../validation-20261009.zh.md)，完整流程与授权边界见[协议](../protocol.zh.md)。正式结果将在每位置收集和评分封口后追加，原结果文件不覆盖。

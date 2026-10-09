@@ -956,6 +956,9 @@
     "originalResultsPreserved": true,
     "regressionPassed": true
   },
-  "sandboxPythonTestsPassed": 55,
-  "narrowViewportVerified": true
+  "sandboxPythonTestsPassed": 60,
+  "narrowViewportVerified": true,
+  "finalTarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+  "fourTaskAdmissionPassed": true,
+  "finalPackageNativeInstallationPassed": true
 }

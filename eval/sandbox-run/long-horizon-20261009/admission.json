@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "formalDelivered": 0,
+  "tasks": [
+    {
+      "taskId": "updo-policy-alerting",
+      "image": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+      "snapshotId": "746f35f9-2698-41cb-8a32-451979f1454f",
+      "baseCommit": "9ecd74f5bd56fa915501e5b77da044d97c450a74",
+      "modelRequests": 0,
+      "passed": true,
+      "snapshot": {
+        "id": "ca6f2b88-fc9f-46d8-80e5-53908c87edc7",
+        "entries": 116,
+        "bytes": 3555353,
+        "digest": "72dd62c3859b7bafc21e764bd880e2501bc545a3bc9b4265b646672b3217b8c2",
+        "untrackedCaptured": true
+      },
+      "checkExitCode": 0,
+      "checkImage": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasGatewayMounts": false,
+      "baselineHasCredentials": false,
+      "nativePermissionPassed": true,
+      "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+      "officialControls": {
+        "nop": {
+          "reward": 0,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54",
+          "passed": true
+        },
+        "oracle": {
+          "reward": 1,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54",
+          "passed": true
+        }
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "image": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+      "snapshotId": "6984daaa-9686-4eb9-ac34-cb17ebd346d2",
+      "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+      "modelRequests": 0,
+      "passed": true,
+      "snapshot": {
+        "id": "b1047de9-d4d3-471f-bd9f-dc7fa7e582ce",
+        "entries": 164,
+        "bytes": 1776502,
+        "digest": "e13bc52c13b2455b0a54055d0d0a7a81ee3a1f220bca20957a044104dc178d5a",
+        "untrackedCaptured": true
+      },
+      "checkExitCode": 0,
+      "checkImage": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasGatewayMounts": false,
+      "baselineHasCredentials": false,
+      "nativePermissionPassed": true,
+      "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+      "officialControls": {
+        "nop": {
+          "reward": 0,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "passed": true
+        },
+        "oracle": {
+          "reward": 1,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "passed": true
+        }
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "image": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+      "snapshotId": "869bd067-1de4-4f8a-956d-6f563dee6e7a",
+      "baseCommit": "010c4bdb4b8758844fd44eacf38e42b22eba8aea",
+      "modelRequests": 0,
+      "passed": true,
+      "snapshot": {
+        "id": "2fe63b24-ce4e-4994-823e-89bcdeec3a84",
+        "entries": 26907,
+        "bytes": 246156753,
+        "digest": "6b6173e59cd9dfd68ee8c935dd075854ccdc7369d6871133fb4aa4a544d8221d",
+        "untrackedCaptured": true
+      },
+      "checkExitCode": 0,
+      "checkImage": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasGatewayMounts": false,
+      "baselineHasCredentials": false,
+      "nativePermissionPassed": true,
+      "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+      "officialControls": {
+        "nop": {
+          "reward": 0,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387",
+          "passed": true
+        },
+        "oracle": {
+          "reward": 1,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387",
+          "passed": true
+        }
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "image": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+      "snapshotId": "e9641a46-e9f4-44a0-8d33-782114dbc56b",
+      "baseCommit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c",
+      "modelRequests": 0,
+      "passed": true,
+      "snapshot": {
+        "id": "db851c79-addd-4632-8ba0-7ad0167af860",
+        "entries": 15145,
+        "bytes": 374251745,
+        "digest": "70c4d830556da8837d9e57e81ec089ee707cb6bbba2d2e93cfdc7dace6a1e2dc",
+        "untrackedCaptured": true
+      },
+      "checkExitCode": 0,
+      "checkImage": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasGatewayMounts": false,
+      "baselineHasCredentials": false,
+      "nativePermissionPassed": true,
+      "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+      "officialControls": {
+        "nop": {
+          "reward": 0,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "passed": true
+        },
+        "oracle": {
+          "reward": 1,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "passed": true
+        }
+      }
+    }
+  ],
+  "developmentRevisionStrictSuccess": true,
+  "developmentFaultStrictSuccess": true,
+  "modelRouteActualMainAndReviewer": true,
+  "keylessAdmissionRepairs": [
+    {
+      "taskId": "updo-policy-alerting",
+      "attempt": 1,
+      "reason": "old probe response schema"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "attempt": 2,
+      "reason": "isolated HOME hid warmed module cache"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "attempt": 3,
+      "reason": "cold compilation exceeded admission command budget"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "attempt": 4,
+      "reason": "completed probe Host was treated as a failed stop"
+    }
+  ],
+  "earlierResultsPreserved": true
+}
