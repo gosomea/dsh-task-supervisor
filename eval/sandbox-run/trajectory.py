@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,6 +13,12 @@ from session_records import control_event
 REVIEW_KINDS = ('planning', 'plan', 'progress', 'stage', 'completion')
 NODE_STATUSES = ('pending', 'running', 'reviewing', 'passed', 'needs-revision',
                  'awaiting-user', 'awaiting-integration')
+
+
+def turn_end_kind(event):
+    reason = (event.get('data') or {}).get('reason')
+    kind = reason.get('kind') if isinstance(reason, dict) else None
+    return kind if isinstance(kind, str) and re.fullmatch(r'[a-z][a-z0-9-]{0,63}', kind) else 'unclassified'
 
 
 def summarize_trajectory(sessions, main_id, task_id=None):
@@ -47,10 +54,13 @@ def summarize_trajectory(sessions, main_id, task_id=None):
         errors = sum(event.get('type') == 'tool/result'
                      and (event.get('data', {}).get('message') or {}).get('isError') is True
                      for event in sessions[sid][1:])
+        endings = Counter(turn_end_kind(event) for event in sessions[sid][1:]
+                          if event.get('type') == 'turn/end')
         rows.append({'sessionId': sid,
             'role': 'main' if sid == main_id else 'reviewer' if sid in reviewer_ids else 'child',
             'events': len(sessions[sid]) - 1,
             'turns': counts['turn/start'], 'modelSteps': counts['step/start'],
+            'turnEndReasons': dict(endings),
             'requestRetries': counts['llm/retry-started'],
             'toolCalls': counts['tool/call'], 'toolErrors': errors,
             'contextCompactions': counts['compaction/end']})
@@ -71,6 +81,7 @@ def summarize_trajectory(sessions, main_id, task_id=None):
     return {'basis': 'original-collected-native-session-events',
         'linkedSessions': len(rows), 'excludedUnrelatedSessions': len(sessions) - len(rows),
         'allTurns': sum(row['turns'] for row in rows),
+        'allTurnEndReasons': dict(sum((Counter(row['turnEndReasons']) for row in rows), Counter())),
         'allModelSteps': sum(row['modelSteps'] for row in rows),
         'allToolCalls': sum(row['toolCalls'] for row in rows),
         'allToolErrors': sum(row['toolErrors'] for row in rows),

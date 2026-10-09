@@ -58,6 +58,20 @@ class TrajectoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             summarize_trajectory(sessions, 'missing')
 
+    def test_turn_end_reasons_use_durable_kind_without_private_detail(self):
+        sessions = {
+            'main': [header('main'), {'type': 'turn/end', 'data': {'reason':
+                {'kind': 'max-tokens', 'detail': 'private-canary'}}}],
+            'review': [header('review', 'main'), {'type': 'turn/end', 'data': {'reason':
+                {'kind': 'completed'}}}, {'type': 'turn/end', 'data': {'reason':
+                {'kind': 'https://private-canary/auth'}}}],
+            'other': [header('other'), {'type': 'turn/end', 'data': {'reason': {'kind': 'aborted'}}}],
+        }
+        value = summarize_trajectory(sessions, 'main')
+        self.assertEqual(value['allTurnEndReasons'], {'max-tokens': 1, 'completed': 1, 'unclassified': 1})
+        self.assertNotIn('aborted', value['allTurnEndReasons'])
+        self.assertNotIn('private-canary', json.dumps(value))
+
 
 if __name__ == '__main__':
     unittest.main()

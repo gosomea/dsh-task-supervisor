@@ -161,17 +161,19 @@ def detail_report(value):
                      f"{reward} | {bucket('F2P')} | {bucket('P2P')} | "
                      f"{cost['requestCount']} | {token_text} | {cost['protocolUserActions']} |")
     lines += ['', '## 实际执行轨迹', '',
-              '| 位置 | Session 数 | 模型执行步 | 工具调用 | 工具错误 | 压缩次数 | Supervisor 节点 |',
-              '|---|---:|---:|---:|---:|---:|---:|']
+              '| 位置 | Session 数 | 模型执行步 | 工具调用 | 工具错误 | 压缩次数 | Supervisor 节点 | 原生轮次结束原因（次数） |',
+              '|---|---:|---:|---:|---:|---:|---:|---|']
     for row in value['positions']:
         trace = row.get('trajectory')
         if trace:
             task = trace['supervisorTask']
             nodes = task['declaredNodes'] if task else '不适用／无绑定记录'
+            endings = ', '.join(f'{kind}: {count}' for kind, count in trace.get('allTurnEndReasons', {}).items()) or '未记录'
             lines.append(f"| {row['id']} | {trace['linkedSessions']} | {trace['allModelSteps']} | "
                          f"{trace['allToolCalls']} | {trace['allToolErrors']} | "
-                         f"{trace['allContextCompactions']} | {nodes} |")
+                         f"{trace['allContextCompactions']} | {nodes} | {endings} |")
     lines += ['', '轨迹由原始收集日志只读计算，重试不是新增执行步；原生 Goal／Plan 与 Supervisor 的节点语义不作等同。',
+              '轮次结束原因来自实际 turn/end 的 data.reason.kind，含主 Session 与所属子 Session；单个轮次结束不自动代表整个控制器完成。',
               '快照仅导出计数、身份与摘要，不包含模型正文、工具参数、私有路径或凭据。',
               '未封口位置不代表失败；当前成功数与完整分母同时保留，最终比较等待全部位置封口。',
               'Token 总和包含独立列出的 uncached/cache-read/cache-write/output；缺失用量不补为零。',
