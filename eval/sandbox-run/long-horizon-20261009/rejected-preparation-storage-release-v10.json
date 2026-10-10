@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "rejected-pre-delivery-preparation-storage-disposition",
+  "atUnix": 1791622432.893305,
+  "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "rejectedLease": "72b846811bc34595ae78bb81f682dc86",
+  "distinctFromPromotedLease": true,
+  "originalGatewayRecordsSha256": {
+    "gateway-created.json": "c6237079d8b3a0f98fe8355f3120dbf771febbaa0a4d29345a76ae5344e62112",
+    "gateway-cleanup.json": "076e58c607f9d87e8b339e5a563dc734d3deae2ff20881780e8b71ffda8f414d",
+    "check-quiescence.json": "2e9e1dfb6c7693432e22f29981fc492228a7b2ce7d70cc5372f3049a15b6ee45"
+  },
+  "originalResultSha256": "f8d0fd34ed557f3641a7596168090475fe10ae93a654cf1bb9aa8bbfee0fe85d",
+  "originalCheckCount": 0,
+  "checksQuiescent": true,
+  "archiveSha256": "19c6c33489a491c6fa8d60683fadc4ea8b336d57408b0e997d2964c9c794d662",
+  "archiveBytes": 147,
+  "releasedReceiptSha256": "2eaa8790554d610a0b25ce6d5301af828a23763a837866762703c0ea5b1697ca",
+  "remainingOwnedVolumes": 0,
+  "remainingOwnedContainers": 0,
+  "modelRequests": 0,
+  "newExecutionAuthorization": false,
+  "activePositionTouched": false,
+  "meaning": "archive then release the explicitly owned failed-preparation evidence volumes; no result or frozen run changed"
+}

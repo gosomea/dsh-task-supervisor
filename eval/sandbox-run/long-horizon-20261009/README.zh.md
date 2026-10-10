@@ -181,6 +181,8 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 
 原 v9 owner 已确认结束，v10 通过独占批次锁接续。[新位置的实际投递核对](live-identity-confirmation-v10.json)记录原位置 23 已启动：主 Session 与 Task 正确绑定，主 Agent 已发出十一条实际 HTTP 请求并收到十一条 HTTP 200 响应，CodeBuddy provider、`deepseek-v4.1-flash` 模型和实际端点匹配。现在十三个位置已启动、十二个封口；该捕获尚无初始批准，只证明新位置实际运行，不代表评分或完成。原结果、任务截止和冻结顺序保持不变。
 
+原位置 19 的模型投递前拒绝尝试另有三个已停止网关的保留证据卷。[旧准备存储处置](rejected-preparation-storage-release-v10.json)确认该租约与实际执行租约不同、原生检查数为零。使用冻结归档器保存并校验原卷，随后按其明确所有权释放；Docker 实查该租约已无卷或容器，原网关收据和已封口结果摘要未变。该处置没有模型请求，不触碰当前位置 23，也不产生执行授权。
+
 ## 环境交接与断点接续
 
 执行环境使用登记的 `colima-dsh-eval-rosetta` Docker context 和 `localhost:8090` OpenSandbox 服务。原生 DSH、模型路由、镜像、运行器、安装包及评分器身份均以冻结材料为准；不要在线选择最新依赖。日常 3080 不属于本批次资源。

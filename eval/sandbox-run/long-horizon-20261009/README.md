@@ -181,6 +181,8 @@ The execution runner is separately frozen as v10, source `f438883`; plugin `44b2
 
 The original v9 owner was confirmed stopped and v10 resumed under the exclusive batch lock. The [actual delivery confirmation](live-identity-confirmation-v10.json) records original position 23 starting with the correct main Session / Task binding. Eleven actual main HTTP requests received eleven HTTP 200 responses, with the CodeBuddy provider, `deepseek-v4.1-flash` model and actual endpoint matching. Thirteen positions have started and twelve are sealed. No initial approval was present at this capture; it proves live execution, not completion or scoring. Original results, deadlines and frozen order remain unchanged.
 
+Position 19's rejected pre-delivery preparation also retained three evidence volumes from its stopped gateway. The [old preparation storage disposition](rejected-preparation-storage-release-v10.json) verifies a lease distinct from actual execution and zero native checks. The frozen archiver preserved and verified these original volumes before releasing their explicit ownership. Docker confirms no remaining volumes or containers under that lease; original gateway receipts and the sealed result hash are unchanged. This disposition makes no model request, touches neither active position 23 nor its execution authorization.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
