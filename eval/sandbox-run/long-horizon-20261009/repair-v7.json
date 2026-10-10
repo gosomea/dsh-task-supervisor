@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "previousReleaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+  "newReleaseSha256": "2cd0c214396f143e07b7e96a77a8a3972651bdefbb34cfe94b7d4d8fa7163062",
+  "runnerCommit": "6453ec9dd34531a07f257adf00524770d1339a1d",
+  "runnerSourceBaseCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+  "changedRunnerFiles": [
+    "runner/sandbox-run/execution.py"
+  ],
+  "addedRunnerFiles": [
+    "runner/sandbox-run/resource_observation.py",
+    "runner/sandbox-run/test_resource_observation.py"
+  ],
+  "runnerFiles": 87,
+  "runtimeFiles": 19832,
+  "specsVerified": 24,
+  "preservedRunRecordCount": 1131,
+  "allExistingRunRecordsUnchanged": true,
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+  "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+  "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "acknowledgedOriginalFault": {
+    "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+    "sha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd",
+    "reward": null,
+    "replacementDelivered": false
+  },
+  "nextOriginalPosition": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+  "modelRequestsDuringRepair": 0,
+  "targetedTestsPassed": 45,
+  "realContainerFixtureSha256": "74bcb5190c8cca2d7a1a3fd9f1e44ba3d87ac237fa6bc1d8827b4d21bb8687e4"
+}
