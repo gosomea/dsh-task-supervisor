@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "frozen-keyless-label-and-cleanup-repair-v9",
+  "sourceCommit": "42790645616c81ea15536bdc31dae327590f2bab",
+  "previousReleaseSha256": "028008873c915edfe2b2164d01c250067e6ab8683fa7708b42aefc5c429d39f3",
+  "releaseSha256": "9510f60f4547f72d9952396256e705c20f19aa579ff17768b6b90f9f19b35ac5",
+  "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "tarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+  "planned": 24,
+  "alreadyDelivered": 11,
+  "alreadySealed": 11,
+  "modelRequestsInRejectedPreparation": 0,
+  "nextOriginalPosition": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "frozenRunnerFileCount": 89,
+  "unchangedPriorRunnerFiles": 86,
+  "changedRunnerFiles": {
+    "runner/sandbox-run/execution.py": "0cbfbd2c6c190a612e89cf1153bffb7e570af285d8a6eb725bce29e3d8f8a128",
+    "runner/sandbox-run/preparation_identity.py": "b28ca1e3b0a6b39153082e895768da0b51fdd3fe4edd2533b689a90cb8de81f7",
+    "runner/sandbox-run/test_preparation_identity.py": "e4cf0d2fa9e03cae3e3c40fa53552064eed7ca72ce0215acf16ca473e4b19d62"
+  },
+  "verifiedRuntimeFileCount": 19832,
+  "preservedRunJsonRecords": 1379,
+  "preservedSpecCount": 24,
+  "all24MetadataLabelsUniqueAndValid": true,
+  "acknowledgedSealedFaults": {
+    "lh-01-geo-shapeindex-serialization-plan-r2": "a60a6ac134be74b6ee88af0745a1f9ec4479abe5da808b0ec1cc62403a78c1ff",
+    "lh-06-updo-policy-alerting-supervisor-independent-r2": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+    "lh-12-updo-policy-alerting-supervisor-independent-r1": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd"
+  },
+  "protocolDeviation": {
+    "kind": "pre-delivery-recovered-gateway-cleanup-owner-correction",
+    "atUnix": 1791617025.469611,
+    "afterDeliveredPositions": 11,
+    "alreadySealedPositions": 11,
+    "supersededCandidateDeliveredModels": 0,
+    "originalPosition": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+    "agentReruns": 0,
+    "unchangedSpecs": true,
+    "unchangedOrder": true,
+    "unchangedPackageModelBudgetsAndScorer": true,
+    "sourceCommit": "42790645616c81ea15536bdc31dae327590f2bab"
+  },
+  "targetedTestsPassed": 64,
+  "keylessFixtureSha256": "38041556054bc7ce8aac156b9a9b4a9abac67f61b239a74a4318211a88b30e65",
+  "officialResultReplacements": 0,
+  "agentReruns": 0,
+  "nativeHostModified": false,
+  "dailyHostModified": false,
+  "npmPublish": false
+}

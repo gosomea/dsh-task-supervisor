@@ -161,6 +161,8 @@ All 62 targeted regressions passed. A real keyless OpenSandbox fixture reproduce
 
 A further ownership gap was found before delivery: the new gateway is created under the preparation child, while the previous shutdown path still selected the parent's historical gateway. Cleanup now derives the child from the parent reconciliation receipt hash and checks the child's prepared worker and gateway identities. Existing positions retain their original path. New positive and negative regressions invoke shutdown, verify selection of the child gateway and reject foreign directories, workers or leases; all 64 targeted tests pass. The first v8 candidate is preserved but has delivered no model request. This correction will be frozen separately; position 19 remains undelivered.
 
+The execution candidate is frozen as [v9](repair-v9.json), source `4279064`. [v8](repair-v8.json) and the [cleanup ownership correction](recovery-cleanup-owner-correction-v8.json) remain as pre-delivery evidence. All 64 regressions pass in the actual v9 copy. Its 89 runner files, 19,832 runtime inputs and server identity were verified; all 24 specs, order, package and 1,379 existing run JSON records are unchanged, and all 24 metadata labels are valid and unique. Execution resumes from the same undelivered position 19. v8 ran no formal Agent and the eleven sealed results are not replaced.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
