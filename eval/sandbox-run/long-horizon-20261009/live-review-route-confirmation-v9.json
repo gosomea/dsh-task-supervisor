@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-live-main-and-reviewer-route-confirmation",
+  "capturedAtUnix": 1791618476.239698,
+  "source": "native-monitor-export-and-route-audit",
+  "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "sessionId": "session-0355245d-f8b0-4424-b4aa-08100c329ddf",
+  "taskId": "8b81e757-2a22-4954-b992-c584f7ce8557",
+  "sandboxId": "90dc4c2b-bdbb-415e-8f1f-55cc1b1e315b",
+  "releaseSha256": "9510f60f4547f72d9952396256e705c20f19aa579ff17768b6b90f9f19b35ac5",
+  "originalDeadlineAtUnix": 1791627997.1605408,
+  "nativeExportSha256": "b0b1430efa24654806ce25a27e73b5fde983fa815ff752679ab277629481cbb6",
+  "routeAuditSha256": "3014fee9edf7be25c2ddbb5c1e50e159a2dc03c38bb95713cbf73099c33232c5",
+  "nativeExportLastSeq": 153,
+  "taskPhase": "reviewing",
+  "planVersion": 0,
+  "initialApprovalReceipts": 0,
+  "jobs": [
+    {
+      "id": "2b2ed611-8b7d-4a6e-9c98-cad69a3697e6",
+      "reviewerSessionId": "task-review-4dbd6a8f-2e00-4fc4-abe2-fa1bdc20738e",
+      "kind": "planning",
+      "status": "applied",
+      "attempt": 1,
+      "cutoff": 103,
+      "verdict": "pass",
+      "decisionSeq": 118
+    },
+    {
+      "id": "59127a23-0c9d-4088-bdce-c18a9c942f93",
+      "reviewerSessionId": "task-review-fd2bc1ca-5546-4ce9-a3a6-d1633209b8b2",
+      "kind": "plan",
+      "status": "applied",
+      "attempt": 1,
+      "cutoff": 118,
+      "verdict": "revise",
+      "decisionSeq": 110
+    },
+    {
+      "id": "5ecc0b7c-0519-4028-9af3-393b28a18017",
+      "reviewerSessionId": "task-review-1721fa65-d553-4438-ad54-e92f9d696b85",
+      "kind": "plan",
+      "status": "started",
+      "attempt": 1,
+      "cutoff": 142,
+      "verdict": null,
+      "decisionSeq": null
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": "session-0355245d-f8b0-4424-b4aa-08100c329ddf",
+      "eventTypes": {
+        "model-start": 11,
+        "http-request": 11,
+        "http-response": 11,
+        "model-finish": 11,
+        "model-end": 11
+      },
+      "requestModels": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "httpStatusCodes": {
+        "200": 11
+      },
+      "endpointMatchingEvents": 22
+    },
+    {
+      "sessionId": "task-review-4dbd6a8f-2e00-4fc4-abe2-fa1bdc20738e",
+      "eventTypes": {
+        "model-start": 16,
+        "http-request": 16,
+        "http-response": 16,
+        "model-finish": 16,
+        "model-end": 16
+      },
+      "requestModels": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "httpStatusCodes": {
+        "200": 16
+      },
+      "endpointMatchingEvents": 32
+    },
+    {
+      "sessionId": "task-review-fd2bc1ca-5546-4ce9-a3a6-d1633209b8b2",
+      "eventTypes": {
+        "model-start": 16,
+        "http-request": 16,
+        "http-response": 16,
+        "model-finish": 16,
+        "model-end": 16
+      },
+      "requestModels": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "httpStatusCodes": {
+        "200": 16
+      },
+      "endpointMatchingEvents": 32
+    },
+    {
+      "sessionId": "task-review-1721fa65-d553-4438-ad54-e92f9d696b85",
+      "eventTypes": {
+        "model-start": 11,
+        "http-request": 11,
+        "http-response": 11,
+        "model-finish": 10,
+        "model-end": 10
+      },
+      "requestModels": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "httpStatusCodes": {
+        "200": 11
+      },
+      "endpointMatchingEvents": 22
+    }
+  ],
+  "endpointMatchingCountIncludesRequestAndResponse": true,
+  "countsAsOfficialResult": false,
+  "rescueCount": 0
+}

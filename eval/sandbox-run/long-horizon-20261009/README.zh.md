@@ -165,6 +165,8 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 
 原位置 19 已完成恢复准备并真实投递：[运行身份核对](live-identity-confirmation-v9.json)交叉检查 SDK 的新标签、原位置及 Task／Session 绑定，确认新网关清理路径指向其准备子目录。捕获到主 Agent 九次实际 CodeBuddy HTTP 200 响应及八条持久回复，路由模型为 `deepseek-codebuddy / deepseek-v4.1-flash`；这是同 Session 的请求与回复证据，非仅模型选择。当前 12 个位置已启动、11 个封口，Superjson 正在规划，尚无首次批准或官方结果。该捕获只证明恢复后的正式投递与身份，不代表整题验收。
 
+`2026-10-10T07:47:56Z` 的[主 Agent 与审查者路由核对](live-review-route-confirmation-v9.json)补充了三场审查的实际请求身份：规划观察通过、首次计划裁决为 revise，主 Agent 随后提交的新计划正在审查；前两场均已有效应用，未触发故障重试或首次批准。主 Agent 有 11 次 HTTP 请求，三位审查者分别为 16、16、11 次，均带相同 CodeBuddy provider、模型及路由匹配证据。请求与响应的匹配事件分开计数，不把它们当成两倍请求数。原始捕获留在私有目录，公开记录只含身份、摘要与计数；此次仍处于规划／计划的日志审查阶段，尚未进入独立产物检查或官方评分。
+
 ## 环境交接与断点接续
 
 执行环境使用登记的 `colima-dsh-eval-rosetta` Docker context 和 `localhost:8090` OpenSandbox 服务。原生 DSH、模型路由、镜像、运行器、安装包及评分器身份均以冻结材料为准；不要在线选择最新依赖。日常 3080 不属于本批次资源。
