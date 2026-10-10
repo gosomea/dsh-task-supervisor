@@ -26,7 +26,7 @@ from native_fault import native_request_fault
 from instruction_identity import task_instruction_identity
 from native_completion import plan_completion_evidence
 from resource_observation import sample_private_storage
-from preparation_identity import metadata_recovery_journal, position_label
+from preparation_identity import metadata_recovery_journal, position_label, prepared_gateway_root
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from control_flow import controller_overlay, observe as native_observe, projection_values
@@ -373,7 +373,7 @@ def quiesce(runtime, box, rpc, started, spec, journal):
     except Exception as error: failed.append(type(error).__name__)
     ready = journal.read('prepared.json')
     if ready and ready.get('gateway'):
-        try: stop_gateway(ready['gateway'], root=journal.root / 'gateway')
+        try: stop_gateway(ready['gateway'], root=prepared_gateway_root(ready, journal))
         except Exception as error: failed.append(type(error).__name__)
     completion = None
     try:

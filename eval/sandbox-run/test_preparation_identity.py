@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from execution import prepare
 from monitor import Journal
 from opensandbox_runtime import OpenSandboxRuntime
-from preparation_identity import file_digest, metadata_recovery_journal, position_label
+from preparation_identity import file_digest, metadata_recovery_journal, position_label, prepared_gateway_root
 
 
 class MetadataIdentityTests(TestCase):
@@ -132,3 +132,29 @@ class ReconciledPreparationTests(TestCase):
             with self.assertRaisesRegex(RuntimeError, 'cleanup'):
                 metadata_recovery_journal(self.spec, journal)
             path.write_bytes(original)
+
+    def test_cleanup_selects_the_recovered_gateway_owner(self):
+        self.assertEqual(prepared_gateway_root({}, self.journal), self.journal.root / 'gateway')
+        self.write_receipt(); child = metadata_recovery_journal(self.spec, self.journal)
+        ready = {'specSha256': self.spec_sha, 'sandboxId': 'original-child', 'gateway': {'lease': 'new-child-lease'}}
+        child.write('prepared.json', ready)
+        promoted = {**ready, 'preparationRecovery': {'attemptDirectory': str(child.root), 'modelRequests': 0}}
+        self.assertEqual(prepared_gateway_root(promoted, self.journal), child.root / 'gateway')
+        with patch('execution.checked'), patch('execution.stop_gateway') as stop, patch('execution.time.sleep'):
+            runtime = Mock(spec=OpenSandboxRuntime); runtime.exec.return_value = (1, '', '')
+            rpc = Mock(); rpc.list_sessions.return_value = {'items': []}
+            self.journal.write('prepared.json', promoted)
+            from execution import quiesce
+            quiesce(runtime, Mock(id='original-child'), rpc, {'sessionId': 'sid'}, self.spec, self.journal)
+            self.assertEqual(stop.call_args.kwargs['root'], child.root / 'gateway')
+            self.assertEqual(stop.call_args.args[0]['lease'], 'new-child-lease')
+
+    def test_cleanup_rejects_a_foreign_directory_gateway_or_worker(self):
+        self.write_receipt(); child = metadata_recovery_journal(self.spec, self.journal)
+        ready = {'specSha256': self.spec_sha, 'sandboxId': 'owned', 'gateway': {'lease': 'owned'}}
+        child.write('prepared.json', ready)
+        promoted = {**ready, 'preparationRecovery': {'attemptDirectory': str(child.root)}}
+        for bad in ({**promoted, 'preparationRecovery': {'attemptDirectory': '/foreign'}},
+                    {**promoted, 'gateway': {'lease': 'foreign'}}, {**promoted, 'sandboxId': 'foreign'}):
+            with self.subTest(bad=bad), self.assertRaisesRegex(RuntimeError, 'differs'):
+                prepared_gateway_root(bad, self.journal)

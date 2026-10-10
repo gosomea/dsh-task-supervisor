@@ -16,6 +16,19 @@ def file_digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def prepared_gateway_root(ready, journal):
+    recovery = ready.get('preparationRecovery')
+    if not recovery:
+        return journal.root / 'gateway'
+    child = journal.root / 'preparation-recovery' / file_digest(journal.root / 'preparation-reconciliation.json')
+    if recovery.get('attemptDirectory') != str(child):
+        raise RuntimeError('recovered preparation directory differs')
+    original = json.loads((child / 'prepared.json').read_text())
+    if any(original.get(key) != ready.get(key) for key in ('specSha256', 'sandboxId', 'gateway')):
+        raise RuntimeError('recovered gateway or worker ownership differs')
+    return child / 'gateway'
+
+
 def metadata_recovery_journal(spec, journal):
     """No implicit retry of a create request whose allocation is unknown."""
     receipt = journal.read('preparation-reconciliation.json')

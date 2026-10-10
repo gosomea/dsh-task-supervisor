@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "pre-delivery-recovered-gateway-cleanup-owner-correction",
+  "supersededReleaseSha256": "028008873c915edfe2b2164d01c250067e6ab8683fa7708b42aefc5c429d39f3",
+  "supersededPublicFreezeSha256": "9055f76ebe014f8068321ac3a0d45abb08cb52797847b447e3f36cd70f10ae13",
+  "supersededCandidateDeliveredModels": 0,
+  "nextOriginalPosition": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "currentStarted": false,
+  "scope": "select preparation child gateway using the exact parent reconciliation and child prepared identities",
+  "targetedTestsPassed": 64,
+  "changedSourcesSha256": {
+    "execution.py": "0cbfbd2c6c190a612e89cf1153bffb7e570af285d8a6eb725bce29e3d8f8a128",
+    "preparation_identity.py": "b28ca1e3b0a6b39153082e895768da0b51fdd3fe4edd2533b689a90cb8de81f7",
+    "test_preparation_identity.py": "e4cf0d2fa9e03cae3e3c40fa53552064eed7ca72ce0215acf16ca473e4b19d62"
+  },
+  "agentReruns": 0,
+  "oldResultsPreserved": true,
+  "nativeHostModified": false,
+  "nextFreezeRequired": true
+}

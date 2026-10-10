@@ -159,6 +159,8 @@ Only the sandbox `position` label changes: valid short IDs are preserved, while 
 
 All 62 targeted regressions passed. A real keyless OpenSandbox fixture reproduced the long-label HTTP 400, accepted the mapped label in the frozen image, ran one command and cleaned up; it is not a formal score. Position 19 is still undelivered and remains in the full denominator. Resume will use that same position, without rerunning position 18. The runner change will be frozen separately as a protocol deviation, preserving v7 and all existing result and preparation records.
 
+A further ownership gap was found before delivery: the new gateway is created under the preparation child, while the previous shutdown path still selected the parent's historical gateway. Cleanup now derives the child from the parent reconciliation receipt hash and checks the child's prepared worker and gateway identities. Existing positions retain their original path. New positive and negative regressions invoke shutdown, verify selection of the child gateway and reject foreign directories, workers or leases; all 64 targeted tests pass. The first v8 candidate is preserved but has delivered no model request. This correction will be frozen separately; position 19 remains undelivered.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
