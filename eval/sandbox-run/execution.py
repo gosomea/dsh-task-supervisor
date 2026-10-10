@@ -26,6 +26,7 @@ from native_fault import native_request_fault
 from instruction_identity import task_instruction_identity
 from native_completion import plan_completion_evidence
 from resource_observation import sample_private_storage
+from preparation_identity import metadata_recovery_journal, position_label
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from control_flow import controller_overlay, observe as native_observe, projection_values
@@ -103,7 +104,14 @@ def prepare(runtime, spec, journal):
         box = runtime.connect(original['sandboxId'])
         return box, RuntimeDshRpc(runtime, box), original
     if journal.read('prepare-intent.json'):
-        raise RuntimeError('uncertain preparation: reconcile original resource; no new sandbox')
+        recovered = metadata_recovery_journal(spec, journal)
+        if not recovered.read('prepared.json'):
+            runtime.assert_no_worker_metadata((spec['id'], position_label(spec['id'])))
+        box, rpc, ready = prepare(runtime, spec, recovered)
+        original = journal.write('prepared.json', {**ready,
+            'preparationRecovery': {'source': 'evaluation-protocol-runner-repair',
+                                    'attemptDirectory': str(recovered.root), 'modelRequests': 0}})
+        return box, rpc, original
     journal.write('prepare-intent.json', {'specSha256': hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest(),
         'source': 'evaluation-protocol', 'modelRequests': 0, 'id': spec['id']})
     gateway = None
@@ -114,7 +122,7 @@ def prepare(runtime, spec, journal):
             check_image=spec['checkImage'], tarball=Path(spec['tarball']), root=journal.root / 'gateway',
             deadline_at=lease_end, platform=spec.get('adminPlatform', 'linux/arm64'))
     try:
-        box = runtime.create(image=None, snapshot_id=spec['snapshotId'], metadata={'role': 'long-horizon-worker', 'position': spec['id']},
+        box = runtime.create(image=None, snapshot_id=spec['snapshotId'], metadata={'role': 'long-horizon-worker', 'position': position_label(spec['id'])},
             network_policy='allow', timeout_minutes=60, cpu=str(spec['mainCpus']),
             memory=str(spec['mainMemoryMiB']) + 'Mi', platform=spec.get('platform'),
             volumes=gateway['workerVolumes'] if gateway else None)
@@ -123,7 +131,8 @@ def prepare(runtime, spec, journal):
             'stage': 'sandbox-create', 'automaticRelaunchAllowed': False})
         if gateway: stop_gateway(gateway, root=journal.root / 'gateway')
         raise
-    journal.write('sandbox-created.json', {'sandboxId': box.id, 'id': spec['id'], 'gateway': gateway})
+    journal.write('sandbox-created.json', {'sandboxId': box.id, 'id': spec['id'],
+        'positionLabel': position_label(spec['id']), 'gateway': gateway})
     try:
         for name, sha in spec.get('baselineFiles', {}).items():
             if hashlib.sha256(runtime.read(box, spec['cwd'] + '/' + name)).hexdigest() != sha:

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-supervisor-independent-stage-timeout",
+  "id": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+  "resultSha256": "0ebc1f4b846e2e6019872f368e17ee062e2c4a090dc39402d9db485539f81cb8",
+  "runtimeReleaseSha256": "2cd0c214396f143e07b7e96a77a8a3972651bdefbb34cfe94b7d4d8fa7163062",
+  "sessionId": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+  "taskId": "8ed878a5-ce5e-4cf4-8c0b-39ab93878978",
+  "official": {
+    "reward": 0,
+    "F2P": {
+      "total": 38,
+      "passed": 0,
+      "failed": 38
+    },
+    "P2P": {
+      "total": 172,
+      "passed": 172,
+      "failed": 0
+    },
+    "cleanupConfirmed": true,
+    "separateEnvironmentObserved": true
+  },
+  "committedPatchBytes": 0,
+  "uncommittedPatchSubmitted": false,
+  "strictSuccess": false,
+  "firstStopReason": "internal-review-fault",
+  "infrastructureFault": false,
+  "humanRescueActions": 0,
+  "initialApprovalReceipts": 1,
+  "originalDeadlineAtUnix": 1791608806.4716318,
+  "wholeElapsedSec": 6784.882842302322,
+  "reviewJobKinds": {
+    "planning": 3,
+    "plan": 1,
+    "progress": 7,
+    "stage": 1
+  },
+  "stage": {
+    "jobId": "cb43effc-0e0c-4208-8dc8-d8e1db15a605",
+    "reviewerSessionId": "task-review-d145ed5f-4d12-484a-b3d5-5120b0cfd24a",
+    "cutoff": 1003,
+    "nodeAttempt": 1,
+    "requirementsVersion": 1,
+    "attempts": 2,
+    "recordedIdentityTuples": 1,
+    "materializedSnapshotIds": 1,
+    "recordsBeforeSnapshotMaterialization": 2,
+    "faultCodes": [
+      "timeout",
+      "timeout"
+    ],
+    "verificationPhase": "independent",
+    "plannedChecks": 8,
+    "commandChecks": 24,
+    "artifactReadRecords": 21,
+    "recordedIndependentCheckResults": 0,
+    "comparisonReached": false,
+    "decisionApplied": false
+  },
+  "taskFaultRetryReservations": 1,
+  "allSessionTokens": null,
+  "tokensReportedLowerBound": {
+    "uncachedInputTokens": 1423339,
+    "outputTokens": 987040,
+    "cacheReadTokens": 40505597,
+    "cacheWriteTokens": 0
+  },
+  "unreportedAttempts": 1,
+  "requestCount": 466,
+  "toolCallsAllSessions": 655,
+  "reviewToolCalls": 474,
+  "reviewReadFailures": 8,
+  "repeatedExactReads": 0,
+  "checkWaitMs": 146211.0,
+  "falseAcceptanceRate": null,
+  "falsePauseRate": null,
+  "correctionBenefit": null
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "kind": "keyless-metadata-label-admission-repair",
+  "formalPositionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "originalReleaseSha256": "2cd0c214396f143e07b7e96a77a8a3972651bdefbb34cfe94b7d4d8fa7163062",
+  "originalPositionLength": 67,
+  "serverLabelMaximum": 63,
+  "errorCode": "SANDBOX::INVALID_METADATA_LABEL",
+  "httpStatus": 400,
+  "modelRequests": 0,
+  "originalAgentDelivered": false,
+  "officialScoreApplicable": false,
+  "faultRecordPreserved": true,
+  "oldIntentPreserved": true,
+  "originalAllocationAbsent": true,
+  "gatewayCleanupConfirmed": true,
+  "rawPositionIdPreserved": true,
+  "positionLabel": "lh-188d97d8227a5beec8bb1640fbfb3419d8e1f5567e281da3e3f5fe7dc3b6",
+  "labelAlgorithm": "lh-prefix-and-first-60-sha256-hex",
+  "reconciliationSha256": "1d702678ef35bd4f1f117195c939a541007cff33c3f18d1058762165b97b2966",
+  "rejectionEvidenceSha256": "72d3e8eba36a88186cc2940fdabf6a876b397d85df1be7e23abe81d0e18014a8",
+  "privateSdkLogSha256": "5be6cac461fc8708fbd8090f2cfbc2d521353e419676ca1279e6435e4f362c57",
+  "fixtureSha256": "38041556054bc7ce8aac156b9a9b4a9abac67f61b239a74a4318211a88b30e65",
+  "fixture": {
+    "originalRejected400": true,
+    "mappedLabelAccepted": true,
+    "actualCommandExitCode": 0,
+    "modelRequests": 0,
+    "resourcesRemoved": true,
+    "countsAsFormalResult": false
+  },
+  "recovery": {
+    "explicitReconciliationRequired": true,
+    "maximumNewPreparationAttempts": 1,
+    "unknownAllocationCannotRetry": true,
+    "existingChildReadyReconnects": true,
+    "originalInputsAndAuthorizationUnchanged": true
+  },
+  "targetedTestsPassed": 62,
+  "limitations": [
+    "server-access-log-omits-request-id"
+  ]
+}

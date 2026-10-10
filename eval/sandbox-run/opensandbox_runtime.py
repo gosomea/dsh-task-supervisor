@@ -68,6 +68,20 @@ class OpenSandboxRuntime:
     def info(self, sandbox: SandboxRef) -> dict:
         return self._boxes[sandbox.id].get_info().model_dump(mode="json")
 
+    def assert_no_worker_metadata(self, positions) -> None:
+        """Reconcile a rejected create before any new keyless allocation."""
+        from opensandbox.models.sandboxes import SandboxFilter
+
+        page = 1
+        while True:
+            result = self._manager.list_sandbox_infos(SandboxFilter(
+                metadata={'role': 'long-horizon-worker'}, page=page, page_size=100))
+            if any((row.metadata or {}).get('position') in positions for row in result.sandbox_infos):
+                raise RuntimeError('original or repaired worker already exists; reconcile its identity')
+            if not result.pagination.has_next_page:
+                return
+            page += 1
+
     def renew_until(self, sandbox: SandboxRef, expires_at: datetime) -> None:
         remaining = expires_at - datetime.now(timezone.utc)
         if remaining.total_seconds() <= 0:

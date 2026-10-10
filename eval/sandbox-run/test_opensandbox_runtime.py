@@ -64,3 +64,22 @@ class RuntimeTests(TestCase):
         with self.assertRaises(ValueError):
             self.runtime.renew_until(SandboxRef("one"), datetime.now(timezone.utc) - timedelta(seconds=1))
         self.box.renew.assert_not_called()
+
+    def test_preparation_reconciliation_reads_every_page_and_never_creates(self):
+        first = Mock(sandbox_infos=[Mock(metadata={'position': 'unrelated'})],
+                     pagination=Mock(has_next_page=True))
+        second = Mock(sandbox_infos=[], pagination=Mock(has_next_page=False))
+        self.runtime._manager.list_sandbox_infos.side_effect = [first, second]
+        self.runtime.assert_no_worker_metadata(('original', 'mapped'))
+        filters = [call.args[0] for call in self.runtime._manager.list_sandbox_infos.call_args_list]
+        self.assertEqual([f.page for f in filters], [1, 2])
+        self.assertEqual(filters[0].metadata, {'role': 'long-horizon-worker'})
+        self.assertFalse(self.runtime._owned)
+
+    def test_preparation_reconciliation_rejects_original_or_mapped_resources(self):
+        for position in ('original', 'mapped'):
+            with self.subTest(position=position):
+                self.runtime._manager.list_sandbox_infos.return_value = Mock(
+                    sandbox_infos=[Mock(metadata={'position': position})], pagination=Mock(has_next_page=False))
+                with self.assertRaisesRegex(RuntimeError, 'already exists'):
+                    self.runtime.assert_no_worker_metadata(('original', 'mapped'))

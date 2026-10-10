@@ -1,0 +1,4579 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-long-horizon-public-comparison",
+  "seed": "dsh-opensandbox-long-horizon-v1",
+  "planned": 24,
+  "sealed": 11,
+  "complete": false,
+  "conditions": {
+    "goal": {
+      "planned": 8,
+      "sealed": 0,
+      "notDelivered": 8,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 0,
+      "rewardZero": 0,
+      "rewardUnknown": 0,
+      "firstStopReasons": {},
+      "infrastructureFaults": 0,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 0,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": null,
+      "metrics": {
+        "requestCount": null,
+        "reviewToolCalls": null,
+        "repeatedExactReads": null,
+        "reviewReadFailures": null,
+        "recordedIndependentCheckResults": null,
+        "taskFaultRetryReservations": null,
+        "taskTruncationReservations": null,
+        "reviewProtocolSubmissions": null,
+        "checkWaitMs": null,
+        "wholeElapsedSec": null,
+        "protocolUserActions": null,
+        "toolCallsAllSessions": null,
+        "contextCompactions": null,
+        "contextCompactionAttempts": null
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "plan": {
+      "planned": 8,
+      "sealed": 5,
+      "notDelivered": 3,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 0,
+      "rewardZero": 4,
+      "rewardUnknown": 1,
+      "firstStopReasons": {
+        "native-upstream-fault": 1,
+        "controller-complete": 2,
+        "native-stop": 2
+      },
+      "infrastructureFaults": 1,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 2,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 545593,
+        "outputTokens": 1094115,
+        "cacheReadTokens": 21669120,
+        "cacheWriteTokens": 0
+      },
+      "metrics": {
+        "requestCount": 350,
+        "reviewToolCalls": 0,
+        "repeatedExactReads": 0,
+        "reviewReadFailures": 0,
+        "recordedIndependentCheckResults": 0,
+        "taskFaultRetryReservations": 0,
+        "taskTruncationReservations": 0,
+        "reviewProtocolSubmissions": 0,
+        "checkWaitMs": null,
+        "wholeElapsedSec": 11295.584193229675,
+        "protocolUserActions": 7,
+        "toolCallsAllSessions": 476,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    },
+    "supervisor-independent": {
+      "planned": 8,
+      "sealed": 6,
+      "notDelivered": 2,
+      "startedNotSealed": 0,
+      "strictSuccesses": 0,
+      "strictSuccessRateFullDenominator": 0.0,
+      "rewardOne": 1,
+      "rewardZero": 3,
+      "rewardUnknown": 2,
+      "firstStopReasons": {
+        "infrastructure-fault": 2,
+        "internal-review-fault": 2,
+        "recovery-budget": 1,
+        "deadline": 1
+      },
+      "infrastructureFaults": 2,
+      "gradingFaults": 0,
+      "announcedCompleteOfficialFailed": 0,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 5385032,
+        "outputTokens": 3575164,
+        "cacheReadTokens": 132664573,
+        "cacheWriteTokens": 0
+      },
+      "metrics": {
+        "requestCount": 1754,
+        "reviewToolCalls": 1958,
+        "repeatedExactReads": 17,
+        "reviewReadFailures": 42,
+        "recordedIndependentCheckResults": 50,
+        "taskFaultRetryReservations": 8,
+        "taskTruncationReservations": 0,
+        "reviewProtocolSubmissions": 0,
+        "checkWaitMs": null,
+        "wholeElapsedSec": 33006.69656300545,
+        "protocolUserActions": 10,
+        "toolCallsAllSessions": 2572,
+        "contextCompactions": 0,
+        "contextCompactionAttempts": 0
+      },
+      "falseAcceptanceRate": null,
+      "falsePauseRate": null,
+      "correctionBenefit": null
+    }
+  },
+  "pairedTasks": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-10-geo-shapeindex-serialization-goal-r2",
+            "lh-20-geo-shapeindex-serialization-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-01-geo-shapeindex-serialization-plan-r2",
+            "lh-04-geo-shapeindex-serialization-plan-r1"
+          ],
+          "strictSuccessRate": 0,
+          "rewards": [
+            null,
+            0
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+            "lh-11-geo-shapeindex-serialization-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": 0,
+          "rewards": [
+            1,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-13-koota-pair-relation-tracking-goal-r2",
+            "lh-16-koota-pair-relation-tracking-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-03-koota-pair-relation-tracking-plan-r2",
+            "lh-22-koota-pair-relation-tracking-plan-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            0,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+            "lh-18-koota-pair-relation-tracking-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": 0,
+          "rewards": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-09-superjson-error-stack-serialization-goal-r1",
+            "lh-24-superjson-error-stack-serialization-goal-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-02-superjson-error-stack-serialization-plan-r1",
+            "lh-17-superjson-error-stack-serialization-plan-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            0,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+            "lh-23-superjson-error-stack-serialization-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "conditions": {
+        "goal": {
+          "positions": [
+            "lh-14-updo-policy-alerting-goal-r2",
+            "lh-21-updo-policy-alerting-goal-r1"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            null,
+            null
+          ]
+        },
+        "plan": {
+          "positions": [
+            "lh-05-updo-policy-alerting-plan-r1",
+            "lh-15-updo-policy-alerting-plan-r2"
+          ],
+          "strictSuccessRate": null,
+          "rewards": [
+            0,
+            null
+          ]
+        },
+        "supervisor-independent": {
+          "positions": [
+            "lh-06-updo-policy-alerting-supervisor-independent-r2",
+            "lh-12-updo-policy-alerting-supervisor-independent-r1"
+          ],
+          "strictSuccessRate": 0,
+          "rewards": [
+            null,
+            null
+          ]
+        }
+      }
+    }
+  ],
+  "comparisons": {
+    "goal": {
+      "pairedTaskCount": 0,
+      "taskDifferences": [],
+      "meanStrictSuccessDifference": null,
+      "taskClusterBootstrap95Percent": null,
+      "interpretation": "exploratory small sample; four tasks, repetitions are paired, no general long-horizon claim"
+    },
+    "plan": {
+      "pairedTaskCount": 1,
+      "taskDifferences": [
+        0
+      ],
+      "meanStrictSuccessDifference": 0,
+      "taskClusterBootstrap95Percent": null,
+      "interpretation": "exploratory small sample; four tasks, repetitions are paired, no general long-horizon claim"
+    }
+  },
+  "positions": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "00507ba4decfb1660871ac6418d67bff2abd70df013affb62ee8b4a0e163d12e",
+      "id": "lh-01-geo-shapeindex-serialization-plan-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-01-geo-shapeindex-serialization-plan-r2",
+        "condition": "plan",
+        "taskId": "geo-shapeindex-serialization",
+        "repeat": 2,
+        "formal": true,
+        "reward": null,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": {
+            "kind": "settled-native-request-fault",
+            "condition": "plan",
+            "errorCode": "SERVER",
+            "controllerSourceSha256": "2f2d425c3bf6ed553cf8488ee699a9121d48b65c9b160cd99aefc5a73a5b656d",
+            "basis": "native-turn-error-and-empty-queues",
+            "seq": 250,
+            "turn": 1,
+            "nativeStoppedAtUnix": 1791554967.387
+          },
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-b7306e79-cd29-4416-a652-12002f1a66c8",
+          "firstStopReason": "native-upstream-fault",
+          "atUnix": 1791557833.1800802,
+          "deadlineAtUnix": 1791565150.329726,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": true
+        },
+        "officialGrade": {
+          "scored": false,
+          "cleanupConfirmed": false,
+          "separateEnvironmentObserved": false,
+          "reward": null,
+          "fault": null,
+          "tests": null,
+          "execution": null,
+          "evidenceSha256": {},
+          "officialFilesSha256": {},
+          "imageDigest": null,
+          "architecture": null,
+          "F2P": null,
+          "P2P": null
+        },
+        "metrics": {
+          "unreportedAttempts": 6,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 42,
+          "toolCallsAllSessions": 52,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 3482.850354194641,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 84648,
+            "outputTokens": 18995,
+            "cacheReadTokens": 1954560,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-b7306e79-cd29-4416-a652-12002f1a66c8",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 84648,
+                "outputTokens": 18995,
+                "cacheReadTokens": 1954560,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 42,
+                "unreportedAttempts": 6,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "d5d369cd31666c4d94803e80b92aecacc3f46c5275e5d80c513e672aafe7247d",
+          "session-evidence.tar": "ae37701361de6de3b5a5b9861a727a02cc78ce16ccd6e029eed3cdb69164ce48",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "734b69ce883aef8fe356667723e67f9472a1a65eca1c37ac9d27e8b5f2a61750"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "a60a6ac134be74b6ee88af0745a1f9ec4479abe5da808b0ec1cc62403a78c1ff",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "error": 1
+        },
+        "allModelSteps": 37,
+        "allToolCalls": 52,
+        "allToolErrors": 2,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-b7306e79-cd29-4416-a652-12002f1a66c8",
+            "role": "main",
+            "events": 251,
+            "turns": 1,
+            "modelSteps": 37,
+            "turnEndReasons": {
+              "error": 1
+            },
+            "requestRetries": 5,
+            "toolCalls": 52,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "3de3ef143d5d402cc343cffe1992ed113e04cfbc46ec0ec2edd0e24840fb2e8e"
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "03e8d19db2df31fb20f830f6d464ee78c67a9b8c85aa23f6be590ebc8a3adc2b",
+      "id": "lh-02-superjson-error-stack-serialization-plan-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-02-superjson-error-stack-serialization-plan-r1",
+        "condition": "plan",
+        "taskId": "superjson-error-stack-serialization",
+        "repeat": 1,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": {
+            "kind": "native-plan-turn-completed",
+            "condition": null,
+            "errorCode": null,
+            "controllerSourceSha256": "2f2d425c3bf6ed553cf8488ee699a9121d48b65c9b160cd99aefc5a73a5b656d",
+            "basis": "completed-current-turn-and-empty-queues",
+            "seq": 580,
+            "turn": 1,
+            "nativeStoppedAtUnix": 1791560982.206
+          },
+          "sessionId": "session-9f275e6b-04c6-4ef4-953a-dec35a1f396c",
+          "firstStopReason": "controller-complete",
+          "atUnix": 1791561096.937472,
+          "deadlineAtUnix": 1791569662.656213,
+          "rescueCount": 0,
+          "controllerComplete": true,
+          "finishedBeforeDeadline": true,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 196,
+            "passed": 195,
+            "failed": 1,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 196,
+            "missingResultPositions": 0,
+            "positionsWithResult": 196
+          },
+          "evidenceSha256": {
+            "trialResult": "01eee20bfa562ac7a07782daabb829429587b7b7ac80182af96dcbd180a1f59b",
+            "testReport": "97f4cf482f553f38e9f627a750c61e06ab7539040d43c8488b95439a311736f2"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "cb5e04f0f6c01180a47f1205b6d86126a8a7f9e7d5662e4f9477daa862826e30",
+            "task.toml": "c808502b1f72060e23e3ac7885b6edd8fa49ad68f2e175f017d560222145cd33"
+          },
+          "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 80,
+            "passed": 79,
+            "failed": 1,
+            "rate": 0.9875
+          },
+          "P2P": {
+            "total": 116,
+            "passed": 116,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 0,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 100,
+          "toolCallsAllSessions": 123,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 2234.281259059906,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": {
+            "uncachedInputTokens": 127112,
+            "outputTokens": 402240,
+            "cacheReadTokens": 5513344,
+            "cacheWriteTokens": 0
+          },
+          "tokensReported": {
+            "uncachedInputTokens": 127112,
+            "outputTokens": 402240,
+            "cacheReadTokens": 5513344,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": true,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-9f275e6b-04c6-4ef4-953a-dec35a1f396c",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 127112,
+                "outputTokens": 402240,
+                "cacheReadTokens": 5513344,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 100,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "f21f5201d2e722744dfca8a0b1b6a26411e60a7d6b69d12b4d773885d2a0ea6a",
+          "session-evidence.tar": "3e30418e4f17a09731a7e0b724c02d83b1751d79f2ea45a53e9ffead288dd4ef",
+          "model.patch": "416d419399a4ca8a83155e1c2b29d72cf341ff8cf53017b4e175326b42325dfc",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "a3761ab929d9a1ee37537f52a16321fe4f4156e6c0265318c16eb0d5c7ab7236"
+        },
+        "announcedCompleteOfficialFailed": true,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "f1300e60175f595551038ccedcfc2a74d3d19a803ecfed76c8d6d330ec4a4b35",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "completed": 1
+        },
+        "allModelSteps": 100,
+        "allToolCalls": 123,
+        "allToolErrors": 2,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-9f275e6b-04c6-4ef4-953a-dec35a1f396c",
+            "role": "main",
+            "events": 581,
+            "turns": 1,
+            "modelSteps": 100,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 123,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "d54725a5633e9beefed9d0ca4c1727daa9484d010dd96432aa6669219a690812"
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "0c914f76f25035ed63aba49408b9cc66de5ed52899ca8aea5b4510018feffbf1",
+      "id": "lh-03-koota-pair-relation-tracking-plan-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-03-koota-pair-relation-tracking-plan-r2",
+        "condition": "plan",
+        "taskId": "koota-pair-relation-tracking",
+        "repeat": 2,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-435b80c6-2190-4e3b-9854-eba6c2feaf33",
+          "firstStopReason": "native-stop",
+          "atUnix": 1791562812.254936,
+          "deadlineAtUnix": 1791571953.787445,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 210,
+            "passed": 172,
+            "failed": 38,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 210,
+            "missingResultPositions": 0,
+            "positionsWithResult": 210
+          },
+          "evidenceSha256": {
+            "trialResult": "a4a1eda11ff583c02c0aa010c499e1aceaa2a8ccfc83e6943f2b818eb59a8a1b",
+            "testReport": "8f867b86dc72737a9786ae295b0abda792e525bafb5fcb75cef8565c52e2bbea"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "7b15510d617d38ac1fab6cdf902aa577aedb34516e047bd469f4e8ec868d778b",
+            "task.toml": "2990c6c0dc3c0877b008a92b20427395ab3bcc520651e4d5dcfe784a3b486935"
+          },
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 38,
+            "passed": 0,
+            "failed": 38,
+            "rate": 0.0
+          },
+          "P2P": {
+            "total": 172,
+            "passed": 172,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 0,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 71,
+          "toolCallsAllSessions": 114,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 1658.4674909114838,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": {
+            "uncachedInputTokens": 97802,
+            "outputTokens": 288829,
+            "cacheReadTokens": 5032192,
+            "cacheWriteTokens": 0
+          },
+          "tokensReported": {
+            "uncachedInputTokens": 97802,
+            "outputTokens": 288829,
+            "cacheReadTokens": 5032192,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": true,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-435b80c6-2190-4e3b-9854-eba6c2feaf33",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 97802,
+                "outputTokens": 288829,
+                "cacheReadTokens": 5032192,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 71,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "1442cebdd6f989a46713a42d66552073de48289930060e894b615adbac1915b6",
+          "session-evidence.tar": "bcda779f3578a6239928b55ab5c9bc414ee1de3b730121bc3de39fb7b6ede156",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "f6af98a2a32dbb64e5c320333c9000752bfddc8ee61f0f7db3b38723c596264d"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "f146e13b82124668745e9cd15b568431766c2675089d1f166d7f23258fdc932e",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "max-tokens": 1
+        },
+        "allModelSteps": 71,
+        "allToolCalls": 114,
+        "allToolErrors": 3,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-435b80c6-2190-4e3b-9854-eba6c2feaf33",
+            "role": "main",
+            "events": 463,
+            "turns": 1,
+            "modelSteps": 71,
+            "turnEndReasons": {
+              "max-tokens": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 114,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "d3d4683ed573d16b782f7a8d8a0d1c431fc93a34783cba8f6e1e1f3ddbd63795"
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "0f41c27c214ede7ddf72d83ad5d2bb323680015ef473c3a0b07887fe130e48be",
+      "id": "lh-04-geo-shapeindex-serialization-plan-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-04-geo-shapeindex-serialization-plan-r1",
+        "condition": "plan",
+        "taskId": "geo-shapeindex-serialization",
+        "repeat": 1,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-87563fe0-d231-4a3f-81c8-f45187075908",
+          "firstStopReason": "native-stop",
+          "atUnix": 1791563510.299724,
+          "deadlineAtUnix": 1791573686.432502,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 623,
+            "passed": 599,
+            "failed": 24,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 623,
+            "missingResultPositions": 24,
+            "positionsWithResult": 599
+          },
+          "evidenceSha256": {
+            "trialResult": "ff82cfed0b1d4f759f715ad7738bdea415ce0d42153bfa0fe3c665842a33f584",
+            "testReport": "37b94980f1d3185750d00efc205efa579aceabf8fd4e38419faeb9c4d1b38372"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+            "task.toml": "a95140adb066b732b69b8485392576cf89e0cf22a0d7028ad5d9d08f37c08f29"
+          },
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 24,
+            "passed": 0,
+            "failed": 24,
+            "rate": 0.0
+          },
+          "P2P": {
+            "total": 599,
+            "passed": 599,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 0,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 24,
+          "toolCallsAllSessions": 43,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 623.867222070694,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": {
+            "uncachedInputTokens": 73414,
+            "outputTokens": 100580,
+            "cacheReadTokens": 1251584,
+            "cacheWriteTokens": 0
+          },
+          "tokensReported": {
+            "uncachedInputTokens": 73414,
+            "outputTokens": 100580,
+            "cacheReadTokens": 1251584,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": true,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-87563fe0-d231-4a3f-81c8-f45187075908",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 73414,
+                "outputTokens": 100580,
+                "cacheReadTokens": 1251584,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 24,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "d5d369cd31666c4d94803e80b92aecacc3f46c5275e5d80c513e672aafe7247d",
+          "session-evidence.tar": "59bf7267e73c3f5851498ae4c64eed875583b1ca600b7c57c5fb9ed3724f888b",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "734b69ce883aef8fe356667723e67f9472a1a65eca1c37ac9d27e8b5f2a61750"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "22a0f95cac75753b94806a6fce0ca086c2486ea7fed37a7d1f5f77a1e83c023f",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "max-tokens": 1
+        },
+        "allModelSteps": 24,
+        "allToolCalls": 43,
+        "allToolErrors": 2,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-87563fe0-d231-4a3f-81c8-f45187075908",
+            "role": "main",
+            "events": 179,
+            "turns": 1,
+            "modelSteps": 24,
+            "turnEndReasons": {
+              "max-tokens": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 43,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "c85778c37de100b1f7545f161b1effbf4bda56a939d2bcc1884134195323fd97"
+      }
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "1e7cd2412a284c4670f8b8fa01c85923541a28087d0253eb10de3a3e318fcf21",
+      "id": "lh-05-updo-policy-alerting-plan-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-05-updo-policy-alerting-plan-r1",
+        "condition": "plan",
+        "taskId": "updo-policy-alerting",
+        "repeat": 1,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": {
+            "kind": "native-plan-turn-completed",
+            "condition": null,
+            "errorCode": null,
+            "controllerSourceSha256": "2f2d425c3bf6ed553cf8488ee699a9121d48b65c9b160cd99aefc5a73a5b656d",
+            "basis": "completed-current-turn-and-empty-queues",
+            "seq": 666,
+            "turn": 1,
+            "nativeStoppedAtUnix": 1791566865.409
+          },
+          "sessionId": "session-ddeb76ea-8786-49db-91ac-d5800910ea20",
+          "firstStopReason": "controller-complete",
+          "atUnix": 1791566905.363203,
+          "deadlineAtUnix": 1791574409.245336,
+          "rescueCount": 0,
+          "controllerComplete": true,
+          "finishedBeforeDeadline": true,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 140,
+            "passed": 139,
+            "failed": 1,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 140,
+            "missingResultPositions": 0,
+            "positionsWithResult": 140
+          },
+          "evidenceSha256": {
+            "trialResult": "4a94a18c9d19844630aaf38831dabccbcb0b086e0a2fd0fbd757a46755aff4fc",
+            "testReport": "69b607484b69f1aa29f2dc128fb3f9428e051861ed1ae439d55335d5fef51c46"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "5f57493c1865cf900c66f0b505499e2e58c3cfe2da297d43ce3b89b95ec47ff5",
+            "task.toml": "f584a697621fbaf7bd8b2e8244eb1be70cb151030b005fd4ea89e4e8a68ce9ad"
+          },
+          "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 17,
+            "passed": 16,
+            "failed": 1,
+            "rate": 0.9411764705882353
+          },
+          "P2P": {
+            "total": 123,
+            "passed": 123,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 0,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 113,
+          "toolCallsAllSessions": 144,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 3296.1178669929504,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": {
+            "uncachedInputTokens": 162617,
+            "outputTokens": 283471,
+            "cacheReadTokens": 7917440,
+            "cacheWriteTokens": 0
+          },
+          "tokensReported": {
+            "uncachedInputTokens": 162617,
+            "outputTokens": 283471,
+            "cacheReadTokens": 7917440,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": true,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-ddeb76ea-8786-49db-91ac-d5800910ea20",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 162617,
+                "outputTokens": 283471,
+                "cacheReadTokens": 7917440,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 113,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "b90c26301c87b3e33fee01b48621864f8cfc35f0ad498441ff7160518d502105",
+          "session-evidence.tar": "1bc2c76200416f91f1639a78aa3a9e31b03d8b450f7098ce2aeb5f7d5d69c541",
+          "model.patch": "9a26f0b80c31d309d9dc81c3482175c9d486bee0294cab4a45a9ddf5c3f2ee1e",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "a7cf3076e25c1478c8cd05fe6e83112d81d0638ca6f554244ac7892eadfdf73c"
+        },
+        "announcedCompleteOfficialFailed": true,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "33ba2cde37eb74331b9806ee4d3df7e7b1b9cd3055ef6c0637c2bb076b137a9d",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "completed": 1
+        },
+        "allModelSteps": 113,
+        "allToolCalls": 144,
+        "allToolErrors": 6,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-ddeb76ea-8786-49db-91ac-d5800910ea20",
+            "role": "main",
+            "events": 667,
+            "turns": 1,
+            "modelSteps": 113,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 144,
+            "toolErrors": 6,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "382fb97010d835b15bbc3fad9a41c1f3d2f6f650ff346288f610be8993207e5d"
+      }
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "22f3300159e183b4e8f7e0c8e88e8353bfb44c77815046d8752dbb097cbac4f2",
+      "id": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+        "condition": "supervisor-independent",
+        "taskId": "updo-policy-alerting",
+        "repeat": 2,
+        "formal": true,
+        "reward": null,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-0e5e7cba-d146-4800-8a64-b2cd20c75155",
+          "firstStopReason": "infrastructure-fault",
+          "atUnix": 1791567148.331263,
+          "deadlineAtUnix": 1791577905.439879,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": true
+        },
+        "officialGrade": {
+          "scored": false,
+          "cleanupConfirmed": false,
+          "separateEnvironmentObserved": false,
+          "reward": null,
+          "fault": null,
+          "tests": null,
+          "execution": null,
+          "evidenceSha256": {},
+          "officialFilesSha256": {},
+          "imageDigest": null,
+          "architecture": null,
+          "F2P": null,
+          "P2P": null
+        },
+        "metrics": {
+          "unreportedAttempts": 1,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 0,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 7,
+          "toolCallsAllSessions": 14,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 0,
+          "reviewReadFailures": 0,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 0,
+          "taskFaultRetryReservations": 0,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 42.89138412475586,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 27448,
+            "outputTokens": 1020,
+            "cacheReadTokens": 83968,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-0e5e7cba-d146-4800-8a64-b2cd20c75155",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 27448,
+                "outputTokens": 1020,
+                "cacheReadTokens": 83968,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 7,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": []
+        },
+        "artifactHashes": {
+          "workspace.tar": "ccd4bb3108831b55dfbc2249ccaf8aed94e2f7f2c75b783d5c26861abfbb7f8e",
+          "session-evidence.tar": "540628aec23368f38c5879246da44fd390a16a28069bc325e84c8babcb62dcfd",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "99907afc0ec23ae3bac4280e5ee433db42718770df4adca38354b90461b56ecc"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 1,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 1,
+        "allTurnEndReasons": {
+          "aborted": 1
+        },
+        "allModelSteps": 7,
+        "allToolCalls": 14,
+        "allToolErrors": 2,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-0e5e7cba-d146-4800-8a64-b2cd20c75155",
+            "role": "main",
+            "events": 79,
+            "turns": 1,
+            "modelSteps": 7,
+            "turnEndReasons": {
+              "aborted": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 14,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": null,
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "a7c9074a0dabe4fddf030eefd807950794e91bf15207db94cfb001c6b5cc2967"
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "239b8a18a8e2f198a1a20f91cffce579891378067febb5bdb219e242377ccab5",
+      "id": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+        "condition": "supervisor-independent",
+        "taskId": "koota-pair-relation-tracking",
+        "repeat": 2,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+          "firstStopReason": "internal-review-fault",
+          "atUnix": 1791571029.150628,
+          "deadlineAtUnix": 1791578643.453853,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 210,
+            "passed": 172,
+            "failed": 38,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 210,
+            "missingResultPositions": 0,
+            "positionsWithResult": 210
+          },
+          "evidenceSha256": {
+            "trialResult": "c53fb379bb3589304ef7f4971f254b5fdb4ff23615b70cc49a03130668293402",
+            "testReport": "8f867b86dc72737a9786ae295b0abda792e525bafb5fcb75cef8565c52e2bbea"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "7b15510d617d38ac1fab6cdf902aa577aedb34516e047bd469f4e8ec868d778b",
+            "task.toml": "2990c6c0dc3c0877b008a92b20427395ab3bcc520651e4d5dcfe784a3b486935"
+          },
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 38,
+            "passed": 0,
+            "failed": 38,
+            "rate": 0.0
+          },
+          "P2P": {
+            "total": 172,
+            "passed": 172,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 1,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 245,
+          "repeatedExactReads": 4,
+          "plannedIndependentChecks": 7,
+          "recordedIndependentCheckResults": 7,
+          "checkWaitMs": 225233.0,
+          "checkCount": 23,
+          "independentReviewJobs": 1,
+          "independentComparisonJobs": 1,
+          "extraCheckCpuNs": null,
+          "requestCount": 197,
+          "toolCallsAllSessions": 311,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 203,
+          "reviewReadFailures": 5,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 3,
+          "taskFaultRetryReservations": 2,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 3185.696775197983,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 610242,
+            "outputTokens": 407763,
+            "cacheReadTokens": 11109248,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 2,
+            "readFiles": 7
+          },
+          "sessions": [
+            {
+              "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 232259,
+                "outputTokens": 108840,
+                "cacheReadTokens": 3460608,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 50,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-75c0a8a9-a3e0-48f6-9a8c-e8df0af7b9a6",
+              "parentSession": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+              "tokensReported": {
+                "uncachedInputTokens": 82111,
+                "outputTokens": 52021,
+                "cacheReadTokens": 1237632,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 23,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-7bf4942a-690c-47d5-afa9-7619d17615a1",
+              "parentSession": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+              "tokensReported": {
+                "uncachedInputTokens": 72267,
+                "outputTokens": 30219,
+                "cacheReadTokens": 1236352,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 29,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-9b497efd-e9a5-422c-ae0e-b31b861bd9df",
+              "parentSession": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+              "tokensReported": {
+                "uncachedInputTokens": 134105,
+                "outputTokens": 52981,
+                "cacheReadTokens": 4012672,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 70,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-f0761a2b-28ea-4bef-941d-e464699f75cd",
+              "parentSession": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+              "tokensReported": {
+                "uncachedInputTokens": 89500,
+                "outputTokens": 163702,
+                "cacheReadTokens": 1161984,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 25,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": [
+            {
+              "jobId": "0e6cff22-8fa6-4e18-9fa1-8452decc5c61",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "bbba5a58-820e-497c-a5a4-7ddf9fdd190f",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "1baab723-1b08-4355-b318-494840c65d37",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "bdf768f9-4d07-4347-99bb-87d37f6ccdb2",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 19660.0,
+              "independentMs": 926968.0,
+              "comparisonAndDecisionMs": 247256.0
+            }
+          ]
+        },
+        "artifactHashes": {
+          "workspace.tar": "7480a0c3584a759a0b3e29b398ca791cbd37a92ad69faabc82ca8daf01981b1e",
+          "session-evidence.tar": "c98519fadcd75d1f843a99d898e8307d70ce91c58a3861c89eb70d4425412376",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e122bbca81259e77a6fc58b1b3861fb9221d9f42aa3e2d6136199082b6d679b2",
+          "submission.json": "19d34a6f6502ac084f803d39dfe68571e874609d434691deb54c7a8e185eec8a"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "27a355628a52a88f43cec0614a182b3771c5b5974a8f2b002bd77651fcd16a0a",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 5,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 9,
+        "allTurnEndReasons": {
+          "completed": 7,
+          "aborted": 2
+        },
+        "allModelSteps": 197,
+        "allToolCalls": 311,
+        "allToolErrors": 19,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-5e0c7c7a-e842-42e5-a84c-247d4cb8cfda",
+            "role": "main",
+            "events": 551,
+            "turns": 3,
+            "modelSteps": 50,
+            "turnEndReasons": {
+              "completed": 3
+            },
+            "requestRetries": 0,
+            "toolCalls": 66,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-75c0a8a9-a3e0-48f6-9a8c-e8df0af7b9a6",
+            "role": "reviewer",
+            "events": 160,
+            "turns": 1,
+            "modelSteps": 23,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 39,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-7bf4942a-690c-47d5-afa9-7619d17615a1",
+            "role": "reviewer",
+            "events": 194,
+            "turns": 1,
+            "modelSteps": 29,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 47,
+            "toolErrors": 0,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-9b497efd-e9a5-422c-ae0e-b31b861bd9df",
+            "role": "reviewer",
+            "events": 458,
+            "turns": 2,
+            "modelSteps": 70,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 114,
+            "toolErrors": 13,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-f0761a2b-28ea-4bef-941d-e464699f75cd",
+            "role": "reviewer",
+            "events": 185,
+            "turns": 2,
+            "modelSteps": 25,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 45,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": {
+          "declaredNodes": 4,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 4,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 3
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "0e6cff22-8fa6-4e18-9fa1-8452decc5c61",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 113,
+                "terminalRecordSeq": 121,
+                "observedJobWindowMs": 188667,
+                "observedStartedWindowMs": 188667
+              },
+              {
+                "jobId": "bbba5a58-820e-497c-a5a4-7ddf9fdd190f",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 146,
+                "terminalRecordSeq": 173,
+                "observedJobWindowMs": 795831,
+                "observedStartedWindowMs": 795702
+              },
+              {
+                "jobId": "1baab723-1b08-4355-b318-494840c65d37",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 306,
+                "terminalRecordSeq": 314,
+                "observedJobWindowMs": 271980,
+                "observedStartedWindowMs": 271980
+              },
+              {
+                "jobId": "bdf768f9-4d07-4347-99bb-87d37f6ccdb2",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 377,
+                "terminalRecordSeq": 541,
+                "observedJobWindowMs": 1210398,
+                "observedStartedWindowMs": 1210219
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 2466876,
+            "observedUnionWindowMs": 2466876,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 188667
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 795831
+              },
+              "progress": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 271980
+              },
+              "stage": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1210398
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 1,
+            "progress": 1,
+            "stage": 1,
+            "completion": 0
+          }
+        },
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "824243fa30323a0ef12ef39b748f25baec718ef0098317b7bc49fbfd6eb1259c"
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "2726f406cea8a40daab8181e4263e42a5267483fcf2f66db7587caa801a333ad",
+      "id": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+        "condition": "supervisor-independent",
+        "taskId": "geo-shapeindex-serialization",
+        "repeat": 2,
+        "formal": true,
+        "reward": 1,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+          "firstStopReason": "recovery-budget",
+          "atUnix": 1791580878.840636,
+          "deadlineAtUnix": 1791582370.8826408,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 1,
+          "fault": null,
+          "tests": {
+            "tests": 623,
+            "passed": 623,
+            "failed": 0,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 623,
+            "missingResultPositions": 0,
+            "positionsWithResult": 623
+          },
+          "evidenceSha256": {
+            "trialResult": "81ba64e6a6cd873d2da1aa1e5f9f6d08ade04076073a7c571142f500a0fbc281",
+            "testReport": "3db6d206876f34c5832f52173a1f2fe212630258e3f5230ba8a357abf4af5270"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+            "task.toml": "a95140adb066b732b69b8485392576cf89e0cf22a0d7028ad5d9d08f37c08f29"
+          },
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 24,
+            "passed": 24,
+            "failed": 0,
+            "rate": 1.0
+          },
+          "P2P": {
+            "total": 599,
+            "passed": 599,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 5,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 902,
+          "repeatedExactReads": 11,
+          "plannedIndependentChecks": 33,
+          "recordedIndependentCheckResults": 33,
+          "checkWaitMs": 700833.0,
+          "checkCount": 141,
+          "independentReviewJobs": 4,
+          "independentComparisonJobs": 4,
+          "extraCheckCpuNs": null,
+          "requestCount": 799,
+          "toolCallsAllSessions": 1162,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 648,
+          "reviewReadFailures": 19,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 4,
+          "taskFaultRetryReservations": 3,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 9307.957995176315,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 2261405,
+            "outputTokens": 1315140,
+            "cacheReadTokens": 68787072,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 16,
+            "readFiles": 24
+          },
+          "sessions": [
+            {
+              "sessionId": "2b797750-f70f-43c3-85da-3142e3d9613c",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 84636,
+                "outputTokens": 32680,
+                "cacheReadTokens": 2182912,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 50,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 724885,
+                "outputTokens": 258924,
+                "cacheReadTokens": 23639808,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 150,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-00c82237-81ec-4879-b5e7-bf99ea39ef3c",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 78075,
+                "outputTokens": 106979,
+                "cacheReadTokens": 1096832,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 24,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-021d6c24-24ff-4d2d-830f-3174fe611aef",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 56230,
+                "outputTokens": 23542,
+                "cacheReadTokens": 551808,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 18,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-255aec22-8551-4435-9e44-049731c10978",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 224879,
+                "outputTokens": 144754,
+                "cacheReadTokens": 11055872,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 116,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-3d8bdbe4-8152-4b71-a07c-7f6060dd7583",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 155508,
+                "outputTokens": 95066,
+                "cacheReadTokens": 7558144,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 95,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-66fb59fb-03ae-4882-ba97-4fa617b52e5c",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 99697,
+                "outputTokens": 119877,
+                "cacheReadTokens": 1128576,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 23,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-6dab4531-6ec9-4e82-b070-dfd7d57ba767",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 50106,
+                "outputTokens": 15563,
+                "cacheReadTokens": 398208,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 13,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-6fdb9f61-1041-443c-b21b-74546900f0c0",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 203575,
+                "outputTokens": 154432,
+                "cacheReadTokens": 11930880,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 127,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-73e2b60e-2e1e-41c5-ac9b-f10cf6878e9e",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 105624,
+                "outputTokens": 58575,
+                "cacheReadTokens": 2555776,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 49,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-86a26e1d-9b34-4b33-805a-91936a2a1cc8",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 70420,
+                "outputTokens": 63520,
+                "cacheReadTokens": 775424,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 19,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-8e8c2aff-a19a-49f2-b875-e5dc7b76a3de",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 118471,
+                "outputTokens": 81651,
+                "cacheReadTokens": 1804928,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 26,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-9e85dbae-e3a7-4700-914b-cef37cea9d47",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 52573,
+                "outputTokens": 25090,
+                "cacheReadTokens": 471936,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 14,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-ddd4a65f-6fdd-48e0-9512-2c06c9a76376",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 75351,
+                "outputTokens": 70073,
+                "cacheReadTokens": 1063040,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 23,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-e12d4aca-5ac7-4e72-a7df-df7ab113967f",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 88382,
+                "outputTokens": 36453,
+                "cacheReadTokens": 1363584,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 23,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-e144f759-5cd2-46e7-9e4f-a2948774d5fb",
+              "parentSession": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+              "tokensReported": {
+                "uncachedInputTokens": 72993,
+                "outputTokens": 27961,
+                "cacheReadTokens": 1209344,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 29,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": [
+            {
+              "jobId": "5bf34472-45cf-444e-ba6b-4aed206ac487",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "ac247f4c-5377-4f91-86ea-8305d5ba6557",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "9553e2e0-8f76-4868-9d53-35056ff17cb5",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 27139.0,
+              "independentMs": 284901.0,
+              "comparisonAndDecisionMs": 56997.0
+            },
+            {
+              "jobId": "f188da4d-ae85-4e69-abd9-a488422aaae9",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "13394c0f-1e88-4364-8d5c-73d5adb87008",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "55216b35-022c-4d6e-980a-58cef59975ad",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "25e7fcef-5181-43e3-af7a-9680840864c0",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 34867.0,
+              "independentMs": 695241.0,
+              "comparisonAndDecisionMs": 421632.0
+            },
+            {
+              "jobId": "42672b49-396a-4082-b680-6c5ff83e000f",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "314c9e84-f65e-44c1-88ee-d1081a87ae25",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "e2513a8f-2e30-450d-8680-3fe90a0bf27f",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "27c6d9c8-3852-4825-a55f-17386b226e6d",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 37932.0,
+              "independentMs": 586195.0,
+              "comparisonAndDecisionMs": 389886.0
+            },
+            {
+              "jobId": "86602c4f-c1e7-4f4b-90c7-0f37369f0321",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 46310.0,
+              "independentMs": 439363.0,
+              "comparisonAndDecisionMs": 113897.0
+            }
+          ]
+        },
+        "artifactHashes": {
+          "workspace.tar": "99ba505cb6be756d7d73e2c044884f63580e522d8a0a3ec23732cc90c965e1a5",
+          "session-evidence.tar": "cc5ab94e5b4b71e809aab37281b8a4e15c9a9600188235ab2e68182256b16aaf",
+          "model.patch": "df3901d12c8c49383dddb3361ea4ab277a51f074dfaa4fb938422ce999fd7b03",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "65340a319d8a80a60731dc833ba7255b229d000133476c7781eb8e1862d7f8fe"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "8608a9318f0424ab100c3a8a18c481e7ee6512622a9559e0b2fafe9f6a2a4b41",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 16,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 30,
+        "allTurnEndReasons": {
+          "completed": 26,
+          "aborted": 4
+        },
+        "allModelSteps": 798,
+        "allToolCalls": 1162,
+        "allToolErrors": 99,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "2b797750-f70f-43c3-85da-3142e3d9613c",
+            "role": "child",
+            "events": 319,
+            "turns": 1,
+            "modelSteps": 50,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 78,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "session-3e463ac5-8484-42bc-906c-64b44582c3d4",
+            "role": "main",
+            "events": 1966,
+            "turns": 12,
+            "modelSteps": 149,
+            "turnEndReasons": {
+              "completed": 12
+            },
+            "requestRetries": 1,
+            "toolCalls": 182,
+            "toolErrors": 9,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-00c82237-81ec-4879-b5e7-bf99ea39ef3c",
+            "role": "reviewer",
+            "events": 157,
+            "turns": 1,
+            "modelSteps": 24,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 36,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-021d6c24-24ff-4d2d-830f-3174fe611aef",
+            "role": "reviewer",
+            "events": 133,
+            "turns": 1,
+            "modelSteps": 18,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 33,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-255aec22-8551-4435-9e44-049731c10978",
+            "role": "reviewer",
+            "events": 666,
+            "turns": 2,
+            "modelSteps": 116,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 149,
+            "toolErrors": 25,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-3d8bdbe4-8152-4b71-a07c-7f6060dd7583",
+            "role": "reviewer",
+            "events": 572,
+            "turns": 1,
+            "modelSteps": 95,
+            "turnEndReasons": {
+              "aborted": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 137,
+            "toolErrors": 10,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-66fb59fb-03ae-4882-ba97-4fa617b52e5c",
+            "role": "reviewer",
+            "events": 151,
+            "turns": 2,
+            "modelSteps": 23,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 31,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-6dab4531-6ec9-4e82-b070-dfd7d57ba767",
+            "role": "reviewer",
+            "events": 92,
+            "turns": 1,
+            "modelSteps": 13,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 20,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-6fdb9f61-1041-443c-b21b-74546900f0c0",
+            "role": "reviewer",
+            "events": 797,
+            "turns": 2,
+            "modelSteps": 127,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 198,
+            "toolErrors": 17,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-73e2b60e-2e1e-41c5-ac9b-f10cf6878e9e",
+            "role": "reviewer",
+            "events": 334,
+            "turns": 1,
+            "modelSteps": 49,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 87,
+            "toolErrors": 11,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-86a26e1d-9b34-4b33-805a-91936a2a1cc8",
+            "role": "reviewer",
+            "events": 132,
+            "turns": 1,
+            "modelSteps": 19,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 31,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-8e8c2aff-a19a-49f2-b875-e5dc7b76a3de",
+            "role": "reviewer",
+            "events": 177,
+            "turns": 1,
+            "modelSteps": 26,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 43,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-9e85dbae-e3a7-4700-914b-cef37cea9d47",
+            "role": "reviewer",
+            "events": 93,
+            "turns": 1,
+            "modelSteps": 14,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 19,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-ddd4a65f-6fdd-48e0-9512-2c06c9a76376",
+            "role": "reviewer",
+            "events": 158,
+            "turns": 1,
+            "modelSteps": 23,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 38,
+            "toolErrors": 6,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-e12d4aca-5ac7-4e72-a7df-df7ab113967f",
+            "role": "reviewer",
+            "events": 150,
+            "turns": 1,
+            "modelSteps": 23,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 34,
+            "toolErrors": 5,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-e144f759-5cd2-46e7-9e4f-a2948774d5fb",
+            "role": "reviewer",
+            "events": 192,
+            "turns": 1,
+            "modelSteps": 29,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 46,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": {
+          "declaredNodes": 4,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 10,
+          "maxCurrentNodeAttempt": 3,
+          "nodeStatuses": {
+            "passed": 1,
+            "reviewing": 1,
+            "pending": 2
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "5bf34472-45cf-444e-ba6b-4aed206ac487",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 113,
+                "terminalRecordSeq": 121,
+                "observedJobWindowMs": 168070,
+                "observedStartedWindowMs": 168070
+              },
+              {
+                "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 205,
+                "terminalRecordSeq": 220,
+                "observedJobWindowMs": 319699,
+                "observedStartedWindowMs": 319586
+              },
+              {
+                "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 229,
+                "terminalRecordSeq": 244,
+                "observedJobWindowMs": 500393,
+                "observedStartedWindowMs": 500288
+              },
+              {
+                "jobId": "ac247f4c-5377-4f91-86ea-8305d5ba6557",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 374,
+                "terminalRecordSeq": 382,
+                "observedJobWindowMs": 127251,
+                "observedStartedWindowMs": 127251
+              },
+              {
+                "jobId": "9553e2e0-8f76-4868-9d53-35056ff17cb5",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 405,
+                "terminalRecordSeq": 535,
+                "observedJobWindowMs": 369425,
+                "observedStartedWindowMs": 369249
+              },
+              {
+                "jobId": "f188da4d-ae85-4e69-abd9-a488422aaae9",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 612,
+                "terminalRecordSeq": 620,
+                "observedJobWindowMs": 399088,
+                "observedStartedWindowMs": 399088
+              },
+              {
+                "jobId": "13394c0f-1e88-4364-8d5c-73d5adb87008",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 703,
+                "terminalRecordSeq": 711,
+                "observedJobWindowMs": 91748,
+                "observedStartedWindowMs": 91748
+              },
+              {
+                "jobId": "55216b35-022c-4d6e-980a-58cef59975ad",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 779,
+                "terminalRecordSeq": 787,
+                "observedJobWindowMs": 193382,
+                "observedStartedWindowMs": 193382
+              },
+              {
+                "jobId": "25e7fcef-5181-43e3-af7a-9680840864c0",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 818,
+                "terminalRecordSeq": 1034,
+                "observedJobWindowMs": 1152244,
+                "observedStartedWindowMs": 1151951
+              },
+              {
+                "jobId": "42672b49-396a-4082-b680-6c5ff83e000f",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1133,
+                "terminalRecordSeq": 1141,
+                "observedJobWindowMs": 322005,
+                "observedStartedWindowMs": 322005
+              },
+              {
+                "jobId": "314c9e84-f65e-44c1-88ee-d1081a87ae25",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1217,
+                "terminalRecordSeq": 1237,
+                "observedJobWindowMs": 644399,
+                "observedStartedWindowMs": 644399
+              },
+              {
+                "jobId": "e2513a8f-2e30-450d-8680-3fe90a0bf27f",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1300,
+                "terminalRecordSeq": 1308,
+                "observedJobWindowMs": 130376,
+                "observedStartedWindowMs": 130376
+              },
+              {
+                "jobId": "27c6d9c8-3852-4825-a55f-17386b226e6d",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1334,
+                "terminalRecordSeq": 1646,
+                "observedJobWindowMs": 1014595,
+                "observedStartedWindowMs": 1014242
+              },
+              {
+                "jobId": "86602c4f-c1e7-4f4b-90c7-0f37369f0321",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1731,
+                "terminalRecordSeq": 1954,
+                "observedJobWindowMs": 600067,
+                "observedStartedWindowMs": 599783
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 6032742,
+            "observedUnionWindowMs": 6032742,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 168070
+              },
+              "plan": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 820092
+              },
+              "progress": {
+                "jobs": 7,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1908249
+              },
+              "stage": {
+                "jobs": 4,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 3136331
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 2,
+            "progress": 7,
+            "stage": 4,
+            "completion": 0
+          }
+        },
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "a27e40fc48acf0e4b089580bb49d63f07b73b2d289c203f5c3582ea996a92f02"
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "6002d124fcadd81f3bcd86aa563eaa8f3f9c98a24de3a548e0ceab77d957aaee",
+      "id": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+        "condition": "supervisor-independent",
+        "taskId": "geo-shapeindex-serialization",
+        "repeat": 1,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+          "firstStopReason": "deadline",
+          "atUnix": 1791591801.1745799,
+          "deadlineAtUnix": 1791591787.8889768,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 623,
+            "passed": 599,
+            "failed": 24,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 623,
+            "missingResultPositions": 24,
+            "positionsWithResult": 599
+          },
+          "evidenceSha256": {
+            "trialResult": "f54447dba422a558a3a3fb398de624bf5b0f31ab90efe827fcc7abe56b8099b5",
+            "testReport": "37b94980f1d3185750d00efc205efa579aceabf8fd4e38419faeb9c4d1b38372"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+            "task.toml": "a95140adb066b732b69b8485392576cf89e0cf22a0d7028ad5d9d08f37c08f29"
+          },
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 24,
+            "passed": 0,
+            "failed": 24,
+            "rate": 0.0
+          },
+          "P2P": {
+            "total": 599,
+            "passed": 599,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 1,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 122,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 0,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": null,
+          "checkCount": 0,
+          "independentReviewJobs": 0,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 105,
+          "toolCallsAllSessions": 159,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 110,
+          "reviewReadFailures": 4,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 1,
+          "taskFaultRetryReservations": 1,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 10813.285603046417,
+          "protocolUserActions": 1,
+          "protocolControlReceipts": 0,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 410560,
+            "outputTokens": 413961,
+            "cacheReadTokens": 4191232,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 0
+          },
+          "sessions": [
+            {
+              "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 124810,
+                "outputTokens": 56573,
+                "cacheReadTokens": 610176,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 21,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-35964001-1dff-4085-9391-acc51ef35536",
+              "parentSession": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+              "tokensReported": {
+                "uncachedInputTokens": 70909,
+                "outputTokens": 99513,
+                "cacheReadTokens": 815488,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 18,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-bceff709-e61d-43b9-897b-83b77a0873ac",
+              "parentSession": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+              "tokensReported": {
+                "uncachedInputTokens": 95081,
+                "outputTokens": 155148,
+                "cacheReadTokens": 1565440,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 30,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-d1219acc-b37a-4b52-9d2a-4e4409abae3b",
+              "parentSession": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+              "tokensReported": {
+                "uncachedInputTokens": 66576,
+                "outputTokens": 85180,
+                "cacheReadTokens": 682624,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 18,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-ed0a47a6-3da2-4855-a114-d1a3d72ab5c5",
+              "parentSession": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+              "tokensReported": {
+                "uncachedInputTokens": 53184,
+                "outputTokens": 17547,
+                "cacheReadTokens": 517504,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 18,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": [
+            {
+              "jobId": "fa5e119c-6112-428f-8d43-5ebfbb171374",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "dc30056c-bee1-4daa-898d-cc9539906811",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "12c0ba47-d3e3-4acf-aa00-18477641bf07",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            }
+          ]
+        },
+        "artifactHashes": {
+          "workspace.tar": "d4e399166ce266985d7a1fd9abfdeb83a561370a1fd2c6f62dc4d1004236afa6",
+          "session-evidence.tar": "488483ff23ecf6d8875fbbe73c04b34d046bc378d4e955450c9ccdf857a2d3e6",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "c3625ea325f5693ac2c1cbb8baa59a671c985e279611d5773957aa7480389d43",
+          "submission.json": "ae26a7c2615d7f53eaa810e9590085943f11cfb52e57300b3648352fbba4c3d6"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "649597b625133276c235f29dbbbd461a08f72b9131ed43e52867473e480037b3",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 5,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 9,
+        "allTurnEndReasons": {
+          "completed": 8,
+          "aborted": 1
+        },
+        "allModelSteps": 105,
+        "allToolCalls": 159,
+        "allToolErrors": 13,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+            "role": "main",
+            "events": 254,
+            "turns": 4,
+            "modelSteps": 21,
+            "turnEndReasons": {
+              "completed": 4
+            },
+            "requestRetries": 0,
+            "toolCalls": 37,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-35964001-1dff-4085-9391-acc51ef35536",
+            "role": "reviewer",
+            "events": 117,
+            "turns": 1,
+            "modelSteps": 18,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 25,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-bceff709-e61d-43b9-897b-83b77a0873ac",
+            "role": "reviewer",
+            "events": 198,
+            "turns": 2,
+            "modelSteps": 30,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 44,
+            "toolErrors": 5,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-d1219acc-b37a-4b52-9d2a-4e4409abae3b",
+            "role": "reviewer",
+            "events": 131,
+            "turns": 1,
+            "modelSteps": 18,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 32,
+            "toolErrors": 4,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-ed0a47a6-3da2-4855-a114-d1a3d72ab5c5",
+            "role": "reviewer",
+            "events": 109,
+            "turns": 1,
+            "modelSteps": 18,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 21,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": {
+          "declaredNodes": 0,
+          "observedPlanVersions": [
+            0
+          ],
+          "currentNodeAttemptOrdinalsSum": null,
+          "maxCurrentNodeAttempt": null,
+          "nodeStatuses": null,
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "fa5e119c-6112-428f-8d43-5ebfbb171374",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 107,
+                "terminalRecordSeq": 115,
+                "observedJobWindowMs": 100499,
+                "observedStartedWindowMs": 100499
+              },
+              {
+                "jobId": "dc30056c-bee1-4daa-898d-cc9539906811",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 156,
+                "terminalRecordSeq": 172,
+                "observedJobWindowMs": 390596,
+                "observedStartedWindowMs": 390404
+              },
+              {
+                "jobId": "12c0ba47-d3e3-4acf-aa00-18477641bf07",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 181,
+                "terminalRecordSeq": 196,
+                "observedJobWindowMs": 460227,
+                "observedStartedWindowMs": 460121
+              },
+              {
+                "jobId": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 205,
+                "terminalRecordSeq": 232,
+                "observedJobWindowMs": 743988,
+                "observedStartedWindowMs": 743873
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 1695310,
+            "observedUnionWindowMs": 1695310,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 100499
+              },
+              "plan": {
+                "jobs": 3,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1594811
+              },
+              "progress": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "stage": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 3,
+            "progress": 0,
+            "stage": 0,
+            "completion": 0
+          }
+        },
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "1a309f99526529897b208425564781e70a5c10bfd06465efaf94d6cf120b47fd"
+      }
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "68d3aadeb49760be497dfee9aac80f984f8bf418772ac532ec00881317960170",
+      "id": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+        "condition": "supervisor-independent",
+        "taskId": "updo-policy-alerting",
+        "repeat": 1,
+        "formal": true,
+        "reward": null,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+          "firstStopReason": "infrastructure-fault",
+          "atUnix": 1791594780.0883021,
+          "deadlineAtUnix": 1791602708.106339,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": true
+        },
+        "officialGrade": {
+          "scored": false,
+          "cleanupConfirmed": false,
+          "separateEnvironmentObserved": false,
+          "reward": null,
+          "fault": null,
+          "tests": null,
+          "execution": null,
+          "evidenceSha256": {},
+          "officialFilesSha256": {},
+          "imageDigest": null,
+          "architecture": null,
+          "F2P": null,
+          "P2P": null
+        },
+        "metrics": {
+          "unreportedAttempts": 1,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 215,
+          "repeatedExactReads": 2,
+          "plannedIndependentChecks": 17,
+          "recordedIndependentCheckResults": 10,
+          "checkWaitMs": 117832.0,
+          "checkCount": 19,
+          "independentReviewJobs": 2,
+          "independentComparisonJobs": 1,
+          "extraCheckCpuNs": null,
+          "requestCount": 180,
+          "toolCallsAllSessions": 271,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 163,
+          "reviewReadFailures": 6,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 2,
+          "taskFaultRetryReservations": 1,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 2871.981963157654,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 652038,
+            "outputTokens": 450240,
+            "cacheReadTokens": 7987456,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 3,
+            "readFiles": 5
+          },
+          "sessions": [
+            {
+              "sessionId": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 306765,
+                "outputTokens": 123940,
+                "cacheReadTokens": 2700672,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 43,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-251d9c0e-61a7-4ef4-9782-a937dc591313",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 33779,
+                "outputTokens": 6423,
+                "cacheReadTokens": 162176,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 9,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-3e600753-5e40-4d8e-beca-a54148358221",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 46197,
+                "outputTokens": 30538,
+                "cacheReadTokens": 785152,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 26,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-5a24a196-5e02-4f2b-bf90-7a5288543bde",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 92908,
+                "outputTokens": 77001,
+                "cacheReadTokens": 2617088,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 52,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-6644f881-57f1-42f7-91d8-a744b51f53db",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 33022,
+                "outputTokens": 11760,
+                "cacheReadTokens": 207744,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 10,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-7f5d969f-0552-4084-bdb4-0176dc8c6d07",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 57946,
+                "outputTokens": 44808,
+                "cacheReadTokens": 512256,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 16,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-b706ca1d-70fd-47c6-9b74-ca445b0c9e93",
+              "parentSession": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+              "tokensReported": {
+                "uncachedInputTokens": 81421,
+                "outputTokens": 155770,
+                "cacheReadTokens": 1002368,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 24,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": [
+            {
+              "jobId": "6f767b2d-68b7-4e5a-98ee-7a2739128e13",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "0be15342-0d6c-4d8b-b00e-8528aeb51cf7",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "c1907cd2-174e-4032-bd26-8000990dd2e5",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "e6e980db-c65a-43f6-a96a-03bc250874ce",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 24705.0,
+              "independentMs": 236711.0,
+              "comparisonAndDecisionMs": 162453.0
+            },
+            {
+              "jobId": "a1fef28a-6e4e-41b3-ba3f-e658fc8b7f7c",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "3ef81fef-b396-416b-a4f8-039fe8a85b79",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 24490.0,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            }
+          ]
+        },
+        "artifactHashes": {
+          "workspace.tar": "aff35bf375e74aca38a9cd20f67731b184bba6494e68cc60f8fa84ad7d8e3d7e",
+          "session-evidence.tar": "417a969d8c74173d418e30bed789f31685da2e645e8f345a5a17aeff693ffa40",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "submission.json": "7e5e667ecf607708c8c2208efb31de015b353322b90837c47fcb3266afb04678"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 7,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 12,
+        "allTurnEndReasons": {
+          "completed": 10,
+          "aborted": 2
+        },
+        "allModelSteps": 180,
+        "allToolCalls": 271,
+        "allToolErrors": 24,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+            "role": "main",
+            "events": 535,
+            "turns": 5,
+            "modelSteps": 43,
+            "turnEndReasons": {
+              "completed": 5
+            },
+            "requestRetries": 0,
+            "toolCalls": 56,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-251d9c0e-61a7-4ef4-9782-a937dc591313",
+            "role": "reviewer",
+            "events": 72,
+            "turns": 1,
+            "modelSteps": 9,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 16,
+            "toolErrors": 0,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-3e600753-5e40-4d8e-beca-a54148358221",
+            "role": "reviewer",
+            "events": 161,
+            "turns": 1,
+            "modelSteps": 26,
+            "turnEndReasons": {
+              "aborted": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 35,
+            "toolErrors": 5,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-5a24a196-5e02-4f2b-bf90-7a5288543bde",
+            "role": "reviewer",
+            "events": 325,
+            "turns": 1,
+            "modelSteps": 52,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 78,
+            "toolErrors": 14,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-6644f881-57f1-42f7-91d8-a744b51f53db",
+            "role": "reviewer",
+            "events": 79,
+            "turns": 1,
+            "modelSteps": 10,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 18,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-7f5d969f-0552-4084-bdb4-0176dc8c6d07",
+            "role": "reviewer",
+            "events": 119,
+            "turns": 1,
+            "modelSteps": 16,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 29,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-b706ca1d-70fd-47c6-9b74-ca445b0c9e93",
+            "role": "reviewer",
+            "events": 170,
+            "turns": 2,
+            "modelSteps": 24,
+            "turnEndReasons": {
+              "aborted": 1,
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 39,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": {
+          "declaredNodes": 5,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 5,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 4
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "6f767b2d-68b7-4e5a-98ee-7a2739128e13",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 104,
+                "terminalRecordSeq": 112,
+                "observedJobWindowMs": 43890,
+                "observedStartedWindowMs": 43890
+              },
+              {
+                "jobId": "0be15342-0d6c-4d8b-b00e-8528aeb51cf7",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 144,
+                "terminalRecordSeq": 152,
+                "observedJobWindowMs": 67474,
+                "observedStartedWindowMs": 67474
+              },
+              {
+                "jobId": "c1907cd2-174e-4032-bd26-8000990dd2e5",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 158,
+                "terminalRecordSeq": 185,
+                "observedJobWindowMs": 766140,
+                "observedStartedWindowMs": 766011
+              },
+              {
+                "jobId": "e6e980db-c65a-43f6-a96a-03bc250874ce",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 259,
+                "terminalRecordSeq": 363,
+                "observedJobWindowMs": 424218,
+                "observedStartedWindowMs": 424037
+              },
+              {
+                "jobId": "a1fef28a-6e4e-41b3-ba3f-e658fc8b7f7c",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 448,
+                "terminalRecordSeq": 456,
+                "observedJobWindowMs": 241863,
+                "observedStartedWindowMs": 241863
+              },
+              {
+                "jobId": "3ef81fef-b396-416b-a4f8-039fe8a85b79",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 467,
+                "terminalRecordSeq": 533,
+                "observedJobWindowMs": 249287,
+                "observedStartedWindowMs": 249082
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 1792872,
+            "observedUnionWindowMs": 1792872,
+            "byKind": {
+              "planning": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 111364
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 766140
+              },
+              "progress": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 241863
+              },
+              "stage": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 673505
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 2,
+            "plan": 1,
+            "progress": 1,
+            "stage": 2,
+            "completion": 0
+          }
+        },
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "0d64c29c61ff92b8e6a43b799b4a5110428cd84a36825aec4b5296e3092c2963"
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "d0fd870ae434b05146942107360da92ed5f490f89eaea42828d51e85a006ffeb",
+      "id": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "state": "sealed",
+      "result": {
+        "schemaVersion": 1,
+        "id": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+        "condition": "supervisor-independent",
+        "taskId": "koota-pair-relation-tracking",
+        "repeat": 1,
+        "formal": true,
+        "reward": 0,
+        "strictSuccess": false,
+        "gradingFault": null,
+        "terminal": {
+          "requestFaultEvidence": null,
+          "nativeCompletionEvidence": null,
+          "sessionId": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+          "firstStopReason": "internal-review-fault",
+          "atUnix": 1791604791.354474,
+          "deadlineAtUnix": 1791608806.4716318,
+          "rescueCount": 0,
+          "controllerComplete": false,
+          "finishedBeforeDeadline": false,
+          "infrastructureFault": false
+        },
+        "officialGrade": {
+          "scored": true,
+          "cleanupConfirmed": true,
+          "separateEnvironmentObserved": true,
+          "reward": 0,
+          "fault": null,
+          "tests": {
+            "tests": 210,
+            "passed": 172,
+            "failed": 38,
+            "skipped": 0,
+            "pending": 0,
+            "other": 0
+          },
+          "execution": {
+            "reportedPositions": 210,
+            "missingResultPositions": 0,
+            "positionsWithResult": 210
+          },
+          "evidenceSha256": {
+            "trialResult": "e3800fbc47681ef1be4a99981733ac8f7bf152330b81d57ea61b1f2fe71c6601",
+            "testReport": "8f867b86dc72737a9786ae295b0abda792e525bafb5fcb75cef8565c52e2bbea"
+          },
+          "officialFilesSha256": {
+            "instruction.md": "7b15510d617d38ac1fab6cdf902aa577aedb34516e047bd469f4e8ec868d778b",
+            "task.toml": "2990c6c0dc3c0877b008a92b20427395ab3bcc520651e4d5dcfe784a3b486935"
+          },
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "architecture": "amd64",
+          "F2P": {
+            "total": 38,
+            "passed": 0,
+            "failed": 38,
+            "rate": 0.0
+          },
+          "P2P": {
+            "total": 172,
+            "passed": 172,
+            "failed": 0,
+            "rate": 1.0
+          }
+        },
+        "metrics": {
+          "unreportedAttempts": 1,
+          "excludedUnrelatedSessions": 0,
+          "reviewToolCalls": 474,
+          "repeatedExactReads": 0,
+          "plannedIndependentChecks": 8,
+          "recordedIndependentCheckResults": 0,
+          "checkWaitMs": 146211.0,
+          "checkCount": 24,
+          "independentReviewJobs": 1,
+          "independentComparisonJobs": 0,
+          "extraCheckCpuNs": null,
+          "requestCount": 466,
+          "toolCallsAllSessions": 655,
+          "contextCompactions": 0,
+          "contextCompactionAttempts": 0,
+          "reviewReads": 416,
+          "reviewReadFailures": 8,
+          "reviewProtocolSubmissions": 0,
+          "reviewFaultHistoryCount": 2,
+          "taskFaultRetryReservations": 1,
+          "taskTruncationReservations": 0,
+          "wholeElapsedSec": 6784.882842302322,
+          "protocolUserActions": 2,
+          "protocolControlReceipts": 1,
+          "protocolInstructionSubmissions": 1,
+          "humanRescueActions": 0,
+          "allSessionTokens": null,
+          "tokensReported": {
+            "uncachedInputTokens": 1423339,
+            "outputTokens": 987040,
+            "cacheReadTokens": 40505597,
+            "cacheWriteTokens": 0
+          },
+          "tokenCoverageComplete": false,
+          "independentEvidenceCoverage": {
+            "applicableCriterionFindings": 0,
+            "readFiles": 21
+          },
+          "sessions": [
+            {
+              "sessionId": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "parentSession": null,
+              "tokensReported": {
+                "uncachedInputTokens": 467059,
+                "outputTokens": 486739,
+                "cacheReadTokens": 23976957,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 157,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-1619fba3-c828-45ce-9cd5-c237a83913cf",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 76687,
+                "outputTokens": 35331,
+                "cacheReadTokens": 993024,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 23,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-3dde25aa-a562-416d-9cd0-fd7af26be815",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 120683,
+                "outputTokens": 69156,
+                "cacheReadTokens": 1514496,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 24,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-4eac783b-aead-4a2f-bb91-0821bde5acec",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 97710,
+                "outputTokens": 97067,
+                "cacheReadTokens": 1426432,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 27,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-50d4707a-e45a-466d-a762-6784f72fc239",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 36089,
+                "outputTokens": 21254,
+                "cacheReadTokens": 301312,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 14,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-a3d4f79d-c976-4769-9b67-936cba668332",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 51138,
+                "outputTokens": 11679,
+                "cacheReadTokens": 361472,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 12,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-cc3eab2b-7496-4fca-a957-35214abfd7c6",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 65009,
+                "outputTokens": 30634,
+                "cacheReadTokens": 657792,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 16,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-d145ed5f-4d12-484a-b3d5-5120b0cfd24a",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 108057,
+                "outputTokens": 40486,
+                "cacheReadTokens": 6401280,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 92,
+                "unreportedAttempts": 1,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-e0925d0f-8a01-4428-a452-f7113585ba42",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 87310,
+                "outputTokens": 22517,
+                "cacheReadTokens": 1008384,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 20,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-e4d266cf-f229-4304-91cd-7fcf41a252cf",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 40178,
+                "outputTokens": 10826,
+                "cacheReadTokens": 308224,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 13,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-eb2f3a64-5f3a-4b36-9f85-4cd6d504bd9b",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 74343,
+                "outputTokens": 24599,
+                "cacheReadTokens": 763520,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 18,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-f7840a6c-e239-43bb-acab-b5e042071fab",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 118215,
+                "outputTokens": 90725,
+                "cacheReadTokens": 1706240,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 29,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            },
+            {
+              "sessionId": "task-review-ff8912b1-a1a3-4d55-a1c3-c5e941131bb8",
+              "parentSession": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+              "tokensReported": {
+                "uncachedInputTokens": 80861,
+                "outputTokens": 46027,
+                "cacheReadTokens": 1086464,
+                "cacheWriteTokens": 0
+              },
+              "usageCoverage": {
+                "settledAttempts": 21,
+                "unreportedAttempts": 0,
+                "unsettledSteps": 0
+              }
+            }
+          ],
+          "reviewPhaseDurations": [
+            {
+              "jobId": "242028e8-bf0b-4628-aa51-2bf40ab8f9b1",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "231199ba-17e4-4204-8e1b-ea0c33fb5bc9",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "7e983a3e-ee6b-42dc-a3db-eb919bf5941d",
+              "kind": "planning",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "6a8dea7f-85b3-4c26-b29f-d71d4defa660",
+              "kind": "plan",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "88834979-277e-44dc-8c8e-1631c22c65a5",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "89780076-6e63-4e32-988f-fa20691bd0d1",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "4ea22a2b-b379-4b43-b02b-412d0e31b8fa",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "f1b36119-4682-4b0c-ad07-885308d8924e",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "7cd7cb28-3f5e-41cc-906d-1d75e93ff721",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "c0d52f9d-095a-43a6-863f-5f6ae2806245",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "b2dc070c-7773-47de-8715-0b6d3571fa31",
+              "kind": "progress",
+              "mode": "log",
+              "planningMs": null,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            },
+            {
+              "jobId": "cb43effc-0e0c-4208-8dc8-d8e1db15a605",
+              "kind": "stage",
+              "mode": "independent",
+              "planningMs": 32692.0,
+              "independentMs": null,
+              "comparisonAndDecisionMs": null
+            }
+          ]
+        },
+        "artifactHashes": {
+          "workspace.tar": "686e868252d76bc2df67104a91e421d1f76546755ec810694f60c0d6f882b52b",
+          "session-evidence.tar": "136800a8c587c7ce74b4ce6c769c4e6dbf25cca9430ee3e990d135b1b82aada5",
+          "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "uncommitted.patch": "a331ee51ec9771388b65f19f35b15225ae28e414d2608e241071c24c021485ec",
+          "submission.json": "208acf4888194e221ddd616c1d02d897caa19da2479daf607e5e86cbf462cdd8"
+        },
+        "announcedCompleteOfficialFailed": false,
+        "falseAcceptanceRate": null,
+        "falsePauseRate": null,
+        "correctionBenefit": null
+      },
+      "notDeliveredReason": null,
+      "privateResultSha256": "0ebc1f4b846e2e6019872f368e17ee062e2c4a090dc39402d9db485539f81cb8",
+      "trajectory": {
+        "basis": "original-collected-native-session-events",
+        "linkedSessions": 13,
+        "excludedUnrelatedSessions": 0,
+        "allTurns": 16,
+        "allTurnEndReasons": {
+          "completed": 14,
+          "aborted": 2
+        },
+        "allModelSteps": 466,
+        "allToolCalls": 655,
+        "allToolErrors": 30,
+        "allContextCompactions": 0,
+        "sessions": [
+          {
+            "sessionId": "session-89840623-19a0-4e8a-a4a9-eae55fadd387",
+            "role": "main",
+            "events": 1214,
+            "turns": 3,
+            "modelSteps": 157,
+            "turnEndReasons": {
+              "completed": 3
+            },
+            "requestRetries": 0,
+            "toolCalls": 181,
+            "toolErrors": 6,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-1619fba3-c828-45ce-9cd5-c237a83913cf",
+            "role": "reviewer",
+            "events": 158,
+            "turns": 1,
+            "modelSteps": 23,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 38,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-3dde25aa-a562-416d-9cd0-fd7af26be815",
+            "role": "reviewer",
+            "events": 181,
+            "turns": 1,
+            "modelSteps": 24,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 48,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-4eac783b-aead-4a2f-bb91-0821bde5acec",
+            "role": "reviewer",
+            "events": 160,
+            "turns": 1,
+            "modelSteps": 27,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 33,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-50d4707a-e45a-466d-a762-6784f72fc239",
+            "role": "reviewer",
+            "events": 101,
+            "turns": 1,
+            "modelSteps": 14,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 23,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-a3d4f79d-c976-4769-9b67-936cba668332",
+            "role": "reviewer",
+            "events": 107,
+            "turns": 1,
+            "modelSteps": 12,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 29,
+            "toolErrors": 0,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-cc3eab2b-7496-4fca-a957-35214abfd7c6",
+            "role": "reviewer",
+            "events": 117,
+            "turns": 1,
+            "modelSteps": 16,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 28,
+            "toolErrors": 2,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-d145ed5f-4d12-484a-b3d5-5120b0cfd24a",
+            "role": "reviewer",
+            "events": 524,
+            "turns": 2,
+            "modelSteps": 92,
+            "turnEndReasons": {
+              "aborted": 2
+            },
+            "requestRetries": 0,
+            "toolCalls": 114,
+            "toolErrors": 6,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-e0925d0f-8a01-4428-a452-f7113585ba42",
+            "role": "reviewer",
+            "events": 147,
+            "turns": 1,
+            "modelSteps": 20,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 37,
+            "toolErrors": 0,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-e4d266cf-f229-4304-91cd-7fcf41a252cf",
+            "role": "reviewer",
+            "events": 92,
+            "turns": 1,
+            "modelSteps": 13,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 20,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-eb2f3a64-5f3a-4b36-9f85-4cd6d504bd9b",
+            "role": "reviewer",
+            "events": 117,
+            "turns": 1,
+            "modelSteps": 18,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 25,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-f7840a6c-e239-43bb-acab-b5e042071fab",
+            "role": "reviewer",
+            "events": 184,
+            "turns": 1,
+            "modelSteps": 29,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 42,
+            "toolErrors": 1,
+            "contextCompactions": 0
+          },
+          {
+            "sessionId": "task-review-ff8912b1-a1a3-4d55-a1c3-c5e941131bb8",
+            "role": "reviewer",
+            "events": 150,
+            "turns": 1,
+            "modelSteps": 21,
+            "turnEndReasons": {
+              "completed": 1
+            },
+            "requestRetries": 0,
+            "toolCalls": 37,
+            "toolErrors": 3,
+            "contextCompactions": 0
+          }
+        ],
+        "supervisorTask": {
+          "declaredNodes": 6,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 6,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 5
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "242028e8-bf0b-4628-aa51-2bf40ab8f9b1",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 123,
+                "terminalRecordSeq": 131,
+                "observedJobWindowMs": 139870,
+                "observedStartedWindowMs": 139870
+              },
+              {
+                "jobId": "231199ba-17e4-4204-8e1b-ea0c33fb5bc9",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 206,
+                "terminalRecordSeq": 214,
+                "observedJobWindowMs": 114239,
+                "observedStartedWindowMs": 114239
+              },
+              {
+                "jobId": "7e983a3e-ee6b-42dc-a3db-eb919bf5941d",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 283,
+                "terminalRecordSeq": 291,
+                "observedJobWindowMs": 72694,
+                "observedStartedWindowMs": 72694
+              },
+              {
+                "jobId": "6a8dea7f-85b3-4c26-b29f-d71d4defa660",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 317,
+                "terminalRecordSeq": 332,
+                "observedJobWindowMs": 478339,
+                "observedStartedWindowMs": 478219
+              },
+              {
+                "jobId": "88834979-277e-44dc-8c8e-1631c22c65a5",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 388,
+                "terminalRecordSeq": 396,
+                "observedJobWindowMs": 75294,
+                "observedStartedWindowMs": 75294
+              },
+              {
+                "jobId": "89780076-6e63-4e32-988f-fa20691bd0d1",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 424,
+                "terminalRecordSeq": 432,
+                "observedJobWindowMs": 144175,
+                "observedStartedWindowMs": 144175
+              },
+              {
+                "jobId": "4ea22a2b-b379-4b43-b02b-412d0e31b8fa",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 492,
+                "terminalRecordSeq": 500,
+                "observedJobWindowMs": 209144,
+                "observedStartedWindowMs": 209144
+              },
+              {
+                "jobId": "f1b36119-4682-4b0c-ad07-885308d8924e",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 588,
+                "terminalRecordSeq": 596,
+                "observedJobWindowMs": 259147,
+                "observedStartedWindowMs": 259147
+              },
+              {
+                "jobId": "7cd7cb28-3f5e-41cc-906d-1d75e93ff721",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 716,
+                "terminalRecordSeq": 724,
+                "observedJobWindowMs": 164924,
+                "observedStartedWindowMs": 164924
+              },
+              {
+                "jobId": "c0d52f9d-095a-43a6-863f-5f6ae2806245",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 832,
+                "terminalRecordSeq": 840,
+                "observedJobWindowMs": 353743,
+                "observedStartedWindowMs": 353743
+              },
+              {
+                "jobId": "b2dc070c-7773-47de-8715-0b6d3571fa31",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 963,
+                "terminalRecordSeq": 971,
+                "observedJobWindowMs": 478035,
+                "observedStartedWindowMs": 478035
+              },
+              {
+                "jobId": "cb43effc-0e0c-4208-8dc8-d8e1db15a605",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1004,
+                "terminalRecordSeq": 1204,
+                "observedJobWindowMs": 1212212,
+                "observedStartedWindowMs": 1211970
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 3701816,
+            "observedUnionWindowMs": 3701816,
+            "byKind": {
+              "planning": {
+                "jobs": 3,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 326803
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 478339
+              },
+              "progress": {
+                "jobs": 7,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1684462
+              },
+              "stage": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1212212
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 3,
+            "plan": 1,
+            "progress": 7,
+            "stage": 1,
+            "completion": 0
+          }
+        },
+        "nativeNodeComparison": "native Goal and Plan do not share Supervisor node semantics",
+        "sessionEvidenceIndexSha256": "f06f677b1ae62a458aa2a308593d1dd67082b9fce2c3bdff67ff3bfb4d238d99"
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "d796298c402edecf20b0d7be4c436d1a7a356308f337426f78c0bcdf610d5387",
+      "id": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "f13f256df4241698d268e4dfeaaf880240578750e0df9ff18c64ef11b539ec0b",
+      "id": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "457782e86ed58806a784c4725e87ee3195569f2eeb0f37ee26401f12ea6defbe",
+      "id": "lh-09-superjson-error-stack-serialization-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "4b266a96c3877c029ca0870da05ccea50023d1613cdb13ef0ff221d4d4d92d0a",
+      "id": "lh-10-geo-shapeindex-serialization-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "6d57166fdad70d249f0eb8fd7b4dcbc684bcdf5077242064a1a93826c35ab154",
+      "id": "lh-13-koota-pair-relation-tracking-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "75269796231953649c53d7da677bf3256aa857c6edbe3d47ce0ce82e7401567d",
+      "id": "lh-14-updo-policy-alerting-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "7c896545b2c16310029a14570a18eada094d90971487159041a4e5a93015d3bb",
+      "id": "lh-15-updo-policy-alerting-plan-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "8790d32a92f2a1b547886aca534cfa5e6f6b3f7d10841a444ffedade3c77c40c",
+      "id": "lh-16-koota-pair-relation-tracking-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "plan",
+      "repeat": 2,
+      "rank": "b24fd982adf82f37df8c269751b2dacca01d580cdfa9eb5051faed84f7151d08",
+      "id": "lh-17-superjson-error-stack-serialization-plan-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "d7f377603667253ccb8e39a6a2a1ab623a13afcd3d86b894a1a90131f2b50474",
+      "id": "lh-20-geo-shapeindex-serialization-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "goal",
+      "repeat": 1,
+      "rank": "dc0de994c54c212eb766176ea12fd063ff5f2930b597076b1e63c62188230c56",
+      "id": "lh-21-updo-policy-alerting-goal-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "plan",
+      "repeat": 1,
+      "rank": "ee98b4f464ec0fcb15eeaf8508cab876ad79defcea958ed453ca8e6dd2db03e1",
+      "id": "lh-22-koota-pair-relation-tracking-plan-r1",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "goal",
+      "repeat": 2,
+      "rank": "f384965fb6cb9214dc9f7c77a71759473d7cdeb8c9d910463ff2a9061136ca41",
+      "id": "lh-24-superjson-error-stack-serialization-goal-r2",
+      "state": "not-delivered",
+      "result": null,
+      "notDeliveredReason": "awaiting-serial-position"
+    }
+  ],
+  "falseAcceptanceRate": null,
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "exportedAt": "2026-10-10T07:12:17.008193+00:00",
+  "reportOnly": true,
+  "reportProcessorSourceSha256": {
+    "public_results.py": "031c8932045ca4059bcdc667b539ccbd4ba0219ee2686f6cbb252aef2c575027",
+    "trajectory.py": "2e50138452f16c22e7e575a4824eb046dcace58d3c70272d4f3ca658314ff334",
+    "review_windows.py": "27f03dbc394ed59c2326674853a8c3ebadf49750006a67a054b25b9c5e288018",
+    "summarize.py": "0c8f2c55c992cdd0ba85ce62ffc7ea25a071b4f86c479c1bc107009aa60dcbb3",
+    "session_records.py": "7e9cc49a56e650f26e586158780c65bf59f69ef6c94f2ecb063ebf163aa48b2c"
+  },
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39"
+}
