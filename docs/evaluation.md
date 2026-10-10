@@ -43,7 +43,8 @@ Start with a suggested 6–12 public integration tasks selected by repository, t
 | Order | Dataset | Purpose and integration scope |
 | --- | --- | --- |
 | Frozen batch | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | Real repository tasks with official Harbor task directories, graders, reference solutions, containers, and independent patch regrading. Preserve existing protocols and results. |
-| Suggested next batch | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) → [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | Validate integration on terminal tasks with published DSH evidence, then evaluate long engineering tasks; the [two-task four-arm pilot](../eval/deepswe/README.md) fixes candidate tasks and order; runtime release and model admission remain pending. |
+| Current long-horizon comparison | [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | The [OpenSandbox batch](../eval/sandbox-run/long-horizon-20261009/README.md) passed admission for four tasks and froze two repeats each of Goal, Plan, and Supervisor-independent: 24 positions. Execution is underway, with each sealed result retained in batch snapshots. The earlier [two-task four-arm pilot](../eval/deepswe/README.md) retains its original protocol and results. |
+| Terminal-task candidate | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) | Published DSH evidence can inform terminal-task integration; task selection, environments, and the formal protocol require a separate freeze. |
 | Consecutive-task candidate | [SlopCodeBench](https://github.com/SprocketLab/slop-code-bench) | Evolving requirements on one project; the official protocol retains the workspace but resets Sessions, so persistent Sessions require a separate protocol. |
 | Expansion candidates | [LongCLI-Bench](https://github.com/finyorko/longcli-bench), [LHTB](https://github.com/zli12321/LHTB), [SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | Validate grading, external continuation, and environment gates before adoption; published leaderboard scores are not this project's controls. |
 
@@ -146,11 +147,13 @@ Deliver the next task at predefined termination or limit conditions, not after h
 
 The [short-task pilot](../eval/pilot-v1/results-20260926.zh.md), [ordering-constraint regression](../eval/reliability-v1/results-20260927.zh.md), and [requirement-revision development pilot](../eval/long-horizon-dev-v1/results-20260927.zh.md) preserve fixes and diagnose failures; they are not public long-horizon benchmark results. Revision delivery timing differs between arms in the development pilot, preventing a direct win-rate comparison.
 
-- [ ] Pin the first public dataset and 6–12 integration tasks; validate Linux execution and external grading (six tasks frozen; NodeBB, Navidrome, and Open Library passed the gate; three tasks still need checks).
-- [ ] Freeze interactions, termination conditions, execution limits, retries, and metric definitions for all three arms.
+Current execution follows the [long-horizon batch](../eval/sandbox-run/long-horizon-20261009/README.md):
+
+- [x] Pin four DeepSWE holdout tasks and pass Linux execution, empty/reference-patch grading, and independent-check admission for each.
+- [x] Freeze interactions, termination conditions, execution limits, retries, execution order, and metrics for all three arms.
 - [x] Integrate the DSH runner and produce real records with native terminal state, external grading, approval receipts, and usage.
-- [x] Run the first frozen task in all three arms and report per-task results and failure classes; continue remaining frozen tasks.
-- [ ] Freeze a holdout, expand runs, and add controls required for the formal comparison.
+- [ ] Seal all 24 positions, retaining infrastructure anomalies, reasons for unexecuted positions, and the full denominator.
+- [ ] Complete paired per-task analysis, cost and trajectory reporting, and small-sample uncertainty.
 - [ ] Develop and run the multi-task Session protocol after the baseline is stable.
 
 ## Claim threshold
@@ -167,8 +170,10 @@ Benchmark counts, model scores, SDK commands, and infrastructure estimates in so
 
 ## Dev Note
 
-This document records the unified evaluation protocol and pending work, not run results. Finalize task IDs, formal sample size, execution environment, exact model versions, and official-protocol adaptation during integration; record observed runs in their evaluation result documents.
+This document is the evaluation entry point. Each batch's frozen protocol defines its tasks, environment, model, authorization, and official-grading adaptation; observed runs belong in its result records. Historical batches retain their original definitions, and later runner repairs preserve separate versions and protocol deviations.
 
 ## OpenSandbox long-horizon batch
 
-The [new paired protocol](../eval/sandbox-run/protocol.md) pins a four-task, three-condition, two-repeat comparison. Admission and execution are pending; no result belongs to this new batch yet. The runner draft is retained separately from the earlier frozen DeepSWE positions.
+The [paired protocol](../eval/sandbox-run/protocol.md) pins four tasks, three conditions, and two repeats. Development revision and fault-recovery cases, four-task admission, actual model routing, clean installation, and positive/negative grading controls passed; see the [development validation](../eval/sandbox-run/validation-20261009.md).
+
+Formal execution has started. Sealed counts, per-condition progress, runner repairs, and environment handoff are maintained in the [batch record](../eval/sandbox-run/long-horizon-20261009/README.md). [Result snapshots](../eval/sandbox-run/long-horizon-20261009/reports/) retain all 24 positions. Started positions reconnect to their original Session, artifacts, and deadline; only Agent-committed patches are graded. Infrastructure anomalies have null reward, and official full reward is reported separately from strict controller success. The complete paired report follows sealing of every position.

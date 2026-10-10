@@ -43,7 +43,8 @@
 | 顺序 | 数据集 | 用途与接入边界 |
 | --- | --- | --- |
 | 已冻结批次 | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | 真实仓库任务；官方提供 Harbor 任务目录、验收器、参考解和容器，以及独立环境补丁重验。保留现有协议与结果。 |
-| 下一批建议 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) → [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | 先用已有 DSH 运行证据的终端任务验证接入，再做长程工程任务；[两题四组小样本](../eval/deepswe/README.zh.md)已固定候选题与顺序；正式运行版本及模型准入待验证。 |
+| 当前长程对照 | [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | [OpenSandbox 批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)已完成四题准入并冻结 Goal、Plan、Supervisor-independent 各两次，共 24 个位置；执行中，逐次结果保存在批次快照中。此前[两题四组小样本](../eval/deepswe/README.zh.md)保留其原协议与结果。 |
+| 终端任务候选 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) | 可参考已有 DSH 运行证据接入终端任务；选题、环境和正式协议需要另行冻结。 |
 | 连续任务候选 | [SlopCodeBench](https://github.com/SprocketLab/slop-code-bench) | 同项目需求逐步扩展；官方保留工作目录但重置 Session，同 Session 模式需单立协议。 |
 | 扩展候选 | [LongCLI-Bench](https://github.com/finyorko/longcli-bench)、[LHTB](https://github.com/zli12321/LHTB)、[SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 先核对评分、外部续行与环境门禁；不直接采用公开排行榜分数作本项目对照。 |
 
@@ -146,11 +147,13 @@ P3 额外报告整段 Session 全通过率、按任务位置的通过率、旧�
 
 已有[短任务试跑](../eval/pilot-v1/results-20260926.zh.md)、[时序约束回归](../eval/reliability-v1/results-20260927.zh.md)和[需求变更开发试跑](../eval/long-horizon-dev-v1/results-20260927.zh.md)用于保持已修复行为并定位失败；它们不是公开长程基准成绩。需求变更试跑存在组间触发时机差异，不能直接比较胜率。
 
-- [ ] 固定首批公开数据集及 6–12 个接入任务，核验 Linux 环境和外部验收（六题已冻结；NodeBB、Navidrome 与 Open Library 已过门禁，其余三题待逐题核验）。
-- [ ] 冻结三组交互、结束条件、执行上限、重试和指标口径。
+当前执行工作以[长程批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)为准：
+
+- [x] 固定四道 DeepSWE 留出题，完成每题 Linux 执行、空补丁／参考补丁评分及独立检查准入。
+- [x] 冻结三组交互、结束条件、执行上限、重试、运行顺序和指标口径。
 - [x] 接入 DSH runner，产出包含原生终态、外部评分、批准收据和资源统计的真实运行记录。
-- [x] 跑通首道冻结题三组公开任务试跑，形成逐题结果和失败分类；其余冻结题继续运行。
-- [ ] 冻结保留集并扩量，补齐正式比较所需对照。
+- [ ] 封口全部 24 个位置，保留基础设施异常、未执行原因及全部分母。
+- [ ] 完成逐题配对分析、费用与轨迹报告，报告小样本不确定性。
 - [ ] 基线稳定后再开发和运行多任务 Session 协议。
 
 ## 结论门槛
@@ -167,8 +170,10 @@ P3 额外报告整段 Session 全通过率、按任务位置的通过率、旧�
 
 ## 开发备注
 
-本文记录统一评测协议与待执行工作，不是运行结果。待接入时确定样本清单、正式样本量、执行环境、模型精确版本和官方协议适配细节；确定后将运行事实写入相应评测结果文档。
+本文是评测入口。各批次的样本、环境、模型、授权和官方评分适配以其冻结协议为准；运行事实写入对应结果记录。历史批次保持原口径，后续运行器修复单独保存版本及协议偏差。
 
 ## OpenSandbox 长程批次
 
-[新的配对协议](../eval/sandbox-run/protocol.zh.md)固定四题、三条件、两次重复的比较。准入与执行尚未完成，本批还没有成绩。运行框架草稿与此前冻结的 DeepSWE 位置分开保留。
+[配对协议](../eval/sandbox-run/protocol.zh.md)固定四题、三条件、两次重复。开发修订与故障恢复用例、四题准入、实际模型路由、干净安装及评分正反控制已完成，证据见[开发验收](../eval/sandbox-run/validation-20261009.zh.md)。
+
+正式运行已开始。当前封口数、各条件进度、运行器修复和环境交接统一维护在[批次记录](../eval/sandbox-run/long-horizon-20261009/README.zh.md)，[结果快照](../eval/sandbox-run/long-horizon-20261009/reports/)保留全部 24 个位置。已启动位置接续原 Session、产物和截止时间；只评分 Agent 已 commit 的补丁。基础设施异常 reward 为 null，官方满分与控制器严格成功分别统计；所有位置封口后才形成完整配对报告。
