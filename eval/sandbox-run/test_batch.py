@@ -45,6 +45,24 @@ class OriginalPositionTests(TestCase):
                 (root / name).write_text('{}')
                 self.assertEqual(next_operation(root), operation)
 
+    def test_collection_fault_requires_exact_ack_before_next_delivery(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / 'release'; root.mkdir()
+            runs = Path(directory) / 'runs'; (runs / 'p').mkdir(parents=True)
+            (root / 'specs').mkdir(); (root / 'specs/p.json').write_text('{}')
+            order = root / 'order.json'; order.write_text(json.dumps({'positions': [{'id': 'p'}]}))
+            outcome = runs / 'p/result.json'; outcome.write_text(json.dumps({'terminal': {
+                'infrastructureFault': False, 'firstStopReason': 'internal-review-fault'},
+                'collectionInfrastructureFault': True, 'gradingFault': None}))
+            release = {'runnerFilesSha256': {}, 'orderSha256': hashlib.sha256(order.read_bytes()).hexdigest(),
+                'specsSha256': {'p': hashlib.sha256(b'{}').hexdigest()}}
+            (root / 'release.json').write_text(json.dumps(release))
+            with self.assertRaisesRegex(RuntimeError, 'stop new delivery'):
+                run_batch(root, runs, 'python', 'localhost', invoke=lambda *_: self.fail('no model delivery'))
+            release['acknowledgedSealedFaults'] = {'p': hashlib.sha256(outcome.read_bytes()).hexdigest()}
+            (root / 'release.json').write_text(json.dumps(release))
+            run_batch(root, runs, 'python', 'localhost', invoke=lambda *_: self.fail('no replacement delivery'))
+
     def test_unknown_delivery_cannot_be_resubmitted(self):
         with TemporaryDirectory() as directory:
             root = Path(directory); (root / 'delivery-intent.json').write_text('{}')

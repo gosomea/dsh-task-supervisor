@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+import re
 import shlex
 import sys
 import tarfile
@@ -106,8 +107,38 @@ def collect_check_storage(journal):
     ready = journal.read('prepared.json')
     if ready and ready.get('gateway'):
         from gateway import archive_storage, stop_gateway
-        stop_gateway(ready['gateway'], root=journal.root / 'gateway')
-        archive_storage(ready['gateway'], root=journal.root / 'gateway')
+        from preparation_identity import prepared_gateway_root
+        root = prepared_gateway_root(ready, journal)
+        stop_gateway(ready['gateway'], root=root)
+        archive_storage(ready['gateway'], root=root)
+
+
+def collection_recovery(journal):
+    """Bind a post-execution repair to the original bytes, without new authority."""
+    value = journal.read('collection-reconciliation.json')
+    if value is None:
+        return None
+    from preparation_identity import file_digest, prepared_gateway_root
+    ready = journal.read('prepared.json')
+    root = prepared_gateway_root(ready, journal)
+    expected = {'schemaVersion': 1, 'kind': 'recovered-gateway-collection-ownership',
+        'source': 'evaluation-protocol-runner-repair', 'modelRequests': 0,
+        'agentReruns': 0, 'authorizationActions': 0, 'gatewayLease': ready['gateway']['lease'],
+        'gatewayRoot': str(root), 'originalExecutionStopped': True}
+    anchors = {name: file_digest(journal.root / name) for name in
+        ('started.json', 'prepared.json', 'terminal.json', 'collection.json', 'sandbox-destroyed.json')}
+    started, terminal, collection, destroyed = (journal.read(name) for name in
+        ('started.json', 'terminal.json', 'collection.json', 'sandbox-destroyed.json'))
+    if (any(value.get(key) != item for key, item in expected.items())
+            or value.get('originalRecordsSha256') != anchors
+            or not re.fullmatch('[a-f0-9]{64}', value.get('faultEvidenceSha256', ''))
+            or not terminal.get('cleanup', {}).get('acknowledged') or not destroyed.get('destroyed')
+            or any(row.get('sandboxId') != ready['sandboxId'] for row in (collection, destroyed))
+            or any(row.get('sessionId') != started['sessionId'] for row in (terminal, collection))):
+        raise RuntimeError('collection reconciliation differs from the original position')
+    return {**expected, 'originalRecordsSha256': anchors,
+        'faultEvidenceSha256': value['faultEvidenceSha256'],
+        'reconciliationSha256': file_digest(journal.root / 'collection-reconciliation.json')}
 
 
 def copy_new(path, data):
@@ -140,6 +171,7 @@ def grade(spec, journal):
         raise RuntimeError('original resource collection is not complete')
     terminal, collection, started = journal.read('terminal.json'), journal.read('collection.json'), journal.read('started.json')
     if not terminal or not collection: raise RuntimeError('execution and collection not sealed')
+    recovery = collection_recovery(journal)
     sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
     from metrics import collect as metrics_collect, read_home
     sessions, projections, hashes = read_home(Path(collection['home']))
@@ -162,12 +194,13 @@ def grade(spec, journal):
         official = development_grade(spec, journal, collection, sessions)
     reward = official.get('reward')
     strict = terminal['controllerComplete'] and terminal['finishedBeforeDeadline'] and reward == 1 \
-        and not terminal['infrastructureFault'] and not official.get('fault')
+        and not terminal['infrastructureFault'] and not recovery and not official.get('fault')
     return journal.write('result.json', {'schemaVersion': 1, 'id': started['id'],
         'condition': started['condition'], 'taskId': spec.get('taskId') or spec.get('case'),
         'repeat': spec.get('repeat'), 'formal': spec.get('formal', False), 'terminal': terminal,
         'reward': reward, 'strictSuccess': strict, 'gradingFault': official.get('fault'),
         'officialGrade': official, 'metrics': metrics, 'artifactHashes': collection['filesSha256'],
+        'collectionInfrastructureFault': recovery is not None, 'collectionRecovery': recovery,
         'announcedCompleteOfficialFailed': terminal['controllerComplete'] and reward == 0,
         'falseAcceptanceRate': None, 'falsePauseRate': None, 'correctionBenefit': None})
 

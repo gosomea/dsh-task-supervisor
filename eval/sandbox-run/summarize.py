@@ -47,7 +47,10 @@ def summarize(order, root):
             'rewardZero': sum(result['reward'] == 0 for result in done),
             'rewardUnknown': sum(result['reward'] is None for result in done),
             'firstStopReasons': dict(Counter(result['terminal']['firstStopReason'] for result in done)),
-            'infrastructureFaults': sum(result['terminal']['infrastructureFault'] for result in done),
+            'infrastructureFaults': sum(bool(result['terminal']['infrastructureFault']
+                or result.get('collectionInfrastructureFault')) for result in done),
+            'executionInfrastructureFaults': sum(result['terminal']['infrastructureFault'] for result in done),
+            'collectionInfrastructureFaults': sum(result.get('collectionInfrastructureFault') is True for result in done),
             'gradingFaults': sum(bool(result['gradingFault']) for result in done),
             'announcedCompleteOfficialFailed': sum(result['announcedCompleteOfficialFailed'] for result in done),
             'allSessionTokens': reported if done and complete_tokens else None,
@@ -97,7 +100,8 @@ def report(summary):
         '|---|---:|---:|---:|---:|---:|']
     for key, row in summary['conditions'].items():
         lines.append(f"| {key} | {row['sealed']}/{row['planned']} | {row['rewardOne']} | {row['rewardZero']} | {row['rewardUnknown']} | {row['strictSuccesses']} |")
-    lines += ['', '严格成功要求截止前控制器完成、官方 reward=1 且无基础设施或评分异常。', '',
+    lines += ['', '严格成功要求截止前控制器完成、官方 reward=1 且无基础设施或评分异常。',
+        '已恢复的收集异常单列计数，保留实际官方评分和执行侧首次停止原因，不计为严格成功。', '',
         '## 逐题配对', '', '| 题目 | Goal | Plan | Supervisor |', '|---|---:|---:|---:|']
     for task in summary['pairedTasks']:
         values = [task['conditions'][key]['strictSuccessRate'] for key in CONDITIONS]

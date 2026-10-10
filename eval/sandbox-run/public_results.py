@@ -77,6 +77,14 @@ def safe_native_evidence(value):
 
 def result(value):
     terminal, official = value['terminal'], value['officialGrade']
+    recovery = value.get('collectionRecovery')
+    safe_recovery = None if not isinstance(recovery, dict) else {
+        **{key: code(recovery.get(key)) for key in
+           ('kind', 'source', 'gatewayLease', 'faultEvidenceSha256', 'reconciliationSha256')},
+        **{key: number(recovery.get(key)) for key in ('modelRequests', 'agentReruns', 'authorizationActions')},
+        'originalExecutionStopped': recovery.get('originalExecutionStopped') is True,
+        'originalRecordsSha256': hashes(recovery.get('originalRecordsSha256')),
+    }
     grade = {key: official.get(key) is True for key in
              ('scored', 'cleanupConfirmed', 'separateEnvironmentObserved')}
     grade.update(reward=number(official.get('reward')), fault=code(official.get('fault')),
@@ -95,6 +103,8 @@ def result(value):
         'repeat': number(value['repeat']), 'formal': value.get('formal') is True,
         'reward': number(value.get('reward')), 'strictSuccess': value.get('strictSuccess') is True,
         'gradingFault': code(value.get('gradingFault')),
+        'collectionInfrastructureFault': value.get('collectionInfrastructureFault') is True,
+        'collectionRecovery': safe_recovery,
         'terminal': {
             'requestFaultEvidence': safe_native_evidence(terminal.get('requestFaultEvidence')),
             'nativeCompletionEvidence': safe_native_evidence(terminal.get('nativeCompletionEvidence')),

@@ -93,7 +93,8 @@ def run_batch(root, runs, python, domain, *, invoke=subprocess.run):
                          'exitCode': outcome.returncode, 'newDeliveryStopped': True})
                     raise RuntimeError('original position requires reconciliation: ' + position['id'] + ' / ' + operation)
             result = json.loads((directory / 'result.json').read_text())
-            if result['terminal']['infrastructureFault'] or result['gradingFault']:
+            if (result['terminal']['infrastructureFault'] or result.get('collectionInfrastructureFault')
+                    or result['gradingFault']):
                 # A repair release may explicitly carry an already sealed fault
                 # forward. Bind exact original bytes; never forgive a new fault
                 # or launch a replacement Agent for that position.

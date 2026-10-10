@@ -33,6 +33,15 @@ class SummaryTests(unittest.TestCase):
             self.assertIsNone(goal['metrics']['requestCount'])
             self.assertEqual(value['comparisons']['goal']['pairedTaskCount'], 4)
             self.assertIsNone(value['falseAcceptanceRate'])
+            second = root / positions[1]['id'] / 'result.json'
+            recovered = json.loads(second.read_text())
+            recovered.update(collectionInfrastructureFault=True, strictSuccess=False)
+            second.write_text(json.dumps(recovered))
+            repaired = summarize({'seed': 'fixed', 'positions': positions}, root)['conditions']['goal']
+            self.assertEqual(repaired['infrastructureFaults'], 2)
+            self.assertEqual(repaired['executionInfrastructureFaults'], 1)
+            self.assertEqual(repaired['collectionInfrastructureFaults'], 1)
+            self.assertEqual(repaired['rewardOne'], 7)
             (root / positions[0]['id'] / 'result.json').unlink()
             (root / positions[0]['id'] / 'started.json').write_text('{}')
             value = summarize({'seed': 'fixed', 'positions': positions}, root)

@@ -24,6 +24,9 @@ class PublicResultsTests(unittest.TestCase):
                 'sessions': [{'sessionId': 'session-test', 'tokensReported': {'outputTokens': 14},
                     'prompt': private}], 'rawModel': private},
             'finding': private, 'announcedCompleteOfficialFailed': True,
+            'collectionInfrastructureFault': True,
+            'collectionRecovery': {'kind': 'recovered-gateway-collection-ownership', 'gatewayRoot': private,
+                'faultEvidenceSha256': 'f' * 64, 'modelRequests': 0, 'authorizationActions': 0},
         }
         public = result(source)
         self.assertNotIn('credential-canary', json.dumps(public))
@@ -33,6 +36,8 @@ class PublicResultsTests(unittest.TestCase):
         self.assertEqual(public['metrics']['tokensReported']['outputTokens'], 14)
         self.assertEqual(public['terminal']['nativeCompletionEvidence']['seq'], 580)
         self.assertEqual(public['terminal']['nativeCompletionEvidence']['controllerSourceSha256'], '2f' * 32)
+        self.assertTrue(public['collectionInfrastructureFault'])
+        self.assertEqual(public['collectionRecovery']['faultEvidenceSha256'], 'f' * 64)
 
     def test_missing_or_invalid_usage_never_becomes_zero(self):
         public = metrics({'allSessionTokens': None, 'tokensReported': None,
