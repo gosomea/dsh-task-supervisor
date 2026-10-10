@@ -2,6 +2,12 @@
 
 本批次使用 DeepSWE v1.1 固定提交 `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`，四道未投递候选题：两道 Go（updo-policy-alerting、geo-shapeindex-serialization），两道 TypeScript（superjson-error-stack-serialization、koota-pair-relation-tracking）。Goal、Plan、Supervisor-independent 各重复两次，共 **24 个位置**。本记录创建时正式投递 **0/24**；开发夹具 reward 不属于这批官方结果。
 
+## 最终范围：Supervisor 已结束
+
+用户在 Supervisor 8/8 封口后要求停止 Goal／Plan 后续运行。[最终报告](supervisor-final-20261010.zh.md)记录六次官方评分：一次满分、五次零分；两次执行基础设施异常为 null，严格成功 0/8。[范围封口](scope-closure-supervisor-only-20261010.json)保留原 24 个位置：八次 Supervisor 和此前五次 Plan 结果不变，一次已启动的 Goal 已停止、收集并销毁沙盒，另十个位置未投递。控制器已停止，不继续原批次；未完成条件配对。
+
+以下冻结规则和过程捕获保留各自历史范围，不能作为恢复后续投递的授权。当前结果以[最终机器报告](supervisor-final-20261010.json)和范围封口为准，取消／未投递不记作产品奖励零。
+
 ## 冻结材料
 
 - [release.json](release.json)：脱敏运行摘要、安装包与源码身份、运行依赖索引摘要、准入证据摘要。

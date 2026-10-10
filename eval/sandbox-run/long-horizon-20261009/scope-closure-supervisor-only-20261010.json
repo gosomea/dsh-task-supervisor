@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "kind": "evaluation-scope-closed-supervisor-only",
+  "source": "direct-user-instruction",
+  "createdAtUnix": 1791627728.158457,
+  "requestedScope": "all eight original Supervisor positions; no further Goal or Plan runs",
+  "originalPlanned": 24,
+  "supervisorPlanned": 8,
+  "supervisorSealed": 8,
+  "historicalPlanSealed": 5,
+  "goalCancelled": 1,
+  "notDelivered": 10,
+  "comparisonComplete": false,
+  "automaticDeliveryAuthorized": false,
+  "batchControllerStopped": true,
+  "nativeGoalCleanupAcknowledged": true,
+  "dailyHostTouched": false,
+  "orderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+  "releaseSha256": "bede3b7fe4bc347e04c4d9ffb60456c3d47cdaaffac21623a7dba66804348d66",
+  "positions": [
+    {
+      "positionId": "lh-01-geo-shapeindex-serialization-plan-r2",
+      "condition": "plan",
+      "state": "completed-evaluation",
+      "reason": "native-upstream-fault",
+      "originalResultSha256": "a60a6ac134be74b6ee88af0745a1f9ec4479abe5da808b0ec1cc62403a78c1ff"
+    },
+    {
+      "positionId": "lh-02-superjson-error-stack-serialization-plan-r1",
+      "condition": "plan",
+      "state": "completed-evaluation",
+      "reason": "controller-complete",
+      "originalResultSha256": "f1300e60175f595551038ccedcfc2a74d3d19a803ecfed76c8d6d330ec4a4b35"
+    },
+    {
+      "positionId": "lh-03-koota-pair-relation-tracking-plan-r2",
+      "condition": "plan",
+      "state": "completed-evaluation",
+      "reason": "native-stop",
+      "originalResultSha256": "f146e13b82124668745e9cd15b568431766c2675089d1f166d7f23258fdc932e"
+    },
+    {
+      "positionId": "lh-04-geo-shapeindex-serialization-plan-r1",
+      "condition": "plan",
+      "state": "completed-evaluation",
+      "reason": "native-stop",
+      "originalResultSha256": "22a0f95cac75753b94806a6fce0ca086c2486ea7fed37a7d1f5f77a1e83c023f"
+    },
+    {
+      "positionId": "lh-05-updo-policy-alerting-plan-r1",
+      "condition": "plan",
+      "state": "completed-evaluation",
+      "reason": "controller-complete",
+      "originalResultSha256": "33ba2cde37eb74331b9806ee4d3df7e7b1b9cd3055ef6c0637c2bb076b137a9d"
+    },
+    {
+      "positionId": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "infrastructure-fault",
+      "originalResultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1"
+    },
+    {
+      "positionId": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "internal-review-fault",
+      "originalResultSha256": "27a355628a52a88f43cec0614a182b3771c5b5974a8f2b002bd77651fcd16a0a"
+    },
+    {
+      "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "recovery-budget",
+      "originalResultSha256": "8608a9318f0424ab100c3a8a18c481e7ee6512622a9559e0b2fafe9f6a2a4b41"
+    },
+    {
+      "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "deadline",
+      "originalResultSha256": "649597b625133276c235f29dbbbd461a08f72b9131ed43e52867473e480037b3"
+    },
+    {
+      "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "infrastructure-fault",
+      "originalResultSha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd"
+    },
+    {
+      "positionId": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "internal-review-fault",
+      "originalResultSha256": "0ebc1f4b846e2e6019872f368e17ee062e2c4a090dc39402d9db485539f81cb8"
+    },
+    {
+      "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "internal-review-fault",
+      "originalResultSha256": "f8d0fd34ed557f3641a7596168090475fe10ae93a654cf1bb9aa8bbfee0fe85d"
+    },
+    {
+      "positionId": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+      "condition": "supervisor-independent",
+      "state": "completed-evaluation",
+      "reason": "internal-review-fault",
+      "originalResultSha256": "d8f7f99a0f70e1310c4aa5a0380c75a9cdfd3d5d7ae6aae6db55e4c410a36062"
+    },
+    {
+      "positionId": "lh-09-superjson-error-stack-serialization-goal-r1",
+      "condition": "goal",
+      "state": "cancelled-by-user",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-10-geo-shapeindex-serialization-goal-r2",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-13-koota-pair-relation-tracking-goal-r2",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-14-updo-policy-alerting-goal-r2",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-15-updo-policy-alerting-plan-r2",
+      "condition": "plan",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-16-koota-pair-relation-tracking-goal-r1",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-17-superjson-error-stack-serialization-plan-r2",
+      "condition": "plan",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-20-geo-shapeindex-serialization-goal-r1",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-21-updo-policy-alerting-goal-r1",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-22-koota-pair-relation-tracking-plan-r1",
+      "condition": "plan",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    },
+    {
+      "positionId": "lh-24-superjson-error-stack-serialization-goal-r2",
+      "condition": "goal",
+      "state": "not-delivered",
+      "reason": "user-requested-supervisor-only",
+      "originalResultSha256": null
+    }
+  ],
+  "cancelledGoalEvidence": {
+    "positionId": "lh-09-superjson-error-stack-serialization-goal-r1",
+    "sessionId": "session-3fff0028-b536-409f-b2eb-83550c106359",
+    "officialGradingExecuted": false,
+    "reward": null,
+    "countAsProductFailure": false,
+    "originalRecordsSha256": {
+      "started.json": "4d35bef31dc78e34621eafe88d83c19a488beb95521ac53878cf86b6f10d5c94",
+      "terminal.json": "184e5eda022843471ebd8edd804d84aa95cc1e7ae4636a77e514eb6b1020a2f0",
+      "quiescence.json": "2beb15b082ac17e5c8b32a0b89aa7a9a25aaf8b4d370872d8f04e381106cc9b9",
+      "collection.json": "dce06e5b299c49f5d131997bf6804afc4747423351c266d96c29e1b2ecc5bd86",
+      "collection-complete.json": "3fb5ca9d12153ca09ee75d79ca6a3f51af3c188420db07e9008a18d5996e3ae1",
+      "sandbox-destroyed.json": "0dd75b2e02254513b13c6f2c1c2f1eb448b331a1b7d0d4049d32856610bbda53"
+    }
+  }
+}

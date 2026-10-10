@@ -2,6 +2,12 @@
 
 DeepSWE v1.1 is pinned to `0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea`. Four undelivered candidates comprise two Go tasks (updo-policy-alerting and geo-shapeindex-serialization) and two TypeScript tasks (superjson-error-stack-serialization and koota-pair-relation-tracking). Goal, Plan and Supervisor-independent each repeat twice: **24 positions**. Formal delivery at creation is **0/24**; development fixture rewards are not official results for this batch.
 
+## Final scope: Supervisor evaluation ended
+
+After all 8/8 Supervisor positions were sealed, the user stopped further Goal / Plan runs. The [final report](supervisor-final-20261010.md) records six official grades: one full reward and five zero rewards; two execution infrastructure failures retain null, and strict success is 0/8. The [scope closure](scope-closure-supervisor-only-20261010.json) retains all original 24 positions: eight Supervisor and five earlier Plan results are unchanged, one started Goal was stopped, collected and its sandbox destroyed, and ten positions were not delivered. The controller is stopped and the original batch does not continue; condition pairing is incomplete.
+
+Frozen rules and captures below retain their historical scopes and do not authorize resumed delivery. The [final machine report](supervisor-final-20261010.json) and scope closure own the current outcome; cancelled or undelivered positions are not product reward zero.
+
 ## Frozen material
 
 - [release.json](release.json): safe runtime projection, artifact/source identity, dependency index digest and admission evidence digests.

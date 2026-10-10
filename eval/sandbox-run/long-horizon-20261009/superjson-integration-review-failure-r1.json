@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "kind": "superjson-integration-review-failure-r1",
+  "reportOnly": true,
+  "positionId": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+  "resultSha256": "d8f7f99a0f70e1310c4aa5a0380c75a9cdfd3d5d7ae6aae6db55e4c410a36062",
+  "sessionId": "session-9cdc0206-d957-4ba2-8772-4977377ace96",
+  "jobId": "6d119ba7-6e3d-4f72-81ae-0f8a5522cba1",
+  "reviewerSessionId": "task-review-5ece2573-830e-4785-82d7-c70c7b39b3d1",
+  "cutoff": 559,
+  "nodeAttempt": 1,
+  "requirementsVersion": 1,
+  "planVersion": 1,
+  "snapshotId": "c60e009f-ed6f-4f1f-abc6-48df930e3a91",
+  "latestRecordSeq": 693,
+  "status": "failed",
+  "attempt": 2,
+  "phase": "comparison",
+  "decisionCallCount": 0,
+  "decisionPersisted": false,
+  "appliedTransitions": 0,
+  "commandCheckCount": 12,
+  "durableFindingsCount": 6,
+  "checkExitCodes": {
+    "0": 10,
+    "1": 2
+  },
+  "checksWithChangedCopy": 1,
+  "toolCalls": {
+    "read_task_context": 9,
+    "inspect_task_artifact": 20,
+    "read_task_input": 1,
+    "read_task_evidence_index": 2,
+    "task_review_check_plan": 3,
+    "run_review_check": 14,
+    "read_review_evidence": 17,
+    "write_review_probe": 4,
+    "task_review_observations": 8
+  },
+  "toolErrors": [
+    {
+      "seq": 43,
+      "callSeq": 42,
+      "tool": "read_task_evidence_index",
+      "errorKind": "premature-comparison",
+      "errorSha256": "058f6e91a4918d12ecd09c51cebfb446d87b76586af60f008b8dffc198f0d286"
+    },
+    {
+      "seq": 48,
+      "callSeq": 47,
+      "tool": "task_review_check_plan",
+      "errorKind": "unclassified",
+      "errorSha256": "387cf4b7a890d60b4bfc44592d9faf8ac4b4dd054b50dbe5f4a09a52ceb31b2f"
+    },
+    {
+      "seq": 53,
+      "callSeq": 52,
+      "tool": "task_review_check_plan",
+      "errorKind": "unclassified",
+      "errorSha256": "28f2675cfd7e7ead5229613d90453ec85f9d3feb95dacddec1d2d0fe2573cfc8"
+    },
+    {
+      "seq": 129,
+      "callSeq": 128,
+      "tool": "inspect_task_artifact",
+      "errorKind": "unclassified",
+      "errorSha256": "6eeffc6d58f7c0e71203987855a660fc7e224686a021d5932e66ab41fa3ae98d"
+    },
+    {
+      "seq": 184,
+      "callSeq": 183,
+      "tool": "task_review_observations",
+      "errorKind": "unclassified",
+      "errorSha256": "a8be78663865dfbc348407f13efb329765839ad36c5a016d87ec26a215236bca"
+    },
+    {
+      "seq": 189,
+      "callSeq": 188,
+      "tool": "task_review_observations",
+      "errorKind": "ineligible-check",
+      "errorSha256": "22d379267de27fb12e9330f33da547553ceac307c0fa9dee348a3f18d214b827"
+    },
+    {
+      "seq": 215,
+      "callSeq": 214,
+      "tool": "run_review_check",
+      "errorKind": "unclassified",
+      "errorSha256": "7989e18a54f6140e7f841e3775083909b698cf8a11580f5c1ecbaca64cd83ecc"
+    },
+    {
+      "seq": 266,
+      "callSeq": 265,
+      "tool": "task_review_observations",
+      "errorKind": "not-fully-read",
+      "errorSha256": "d87f62ee857b11a4747cd0650f3a377bf1a2f36684d354c35c559687404cdb97"
+    },
+    {
+      "seq": 276,
+      "callSeq": 275,
+      "tool": "read_task_context",
+      "errorKind": "premature-comparison",
+      "errorSha256": "058f6e91a4918d12ecd09c51cebfb446d87b76586af60f008b8dffc198f0d286"
+    },
+    {
+      "seq": 281,
+      "callSeq": 280,
+      "tool": "task_review_observations",
+      "errorKind": "schema-or-required-field",
+      "errorSha256": "004861aee460eeb41d59c4323d7c215ee3259be900bb2018e3101710e8d6975b"
+    },
+    {
+      "seq": 286,
+      "callSeq": 285,
+      "tool": "task_review_observations",
+      "errorKind": "unclassified",
+      "errorSha256": "fb87c7b421104c898bf4661106ca9cb4166875fdcface86ac3684799b8c81156"
+    },
+    {
+      "seq": 291,
+      "callSeq": 290,
+      "tool": "task_review_observations",
+      "errorKind": "unclassified",
+      "errorSha256": "5e05a17a040b427cf181d414e614f8e4b0ef11b849f3093ea35677194cc7b2d4"
+    },
+    {
+      "seq": 296,
+      "callSeq": 295,
+      "tool": "task_review_observations",
+      "errorKind": "unclassified",
+      "errorSha256": "1a739fb0862922f13a9bad7fd7fbc027c61b790ab28ee55b3c5540cc3247a0b3"
+    },
+    {
+      "seq": 350,
+      "callSeq": 349,
+      "tool": "run_review_check",
+      "errorKind": "unclassified",
+      "errorSha256": "7989e18a54f6140e7f841e3775083909b698cf8a11580f5c1ecbaca64cd83ecc"
+    }
+  ],
+  "toolErrorKinds": {
+    "premature-comparison": 2,
+    "unclassified": 9,
+    "ineligible-check": 1,
+    "not-fully-read": 1,
+    "schema-or-required-field": 1
+  },
+  "fileReadQualificationAtRetry": {
+    "beforeCount": 8,
+    "afterCount": 8,
+    "allPriorRangesCovered": true
+  },
+  "fileReadQualificationAtFinal": {
+    "beforeCount": 8,
+    "afterCount": 8,
+    "allPriorRangesCovered": true
+  },
+  "checkReadQualificationAtRetry": {
+    "beforeCount": 9,
+    "afterCount": 9,
+    "allPriorRangesCovered": true
+  },
+  "checkReadQualificationAtFinal": {
+    "beforeCount": 9,
+    "afterCount": 17,
+    "allPriorRangesCovered": true
+  },
+  "recoveryMetadataKeys": [
+    "retryLimit",
+    "delayMs",
+    "resume",
+    "consumed",
+    "protocolRepairs",
+    "permit",
+    "manualOnly",
+    "manualPending",
+    "nextRetryAt",
+    "failures"
+  ],
+  "reviewSourceSha256": "8f04b4a5eda4e8691d092c6241ef72f12aff524c5d4a3bca2dbab918bcd28655",
+  "mainSourceSha256": "d487573d54fe496d5f3ced30506a624f864ebb361cf7af44556ba8225a884ed0",
+  "nativeMainLogBytes": 444491654,
+  "qualifiedReadComparison": "same identity and total, union coverage of all prior ranges; row equality is not required",
+  "requirementsAuthority": "input.requirementsVersion, not absent top-level field"
+}

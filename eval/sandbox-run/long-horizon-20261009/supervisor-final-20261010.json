@@ -1,0 +1,1457 @@
+{
+  "schemaVersion": 1,
+  "kind": "supervisor-final-eight-original-positions",
+  "reportOnly": true,
+  "createdAtUnix": 1791627794.3992388,
+  "sourceSnapshot": "reports/20261010-102010Z/summary.json",
+  "sourceSnapshotSha256": "eba3e8dde6c0ce9c9578a6d4652200fb32ed3dfc4b3e843dd9eb19a944385e78",
+  "scopeClosure": "scope-closure-supervisor-only-20261010.json",
+  "scopeClosureSha256": "37e5ef6c5ec811ac03df8c3791b6b9f8a315267e2648698cfd5bb34dfabae0ae",
+  "scope": {
+    "plannedSupervisorPositions": 8,
+    "sealedSupervisorPositions": 8,
+    "distinctPublicTasks": 4,
+    "sameTaskRepeats": 2,
+    "comparisonComplete": false,
+    "goalAndPlanFurtherRunsCancelledByUser": true,
+    "historicalPlanResultsRetained": 5,
+    "notDeliveredOriginalPositions": 10,
+    "cancelledStartedGoalPositions": 1
+  },
+  "frozen": {
+    "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+    "pluginTarballSha256": "cdd051964e75b930c80341b3be1fc9421996d24f23fc67d0a8ba6c36439ee366",
+    "executionReleaseSha256": "bede3b7fe4bc347e04c4d9ffb60456c3d47cdaaffac21623a7dba66804348d66",
+    "originalOrderSha256": "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+    "reportProcessorSourceSha256": {
+      "public_results.py": "1ccff2f2b7f8b31a259560148fcac6be336ab055472bae6a1387ac1a6175ccd2",
+      "trajectory.py": "2e50138452f16c22e7e575a4824eb046dcace58d3c70272d4f3ca658314ff334",
+      "review_windows.py": "27f03dbc394ed59c2326674853a8c3ebadf49750006a67a054b25b9c5e288018",
+      "summarize.py": "e546a2d4804e9d4cefb67765963a9548773511860bca24047b2a1dd2ac4b58b3",
+      "session_records.py": "7e9cc49a56e650f26e586158780c65bf59f69ef6c94f2ecb063ebf163aa48b2c"
+    }
+  },
+  "aggregate": {
+    "officialScored": 6,
+    "rewardOne": 1,
+    "rewardZero": 5,
+    "rewardUnknown": 2,
+    "strictSuccess": 0,
+    "strictSuccessRateFullDenominator": 0,
+    "executionInfrastructureFaults": 2,
+    "collectionInfrastructureFaults": 1,
+    "infrastructureFaultUnion": 3,
+    "gradingFaults": 0,
+    "firstStopReasons": {
+      "infrastructure-fault": 2,
+      "internal-review-fault": 4,
+      "recovery-budget": 1,
+      "deadline": 1
+    },
+    "requestCount": 2165,
+    "independentCommandChecks": 234,
+    "recordedIndependentCheckResults": 74,
+    "reviewToolCalls": 2428,
+    "allToolCalls": 3172,
+    "allToolErrors": 253,
+    "wholeElapsedSec": 41225.639451265335,
+    "allSessionTokens": null,
+    "tokensReportedLowerBound": {
+      "uncachedInputTokens": 6711976,
+      "outputTokens": 4627749,
+      "cacheReadTokens": 153876093,
+      "cacheWriteTokens": 0
+    },
+    "tokenCoverageComplete": false,
+    "humanRescueActions": 0,
+    "protocolUserActions": 14,
+    "taskFaultRetryReservations": 11,
+    "taskTruncationReservations": 1,
+    "reviewReadFailures": 53,
+    "repeatedExactReads": 29,
+    "contextCompactions": 0,
+    "announcedCompleteOfficialFailed": 0,
+    "falseAcceptanceRate": null,
+    "falsePauseRate": null,
+    "correctionBenefit": null,
+    "extraCheckCpuNs": null
+  },
+  "positions": [
+    {
+      "positionId": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "taskId": "updo-policy-alerting",
+      "repeat": 2,
+      "resultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+      "reward": null,
+      "strictSuccess": false,
+      "firstStopReason": "infrastructure-fault",
+      "executionInfrastructureFault": true,
+      "collectionInfrastructureFault": false,
+      "F2P": null,
+      "P2P": null,
+      "requestCount": 7,
+      "independentCommandChecks": 0,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 0,
+      "allToolCalls": 14,
+      "allToolErrors": 2,
+      "wholeElapsedSec": 42.89138412475586,
+      "reviewWindowsMs": null,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 27448,
+        "outputTokens": 1020,
+        "cacheReadTokens": 83968,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 1,
+        "modelSteps": 7,
+        "mainModelSteps": 7,
+        "supervisorTask": null
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "taskId": "koota-pair-relation-tracking",
+      "repeat": 2,
+      "resultSha256": "27a355628a52a88f43cec0614a182b3771c5b5974a8f2b002bd77651fcd16a0a",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 38,
+        "passed": 0,
+        "failed": 38,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 172,
+        "passed": 172,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 197,
+      "independentCommandChecks": 23,
+      "recordedIndependentCheckResults": 7,
+      "reviewToolCalls": 245,
+      "allToolCalls": 311,
+      "allToolErrors": 19,
+      "wholeElapsedSec": 3185.696775197983,
+      "reviewWindowsMs": 2466876,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 610242,
+        "outputTokens": 407763,
+        "cacheReadTokens": 11109248,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 5,
+        "modelSteps": 197,
+        "mainModelSteps": 50,
+        "supervisorTask": {
+          "declaredNodes": 4,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 4,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 3
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "0e6cff22-8fa6-4e18-9fa1-8452decc5c61",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 113,
+                "terminalRecordSeq": 121,
+                "observedJobWindowMs": 188667,
+                "observedStartedWindowMs": 188667
+              },
+              {
+                "jobId": "bbba5a58-820e-497c-a5a4-7ddf9fdd190f",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 146,
+                "terminalRecordSeq": 173,
+                "observedJobWindowMs": 795831,
+                "observedStartedWindowMs": 795702
+              },
+              {
+                "jobId": "1baab723-1b08-4355-b318-494840c65d37",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 306,
+                "terminalRecordSeq": 314,
+                "observedJobWindowMs": 271980,
+                "observedStartedWindowMs": 271980
+              },
+              {
+                "jobId": "bdf768f9-4d07-4347-99bb-87d37f6ccdb2",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 377,
+                "terminalRecordSeq": 541,
+                "observedJobWindowMs": 1210398,
+                "observedStartedWindowMs": 1210219
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 2466876,
+            "observedUnionWindowMs": 2466876,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 188667
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 795831
+              },
+              "progress": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 271980
+              },
+              "stage": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1210398
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 1,
+            "progress": 1,
+            "stage": 1,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "taskId": "geo-shapeindex-serialization",
+      "repeat": 2,
+      "resultSha256": "8608a9318f0424ab100c3a8a18c481e7ee6512622a9559e0b2fafe9f6a2a4b41",
+      "reward": 1,
+      "strictSuccess": false,
+      "firstStopReason": "recovery-budget",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 24,
+        "passed": 24,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "P2P": {
+        "total": 599,
+        "passed": 599,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 799,
+      "independentCommandChecks": 141,
+      "recordedIndependentCheckResults": 33,
+      "reviewToolCalls": 902,
+      "allToolCalls": 1162,
+      "allToolErrors": 99,
+      "wholeElapsedSec": 9307.957995176315,
+      "reviewWindowsMs": 6032742,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 2261405,
+        "outputTokens": 1315140,
+        "cacheReadTokens": 68787072,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 16,
+        "modelSteps": 798,
+        "mainModelSteps": 149,
+        "supervisorTask": {
+          "declaredNodes": 4,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 10,
+          "maxCurrentNodeAttempt": 3,
+          "nodeStatuses": {
+            "passed": 1,
+            "reviewing": 1,
+            "pending": 2
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "5bf34472-45cf-444e-ba6b-4aed206ac487",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 113,
+                "terminalRecordSeq": 121,
+                "observedJobWindowMs": 168070,
+                "observedStartedWindowMs": 168070
+              },
+              {
+                "jobId": "baa35b8b-2882-476b-b7fa-5751e9507815",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 205,
+                "terminalRecordSeq": 220,
+                "observedJobWindowMs": 319699,
+                "observedStartedWindowMs": 319586
+              },
+              {
+                "jobId": "23f1bbaa-286d-4dc2-bd6b-2a21cae8f567",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 229,
+                "terminalRecordSeq": 244,
+                "observedJobWindowMs": 500393,
+                "observedStartedWindowMs": 500288
+              },
+              {
+                "jobId": "ac247f4c-5377-4f91-86ea-8305d5ba6557",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 374,
+                "terminalRecordSeq": 382,
+                "observedJobWindowMs": 127251,
+                "observedStartedWindowMs": 127251
+              },
+              {
+                "jobId": "9553e2e0-8f76-4868-9d53-35056ff17cb5",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 405,
+                "terminalRecordSeq": 535,
+                "observedJobWindowMs": 369425,
+                "observedStartedWindowMs": 369249
+              },
+              {
+                "jobId": "f188da4d-ae85-4e69-abd9-a488422aaae9",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 612,
+                "terminalRecordSeq": 620,
+                "observedJobWindowMs": 399088,
+                "observedStartedWindowMs": 399088
+              },
+              {
+                "jobId": "13394c0f-1e88-4364-8d5c-73d5adb87008",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 703,
+                "terminalRecordSeq": 711,
+                "observedJobWindowMs": 91748,
+                "observedStartedWindowMs": 91748
+              },
+              {
+                "jobId": "55216b35-022c-4d6e-980a-58cef59975ad",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 779,
+                "terminalRecordSeq": 787,
+                "observedJobWindowMs": 193382,
+                "observedStartedWindowMs": 193382
+              },
+              {
+                "jobId": "25e7fcef-5181-43e3-af7a-9680840864c0",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 818,
+                "terminalRecordSeq": 1034,
+                "observedJobWindowMs": 1152244,
+                "observedStartedWindowMs": 1151951
+              },
+              {
+                "jobId": "42672b49-396a-4082-b680-6c5ff83e000f",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1133,
+                "terminalRecordSeq": 1141,
+                "observedJobWindowMs": 322005,
+                "observedStartedWindowMs": 322005
+              },
+              {
+                "jobId": "314c9e84-f65e-44c1-88ee-d1081a87ae25",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1217,
+                "terminalRecordSeq": 1237,
+                "observedJobWindowMs": 644399,
+                "observedStartedWindowMs": 644399
+              },
+              {
+                "jobId": "e2513a8f-2e30-450d-8680-3fe90a0bf27f",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1300,
+                "terminalRecordSeq": 1308,
+                "observedJobWindowMs": 130376,
+                "observedStartedWindowMs": 130376
+              },
+              {
+                "jobId": "27c6d9c8-3852-4825-a55f-17386b226e6d",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1334,
+                "terminalRecordSeq": 1646,
+                "observedJobWindowMs": 1014595,
+                "observedStartedWindowMs": 1014242
+              },
+              {
+                "jobId": "86602c4f-c1e7-4f4b-90c7-0f37369f0321",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 1731,
+                "terminalRecordSeq": 1954,
+                "observedJobWindowMs": 600067,
+                "observedStartedWindowMs": 599783
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 6032742,
+            "observedUnionWindowMs": 6032742,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 168070
+              },
+              "plan": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 820092
+              },
+              "progress": {
+                "jobs": 7,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1908249
+              },
+              "stage": {
+                "jobs": 4,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 3136331
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 2,
+            "progress": 7,
+            "stage": 4,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "taskId": "geo-shapeindex-serialization",
+      "repeat": 1,
+      "resultSha256": "649597b625133276c235f29dbbbd461a08f72b9131ed43e52867473e480037b3",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "deadline",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 24,
+        "passed": 0,
+        "failed": 24,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 599,
+        "passed": 599,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 105,
+      "independentCommandChecks": 0,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 122,
+      "allToolCalls": 159,
+      "allToolErrors": 13,
+      "wholeElapsedSec": 10813.285603046417,
+      "reviewWindowsMs": 1695310,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 410560,
+        "outputTokens": 413961,
+        "cacheReadTokens": 4191232,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 5,
+        "modelSteps": 105,
+        "mainModelSteps": 21,
+        "supervisorTask": {
+          "declaredNodes": 0,
+          "observedPlanVersions": [
+            0
+          ],
+          "currentNodeAttemptOrdinalsSum": null,
+          "maxCurrentNodeAttempt": null,
+          "nodeStatuses": null,
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "fa5e119c-6112-428f-8d43-5ebfbb171374",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 107,
+                "terminalRecordSeq": 115,
+                "observedJobWindowMs": 100499,
+                "observedStartedWindowMs": 100499
+              },
+              {
+                "jobId": "dc30056c-bee1-4daa-898d-cc9539906811",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 156,
+                "terminalRecordSeq": 172,
+                "observedJobWindowMs": 390596,
+                "observedStartedWindowMs": 390404
+              },
+              {
+                "jobId": "12c0ba47-d3e3-4acf-aa00-18477641bf07",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 181,
+                "terminalRecordSeq": 196,
+                "observedJobWindowMs": 460227,
+                "observedStartedWindowMs": 460121
+              },
+              {
+                "jobId": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 205,
+                "terminalRecordSeq": 232,
+                "observedJobWindowMs": 743988,
+                "observedStartedWindowMs": 743873
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 1695310,
+            "observedUnionWindowMs": 1695310,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 100499
+              },
+              "plan": {
+                "jobs": 3,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1594811
+              },
+              "progress": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "stage": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 3,
+            "progress": 0,
+            "stage": 0,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "taskId": "updo-policy-alerting",
+      "repeat": 1,
+      "resultSha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd",
+      "reward": null,
+      "strictSuccess": false,
+      "firstStopReason": "infrastructure-fault",
+      "executionInfrastructureFault": true,
+      "collectionInfrastructureFault": false,
+      "F2P": null,
+      "P2P": null,
+      "requestCount": 180,
+      "independentCommandChecks": 19,
+      "recordedIndependentCheckResults": 10,
+      "reviewToolCalls": 215,
+      "allToolCalls": 271,
+      "allToolErrors": 24,
+      "wholeElapsedSec": 2871.981963157654,
+      "reviewWindowsMs": 1792872,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 652038,
+        "outputTokens": 450240,
+        "cacheReadTokens": 7987456,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 7,
+        "modelSteps": 180,
+        "mainModelSteps": 43,
+        "supervisorTask": {
+          "declaredNodes": 5,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 5,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 4
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "6f767b2d-68b7-4e5a-98ee-7a2739128e13",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 104,
+                "terminalRecordSeq": 112,
+                "observedJobWindowMs": 43890,
+                "observedStartedWindowMs": 43890
+              },
+              {
+                "jobId": "0be15342-0d6c-4d8b-b00e-8528aeb51cf7",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 144,
+                "terminalRecordSeq": 152,
+                "observedJobWindowMs": 67474,
+                "observedStartedWindowMs": 67474
+              },
+              {
+                "jobId": "c1907cd2-174e-4032-bd26-8000990dd2e5",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 158,
+                "terminalRecordSeq": 185,
+                "observedJobWindowMs": 766140,
+                "observedStartedWindowMs": 766011
+              },
+              {
+                "jobId": "e6e980db-c65a-43f6-a96a-03bc250874ce",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 259,
+                "terminalRecordSeq": 363,
+                "observedJobWindowMs": 424218,
+                "observedStartedWindowMs": 424037
+              },
+              {
+                "jobId": "a1fef28a-6e4e-41b3-ba3f-e658fc8b7f7c",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 448,
+                "terminalRecordSeq": 456,
+                "observedJobWindowMs": 241863,
+                "observedStartedWindowMs": 241863
+              },
+              {
+                "jobId": "3ef81fef-b396-416b-a4f8-039fe8a85b79",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 467,
+                "terminalRecordSeq": 533,
+                "observedJobWindowMs": 249287,
+                "observedStartedWindowMs": 249082
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 1792872,
+            "observedUnionWindowMs": 1792872,
+            "byKind": {
+              "planning": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 111364
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 766140
+              },
+              "progress": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 241863
+              },
+              "stage": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 673505
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 2,
+            "plan": 1,
+            "progress": 1,
+            "stage": 2,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "taskId": "koota-pair-relation-tracking",
+      "repeat": 1,
+      "resultSha256": "0ebc1f4b846e2e6019872f368e17ee062e2c4a090dc39402d9db485539f81cb8",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 38,
+        "passed": 0,
+        "failed": 38,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 172,
+        "passed": 172,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 466,
+      "independentCommandChecks": 24,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 474,
+      "allToolCalls": 655,
+      "allToolErrors": 30,
+      "wholeElapsedSec": 6784.882842302322,
+      "reviewWindowsMs": 3701816,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 1423339,
+        "outputTokens": 987040,
+        "cacheReadTokens": 40505597,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 13,
+        "modelSteps": 466,
+        "mainModelSteps": 157,
+        "supervisorTask": {
+          "declaredNodes": 6,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 6,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 5
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "242028e8-bf0b-4628-aa51-2bf40ab8f9b1",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 123,
+                "terminalRecordSeq": 131,
+                "observedJobWindowMs": 139870,
+                "observedStartedWindowMs": 139870
+              },
+              {
+                "jobId": "231199ba-17e4-4204-8e1b-ea0c33fb5bc9",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 206,
+                "terminalRecordSeq": 214,
+                "observedJobWindowMs": 114239,
+                "observedStartedWindowMs": 114239
+              },
+              {
+                "jobId": "7e983a3e-ee6b-42dc-a3db-eb919bf5941d",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 283,
+                "terminalRecordSeq": 291,
+                "observedJobWindowMs": 72694,
+                "observedStartedWindowMs": 72694
+              },
+              {
+                "jobId": "6a8dea7f-85b3-4c26-b29f-d71d4defa660",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 317,
+                "terminalRecordSeq": 332,
+                "observedJobWindowMs": 478339,
+                "observedStartedWindowMs": 478219
+              },
+              {
+                "jobId": "88834979-277e-44dc-8c8e-1631c22c65a5",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 388,
+                "terminalRecordSeq": 396,
+                "observedJobWindowMs": 75294,
+                "observedStartedWindowMs": 75294
+              },
+              {
+                "jobId": "89780076-6e63-4e32-988f-fa20691bd0d1",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 424,
+                "terminalRecordSeq": 432,
+                "observedJobWindowMs": 144175,
+                "observedStartedWindowMs": 144175
+              },
+              {
+                "jobId": "4ea22a2b-b379-4b43-b02b-412d0e31b8fa",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 492,
+                "terminalRecordSeq": 500,
+                "observedJobWindowMs": 209144,
+                "observedStartedWindowMs": 209144
+              },
+              {
+                "jobId": "f1b36119-4682-4b0c-ad07-885308d8924e",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 588,
+                "terminalRecordSeq": 596,
+                "observedJobWindowMs": 259147,
+                "observedStartedWindowMs": 259147
+              },
+              {
+                "jobId": "7cd7cb28-3f5e-41cc-906d-1d75e93ff721",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 716,
+                "terminalRecordSeq": 724,
+                "observedJobWindowMs": 164924,
+                "observedStartedWindowMs": 164924
+              },
+              {
+                "jobId": "c0d52f9d-095a-43a6-863f-5f6ae2806245",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 832,
+                "terminalRecordSeq": 840,
+                "observedJobWindowMs": 353743,
+                "observedStartedWindowMs": 353743
+              },
+              {
+                "jobId": "b2dc070c-7773-47de-8715-0b6d3571fa31",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 963,
+                "terminalRecordSeq": 971,
+                "observedJobWindowMs": 478035,
+                "observedStartedWindowMs": 478035
+              },
+              {
+                "jobId": "cb43effc-0e0c-4208-8dc8-d8e1db15a605",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 1004,
+                "terminalRecordSeq": 1204,
+                "observedJobWindowMs": 1212212,
+                "observedStartedWindowMs": 1211970
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 3701816,
+            "observedUnionWindowMs": 3701816,
+            "byKind": {
+              "planning": {
+                "jobs": 3,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 326803
+              },
+              "plan": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 478339
+              },
+              "progress": {
+                "jobs": 7,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1684462
+              },
+              "stage": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1212212
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 3,
+            "plan": 1,
+            "progress": 7,
+            "stage": 1,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "taskId": "superjson-error-stack-serialization",
+      "repeat": 2,
+      "resultSha256": "f8d0fd34ed557f3641a7596168090475fe10ae93a654cf1bb9aa8bbfee0fe85d",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": true,
+      "F2P": {
+        "total": 80,
+        "passed": 0,
+        "failed": 80,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 116,
+        "passed": 116,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 155,
+      "independentCommandChecks": 10,
+      "recordedIndependentCheckResults": 11,
+      "reviewToolCalls": 189,
+      "allToolCalls": 239,
+      "allToolErrors": 23,
+      "wholeElapsedSec": 3237.0115010738373,
+      "reviewWindowsMs": 2357840,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 537455,
+        "outputTokens": 462428,
+        "cacheReadTokens": 7386368,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 6,
+        "modelSteps": 155,
+        "mainModelSteps": 32,
+        "supervisorTask": {
+          "declaredNodes": 3,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 3,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "reviewing": 1,
+            "pending": 2
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "2b2ed611-8b7d-4a6e-9c98-cad69a3697e6",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 104,
+                "terminalRecordSeq": 112,
+                "observedJobWindowMs": 146561,
+                "observedStartedWindowMs": 146561
+              },
+              {
+                "jobId": "59127a23-0c9d-4088-bdce-c18a9c942f93",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 119,
+                "terminalRecordSeq": 134,
+                "observedJobWindowMs": 568168,
+                "observedStartedWindowMs": 568016
+              },
+              {
+                "jobId": "5ecc0b7c-0519-4028-9af3-393b28a18017",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 143,
+                "terminalRecordSeq": 158,
+                "observedJobWindowMs": 222426,
+                "observedStartedWindowMs": 222227
+              },
+              {
+                "jobId": "5bf9620e-fdec-4b01-a89b-3753fb93ce57",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 271,
+                "terminalRecordSeq": 279,
+                "observedJobWindowMs": 216306,
+                "observedStartedWindowMs": 216306
+              },
+              {
+                "jobId": "4f631716-fa11-4758-9241-d5cca6fabae2",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 315,
+                "terminalRecordSeq": 459,
+                "observedJobWindowMs": 1204379,
+                "observedStartedWindowMs": 1204195
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 2357840,
+            "observedUnionWindowMs": 2357840,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 146561
+              },
+              "plan": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 790594
+              },
+              "progress": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 216306
+              },
+              "stage": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 1204379
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 2,
+            "progress": 1,
+            "stage": 1,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    },
+    {
+      "positionId": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+      "taskId": "superjson-error-stack-serialization",
+      "repeat": 1,
+      "resultSha256": "d8f7f99a0f70e1310c4aa5a0380c75a9cdfd3d5d7ae6aae6db55e4c410a36062",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 80,
+        "passed": 0,
+        "failed": 80,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 116,
+        "passed": 116,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 256,
+      "independentCommandChecks": 17,
+      "recordedIndependentCheckResults": 13,
+      "reviewToolCalls": 281,
+      "allToolCalls": 361,
+      "allToolErrors": 43,
+      "wholeElapsedSec": 4981.93138718605,
+      "reviewWindowsMs": 3250835,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 789489,
+        "outputTokens": 590157,
+        "cacheReadTokens": 13825152,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0,
+      "contextCompactions": 0,
+      "trajectory": {
+        "linkedSessions": 8,
+        "modelSteps": 256,
+        "mainModelSteps": 58,
+        "supervisorTask": {
+          "declaredNodes": 4,
+          "observedPlanVersions": [
+            0,
+            1
+          ],
+          "currentNodeAttemptOrdinalsSum": 4,
+          "maxCurrentNodeAttempt": 1,
+          "nodeStatuses": {
+            "passed": 1,
+            "reviewing": 1,
+            "pending": 2
+          },
+          "reviewWindows": {
+            "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+            "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+            "jobs": [
+              {
+                "jobId": "7231fcbe-e9bd-4305-a514-db71f8df901a",
+                "kind": "planning",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 105,
+                "terminalRecordSeq": 113,
+                "observedJobWindowMs": 64917,
+                "observedStartedWindowMs": 64917
+              },
+              {
+                "jobId": "5c3535c3-36b3-4973-ab26-c37744a93a71",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 119,
+                "terminalRecordSeq": 134,
+                "observedJobWindowMs": 171323,
+                "observedStartedWindowMs": 171150
+              },
+              {
+                "jobId": "6b698a9f-e1d1-4a66-9a90-cbd4ed509f74",
+                "kind": "plan",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 143,
+                "terminalRecordSeq": 158,
+                "observedJobWindowMs": 486178,
+                "observedStartedWindowMs": 486059
+              },
+              {
+                "jobId": "dd8ca0f7-1b28-44ce-abec-3de7fb99c053",
+                "kind": "stage",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 270,
+                "terminalRecordSeq": 360,
+                "observedJobWindowMs": 868537,
+                "observedStartedWindowMs": 868190
+              },
+              {
+                "jobId": "9ef7297a-7729-4d39-aff6-a19eb7b8c074",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 417,
+                "terminalRecordSeq": 425,
+                "observedJobWindowMs": 181586,
+                "observedStartedWindowMs": 181586
+              },
+              {
+                "jobId": "f55101ef-4812-463a-8a2f-c5d5285c366c",
+                "kind": "progress",
+                "finalStatus": "applied",
+                "observedReviewAttempts": 1,
+                "firstRecordSeq": 515,
+                "terminalRecordSeq": 523,
+                "observedJobWindowMs": 245209,
+                "observedStartedWindowMs": 245209
+              },
+              {
+                "jobId": "6d119ba7-6e3d-4f72-81ae-0f8a5522cba1",
+                "kind": "stage",
+                "finalStatus": "failed",
+                "observedReviewAttempts": 2,
+                "firstRecordSeq": 560,
+                "terminalRecordSeq": 688,
+                "observedJobWindowMs": 1233085,
+                "observedStartedWindowMs": 1231131
+              }
+            ],
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 3250835,
+            "observedUnionWindowMs": 3250835,
+            "byKind": {
+              "planning": {
+                "jobs": 1,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 64917
+              },
+              "plan": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 657501
+              },
+              "progress": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 426795
+              },
+              "stage": {
+                "jobs": 2,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 2101622
+              },
+              "completion": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              },
+              "unclassified": {
+                "jobs": 0,
+                "unknownWindows": 0,
+                "totalObservedJobWindowMs": 0
+              }
+            }
+          },
+          "reviewJobsByKind": {
+            "planning": 1,
+            "plan": 2,
+            "progress": 2,
+            "stage": 2,
+            "completion": 0
+          }
+        }
+      },
+      "resourceLimits": null
+    }
+  ],
+  "sameTaskRepeatPairs": [
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "repeats": [
+        {
+          "repeat": 1,
+          "reward": 0,
+          "strictSuccess": false,
+          "firstStopReason": "deadline"
+        },
+        {
+          "repeat": 2,
+          "reward": 1,
+          "strictSuccess": false,
+          "firstStopReason": "recovery-budget"
+        }
+      ]
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "repeats": [
+        {
+          "repeat": 1,
+          "reward": 0,
+          "strictSuccess": false,
+          "firstStopReason": "internal-review-fault"
+        },
+        {
+          "repeat": 2,
+          "reward": 0,
+          "strictSuccess": false,
+          "firstStopReason": "internal-review-fault"
+        }
+      ]
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "repeats": [
+        {
+          "repeat": 1,
+          "reward": 0,
+          "strictSuccess": false,
+          "firstStopReason": "internal-review-fault"
+        },
+        {
+          "repeat": 2,
+          "reward": 0,
+          "strictSuccess": false,
+          "firstStopReason": "internal-review-fault"
+        }
+      ]
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "repeats": [
+        {
+          "repeat": 1,
+          "reward": null,
+          "strictSuccess": false,
+          "firstStopReason": "infrastructure-fault"
+        },
+        {
+          "repeat": 2,
+          "reward": null,
+          "strictSuccess": false,
+          "firstStopReason": "infrastructure-fault"
+        }
+      ]
+    }
+  ],
+  "uncertainty": {
+    "unit": "four distinct tasks; repeats are correlated observations",
+    "pairedConditionDifference": null,
+    "reason": "user ended Goal and Plan comparison; no complete condition pairing",
+    "superiorityClaimSupported": false,
+    "blindReviewLabelsAvailable": false
+  },
+  "originalResultImmutability": {
+    "previousSevenSupervisorResultHashesUnchanged": true,
+    "agentReruns": 0,
+    "resultsOverwritten": 0
+  }
+}

@@ -1,6 +1,6 @@
 # 评测设计与执行路线
 
-当前工作以[OpenSandbox 长程协议](../eval/sandbox-run/protocol.zh.md)为准：四道留出题、三条件、两次重复，24 个位置。当前完成修订开发回归，严格故障恢复与最终冻结尚在验收；公开投递 0/24。下文历史批次保持原有日期和口径，不与新批混合。
+本轮[OpenSandbox 长程协议](../eval/sandbox-run/protocol.zh.md)原定四道留出题、三条件、两次重复，24 个位置。用户在 Supervisor 8/8 封口后结束后续 Goal／Plan 运行。[最终报告](../eval/sandbox-run/long-horizon-20261009/supervisor-final-20261010.zh.md)记录六次官方评分中一次满分、五次零分，另两次执行基础设施异常为 null，严格成功 0/8；未完成条件配对。下文历史批次保持原有日期和口径，不与本批混合。
 
 **更新日期：2026-09-28。状态：两道冻结样本三组已封口，第三道已过环境门禁。** 本文统一维护评测问题、执行顺序、数据集、对照组、指标与结果交付。接入证据见 [SWE-bench Pro V2 记录](../eval/swebench-pro-v2/README.zh.md)，三组同题校准见 [NodeBB 校准结果](../eval/swebench-pro-v2/calibration-nodebb-20260928.zh.md)，逐题配对运行见 [冻结 NodeBB 结果](../eval/swebench-pro-v2/frozen-nodebb-20260928.zh.md)和[冻结 Navidrome 结果](../eval/swebench-pro-v2/frozen-navidrome-20260928.zh.md)；目前还没有足以估计总体胜率的样本、长程留出集或优越性结论。[架构](architecture.zh.md)负责产品设计，[实现状态](implementation.zh.md)记录运行能力。
 
@@ -43,7 +43,7 @@
 | 顺序 | 数据集 | 用途与接入边界 |
 | --- | --- | --- |
 | 已冻结批次 | [SWE-bench Pro V2](https://github.com/scaleapi/SWE-bench_Pro-os/blob/main/v2/README.md) | 真实仓库任务；官方提供 Harbor 任务目录、验收器、参考解和容器，以及独立环境补丁重验。保留现有协议与结果。 |
-| 当前长程对照 | [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | [OpenSandbox 批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)已完成四题准入并冻结 Goal、Plan、Supervisor-independent 各两次，共 24 个位置；执行中，逐次结果保存在批次快照中。此前[两题四组小样本](../eval/deepswe/README.zh.md)保留其原协议与结果。 |
+| 长程公开题评测 | [DeepSWE v1.1](https://github.com/datacurve-ai/deep-swe) | [OpenSandbox 批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)四题各两次的 Supervisor 8/8 已封口；按用户要求停止其余 Goal／Plan，原 24 个位置的结果及未执行原因保留。此前[两题四组小样本](../eval/deepswe/README.zh.md)保持原协议与结果，不合并。 |
 | 终端任务候选 | [Terminal-Bench 2.1](https://github.com/apache/maka/blob/main/docs/eval/terminal-bench-2.1-deepseek-v4-flash-nine-arm.md) | 可参考已有 DSH 运行证据接入终端任务；选题、环境和正式协议需要另行冻结。 |
 | 连续任务候选 | [SlopCodeBench](https://github.com/SprocketLab/slop-code-bench) | 同项目需求逐步扩展；官方保留工作目录但重置 Session，同 Session 模式需单立协议。 |
 | 扩展候选 | [LongCLI-Bench](https://github.com/finyorko/longcli-bench)、[LHTB](https://github.com/zli12321/LHTB)、[SWE-EVO](https://github.com/SWE-EVO/SWE-EVO) | 先核对评分、外部续行与环境门禁；不直接采用公开排行榜分数作本项目对照。 |
@@ -147,13 +147,13 @@ P3 额外报告整段 Session 全通过率、按任务位置的通过率、旧�
 
 已有[短任务试跑](../eval/pilot-v1/results-20260926.zh.md)、[时序约束回归](../eval/reliability-v1/results-20260927.zh.md)和[需求变更开发试跑](../eval/long-horizon-dev-v1/results-20260927.zh.md)用于保持已修复行为并定位失败；它们不是公开长程基准成绩。需求变更试跑存在组间触发时机差异，不能直接比较胜率。
 
-当前执行工作以[长程批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)为准：
+本轮交付以[长程批次](../eval/sandbox-run/long-horizon-20261009/README.zh.md)及用户缩小后的范围为准：
 
 - [x] 固定四道 DeepSWE 留出题，完成每题 Linux 执行、空补丁／参考补丁评分及独立检查准入。
 - [x] 冻结三组交互、结束条件、执行上限、重试、运行顺序和指标口径。
 - [x] 接入 DSH runner，产出包含原生终态、外部评分、批准收据和资源统计的真实运行记录。
-- [ ] 封口全部 24 个位置，保留基础设施异常、未执行原因及全部分母。
-- [ ] 完成逐题配对分析、费用与轨迹报告，报告小样本不确定性。
+- [x] 封口全部八个 Supervisor 位置；原 24 个位置保留既有结果、一次取消和十个未投递原因。
+- [x] 保存逐题重复结果、成本与轨迹报告；条件配对未完成，不推断优越性。
 - [ ] 基线稳定后再开发和运行多任务 Session 协议。
 
 ## 结论门槛
@@ -176,4 +176,4 @@ P3 额外报告整段 Session 全通过率、按任务位置的通过率、旧�
 
 [配对协议](../eval/sandbox-run/protocol.zh.md)固定四题、三条件、两次重复。开发修订与故障恢复用例、四题准入、实际模型路由、干净安装及评分正反控制已完成，证据见[开发验收](../eval/sandbox-run/validation-20261009.zh.md)。
 
-正式运行已开始。当前封口数、各条件进度、运行器修复和环境交接统一维护在[批次记录](../eval/sandbox-run/long-horizon-20261009/README.zh.md)，[结果快照](../eval/sandbox-run/long-horizon-20261009/reports/)保留全部 24 个位置。已启动位置接续原 Session、产物和截止时间；只评分 Agent 已 commit 的补丁。基础设施异常 reward 为 null，官方满分与控制器严格成功分别统计；所有位置封口后才形成完整配对报告。
+Supervisor 已完成八次评测并按用户要求结束本批。[最终报告](../eval/sandbox-run/long-horizon-20261009/supervisor-final-20261010.zh.md)和[范围封口](../eval/sandbox-run/long-horizon-20261009/scope-closure-supervisor-only-20261010.json)统一记录成绩、故障、取消与未投递原因；[历史快照](../eval/sandbox-run/long-horizon-20261009/reports/)保留原 24 个位置。只评分 Agent 已 commit 的补丁，基础设施异常 reward 保持 null，官方满分与控制器严格成功分别统计。原控制器已停止；Goal／Plan 未形成完整配对。

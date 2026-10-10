@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "kind": "evaluation-quiescent-scope-closure",
+  "reportOnly": true,
+  "createdAtUnix": 1791628171.377362,
+  "activeFrozenBatchOrPositionProcesses": 0,
+  "allStartedSandboxesDestroyed": true,
+  "newModelRequests": 0,
+  "dailyHostTouched": false,
+  "positions": [
+    {
+      "positionId": "lh-01-geo-shapeindex-serialization-plan-r2",
+      "sandboxId": "574499aa-adef-49e0-8a40-a80159c77816",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    },
+    {
+      "positionId": "lh-02-superjson-error-stack-serialization-plan-r1",
+      "sandboxId": "ee2fcf5f-2e89-4f19-a39f-1fa6ba378aab",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    },
+    {
+      "positionId": "lh-03-koota-pair-relation-tracking-plan-r2",
+      "sandboxId": "5a7f138a-7771-43e5-b944-32f9da678590",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    },
+    {
+      "positionId": "lh-04-geo-shapeindex-serialization-plan-r1",
+      "sandboxId": "42d814af-362c-40a6-a18c-9705d77775d8",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    },
+    {
+      "positionId": "lh-05-updo-policy-alerting-plan-r1",
+      "sandboxId": "ce666af4-59a1-40ed-92cd-1bbcf1953139",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    },
+    {
+      "positionId": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "sandboxId": "64dadc68-9ce2-49b1-b683-c10a1599d3d9",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "a6652031e7894545a378bb36541ca8e0",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "sandboxId": "94ba7c66-a583-4100-b724-d7827d55315e",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "47f841d55ec14d8e964209671087a299",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "sandboxId": "27f82003-3d69-4681-a876-456615574946",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "702bc32785db428c908ae2fff0c6e553",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "sandboxId": "11972d33-aebf-4e9e-8c5c-d4755e395aa5",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "86d4b5d9cf1f477d9eac461500962a66",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "sandboxId": "125def20-f49f-45c8-b357-d223ebece75d",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "618f4f49d99c4d7ab7893c1ebca74e17",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "sandboxId": "049b321a-f31f-4288-b417-fee6a3d6bb2b",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "9539f7354c8f42429c9d80e58845d963",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "sandboxId": "90dc4c2b-bdbb-415e-8f1f-55cc1b1e315b",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "76d441e046054add8afd89109ddc9004",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+      "sandboxId": "21ca35bf-7caf-48dd-93a7-2904be2986a3",
+      "sandboxDestroyed": true,
+      "collectionComplete": true,
+      "gatewayLease": "7e47325856b24ad893826c57d1ea53a8",
+      "activeOwnedContainers": 0,
+      "remainingOwnedVolumes": 0,
+      "storageArchiveSealed": true,
+      "gatewayStopped": true
+    },
+    {
+      "positionId": "lh-09-superjson-error-stack-serialization-goal-r1",
+      "sandboxId": "41ff7efd-eff9-4fe8-9431-233b34679626",
+      "sandboxDestroyed": true,
+      "collectionComplete": true
+    }
+  ]
+}

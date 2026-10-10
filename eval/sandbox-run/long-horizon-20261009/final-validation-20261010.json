@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "supervisor-only-final-report-validation",
+  "reportOnly": true,
+  "atUnix": 1791652725.528676,
+  "checks": {
+    "eightOriginalSupervisorResultHashes": true,
+    "allThirteenPriorResultHashes": true,
+    "fullTwentyFourPositionDisposition": true,
+    "frozenReleaseOrderAndTarballHashes": true,
+    "frozenRunnerFiles": 91,
+    "supervisorAggregateRecount": true,
+    "fourBilingualPairsLineAndStructureAlignment": true,
+    "newReportLinks": true,
+    "newPublicEvidencePrivacyAndJson": true,
+    "originalSandboxesAndOwnedResourcesQuiescent": true,
+    "gitDiffCheck": true
+  },
+  "codeChanges": false,
+  "newModelRequests": 0,
+  "notRepeated": {
+    "hostClientTypecheckBuildAndRuntimeTests": "report-only change; original code checks and package remain pinned",
+    "upstreamDshDocsScripts": "not present in this standalone plugin package; focused pairing, hash, links and prose checks performed"
+  },
+  "aggregate": {
+    "supervisorSealed": 8,
+    "officialScored": 6,
+    "rewardOne": 1,
+    "rewardZero": 5,
+    "rewardUnknown": 2,
+    "strictSuccess": 0
+  },
+  "sourceHashes": {
+    "supervisor-final-20261010.json": "c4c0ed69102532adada7d353866e5ae212f8bc822e68dd34f3a673191a0c33ba",
+    "scope-closure-supervisor-only-20261010.json": "37e5ef6c5ec811ac03df8c3791b6b9f8a315267e2648698cfd5bb34dfabae0ae",
+    "resources-closed-supervisor-only-20261010.json": "3684b83b350b26b111b0dfe0a60ec8a25e2949d6b9d1c0aeec2666d72c0247be",
+    "superjson-integration-review-failure-r1.json": "d1d272f9e112818f1bdd4485d0e777013f6ac3d444c6ccc282954378857d05a3"
+  }
+}
