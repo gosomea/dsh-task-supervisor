@@ -163,6 +163,8 @@ A further ownership gap was found before delivery: the new gateway is created un
 
 The execution candidate is frozen as [v9](repair-v9.json), source `4279064`. [v8](repair-v8.json) and the [cleanup ownership correction](recovery-cleanup-owner-correction-v8.json) remain as pre-delivery evidence. All 64 regressions pass in the actual v9 copy. Its 89 runner files, 19,832 runtime inputs and server identity were verified; all 24 specs, order, package and 1,379 existing run JSON records are unchanged, and all 24 metadata labels are valid and unique. Execution resumes from the same undelivered position 19. v8 ran no formal Agent and the eleven sealed results are not replaced.
 
+Original position 19 has completed reconciled preparation and received the real task. The [live identity confirmation](live-identity-confirmation-v9.json) cross-checks the SDK label, original position and Task / Session binding, and locates the new gateway under its preparation child. It observes nine actual CodeBuddy HTTP 200 responses and eight persisted main Agent replies, using `deepseek-codebuddy / deepseek-v4.1-flash`. These are request and reply records from that Session, not only model selection. Twelve positions have started and eleven are sealed. Superjson is planning, with no initial approval or official score yet. The capture proves resumed delivery and identity, not task acceptance.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

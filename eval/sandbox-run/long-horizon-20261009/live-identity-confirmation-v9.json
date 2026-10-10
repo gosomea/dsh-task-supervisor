@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-live-position-identity-after-keyless-reconciliation",
+  "capturedAtUnix": 1791617489.257202,
+  "source": "native-monitor-export-and-live-sdk-and-route-audit",
+  "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "sessionId": "session-0355245d-f8b0-4424-b4aa-08100c329ddf",
+  "taskId": "8b81e757-2a22-4954-b992-c584f7ce8557",
+  "sandboxId": "90dc4c2b-bdbb-415e-8f1f-55cc1b1e315b",
+  "releaseSha256": "9510f60f4547f72d9952396256e705c20f19aa579ff17768b6b90f9f19b35ac5",
+  "originalPositionIdentityPreserved": true,
+  "mappedMetadataLabel": "lh-188d97d8227a5beec8bb1640fbfb3419d8e1f5567e281da3e3f5fe7dc3b6",
+  "nativeTaskBindingConfirmed": true,
+  "currentTaskPhase": "planning",
+  "originalDeadlineAtUnix": 1791627997.1605408,
+  "initialApprovalReceipts": 0,
+  "rescueCount": 0,
+  "nativeExportLastSeq": 91,
+  "nativeExportLastEventAtUnix": 1791617393.762,
+  "nativeRecordedModelSteps": 9,
+  "nativeRecordedAssistantMessages": 8,
+  "mainRouteEventTypes": {
+    "model-start": 9,
+    "http-request": 9,
+    "http-response": 9,
+    "model-finish": 8,
+    "model-end": 8
+  },
+  "mainHttpStatusCodes": {
+    "200": 9
+  },
+  "mainEndpointMatches": 18,
+  "selectedActualRequestModels": [
+    [
+      "deepseek-codebuddy",
+      "deepseek-v4.1-flash"
+    ]
+  ],
+  "routeAuditSha256": "a988e4ef1f43a69c271869e8914783e19485c25afde3939000e5c6c9d95af51a",
+  "currentGatewayLease": "76d441e046054add8afd89109ddc9004",
+  "recoveredGatewayRootBoundToChild": true,
+  "oldGatewayCleanupPreserved": true,
+  "reconciliationSha256": "1d702678ef35bd4f1f117195c939a541007cff33c3f18d1058762165b97b2966",
+  "countsAsOfficialResult": false
+}

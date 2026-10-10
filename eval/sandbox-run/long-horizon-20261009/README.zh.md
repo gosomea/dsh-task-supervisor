@@ -163,6 +163,8 @@ Python 监控器是唯一外层控制器；插件负责有界恢复及调度。�
 
 当前执行候选已冻结为 [v9](repair-v9.json)，源码 `4279064`；[v8](repair-v8.json) 与[清理归属修订](recovery-cleanup-owner-correction-v8.json)保留为投递前证据。v9 冻结副本的 64 项回归通过，89 份运行器文件、19,832 份运行依赖及服务身份已核对；24 份 spec、顺序、安装包和 1,379 份原运行 JSON 记录未改变，24 个元数据标签合法且唯一。新执行从同一未投递位置 19 开始，v8 未运行正式 Agent，原十一份结果不替换。
 
+原位置 19 已完成恢复准备并真实投递：[运行身份核对](live-identity-confirmation-v9.json)交叉检查 SDK 的新标签、原位置及 Task／Session 绑定，确认新网关清理路径指向其准备子目录。捕获到主 Agent 九次实际 CodeBuddy HTTP 200 响应及八条持久回复，路由模型为 `deepseek-codebuddy / deepseek-v4.1-flash`；这是同 Session 的请求与回复证据，非仅模型选择。当前 12 个位置已启动、11 个封口，Superjson 正在规划，尚无首次批准或官方结果。该捕获只证明恢复后的正式投递与身份，不代表整题验收。
+
 ## 环境交接与断点接续
 
 执行环境使用登记的 `colima-dsh-eval-rosetta` Docker context 和 `localhost:8090` OpenSandbox 服务。原生 DSH、模型路由、镜像、运行器、安装包及评分器身份均以冻结材料为准；不要在线选择最新依赖。日常 3080 不属于本批次资源。
