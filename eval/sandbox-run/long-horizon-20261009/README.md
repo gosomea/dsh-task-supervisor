@@ -179,6 +179,8 @@ After execution stopped, collection selected the gateway directory of the origin
 
 The execution runner is separately frozen as v10, source `f438883`; plugin `44b2a42` and its tarball remain unchanged. All 83 targeted regressions pass, with 91 runner files, 19,832 dependencies and server identity verified, and all 24 specs/order unchanged. Report dependencies are included in the complete freeze. The first copy candidate's missing report module failure is retained and made no model delivery. v10 must explicitly acknowledge position 19's exact original result hash before proceeding. The next position remains original position 23, Superjson / Supervisor / r1.
 
+The original v9 owner was confirmed stopped and v10 resumed under the exclusive batch lock. The [actual delivery confirmation](live-identity-confirmation-v10.json) records original position 23 starting with the correct main Session / Task binding. Eleven actual main HTTP requests received eleven HTTP 200 responses, with the CodeBuddy provider, `deepseek-v4.1-flash` model and actual endpoint matching. Thirteen positions have started and twelve are sealed. No initial approval was present at this capture; it proves live execution, not completion or scoring. Original results, deadlines and frozen order remain unchanged.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
