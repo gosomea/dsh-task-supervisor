@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "kind": "development-kernel-environment-skip-coverage-audit",
+  "capturedAt": "2026-10-10T08:07:28.758506+00:00",
+  "pluginSourceCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "kernelLogSha256": "994c5ce19745f29bd3d443a1efccc31c9fb80d47d03eb2d854a7524559abb555",
+  "kernelSummary": {
+    "passed": 464,
+    "skipped": 15,
+    "total": 479,
+    "passedFiles": 34
+  },
+  "historicalLogHasPerTestNames": false,
+  "sourceComparedByteForByteToFrozenCommit": true,
+  "sourceDerivedEnvironmentGatedTests": [
+    {
+      "file": "spikes/kernel/check-gateway.spec.ts",
+      "sourceSha256": "f40899b0c95079bebcb2433c0c42f5179c4c04ab3e407a894a212aeee19a0ee0",
+      "environmentGatedTests": [
+        {
+          "title": "runs with administrator-owned mounts and persists acknowledged client evidence",
+          "sourceLine": 72,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "cancellation waits for the native command and daemon cleanup acknowledgement",
+          "sourceLine": 101,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "a restart recovers only the private records and refuses a client artifact rewrite",
+          "sourceLine": 113,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "a check cannot poison the seed probe directory used by the next invocation",
+          "sourceLine": 122,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "generated artifacts do not invalidate the private seed or later gateway checks",
+          "sourceLine": 130,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "corrects a missing cwd through the real gateway without replacing its snapshot",
+          "sourceLine": 163,
+          "skipCondition": "!native || process.platform === 'win32'",
+          "historicalPerTestExecutionStatus": null
+        }
+      ]
+    },
+    {
+      "file": "spikes/kernel/review-check.spec.ts",
+      "sourceSha256": "0da76b5d66b9dce68c6811822737447f6623c0b022a1af9b4f9bc5d21ea23069",
+      "environmentGatedTests": [
+        {
+          "title": "permits check writes, denies source reads/writes and network, and scrubs the environment",
+          "sourceLine": 31,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "reports source modification independently of a zero command exit",
+          "sourceLine": 48,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "records generated reports separately and starts the next check without them",
+          "sourceLine": 54,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "terminates a command at its own deadline and records the timeout separately",
+          "sourceLine": 63,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "preserves structured arguments and excludes host baseline, credentials and Docker control sockets",
+          "sourceLine": 69,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "removes a container with a surviving detached child before publishing evidence",
+          "sourceLine": 79,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "recovers an interrupted owned daemon resource from its durable identity",
+          "sourceLine": 88,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        },
+        {
+          "title": "records a missing program without poisoning the next native check",
+          "sourceLine": 181,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        }
+      ]
+    },
+    {
+      "file": "spikes/kernel/supervisor.spec.ts",
+      "sourceSha256": "e2345f2d72695fda2473807c0a04d01767c195dbaf9e04705fffd3042cc6885b",
+      "environmentGatedTests": [
+        {
+          "title": "records independent execution before reading a misleading main report and rejects the actual defect",
+          "sourceLine": 1911,
+          "skipCondition": "!process.env.DSH_CHECK_DOCKER_IMAGE || !process.env.DSH_CHECK_DOCKER_CONTEXT",
+          "historicalPerTestExecutionStatus": null
+        }
+      ]
+    }
+  ],
+  "sourceDerivedEnvironmentGatedCount": 15,
+  "requiredEnvironmentNames": [
+    "DSH_CHECK_DOCKER_CONTEXT",
+    "DSH_CHECK_DOCKER_IMAGE"
+  ],
+  "historicalPerTestStatusReconstructed": false,
+  "interpretation": "The retained log proves only aggregate counts. This list identifies the frozen source container gates, not per-test execution or passing evidence. Real sandbox admission and development runs are reported separately.",
+  "modelRequests": 0,
+  "formalExecutionModified": false,
+  "originalLogModified": false
+}

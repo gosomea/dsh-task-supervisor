@@ -29,6 +29,20 @@ The machine record retains an earlier pending `faultEvidenceRecoveryGate` placeh
 
 The full kernel suite passed 464 checks with 15 environment-dependent skips. Sandbox monitoring/collection passed 60 Python tests; official grading adaptation and score parsing passed 7 each. Four focused protocol tests passed; 144 other tests were filtered out. Host and Client strict typechecks passed. Controlled clocks and barriers cover deadlines, cancellation, budget persistence through replanning/restart, stale decisions, same-job evidence and duplicate grant refusal.
 
+### Environment-gated coverage
+
+The retained kernel log contains aggregate counts without per-test names. The [frozen-source coverage audit](kernel-skip-coverage-20261010.json) compares three test files byte for byte with the original plugin commit and lists these 15 native container checks gated by `DSH_CHECK_DOCKER_CONTEXT` / `DSH_CHECK_DOCKER_IMAGE`. The machine record retains full titles and conditions. Historical per-test execution status remains null; aggregate counts do not reconstruct individual outcomes.
+
+| File | Gated checks | Scope |
+| --- | ---: | --- |
+| `spikes/kernel/check-gateway.spec.ts` | 6 | Administrator mounts and durable evidence, cancellation cleanup acknowledgement, restart identity recovery, probe isolation, generated-artifact isolation, and cwd correction. |
+| `spikes/kernel/review-check.spec.ts` | 8 | Source/network/environment isolation, source modification detection, generated-report isolation, command deadline, structured arguments and control-socket isolation, detached-child cleanup, interrupted-resource recovery, and isolation after a missing program. |
+| `spikes/kernel/supervisor.spec.ts` | 1 | Independent execution before a misleading main report, rejecting the actual defect. |
+
+Four-task native admission, snapshots and real checks, and development recovery have their own evidence and are interpreted within those runs. The 144 filtered tests describe the focused protocol command's selection; the full kernel is counted separately. This audit only clarifies evidence scope and preserves the original log, frozen package and formal execution.
+
+### Browser and installation
+
 The browser verified complete decision bodies in the main Session, collapsed finished processes, separation of current review from previous decisions, real deadlines and fault counters. Actual reviews completed after more than 120 seconds. Screenshots and raw logs remain in the private registered environment; authentication URLs and credentials are not committed. A 480×900 viewport was checked for activity, deadlines, recovery counts and DAG scrolling. All four candidates passed native installation with the same final tarball, actual snapshot/check execution and credential-free, gateway-mount-free baselines.
 
 ## Resources and collection
