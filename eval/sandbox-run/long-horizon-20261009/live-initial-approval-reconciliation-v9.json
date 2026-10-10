@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-original-initial-approval-reconciled-after-transport-fault",
+  "capturedAtUnix": 1791618919.40686,
+  "source": "original-action-journal-and-native-monitor-export",
+  "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "sessionId": "session-0355245d-f8b0-4424-b4aa-08100c329ddf",
+  "taskId": "8b81e757-2a22-4954-b992-c584f7ce8557",
+  "sandboxId": "90dc4c2b-bdbb-415e-8f1f-55cc1b1e315b",
+  "releaseSha256": "9510f60f4547f72d9952396256e705c20f19aa579ff17768b6b90f9f19b35ac5",
+  "originalDeadlineAtUnix": 1791627997.1605408,
+  "actionId": "b1125f3b-416f-497c-b055-30ead1e21ea2",
+  "action": "initial-approval",
+  "intentAtUnix": 1791618643.46364,
+  "transportFaultAtUnix": 1791618675.861748,
+  "transportFaultType": "DshRpcError",
+  "transportFaultWasResultUnknown": true,
+  "transportFaultCauseConfirmed": false,
+  "receiptAtUnix": 1791618812.1422248,
+  "reconciledFromNativeState": true,
+  "originalIdentityMatches": true,
+  "nativeIntentCount": 1,
+  "nativeActionResultsObserved": 0,
+  "approvedPlanVersion": 1,
+  "requirementsVersion": 1,
+  "currentTaskPhase": "active",
+  "everApproved": true,
+  "nativeExportLastSeq": 266,
+  "nativeExportSha256": "f61170bbf70c003a42140adee0dddc2a0278470a7821e0ab3e7ae571d88b78ff",
+  "actionJournalSha256": {
+    "initial-approval-intent.json": "bbb2c6b95b8d6ed8e81ba229ebc672ae0c75deec2d8cacb8803d0a8b66354927",
+    "initial-approval-transport-fault.json": "73be293d1985ccbe88de4391e5be5befe667744253317d21c67f7c1e16366d63",
+    "initial-approval-receipt.json": "8fb9fa653722c6da1dc41fc7a1e2e677755d37f1f5766424f10340b2c2cca953"
+  },
+  "nodeRuns": [
+    {
+      "id": "core-modules",
+      "status": "running",
+      "attempt": 1
+    },
+    {
+      "id": "error-rules",
+      "status": "pending",
+      "attempt": 1
+    },
+    {
+      "id": "verify-commit",
+      "status": "pending",
+      "attempt": 1
+    }
+  ],
+  "initialApprovalReceipts": 1,
+  "retransmissionCount": 0,
+  "rescueCount": 0,
+  "countsAsOfficialResult": false
+}
