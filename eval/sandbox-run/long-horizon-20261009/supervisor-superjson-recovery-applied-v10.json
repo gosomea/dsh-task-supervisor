@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "formal-independent-node-recovery-applied-and-continued",
+  "capturedAtUnix": 1791624724.068553,
+  "positionId": "lh-23-superjson-error-stack-serialization-supervisor-independent-r1",
+  "sessionId": "session-9cdc0206-d957-4ba2-8772-4977377ace96",
+  "taskId": "e641e9f0-09a1-4294-9f52-c03019bae4a8",
+  "sandboxId": "21ca35bf-7caf-48dd-93a7-2904be2986a3",
+  "releaseSha256": "bede3b7fe4bc347e04c4d9ffb60456c3d47cdaaffac21623a7dba66804348d66",
+  "nativeExportSha256": "9380aa68109909549f12d71286e1ca4654bb2979ef12b65381c0dbb04f95dc7e",
+  "routeAuditSha256": "75cc8ec1235b000cdae1942d5aaa5129ea7b2362bf0689d7612d643b076451d6",
+  "jobId": "dd8ca0f7-1b28-44ce-abec-3de7fb99c053",
+  "reviewerSessionId": "task-review-5b0addeb-2aae-4a19-b5c6-6995cdc730aa",
+  "stageId": "core-modules",
+  "nodeAttempt": 1,
+  "cutoff": 269,
+  "requirementsVersion": 1,
+  "planVersion": 1,
+  "snapshotId": "29f7a725-2eb8-489b-94a1-bf1a88129db6",
+  "sameIdentityAcrossRetry": true,
+  "reviewAttempt": 2,
+  "faultRetryConsumed": 1,
+  "faultHistory": [
+    {
+      "at": "2026-10-10T09:20:38.039Z",
+      "code": "timeout",
+      "attempt": 1
+    }
+  ],
+  "oldQualifiedFileReads": 7,
+  "oldQualifiedCheckReads": 9,
+  "oldFileQualificationRetained": true,
+  "oldCheckQualificationRetained": true,
+  "commandChecks": 5,
+  "recordedIndependentFindings": 7,
+  "decisionStatus": "applied",
+  "verdict": "pass",
+  "appliedTransitionCount": 1,
+  "firstAppliedRecordSeq": 360,
+  "nextNodeStartCallSeq": null,
+  "nextNodeFirstRunningRecordSeq": 383,
+  "confirmedTaskFaultRecoveries": 1,
+  "originalDeadlineAtUnix": 1791632669.4283159,
+  "durableTaskDeadlineAt": "2026-10-10T11:44:29.428Z",
+  "initialApprovalReceipts": 1,
+  "initialApprovalActionId": "0635139a-d581-4357-9cd7-1815d6de5454",
+  "approvalJournalSha256": {
+    "initial-approval-transport-fault.json": "6ef8fb9e7420c0cc8d524588023e843f26d4cf7066da725c71f7f455bdd78fb8",
+    "initial-approval-receipt.json": "f809803fe8c95eb4b36a06980d62ce853be3da386e0c8f449e8625843ef85982",
+    "initial-approval-intent.json": "5119f52f2bf3f2eebb15debffb5fdf7809565bb297885dcdf21da9927225a3e1"
+  },
+  "rescueCount": 0,
+  "modelRequestsByAudit": 0,
+  "routeProof": [
+    {
+      "sessionId": "session-9cdc0206-d957-4ba2-8772-4977377ace96",
+      "requests": 35,
+      "responses200": 35,
+      "httpErrors": 0,
+      "actualEndpointMatches": true,
+      "requestRoutes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    },
+    {
+      "sessionId": "task-review-5b0addeb-2aae-4a19-b5c6-6995cdc730aa",
+      "requests": 69,
+      "responses200": 68,
+      "httpErrors": 1,
+      "actualEndpointMatches": true,
+      "requestRoutes": [
+        [
+          "deepseek-codebuddy",
+          "deepseek-v4.1-flash"
+        ]
+      ]
+    }
+  ],
+  "countsAsOfficialResult": false,
+  "scope": "Applied recovery and next-node handoff for this attempt only; whole-task outcome and official score remain pending."
+}

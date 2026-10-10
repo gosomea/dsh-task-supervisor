@@ -183,6 +183,12 @@ The original v9 owner was confirmed stopped and v10 resumed under the exclusive 
 
 Position 19's rejected pre-delivery preparation also retained three evidence volumes from its stopped gateway. The [old preparation storage disposition](rejected-preparation-storage-release-v10.json) verifies a lease distinct from actual execution and zero native checks. The frozen archiver preserved and verified these original volumes before releasing their explicit ownership. Docker confirms no remaining volumes or containers under that lease; original gateway receipts and the sealed result hash are unchanged. This disposition makes no model request, touches neither active position 23 nor its execution authorization.
 
+## Recovery and continuation in the final Supervisor position
+
+Original position 23, Superjson / Supervisor / r1, produced [first-node recovery and application evidence](supervisor-superjson-recovery-applied-v10.json). After its first 600-second review deadline, `core-modules` resumed the same job, reviewer Session, requirement / plan versions, node attempt, evidence cutoff seq 269 and snapshot. Seven existing file-read qualifications and nine check-evidence read qualifications were retained. Five command checks and seven independent findings reached comparison; the second attempt's pass was applied at main-log seq 360, with one transition into applied status.
+
+The native node state then recorded `integration` running at seq 383 under the original approval. One fault recovery was confirmed; the Task's absolute deadline was not extended, and there was no second initial grant or rescue. Route capture includes 35 actual main requests and 69 requests from this reviewer, matching the same CodeBuddy provider and model. Request errors and HTTP responses remain separate counts and do not establish the error's cause. This evidence proves this node's recovery, retained read qualification and downstream handoff only. The whole position remains unsealed and its official reward awaits grading.
+
 ## Supervisor interim analysis
 
 The [analysis of seven sealed runs](supervisor-interim-20261010.md) summarizes confirmed independent checks, recovery gaps, decision failures and environment faults, with repair priorities after this batch. Its [machine record](supervisor-interim-20261010.json) binds the twelfth result snapshot and excludes the last Supervisor position still running. It is not a complete condition comparison and changes no frozen execution.
