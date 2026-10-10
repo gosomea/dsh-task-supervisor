@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "kind": "supervisor-interim-seven-sealed-positions",
+  "reportOnly": true,
+  "createdAtUnix": 1791622983.655728,
+  "sourceSnapshot": "reports/20261010-084126Z/summary.json",
+  "sourceSnapshotSha256": "f65cbb6111899379679f9d5e7c2a1829272d113127bee572aaa14c16a16d7e01",
+  "scope": {
+    "plannedSupervisorPositions": 8,
+    "sealedSupervisorPositions": 7,
+    "distinctPublicTasks": 4,
+    "comparisonComplete": false,
+    "lastSupervisorPositionExcludedUntilSealed": true
+  },
+  "aggregate": {
+    "officialScored": 5,
+    "rewardOne": 1,
+    "rewardZero": 4,
+    "rewardUnknown": 2,
+    "strictSuccess": 0,
+    "executionInfrastructureFaults": 2,
+    "collectionInfrastructureFaults": 1,
+    "infrastructureFaultUnion": 3,
+    "requestCount": 1909,
+    "independentCommandChecks": 217,
+    "recordedIndependentCheckResults": 61,
+    "reviewToolCalls": 2147,
+    "allToolCalls": 2811,
+    "allToolErrors": 210,
+    "wholeElapsedSec": 36243.708064079285,
+    "allSessionTokens": null,
+    "tokensReportedLowerBound": {
+      "uncachedInputTokens": 5922487,
+      "outputTokens": 4037592,
+      "cacheReadTokens": 140050941,
+      "cacheWriteTokens": 0
+    },
+    "humanRescueActions": 0,
+    "falseAcceptanceRate": null,
+    "falsePauseRate": null,
+    "correctionBenefit": null
+  },
+  "positions": [
+    {
+      "positionId": "lh-06-updo-policy-alerting-supervisor-independent-r2",
+      "taskId": "updo-policy-alerting",
+      "repeat": 2,
+      "resultSha256": "faffea9bdcb1c20175c9de968635783be8b8e5b2dfc2d216c71f365a605355d1",
+      "reward": null,
+      "strictSuccess": false,
+      "firstStopReason": "infrastructure-fault",
+      "executionInfrastructureFault": true,
+      "collectionInfrastructureFault": false,
+      "F2P": null,
+      "P2P": null,
+      "requestCount": 7,
+      "independentCommandChecks": 0,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 0,
+      "allToolCalls": 14,
+      "allToolErrors": 2,
+      "wholeElapsedSec": 42.89138412475586,
+      "reviewWindowsMs": null,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 27448,
+        "outputTokens": 1020,
+        "cacheReadTokens": 83968,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-07-koota-pair-relation-tracking-supervisor-independent-r2",
+      "taskId": "koota-pair-relation-tracking",
+      "repeat": 2,
+      "resultSha256": "27a355628a52a88f43cec0614a182b3771c5b5974a8f2b002bd77651fcd16a0a",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 38,
+        "passed": 0,
+        "failed": 38,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 172,
+        "passed": 172,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 197,
+      "independentCommandChecks": 23,
+      "recordedIndependentCheckResults": 7,
+      "reviewToolCalls": 245,
+      "allToolCalls": 311,
+      "allToolErrors": 19,
+      "wholeElapsedSec": 3185.696775197983,
+      "reviewWindowsMs": 2466876,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 610242,
+        "outputTokens": 407763,
+        "cacheReadTokens": 11109248,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-08-geo-shapeindex-serialization-supervisor-independent-r2",
+      "taskId": "geo-shapeindex-serialization",
+      "repeat": 2,
+      "resultSha256": "8608a9318f0424ab100c3a8a18c481e7ee6512622a9559e0b2fafe9f6a2a4b41",
+      "reward": 1,
+      "strictSuccess": false,
+      "firstStopReason": "recovery-budget",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 24,
+        "passed": 24,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "P2P": {
+        "total": 599,
+        "passed": 599,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 799,
+      "independentCommandChecks": 141,
+      "recordedIndependentCheckResults": 33,
+      "reviewToolCalls": 902,
+      "allToolCalls": 1162,
+      "allToolErrors": 99,
+      "wholeElapsedSec": 9307.957995176315,
+      "reviewWindowsMs": 6032742,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 2261405,
+        "outputTokens": 1315140,
+        "cacheReadTokens": 68787072,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+      "taskId": "geo-shapeindex-serialization",
+      "repeat": 1,
+      "resultSha256": "649597b625133276c235f29dbbbd461a08f72b9131ed43e52867473e480037b3",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "deadline",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 24,
+        "passed": 0,
+        "failed": 24,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 599,
+        "passed": 599,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 105,
+      "independentCommandChecks": 0,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 122,
+      "allToolCalls": 159,
+      "allToolErrors": 13,
+      "wholeElapsedSec": 10813.285603046417,
+      "reviewWindowsMs": 1695310,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 410560,
+        "outputTokens": 413961,
+        "cacheReadTokens": 4191232,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+      "taskId": "updo-policy-alerting",
+      "repeat": 1,
+      "resultSha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd",
+      "reward": null,
+      "strictSuccess": false,
+      "firstStopReason": "infrastructure-fault",
+      "executionInfrastructureFault": true,
+      "collectionInfrastructureFault": false,
+      "F2P": null,
+      "P2P": null,
+      "requestCount": 180,
+      "independentCommandChecks": 19,
+      "recordedIndependentCheckResults": 10,
+      "reviewToolCalls": 215,
+      "allToolCalls": 271,
+      "allToolErrors": 24,
+      "wholeElapsedSec": 2871.981963157654,
+      "reviewWindowsMs": 1792872,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 652038,
+        "outputTokens": 450240,
+        "cacheReadTokens": 7987456,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-18-koota-pair-relation-tracking-supervisor-independent-r1",
+      "taskId": "koota-pair-relation-tracking",
+      "repeat": 1,
+      "resultSha256": "0ebc1f4b846e2e6019872f368e17ee062e2c4a090dc39402d9db485539f81cb8",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": false,
+      "F2P": {
+        "total": 38,
+        "passed": 0,
+        "failed": 38,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 172,
+        "passed": 172,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 466,
+      "independentCommandChecks": 24,
+      "recordedIndependentCheckResults": 0,
+      "reviewToolCalls": 474,
+      "allToolCalls": 655,
+      "allToolErrors": 30,
+      "wholeElapsedSec": 6784.882842302322,
+      "reviewWindowsMs": 3701816,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 1423339,
+        "outputTokens": 987040,
+        "cacheReadTokens": 40505597,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    },
+    {
+      "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+      "taskId": "superjson-error-stack-serialization",
+      "repeat": 2,
+      "resultSha256": "f8d0fd34ed557f3641a7596168090475fe10ae93a654cf1bb9aa8bbfee0fe85d",
+      "reward": 0,
+      "strictSuccess": false,
+      "firstStopReason": "internal-review-fault",
+      "executionInfrastructureFault": false,
+      "collectionInfrastructureFault": true,
+      "F2P": {
+        "total": 80,
+        "passed": 0,
+        "failed": 80,
+        "rate": 0.0
+      },
+      "P2P": {
+        "total": 116,
+        "passed": 116,
+        "failed": 0,
+        "rate": 1.0
+      },
+      "requestCount": 155,
+      "independentCommandChecks": 10,
+      "recordedIndependentCheckResults": 11,
+      "reviewToolCalls": 189,
+      "allToolCalls": 239,
+      "allToolErrors": 23,
+      "wholeElapsedSec": 3237.0115010738373,
+      "reviewWindowsMs": 2357840,
+      "allSessionTokens": null,
+      "tokensReportedLowerBound": {
+        "uncachedInputTokens": 537455,
+        "outputTokens": 462428,
+        "cacheReadTokens": 7386368,
+        "cacheWriteTokens": 0
+      },
+      "humanRescueActions": 0
+    }
+  ],
+  "supportingAuditsSha256": {
+    "supervisor-first-independent-stage-v6.json": "5cbc0fd23913ad7d47cf031880a337040488b647079e0a3e1260a651bffa2f8c",
+    "supervisor-budget-exhaustion-official-pass-v6.json": "01916f717a66177257d27856e51531101f967b20b1c9714873a3f21e0ff1bc1b",
+    "supervisor-planning-recovery-terminal-v6.json": "e232d5d083bb0e8cdd4ab6c7b834e29c88a41ee003aa49c77df14dd08b6908a9",
+    "supervisor-storage-observation-fault-v6.json": "5cb21b9cc0b4888dcbdf4512265f6c100cb64229f3965037712af150b94cc8c5",
+    "superjson-node-review-failure-r2.json": "276df5344399f702c6bb1fa4b948b4b5d7cdd97c2eecfa00322e9597bf5781b9",
+    "repair-v10.json": "fb4dde8326609e5a41db861decbc2accfaf30601e8144293fdde67028934c51f",
+    "supervisor-koota-stage-timeout-v7.json": "5f989599b47ae4ee11cfc1b5f6a60019b982a01b50231c29fd1063c1608ab4a2"
+  },
+  "executionChanged": false,
+  "newAuthorization": false,
+  "modelRequestsByAnalysis": 0
+}

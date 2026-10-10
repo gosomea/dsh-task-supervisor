@@ -183,6 +183,10 @@ The original v9 owner was confirmed stopped and v10 resumed under the exclusive 
 
 Position 19's rejected pre-delivery preparation also retained three evidence volumes from its stopped gateway. The [old preparation storage disposition](rejected-preparation-storage-release-v10.json) verifies a lease distinct from actual execution and zero native checks. The frozen archiver preserved and verified these original volumes before releasing their explicit ownership. Docker confirms no remaining volumes or containers under that lease; original gateway receipts and the sealed result hash are unchanged. This disposition makes no model request, touches neither active position 23 nor its execution authorization.
 
+## Supervisor interim analysis
+
+The [analysis of seven sealed runs](supervisor-interim-20261010.md) summarizes confirmed independent checks, recovery gaps, decision failures and environment faults, with repair priorities after this batch. Its [machine record](supervisor-interim-20261010.json) binds the twelfth result snapshot and excludes the last Supervisor position still running. It is not a complete condition comparison and changes no frozen execution.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.
