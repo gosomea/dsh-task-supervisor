@@ -133,6 +133,16 @@ The last normally completed main-Agent turn was seq 243. No later model step, to
 
 The frozen runner's first stop reason is deadline. The earlier source reproduction diagnoses the planning-recovery version check; both are retained without rewriting the terminal reason as a review fault. Nine of 24 positions are sealed: seven official scores (one reward 1, six reward 0), two infrastructure outcomes at null, and no strict successes yet. Position 12, Updo/Supervisor/r1, has started. The first eight results, 24 specifications, 85 runner files, 19,832 runtime inputs and service identity were verified unchanged.
 
+## Private-check storage observation race
+
+The tenth actual delivery (original position 12, Updo / Supervisor / r1) is sealed as an infrastructure fault. The [tenth immutable snapshot](reports/20261010-011938Z/report.zh.md) retains reward=null and strict success=false; official grading was not run. Its recovered plan review passed, with one initial approval. The first independent node review requested revision, the main Agent made changes and resubmitted, and the second node review was running when the outer monitor stopped and cleaned up the original resources. No rescue or replacement was delivered.
+
+[Fault and repair evidence](supervisor-storage-observation-fault-v6.json) identifies GNU `du -sb` failing when check cleanup removed two temporary descendants during private-storage traversal. Its nonzero exit became `CalledProcessError`, sealing the position after about 47.87 minutes. This is an infrastructure failure, not an internal review timeout or a zero official reward. The original logs, result and v6 frozen inputs remain unchanged.
+
+The repair only changes deterministic-monitor storage sampling. It retains apparent-byte accounting and resamples once only for recognized missing descendants beneath bound roots, whose device and inode must remain stable. Failed partial totals never count. Missing or replaced roots, access denial, unknown errors and a second race still fail admission/observation. Task deadlines, approval and plugin recovery budgets do not change.
+
+All 45 targeted regressions passed, including 10 storage/error/limit cases. A model-free, network-disabled container using the frozen administrator image and real GNU `du` verified an explicitly injected missing descendant, bounded recovery and missing-root rejection; its container was removed. This fixture is not a formal outcome. The repaired monitor will be frozen separately; the original position stays in the complete 24-position denominator and remaining deliveries continue afterward. Ten positions are sealed: seven official scores and three infrastructure faults, with zero strict successes so far.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

@@ -25,6 +25,7 @@ from runtime_rpc import RuntimeDshRpc
 from native_fault import native_request_fault
 from instruction_identity import task_instruction_identity
 from native_completion import plan_completion_evidence
+from resource_observation import sample_private_storage
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'deepswe'))
 from control_flow import controller_overlay, observe as native_observe, projection_values
@@ -323,10 +324,11 @@ def with_resources(view, sandbox_id, spec, gateway=None):
         row = json.loads(subprocess.check_output(prefix + ['inspect', gateway['adminId']], timeout=30))[0]
         if row['Id'] != gateway['adminId'] or row['Config'].get('Labels', {}).get('dsh.long-horizon.lease') != gateway['lease']:
             raise ValueError('foreign gateway resource observation')
-        usage = subprocess.check_output(prefix + ['exec', gateway['adminId'], 'du', '-sb',
-            gateway['volumes']['client']['path'], gateway['volumes']['private']['path']], timeout=30).decode()
-        total = sum(int(line.split()[0]) for line in usage.splitlines())
-        view['resources'].update(privateCheckStorageBytes=total, checkStorageLimitBytes=spec['checkStorageLimitBytes'])
+        sample = sample_private_storage(prefix, gateway['adminId'],
+            [gateway['volumes']['client']['path'], gateway['volumes']['private']['path']])
+        total = sample['bytes']
+        view['resources'].update(privateCheckStorageBytes=total, checkStorageLimitBytes=spec['checkStorageLimitBytes'],
+            checkStorageSampleRetries=sample['resamples'], checkStorageTransientMissingEntries=sample['transientMissingEntries'])
         view['storageExceeded'] |= total > spec['checkStorageLimitBytes']
     return view
 

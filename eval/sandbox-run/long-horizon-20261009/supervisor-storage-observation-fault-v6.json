@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "positionId": "lh-12-updo-policy-alerting-supervisor-independent-r1",
+  "condition": "supervisor-independent",
+  "mainSessionId": "session-f520eccd-ceb3-4385-b728-54fbc2e345de",
+  "originalResultSha256": "77afdc2440d6a5e1a8220a1469d011d4e04b8f1f6bb2d7de5aabecf7bb605abd",
+  "originalReleaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+  "frozenRunnerCommit": "f3281554e8d23679cfb74ac41ef4d67a5ecf58fe",
+  "originalStorageSamplerSha256": "7727b3845e4f06a7c19808e9488aae84f0560f6ab30afda720e104028c46f89e",
+  "firstStopReason": "infrastructure-fault",
+  "reward": null,
+  "strictSuccess": false,
+  "gradingSkippedForInfrastructureFault": true,
+  "terminalAtUnix": 1791594780.0883021,
+  "originalDeadlineAtUnix": 1791602708.106339,
+  "cleanupAcknowledged": true,
+  "failure": {
+    "operation": "private-check-storage-du",
+    "errorType": "CalledProcessError",
+    "faultRecordSha256": "147075fb9f9b6131abbce61a1b9159177b57602a823deff3da34719966977f85",
+    "privateBatchLogSha256": "3206d2bf2c770a986ac8b02de916a78637ab3c4070ca2ecf578ffd64deee0de3",
+    "stderr": [
+      {
+        "line": 1,
+        "errorType": "disappearing-storage-descendant",
+        "underBoundVolumeRoot": true,
+        "isVolumeRoot": false,
+        "stderrLineSha256": "4138ea9b597a9c20839c6819e2f649fbcb678c469b2c36e8daef2aeb9ac9732a"
+      },
+      {
+        "line": 2,
+        "errorType": "disappearing-storage-descendant",
+        "underBoundVolumeRoot": true,
+        "isVolumeRoot": false,
+        "stderrLineSha256": "3e5359b2f701803f1d3af1df9e7ffd285cf8f78d591652a1885bfdf8b110e8f0"
+      }
+    ],
+    "diagnosis": "The storage sampler traversed descendants while the independent check removed temporary files. GNU du reported ENOENT and its nonzero exit sealed an infrastructure fault."
+  },
+  "priorProductEvents": {
+    "planRecoveryApplied": true,
+    "initialApprovalReceipts": 1,
+    "humanRescueActions": 0,
+    "independentReviewJobs": 2,
+    "independentCommandChecks": 19,
+    "wholeElapsedSec": 2871.981963157654
+  },
+  "repair": {
+    "scope": "deterministic-monitor-only",
+    "maximumStorageResamples": 1,
+    "partialSamplesAccepted": false,
+    "requiresSameRootDirectoryIdentities": true,
+    "unknownAndPermissionErrorsRetried": false,
+    "failedPositionReplaced": false,
+    "pluginChanged": false,
+    "targetedTestsPassed": 45,
+    "newStorageTestsPassed": 10
+  },
+  "modelFreeFixture": {
+    "privateEvidenceSha256": "74bcb5190c8cca2d7a1a3fd9f1e44ba3d87ac237fa6bc1d8827b4d21bb8687e4",
+    "imageId": "sha256:052e8ba1c63341052b323fa1b16be448c25a9980478fe9ee6e95f6cf93090484",
+    "networkMode": "none",
+    "normal": {
+      "bytes": 7,
+      "resamples": 0,
+      "transientMissingEntries": 0
+    },
+    "recovered": {
+      "bytes": 7,
+      "resamples": 1,
+      "transientMissingEntries": 1
+    },
+    "missingRootRejected": true,
+    "modelRequests": 0,
+    "explicitMissingDescendantInjection": true,
+    "formalCase": false,
+    "fixtureContainerRemoved": true
+  },
+  "limits": [
+    "This original position remains an infrastructure fault with reward null.",
+    "The storage repair does not resume or replace the original Agent.",
+    "The real-container recovery uses explicit fault injection; it is not a formal benchmark outcome.",
+    "Official scoring was not run for this infrastructure-fault position."
+  ]
+}
