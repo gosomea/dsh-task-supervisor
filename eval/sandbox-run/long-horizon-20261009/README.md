@@ -123,6 +123,16 @@ The frozen `recoveryCanContinue` source requires `permit.planVersion + 1 === tas
 
 The log subsequently records one main-Agent handoff turn, normally completed at seq 243. No later tool or new review existed at capture, and no initial grant had been issued. This proves the recovery gate's version mismatch and subsequent inactivity; it does not establish a sealed position, official reward 0 or a need to conflate planning continuation with implementation permission. The frozen condition retains this product behavior. The monitor waits for the original deadline or an existing terminal condition without rescue, rerun or runner changes. Final elapsed time and official grading will enter a new immutable snapshot after sealing.
 
+## Final result of the planning-continuation gap
+
+The ninth actual delivery (original position 11, Geo/Supervisor/r1) is sealed. The [ninth result snapshot](reports/20261010-002723Z/report.zh.md) records official reward 0, F2P 0/24, P2P 599/599 and 599/623 total tests, with successful grading and cleanup. The Agent made no implementation commit. Official input was a zero-byte patch; the evaluator did not commit dirty artifacts.
+
+[Final state and evidence](supervisor-planning-recovery-terminal-v6.json) retain the earlier recovery-gate capture and digest. The native budget recorded task-deadline after the absolute deadline `2026-10-10T00:23:07.888Z`. The final Task is paused, plan version remains 0, and implementation was never approved. Only one fault recovery was consumed, without another grant or rescue. The earlier applied revise remains historical; the final pause is not another application of the verdict.
+
+The last normally completed main-Agent turn was seq 243. No later model step, tool call or main-Agent turn occurred during the approximately 146.45 minutes until terminal collection. Execution took about 180.22 minutes, with 105 model requests, 159 tool calls and 13 tool errors. Four log reviews comprised one planning observation and three plan reviews; their cumulative observed window was 1695.310 seconds, including one same-job retry. The position never reached node, progress or completion review or independent artifact checking, so it is not a positive or negative control for independent verification capability. One request across five Sessions lacks usage; all-token totals remain null, with reported lower bounds and window details in the machine record.
+
+The frozen runner's first stop reason is deadline. The earlier source reproduction diagnoses the planning-recovery version check; both are retained without rewriting the terminal reason as a review fault. Nine of 24 positions are sealed: seven official scores (one reward 1, six reward 0), two infrastructure outcomes at null, and no strict successes yet. Position 12, Updo/Supervisor/r1, has started. The first eight results, 24 specifications, 85 runner files, 19,832 runtime inputs and service identity were verified unchanged.
+
 ## Environment handoff and resumption
 
 Execution uses the registered `colima-dsh-eval-rosetta` Docker context and OpenSandbox at `localhost:8090`. Frozen materials identify DSH, model routing, images, runner, package and grader; do not select newer dependencies online. Daily port 3080 is outside this batch's resources.

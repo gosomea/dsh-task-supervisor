@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "kind": "sealed-planning-recovery-continuation-gap",
+  "reportOnly": true,
+  "observedAt": "2026-10-10T00:30:42.922048+00:00",
+  "positionId": "lh-11-geo-shapeindex-serialization-supervisor-independent-r1",
+  "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+  "taskId": "23475c5d-a300-4855-b664-dc5cdc8e9973",
+  "frozenPluginCommit": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "releaseSha256": "e94b778e17e25829eacce7431d81713ae098907bc0d10a7fbc03af51c07a07e6",
+  "startedSha256": "e414073ce7cf9fa3b9ba49cee9d222514597a5b683bd6ee5d8130798136ecf5a",
+  "formalResultSha256": "649597b625133276c235f29dbbbd461a08f72b9131ed43e52867473e480037b3",
+  "report": "reports/20261010-002723Z/report.zh.md",
+  "priorCapture": {
+    "file": "supervisor-planning-recovery-gate-v6.json",
+    "sha256": "892d6d80a54b6e6f0f1c2e3a224423c6faed829c910ee0f40fc36fb98eab6118",
+    "originalEvidenceCaptureRetained": true,
+    "reproduction": {
+      "actual": false,
+      "isolatedVersionCounterfactual": true,
+      "freshUnretriedPlanning": true
+    },
+    "recoverySourceSha256": "5d94a3b32c0a8d1e53fa83a5e1c0524c7ecd0bab1c5128287b2814f46685cae6"
+  },
+  "terminal": {
+    "requestFaultEvidence": null,
+    "nativeCompletionEvidence": null,
+    "sessionId": "session-b3ccc7ce-8a7a-4116-a11c-024bf3573255",
+    "firstStopReason": "deadline",
+    "atUnix": 1791591801.1745799,
+    "deadlineAtUnix": 1791591787.8889768,
+    "rescueCount": 0,
+    "controllerComplete": false,
+    "finishedBeforeDeadline": false,
+    "infrastructureFault": false
+  },
+  "officialGrade": {
+    "scored": true,
+    "cleanupConfirmed": true,
+    "separateEnvironmentObserved": true,
+    "reward": 0,
+    "fault": null,
+    "tests": {
+      "tests": 623,
+      "passed": 599,
+      "failed": 24,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0
+    },
+    "execution": {
+      "reportedPositions": 623,
+      "missingResultPositions": 24,
+      "positionsWithResult": 599
+    },
+    "evidenceSha256": {
+      "trialResult": "f54447dba422a558a3a3fb398de624bf5b0f31ab90efe827fcc7abe56b8099b5",
+      "testReport": "37b94980f1d3185750d00efc205efa579aceabf8fd4e38419faeb9c4d1b38372"
+    },
+    "officialFilesSha256": {
+      "instruction.md": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+      "task.toml": "a95140adb066b732b69b8485392576cf89e0cf22a0d7028ad5d9d08f37c08f29"
+    },
+    "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+    "architecture": "amd64",
+    "F2P": {
+      "total": 24,
+      "passed": 0,
+      "failed": 24,
+      "rate": 0.0
+    },
+    "P2P": {
+      "total": 599,
+      "passed": 599,
+      "failed": 0,
+      "rate": 1.0
+    }
+  },
+  "reward": 0,
+  "strictSuccess": false,
+  "committedSubmission": {
+    "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+    "headCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+    "patchBytes": 0,
+    "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "workingTreeSubmitted": false
+  },
+  "artifactHashes": {
+    "workspace.tar": "d4e399166ce266985d7a1fd9abfdeb83a561370a1fd2c6f62dc4d1004236afa6",
+    "session-evidence.tar": "488483ff23ecf6d8875fbbe73c04b34d046bc378d4e955450c9ccdf857a2d3e6",
+    "model.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "uncommitted.patch": "c3625ea325f5693ac2c1cbb8baa59a671c985e279611d5773957aa7480389d43",
+    "submission.json": "ae26a7c2615d7f53eaa810e9590085943f11cfb52e57300b3648352fbba4c3d6"
+  },
+  "finalTask": {
+    "recordSeq": 251,
+    "time": 1791591790533,
+    "id": "23475c5d-a300-4855-b664-dc5cdc8e9973",
+    "phase": "paused",
+    "revision": 10,
+    "requirementsVersion": 1,
+    "planVersion": 0,
+    "approvedPlanVersion": null,
+    "everApproved": false,
+    "declaredNodes": 0
+  },
+  "review": {
+    "id": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+    "reviewerSessionId": "task-review-bceff709-e61d-43b9-897b-83b77a0873ac",
+    "kind": "plan",
+    "verificationMode": "log",
+    "attempt": 2,
+    "cutoff": 204,
+    "requirementsVersion": 1,
+    "planVersion": 0,
+    "status": "applied",
+    "verdict": "revise",
+    "firstAppliedRecordSeq": 232,
+    "latestRecordSeq": 249,
+    "retryConsumed": 1,
+    "manualOnlyAtFinalStop": true
+  },
+  "executionBudget": {
+    "recordSeq": 244,
+    "revision": 4,
+    "createdAt": "2026-10-09T21:23:28.412Z",
+    "deadlineAt": "2026-10-10T00:23:07.888Z",
+    "confirmedFaultActions": [
+      {
+        "id": "review:70c6e4c4-665b-4f7f-b81b-4743e416eca5:2",
+        "kind": "review-fault",
+        "at": "2026-10-09T21:54:17.795Z",
+        "requirementsVersion": 1,
+        "planVersion": 0,
+        "effectId": "e7dee0c1-8465-43ce-a88c-a570b46af75f",
+        "status": "confirmed",
+        "confirmedAt": "2026-10-09T21:54:20.927Z"
+      }
+    ],
+    "stops": [
+      {
+        "at": "2026-10-10T00:23:07.993Z",
+        "reason": "task-deadline"
+      }
+    ]
+  },
+  "lastMainTurn": {
+    "seq": 243,
+    "time": 1791583013929,
+    "reasonKind": "completed",
+    "laterAgentActivityEvents": 0,
+    "secondsUntilTerminal": 8787.245579957962
+  },
+  "metrics": {
+    "requestCount": 105,
+    "toolCallsAllSessions": 159,
+    "wholeElapsedSec": 10813.285603046417,
+    "allSessionTokens": null,
+    "unreportedAttempts": 1,
+    "tokensReported": {
+      "uncachedInputTokens": 410560,
+      "outputTokens": 413961,
+      "cacheReadTokens": 4191232,
+      "cacheWriteTokens": 0
+    },
+    "reviewToolCalls": 122,
+    "reviewReads": 110,
+    "reviewReadFailures": 4,
+    "repeatedExactReads": 0,
+    "independentReviewJobs": 0,
+    "independentComparisonJobs": 0,
+    "checkCount": 0,
+    "checkWaitMs": null,
+    "taskFaultRetryReservations": 1,
+    "taskTruncationReservations": 0,
+    "protocolUserActions": 1,
+    "protocolControlReceipts": 0,
+    "humanRescueActions": 0
+  },
+  "trajectory": {
+    "linkedSessions": 5,
+    "allModelSteps": 105,
+    "allToolCalls": 159,
+    "allToolErrors": 13,
+    "allContextCompactions": 0,
+    "allTurnEndReasons": {
+      "completed": 8,
+      "aborted": 1
+    },
+    "supervisorTask": {
+      "declaredNodes": 0,
+      "observedPlanVersions": [
+        0
+      ],
+      "currentNodeAttemptOrdinalsSum": null,
+      "maxCurrentNodeAttempt": null,
+      "nodeStatuses": null,
+      "reviewWindows": {
+        "basis": "first durable job record to terminal record of final attempt; includes retries and queue delays",
+        "interpretation": "observed windows, not CPU time or proof that the main Agent was blocked throughout",
+        "jobs": [
+          {
+            "jobId": "fa5e119c-6112-428f-8d43-5ebfbb171374",
+            "kind": "planning",
+            "finalStatus": "applied",
+            "observedReviewAttempts": 1,
+            "firstRecordSeq": 107,
+            "terminalRecordSeq": 115,
+            "observedJobWindowMs": 100499,
+            "observedStartedWindowMs": 100499
+          },
+          {
+            "jobId": "dc30056c-bee1-4daa-898d-cc9539906811",
+            "kind": "plan",
+            "finalStatus": "applied",
+            "observedReviewAttempts": 1,
+            "firstRecordSeq": 156,
+            "terminalRecordSeq": 172,
+            "observedJobWindowMs": 390596,
+            "observedStartedWindowMs": 390404
+          },
+          {
+            "jobId": "12c0ba47-d3e3-4acf-aa00-18477641bf07",
+            "kind": "plan",
+            "finalStatus": "applied",
+            "observedReviewAttempts": 1,
+            "firstRecordSeq": 181,
+            "terminalRecordSeq": 196,
+            "observedJobWindowMs": 460227,
+            "observedStartedWindowMs": 460121
+          },
+          {
+            "jobId": "70c6e4c4-665b-4f7f-b81b-4743e416eca5",
+            "kind": "plan",
+            "finalStatus": "applied",
+            "observedReviewAttempts": 2,
+            "firstRecordSeq": 205,
+            "terminalRecordSeq": 232,
+            "observedJobWindowMs": 743988,
+            "observedStartedWindowMs": 743873
+          }
+        ],
+        "unknownWindows": 0,
+        "totalObservedJobWindowMs": 1695310,
+        "observedUnionWindowMs": 1695310,
+        "byKind": {
+          "planning": {
+            "jobs": 1,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 100499
+          },
+          "plan": {
+            "jobs": 3,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 1594811
+          },
+          "progress": {
+            "jobs": 0,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 0
+          },
+          "stage": {
+            "jobs": 0,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 0
+          },
+          "completion": {
+            "jobs": 0,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 0
+          },
+          "unclassified": {
+            "jobs": 0,
+            "unknownWindows": 0,
+            "totalObservedJobWindowMs": 0
+          }
+        }
+      },
+      "reviewJobsByKind": {
+        "planning": 1,
+        "plan": 3,
+        "progress": 0,
+        "stage": 0,
+        "completion": 0
+      }
+    },
+    "sessionEvidenceIndexSha256": "1a309f99526529897b208425564781e70a5c10bfd06465efaf94d6cf120b47fd"
+  },
+  "runtimeMutatedByAudit": false,
+  "resultOverwritten": false,
+  "falseAcceptanceRate": null,
+  "falsePauseRate": null,
+  "correctionBenefit": null,
+  "scope": "Official grading covers the committed patch. This position never reached implementation or independent artifact review; the captured recovery-gate reproduction diagnoses planning continuation only."
+}
