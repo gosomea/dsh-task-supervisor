@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "kind": "sealed-independent-node-review-protocol-failure",
+  "positionId": "lh-19-superjson-error-stack-serialization-supervisor-independent-r2",
+  "mainSessionId": "session-0355245d-f8b0-4424-b4aa-08100c329ddf",
+  "taskId": "8b81e757-2a22-4954-b992-c584f7ce8557",
+  "reviewJobId": "4f631716-fa11-4758-9241-d5cca6fabae2",
+  "reviewerSessionId": "task-review-bfa30575-d724-4781-bd32-3ff2fabddfd6",
+  "stageId": "core-modules",
+  "nodeAttempt": 1,
+  "cutoff": 314,
+  "snapshotId": "2f1e200f-22aa-4922-b6b8-8db0f1ef324d",
+  "jobStatus": "failed",
+  "reviewAttempt": 2,
+  "faultRetryConsumed": 1,
+  "finalIndependentPhase": "comparison",
+  "plannedChecks": 11,
+  "independentCommandChecks": 10,
+  "inspectedArtifactFiles": 9,
+  "recordedCheckFindings": 11,
+  "reviewerToolCallCounts": {
+    "read_task_input": 1,
+    "read_task_context": 9,
+    "inspect_task_artifact": 17,
+    "read_task_evidence_index": 5,
+    "task_review_check_plan": 3,
+    "run_review_check": 10,
+    "read_review_evidence": 30,
+    "write_review_probe": 3,
+    "task_review_observations": 10,
+    "read_task_evidence_batch": 1,
+    "task_review_decision": 2
+  },
+  "reviewerToolResultErrors": 17,
+  "failedDecisionSubmissions": [
+    {
+      "reviewerSeq": 377,
+      "isError": true,
+      "message": "Error: check evidence is incomplete, modified, timed out, cancelled or foreign",
+      "originalEventSha256": "f34665724478d31506717aa8ffc91e326739dc6d51129725ea9ba7fc93d43d7d"
+    },
+    {
+      "reviewerSeq": 382,
+      "isError": true,
+      "message": "Error: invalid arguments: missing required property \"verdict\"",
+      "originalEventSha256": "c49b3fa074dae25309e80d495c134d07c80955654d1aae694527f48be5bb352b"
+    }
+  ],
+  "invalidNonLogEvidenceReferences": [
+    {
+      "checkId": "K3",
+      "method": "run",
+      "evidenceId": "cf4a0de1-3725-4d57-9342-b9ee429ef7a9",
+      "existsInActualCheckResults": true,
+      "changedCount": 1
+    },
+    {
+      "criterionId": "C10",
+      "method": "read",
+      "evidenceId": "seq:212",
+      "existsInActualCheckResults": false,
+      "changedCount": null
+    },
+    {
+      "criterionId": "C10",
+      "method": "read",
+      "evidenceId": "seq:213",
+      "existsInActualCheckResults": false,
+      "changedCount": null
+    },
+    {
+      "criterionId": "C10",
+      "method": "read",
+      "evidenceId": "seq:217",
+      "existsInActualCheckResults": false,
+      "changedCount": null
+    }
+  ],
+  "internalFaults": [
+    {
+      "at": "2026-10-10T08:08:59.554Z",
+      "attempt": 1,
+      "code": "timeout",
+      "retryable": true
+    },
+    {
+      "at": "2026-10-10T08:19:03.642Z",
+      "attempt": 2,
+      "code": "timeout",
+      "retryable": true
+    }
+  ],
+  "decisionPersisted": false,
+  "resultSha256": "f8d0fd34ed557f3641a7596168090475fe10ae93a654cf1bb9aa8bbfee0fe85d",
+  "sessionEvidenceArchiveSha256": "6b5d368e53352f3fa6849ce716608b3c6a6954a0351b9348c37b9eac2536a163",
+  "verificationSourceSha256": "c4ea0435cd3d6fd43256c4dd46057e0682c1f5acd6386da87138e43541d29639",
+  "officialReward": 0,
+  "agentCommittedPatchBytes": 0,
+  "workingTreeSubmitted": false,
+  "humanRescueActions": 0,
+  "interpretation": "actual independent work and failed protocol submissions; no applied verdict, no claim of product correctness or blind-labelled false pause",
+  "falsePauseRate": null,
+  "falseAcceptanceRate": null
+}
