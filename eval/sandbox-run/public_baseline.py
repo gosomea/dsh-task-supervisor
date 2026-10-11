@@ -11,10 +11,32 @@ from probe import wait_snapshot
 from records import exclusive_json
 
 
-def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, out):
+ADMISSION_DEADLINE_MS = 600000
+
+
+def wait_probe_result(runtime, box, *, timeout_s, monotonic=time.monotonic, sleep=time.sleep):
+    """Bound the observation by elapsed time, including slow SDK calls."""
+    deadline = monotonic() + timeout_s
+    while monotonic() < deadline:
+        remaining = deadline - monotonic()
+        code, _, _ = runtime.exec(box, 'test -f /opt/eval/topology-result.json',
+                                  timeout_s=min(5, remaining))
+        if monotonic() >= deadline:
+            break
+        if code == 0:
+            return
+        sleep(min(1, deadline - monotonic()))
+    raise TimeoutError('candidate private check did not finish within admission budget')
+
+
+def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, out,
+          deadline_ms=ADMISSION_DEADLINE_MS):
+    if isinstance(deadline_ms, bool) or not isinstance(deadline_ms, int) or not 30000 <= deadline_ms <= 600000:
+        raise ValueError('keyless admission deadline must be 30000–600000 milliseconds')
     tarball_sha256 = hashlib.sha256(tarball.read_bytes()).hexdigest()
     exclusive_json(out / 'intent.json', {'taskId': candidate['id'], 'image': image,
-        'baseCommit': candidate['baseCommit'], 'tarballSha256': tarball_sha256, 'modelRequests': 0})
+        'baseCommit': candidate['baseCommit'], 'tarballSha256': tarball_sha256, 'modelRequests': 0,
+        'admissionDeadlineMs': deadline_ms, 'resultCollectionGraceMs': 45000})
     gateway = prepare_gateway(context=context, admin_image=admin_image, check_image=image,
         tarball=tarball, root=out / 'gateway', deadline_at=datetime.fromtimestamp(
             time.time() + 1200, timezone.utc).isoformat())
@@ -32,7 +54,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
             "const fs=require('node:fs'); if(fs.readFileSync('.dsh-untracked-probe','utf8')!=='untracked artifact\\n')throw Error('snapshot input');console.log(require('./package.json').name,process.arch)"]
         config = {'workspace': '/workspace', 'storageRoot': gateway['verification']['storageRoot'],
             'gatewaySocket': gateway['verification']['checkGatewaySocket'], 'image': image,
-            'output': '/opt/eval/topology-result.json', 'deadlineMs': 180000, 'argv': argv,
+            'output': '/opt/eval/topology-result.json', 'deadlineMs': deadline_ms, 'argv': argv,
             'runtimeLinkTargets': [], 'maxFiles': 100000, 'maxBytes': 512 * 1024 * 1024}
         root = '/opt/eval/keyless-home/profiles/probe'
         runtime.write(box, root + '/package.json', json.dumps({'private': True, 'type': 'module', 'dsh': {'profile': {'bundles': []}}}).encode())
@@ -41,11 +63,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
             {'id': 'subprocess', 'name': '/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-subprocess-local/lib/index.js'},
             {'id': 'probe', 'name': '/opt/eval/gateway-probe.mjs', 'config': config}]}]).encode())
         runtime.exec(box, 'DSH_HOME=/opt/eval/keyless-home DSH_TELEMETRY_DISABLED=1 dsh --profile probe > /opt/eval/keyless.log 2>&1 & p=$!; echo "$p" > /opt/eval/keyless.pid; wait "$p"', timeout_s=None, background=True)
-        for _ in range(200):
-            code, _, _ = runtime.exec(box, 'test -f /opt/eval/topology-result.json', timeout_s=5)
-            if code == 0: break
-            time.sleep(1)
-        else: raise TimeoutError('candidate private check did not finish')
+        wait_probe_result(runtime, box, timeout_s=deadline_ms / 1000 + 45)
         result = json.loads(runtime.read(box, '/opt/eval/topology-result.json'))
         exclusive_json(out / 'check-result.json', result)
         if result.get('error') or result.get('dockerSocketMounted') or result.get('check', {}).get('exitCode') != 0 \
@@ -84,6 +102,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
         wait_snapshot(runtime, snapshot.id, timeout_s=180, sleep=time.sleep, monotonic=time.monotonic)
         receipt = {'taskId': candidate['id'], 'image': image, 'snapshotId': snapshot.id,
             'baseCommit': head, 'tarballSha256': tarball_sha256, 'modelRequests': 0, 'passed': True,
+            'admissionDeadlineMs': deadline_ms, 'probeTimings': result.get('timings'),
             'snapshot': result['snapshot'], 'checkExitCode': result['check']['exitCode'],
             'checkImage': image, 'sourceUnchanged': True, 'dockerSocketMounted': False,
             'baselineHasGatewayMounts': False, 'baselineHasCredentials': False}

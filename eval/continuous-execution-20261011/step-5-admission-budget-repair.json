@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "step-5-keyless-admission-budget-repair",
+  "sourceBeforeChange": "8f2fa2e738f91ca6c30fa7c63de0191c768a913e",
+  "productionSourceCommit": "bca1e7819687169b476fbe31f1f78df35a722106",
+  "candidateTarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+  "productionSourceChanged": false,
+  "packageRebuilt": false,
+  "taskDeadlineChanged": false,
+  "reviewBudgetChanged": false,
+  "priorFailure": {
+    "schemaVersion": 1,
+    "kind": "keyless-admission-budget-failure",
+    "taskId": "superjson-error-stack-serialization",
+    "sourceCommit": "8f2fa2e738f91ca6c30fa7c63de0191c768a913e",
+    "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+    "modelRequests": 0,
+    "newPublicPositionsDelivered": 0,
+    "failure": {
+      "modelRequests": 0,
+      "workspace": "/workspace",
+      "dockerSocketMounted": false,
+      "snapshot": {
+        "id": "704dc3ab-3bc6-4d13-b3c8-ce8b66003fd2",
+        "entries": 26907,
+        "bytes": 246156753,
+        "digest": "6b6173e59cd9dfd68ee8c935dd075854ccdc7369d6871133fb4aa4a544d8221d",
+        "untrackedCaptured": true
+      },
+      "error": "Error: CHECK_INFRASTRUCTURE: gateway: Error: check request cancelled"
+    },
+    "admissionDeadlineMs": 180000,
+    "archiveControlMetadata": [
+      {
+        "path": "client/review-2biLcU/manifest.json",
+        "mtimeUtc": "2026-10-11T14:59:13+00:00",
+        "entryCount": 26907
+      },
+      {
+        "path": "private/review-4BmvDM/manifest.json",
+        "mtimeUtc": "2026-10-11T15:00:33+00:00",
+        "entryCount": 26907
+      },
+      {
+        "path": "private/snapshot-704dc3ab-3bc6-4d13-b3c8-ce8b66003fd2.json",
+        "mtimeUtc": "2026-10-11T15:00:33+00:00",
+        "entryCount": 26907
+      }
+    ],
+    "containerLedgers": 0,
+    "cleanup": {
+      "sandboxId": "fa22016a-8811-4f73-893c-acff7bcd4ce5",
+      "destroyed": true,
+      "gatewayStopped": true
+    },
+    "resourceRelease": {
+      "lease": "94ad930cbea644f6bc900dbb8d83d572",
+      "archivedBeforeRemoval": true,
+      "sha256": "0a78d8544235a5b19c2ec4b592dc803a27dba8d7b3e9567e490f0d6bb0f3d7d1"
+    },
+    "evidenceSha256": {
+      "check-result.json": "4e80d91a970d78d5de53129df4dada92c1d02b8c64c2ef91ce0a05907c8d1c81",
+      "cleanup.json": "2678a85b4154fbc88d247a29c4651be0025db65f1aa64adb4fa108a6e840533a",
+      "gateway/check-storage.json": "6bd76d6f350a179ddeb29816571b46440d0b5d4efd4674bc082bb9641775c2ba"
+    },
+    "reason": "Whole keyless fixture deadline exhausted by full snapshot and private-copy preparation; no runtime container ledger was created. Source requirements and production review budgets unchanged."
+  },
+  "changes": {
+    "keylessAdmissionDefaultMs": 600000,
+    "maxConfigurableMs": 600000,
+    "resultObservationGraceMs": 45000,
+    "observerUsesMonotonicDeadline": true,
+    "probeStageTimings": true
+  },
+  "checks": {
+    "python": {
+      "command": "/private/tmp/opensandbox-eval-venv/bin/python -m unittest discover -s eval/sandbox-run -p test_*.py",
+      "passed": 131,
+      "exitCode": 0,
+      "logSha256": "3fe83cfac8d7cf8e245395ecc53849e91c5b0a12f969038195028105de123daf"
+    },
+    "hostAndClientStrict": {
+      "command": "DSH_SOURCE=<local DSH> node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "logSha256": "229e7569dc8dd01a2f5c6c04ca879592eb63308ccb19927a5261b265cf8c5fe6"
+    },
+    "probeBuild": {
+      "runner": "Node24 / tsdown programmatic build; isolated cache output, no package build",
+      "exitCode": 0,
+      "artifactSha256": "85d53ec6de096e23b40a403c5d22ba78129efd7c756dca285b9943f47b8c2001"
+    }
+  },
+  "initialCheckSetupFaults": [
+    "System Python3.14 unittest import used incompatible annotationlib; repeated once under frozen Python3.13.3 with 131 passing.",
+    "Direct tsc omitted DSH type/path composition; existing strict Host/Client runner passed."
+  ],
+  "actualCorrectedAdmission": "pending: immutable new attempt, failed v4 preserved",
+  "steps56Complete": false
+}
