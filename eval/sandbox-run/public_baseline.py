@@ -1,5 +1,6 @@
 """Keyless public baseline plus actual candidate snapshot/check admission."""
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import time
@@ -11,8 +12,9 @@ from records import exclusive_json
 
 
 def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, out):
+    tarball_sha256 = hashlib.sha256(tarball.read_bytes()).hexdigest()
     exclusive_json(out / 'intent.json', {'taskId': candidate['id'], 'image': image,
-        'baseCommit': candidate['baseCommit'], 'modelRequests': 0})
+        'baseCommit': candidate['baseCommit'], 'tarballSha256': tarball_sha256, 'modelRequests': 0})
     gateway = prepare_gateway(context=context, admin_image=admin_image, check_image=image,
         tarball=tarball, root=out / 'gateway', deadline_at=datetime.fromtimestamp(
             time.time() + 1200, timezone.utc).isoformat())
@@ -81,7 +83,7 @@ def admit(runtime, *, candidate, image, tarball, probe, admin_image, context, ou
         snapshot = runtime.create_snapshot(box, candidate['id'] + '-keyless-baseline')
         wait_snapshot(runtime, snapshot.id, timeout_s=180, sleep=time.sleep, monotonic=time.monotonic)
         receipt = {'taskId': candidate['id'], 'image': image, 'snapshotId': snapshot.id,
-            'baseCommit': head, 'modelRequests': 0, 'passed': True,
+            'baseCommit': head, 'tarballSha256': tarball_sha256, 'modelRequests': 0, 'passed': True,
             'snapshot': result['snapshot'], 'checkExitCode': result['check']['exitCode'],
             'checkImage': image, 'sourceUnchanged': True, 'dockerSocketMounted': False,
             'baselineHasGatewayMounts': False, 'baselineHasCredentials': False}

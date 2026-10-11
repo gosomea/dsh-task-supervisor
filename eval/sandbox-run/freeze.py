@@ -52,6 +52,33 @@ def development_gate(value, tarball_sha256):
         for row in cases.values() for job in row['jobs']), 'development applications or cleanup unconfirmed')
 
 
+def development_amendment_gate(value, tarball_sha256, previous, previous_sha256, source_commit, changed_sources):
+    """A narrow budget correction preserves, rather than relabels, the prior model gate."""
+    require(value.get('schemaVersion') == 1 and value.get('kind') == 'review-budget-reserve-correction',
+            'unsupported development amendment')
+    require(value.get('previousReleaseSha256') == previous_sha256
+        and value.get('previousPluginSourceCommit') == previous['pluginSourceCommit']
+        and value.get('previousTarballSha256') == previous['tarballSha256'], 'development amendment parent differs')
+    require(value.get('pluginSourceCommit') == source_commit and value.get('tarballSha256') == tarball_sha256,
+            'development amendment current package/source differs')
+    require(changed_sources == ['src/review-budget.ts'] and value.get('changedSources') == changed_sources,
+            'development amendment exceeds the validated budget-only source change')
+    checks = value.get('checks', {})
+    require(all(checks.get(key) is True for key in ('preFixRegressionFailed', 'lightReserveNativeHostPassed',
+        'absoluteTaskCutoffPassed', 'lateDecisionRejected', 'sameJobAndEvidencePreserved',
+        'hostClientStrictPassed', 'buildPassed', 'cleanInstallBytesMatched'))
+        and checks.get('kernelExitCode') == 0 and type(checks.get('kernelPassed')) is int
+        and checks['kernelPassed'] > 0, 'development amendment validation incomplete')
+    require(value.get('priorModelEvidenceReused') is True and value.get('priorModelEvidenceRelabeled') is False,
+            'development amendment must retain the original model evidence identity')
+
+
+def amended_package_gate(value, tarball_sha256, amended):
+    if amended:
+        require(value.get('tarballSha256') == tarball_sha256,
+                'amended package requires current-package route and gateway evidence')
+
+
 def freeze(config, out):
     source = Path(config['source']).resolve()
     require(not out.exists(), 'release directory already exists; no replacement')
@@ -59,6 +86,7 @@ def freeze(config, out):
     require(selection['seed'] == SEED, 'selection seed differs')
     tasks = selection['selectedTaskIds']
     development = config.get('developmentRegression') is True
+    amendment_path = config.get('developmentAmendment') if development else None
     registry = config.get('bootstrapRegistryIpv4', [])
     if registry:
         registry = [str(ipaddress.IPv4Address(value)) for value in registry]
@@ -80,7 +108,21 @@ def freeze(config, out):
         return read(path)
     if development:
         gate(config['originalExposedOrder'])
-        development_gate(gate(config['developmentGate']), digest(config['tarball']))
+        if amendment_path:
+            previous = gate(config['previousRelease'])
+            require(previous.get('scope') == 'exposed-supervisor-development'
+                and previous.get('planned') == 8, 'amendment requires an original eight-position development release')
+            prior_gate_path = Path(config['developmentGate']).resolve()
+            require(any(Path(row['privateSource']).resolve() == prior_gate_path
+                and row['sha256'] == digest(prior_gate_path) for row in previous['gates']),
+                'original development gate is not bound to the previous release')
+            development_gate(gate(prior_gate_path), previous['tarballSha256'])
+            changed = subprocess.check_output(['git', '-C', str(source), 'diff', '--name-only',
+                previous['pluginSourceCommit'], config['pluginSourceCommit'], '--', 'src'], text=True).splitlines()
+            development_amendment_gate(gate(amendment_path), digest(config['tarball']), previous,
+                digest(config['previousRelease']), config['pluginSourceCommit'], changed)
+        else:
+            development_gate(gate(config['developmentGate']), digest(config['tarball']))
     else:
         require(gate(config['revisionResult'])['strictSuccess'] is True, 'revision gate failed')
         fault = gate(config['faultResult'])
@@ -89,12 +131,14 @@ def freeze(config, out):
             ('sameJobAndSession', 'sameCutoffAndSnapshot', 'nodeAppliedOnce', 'preRetryReadQualificationsPreserved'))
             and checks['retryCount'] == 1, 'strict artifact recovery gate failed')
     route = gate(config['routeEvidence'])
+    amended_package_gate(route, digest(config['tarball']), bool(amendment_path))
     require(route['routesMatched'] is True and route['main']['successfulRequestAndDurableAnswer'] is True
         and any(row.get('successfulRequestAndDurableAnswer') is True for row in route['reviewers']), 'actual main/reviewer route evidence missing')
     baselines = {}
     official_images = {}
     for task in tasks:
         baseline = gate(config['baselines'][task])
+        amended_package_gate(baseline, digest(config['tarball']), bool(amendment_path))
         require(baseline.get('passed') is True and baseline['taskId'] == task and baseline['modelRequests'] == 0
             and baseline['sourceUnchanged'] is True and baseline['dockerSocketMounted'] is False
             and baseline['baselineHasGatewayMounts'] is False and baseline['baselineHasCredentials'] is False,

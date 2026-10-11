@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "step": 5,
+  "status": "corrected-freeze-framework-prepared-admission-pending",
+  "sourceParent": "bca1e7819687169b476fbe31f1f78df35a722106",
+  "scope": "exposed-supervisor-development",
+  "candidateTarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+  "previousReleaseSha256": "37ac39818bf006a2686430e204ad023a9536dc1b75151abd6c3af55a15f32690",
+  "amendmentSha256": "b1880bd7a366fe7ada6799c1cff5c93f767908225803b1a1c32fa8cdf545061a",
+  "productionSourcesChanged": [
+    "src/review-budget.ts"
+  ],
+  "priorCrossProductModelEvidence": {
+    "candidate": 7,
+    "tarballSha256": "a2437bedc9cbe83f0339aad03fb0bd9df0350d920a3e7ffd5da7f226ee2e84a1",
+    "reused": true,
+    "relabeledAsCandidate8": false,
+    "newModelRuns": 0
+  },
+  "checks": [
+    {
+      "command": "Python 3.13 -m unittest discover -s eval/sandbox-run -p test_*.py -v",
+      "exitCode": 0,
+      "passed": 127,
+      "durationSec": 0.755,
+      "logSha256": "1cd1c201efedafe75a82132d93c8c513301aefd1e77a105706773886949946b4"
+    }
+  ],
+  "newCandidateNativeAdmission": "pending",
+  "newCandidateGatewayAdmission": "pending",
+  "newCandidateActualRequestRoute": "pending",
+  "replacementRelease": "pending",
+  "replacementBenchmarkDeliveries": 0,
+  "oldInFlightRunChanged": false,
+  "dailyHostRestarted": false,
+  "at": "2026-10-11T14:14:39.209679+00:00"
+}

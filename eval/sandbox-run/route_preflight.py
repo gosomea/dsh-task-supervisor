@@ -1,5 +1,6 @@
 """Real main/reviewer routing admission, separate from public test positions."""
 import json
+import hashlib
 from pathlib import Path
 import time
 import shlex
@@ -13,7 +14,8 @@ from execution import bind_registry
 def run(runtime, *, image: str, tarball: Path, daily_patch: str,
         credential: bytes, out: Path, host_gateway: str, bootstrap_registry_ipv4=None,
         platform='linux/amd64') -> dict:
-    exclusive_json(out / 'intent.json', {'kind': 'real-route-calibration', 'image': image,
+    tarball_sha256 = hashlib.sha256(tarball.read_bytes()).hexdigest()
+    exclusive_json(out / 'intent.json', {'kind': 'real-route-calibration', 'image': image, 'tarballSha256': tarball_sha256,
         'platform': platform, 'publicTaskDelivered': False, 'executionApprovals': 0})
     box = runtime.create(image=image, snapshot_id=None, metadata={'role': 'route-calibration'},
         timeout_minutes=15, cpu='2', memory='8Gi', network_policy='allow', platform=platform)
@@ -69,6 +71,7 @@ def run(runtime, *, image: str, tarball: Path, daily_patch: str,
                     and any(row['type'] == 'model-finish' and row.get('finishKind') in ('stop', 'tool-calls') for row in selected)
             if review and completed(session_id) and completed(review['reviewerSessionId']):
                 result = {'passed': True, 'mainSessionId': session_id, 'reviewerSessionId': review['reviewerSessionId'],
+                    'tarballSha256': tarball_sha256,
                     'reviewJobId': review['id'], 'reviewTaskId': review['taskId'],
                     'provider': 'deepseek-codebuddy', 'model': 'deepseek-v4.1-flash',
                     'successfulMainAndReviewerHttpObserved': True, 'executionApprovals': 0,
