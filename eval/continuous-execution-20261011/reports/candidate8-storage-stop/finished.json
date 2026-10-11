@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-11T16:19:41.342647+00:00",
+  "status": "requires-reconciliation",
+  "planned": 8,
+  "sealed": 1,
+  "lastBatchEventKind": "attention",
+  "lastBatchOperation": "sealed-result",
+  "lastBatchExitCode": null,
+  "reportOnly": true,
+  "modelRequests": 0,
+  "controlActions": 0
+}
