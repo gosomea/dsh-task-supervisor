@@ -38,6 +38,8 @@ export function checkResultsAsEvidence(state: VerificationState, results: CheckF
   }
   return results.map(result => {
     const check = checks.find(item => item.id === result.checkId)!
+    if (result.evidenceIds.some(id => state.reusedChecks?.some(reuse => reuse.checkId === id &&
+      (reuse.plannedCheckId !== check.id || reuse.method !== check.method || reuse.scope !== check.coverage || reuse.digest !== state.snapshot.digest)))) throw new Error('reused evidence cannot expand its bound method or scope')
     if (passing && check.basis === 'explicit' && result.status !== 'satisfied') throw new Error('failed or unverified original requirements cannot pass')
     return { criterionId: check.id, method: check.method, status: result.status, finding: result.finding, evidenceIds: result.evidenceIds }
   })

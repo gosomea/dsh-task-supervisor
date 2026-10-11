@@ -14,7 +14,7 @@ export const requirementResultSchema = logRequirementSchema.omit({ evidenceSeqs:
   evidence: z.array(z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('session'), seq: z.number().int().nonnegative(), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative(), truncated: z.boolean() }).strict(),
     z.object({ kind: z.literal('artifact'), snapshotId: z.string(), path: z.string(), hash: z.string(), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict(),
-    z.object({ kind: z.literal('check'), snapshotId: z.string(), checkId: z.string(), argv: z.array(z.string()), streams: z.array(z.object({ stream: z.enum(['stdout', 'stderr']), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()) }).strict(),
+    z.object({ kind: z.literal('check'), snapshotId: z.string(), sourceJobId: z.string().optional(), reusedForSnapshotId: z.string().optional(), checkId: z.string(), argv: z.array(z.string()), streams: z.array(z.object({ stream: z.enum(['stdout', 'stderr']), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()) }).strict(),
   ])),
 }).strict()
 export type RequirementResult = z.infer<typeof requirementResultSchema>
@@ -71,9 +71,10 @@ export function independentRequirementResults(job: ReviewJob, findings: CheckFin
         if (!entry || !read) throw new Error('artifact evidence is not bound to this snapshot')
         return { kind: 'artifact', snapshotId: state.snapshot.id, path, hash: entry.hash, ranges: read.ranges, total: read.total }
       }
-      const executed = state.checks.find(item => item.id === id && item.snapshotId === state.snapshot.id)
+      const reuse = state.reusedChecks?.find(item => item.checkId === id && item.plannedCheckId === check.id && item.digest === state.snapshot.digest && item.scope === check.coverage)
+      const executed = state.checks.find(item => item.id === id && (item.snapshotId === state.snapshot.id || reuse?.sourceSnapshotId === item.snapshotId))
       if (!executed) throw new Error('check evidence is not bound to this snapshot')
-      return { kind: 'check', snapshotId: state.snapshot.id, checkId: id, argv: executed.argv,
+      return { kind: 'check', snapshotId: executed.snapshotId, ...reuse ? { sourceJobId: reuse.sourceJobId, reusedForSnapshotId: state.snapshot.id } : {}, checkId: id, argv: executed.argv,
         streams: state.readChecks.filter(item => item.id === id).map(item => ({ stream: item.stream, ranges: item.ranges, total: item.total })) }
     })
     return { id: check.id, criterionId: check.criterionId, requirement: check.fact, source: check.source, basis: check.basis, method: check.method,

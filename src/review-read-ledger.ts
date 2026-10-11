@@ -73,7 +73,7 @@ export function restoreReviewReads(events: readonly SessionEvent[], job: ReviewJ
     }
     if (call.data.name === 'read_review_evidence' && job.verification) {
       const parsed = checkRead.safeParse(raw)
-      if (!parsed.success || parsed.data.snapshotId !== job.verification.snapshot.id) continue
+      if (!parsed.success || parsed.data.snapshotId !== job.verification.snapshot.id && !job.verification.reusedChecks?.some(item => item.checkId === parsed.data.checkId && item.sourceSnapshotId === parsed.data.snapshotId && item.digest === job.verification!.snapshot.digest)) continue
       const value = parsed.data, prior = job.verification.readChecks.find(read => read.id === value.checkId && read.stream === value.stream && read.total === value.totalChars)
       if (!prior || value.offset + value.text.length > value.totalChars || !job.verification.checks.some(check => check.id === value.checkId && check.snapshotId === value.snapshotId)) continue
       let read = checks.find(read => read.id === value.checkId && read.stream === value.stream)

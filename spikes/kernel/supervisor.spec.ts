@@ -8,6 +8,7 @@ import * as FsTools from '@deepseek-ai/dsh-tool-fs'
 import { LocalAttachmentStore } from '@deepseek-ai/dsh-attachment-local'
 import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
 import { verificationPolicy } from '../../src/verification.ts'
+import * as ReviewChecks from '../../src/review-check.ts'
 import { PtcRuntime, type PtcRunRequest, type PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import Goals from '@deepseek-ai/dsh-goal'
@@ -31,6 +32,7 @@ import * as Supervisor from '../../src/index.ts'
 import { draftOf, recordDraft } from '../../src/drafts.ts'
 import { createReviewJob, reviewStage, savedReviewDecision } from '../../src/reviewer.ts'
 import { captureSnapshot } from '../../src/artifact-snapshot.ts'
+import { reviewBudgetPolicySchema } from '../../src/review-budget.ts'
 import { displayedPlan, progress, taskStatus } from '../../src/client/presentation.ts'
 import { validateProvenance } from '../../src/provenance.ts'
 import { installRepairs } from '../../src/repair-runtime.ts'
@@ -3543,4 +3545,138 @@ it('blocks recovery when reviewer disposal cannot be confirmed', async () => {
   expect(job.cleanupHistory?.at(-1)?.confirmed).toBe(false)
   expect(job.recovery?.consumed).toBe(0); expect(job.attempt).toBe(1)
   expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toHaveLength(0)
+})
+
+it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'boundary'] as const)('incremental native review persists actual findings and derives coverage across recovery: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-incremental-review-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'brief.md'), mode === 'wrong' ? '# Wrong title' : '# Required title')
+  const check = { id: 'title', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'Required title', method: 'read', expected: '# Required title', coverage: 'Complete document', basis: 'explicit' }
+  const result = { checkId: 'title', status: mode === 'wrong' ? 'failed' : 'satisfied', finding: mode === 'wrong' ? 'Required title absent' : 'Read and verified required title', coverage: check.coverage, limitations: 'Static content only', evidenceIds: ['file:brief.md'] }
+  const steps: [string, Record<string, unknown>][] = [
+    ['task_review_check_plan', { checks: [check, { ...check, id: 'extra', basis: mode === 'missing' ? 'explicit' : 'derived' }] }],
+    ...mode === 'unread' ? [['task_review_check_result', { result }] as [string, Record<string, unknown>]] : [],
+    ['inspect_task_artifact', { action: 'read', path: 'brief.md' }],
+    ['task_review_check_result', { result }],
+    ...['fault', 'missing-session'].includes(mode) ? [['FAULT', {}] as [string, Record<string, unknown>]] : [],
+    ...mode === 'missing-session' ? [['inspect_task_artifact', { action: 'read', path: 'brief.md' }] as [string, Record<string, unknown>]] : [],
+    ...mode === 'boundary' ? [['WAIT', {}], ['WAIT', {}]] as [string, Record<string, unknown>][] : [['task_review_observations', {}]] as [string, Record<string, unknown>][],
+    ['read_task_context', { field: 'report' }],
+    ['read_task_evidence', { from_seq: 0, limit: 30 }],
+    ['task_review_decision', { verdict: ['missing', 'wrong'].includes(mode) ? 'revise' : 'pass', finding: '# Verified title\n\nFull report remains readable.', evidence_seqs: [0] }],
+  ]
+  let calls = 0, missing = false, originalSession: string | undefined
+  const waiting = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]; let waitIndex = 0
+  const inputs: string[] = []
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      inputs.push(JSON.stringify(options.messages))
+      const step = steps[calls++]
+      if (step?.[0] === 'FAULT') { missing = mode === 'missing-session'; throw new LlmError('controlled temporary transport after durable finding', 'TRANSPORT') }
+      if (step?.[0] === 'WAIT') {
+        waiting[waitIndex++]!.resolve()
+        await new Promise<void>(resolve => options.signal?.aborted ? resolve() : options.signal?.addEventListener('abort', () => resolve(), { once: true }))
+        yield { type: 'finish', reason: { kind: 'aborted', failure: { code: 'CANCELLED', message: 'controlled phase boundary' } } }; return
+      }
+      yield* step ? toolResponse(step[0], step[1], `incremental-${calls}`) : textResponse('done')
+    }
+  }()
+  const ctx = await host(join(root, 'sessions'), adapter, false); await ctx.sessionProjections.register(taskProjection); await ctx.plugin(LocalFileSystem)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`incremental-${mode}`), agentOptions: { provider: 'scripted', model: 'main' }, meta: { cwd: workspace } })
+  const task = newTask('Deliver the required static title. No optional additions are mandatory.')
+  task.criteria = [{ id: 'c', text: 'Required title', provenance: { kind: 'user', reference: 'objective' } }]
+  task.stages = [{ id: 's', title: 'Deliver title', criterionIds: ['c'] }]; appendTask(ctx, agent, task)
+  const stat = ctx.sessionPersistence.stat.bind(ctx.sessionPersistence)
+  vi.spyOn(ctx.sessionPersistence, 'stat').mockImplementation(async (id, options) => {
+    if (String(id).startsWith('task-review-')) originalSession ??= String(id)
+    // Inject loss only after the old native range has stopped and recovery was reserved.
+    if (missing && String(id) === originalSession) return undefined
+    return stat(id, options)
+  })
+  if (mode === 'boundary') vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  const pending = reviewStage(ctx, agent, task, 's', 'PRIVATE_MAIN_REPORT', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, 'stage', { repairAttempts: 0, checkProtocol: 1, incrementalProtocol: 1,
+      budget: reviewBudgetPolicySchema.parse({}), verification: verificationPolicy({ storageRoot: join(root, 'snapshots') }),
+      faultRecovery: { attempts: 1, delayMs: 0, resume: true, armed: false } })
+  let decision: Awaited<typeof pending>
+  try {
+    if (mode === 'boundary') {
+      await waiting[0]!.promise; await vi.advanceTimersByTimeAsync(420000); await waiting[1]!.promise
+      await vi.advanceTimersByTimeAsync(60000)
+    }
+    decision = await pending
+  } finally { if (mode === 'boundary') vi.useRealTimers() }
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.verification?.checkHistory).toMatchObject([{ result }])
+  expect(job.verification?.checkFindings?.[1]?.status).toBe('unverified')
+  expect(decision.criteria?.[0]?.status).toBe(mode === 'missing' ? 'unverified' : mode === 'wrong' ? 'failed' : 'satisfied')
+  expect(decision.verdict).toBe(['missing', 'wrong'].includes(mode) ? 'revise' : 'pass')
+  const reviewer = await ctx.sessionPersistence.open(SessionId(job.reviewerSessionId!), 'read')
+  try {
+    const events = (await reviewer.read(0, 300)).events
+    expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'inspect_task_artifact')).toHaveLength(1)
+    expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(mode === 'unread' ? 1 : 0)
+  } finally { await reviewer.close() }
+  expect(inputs.slice(0, mode === 'fault' ? 6 : mode === 'missing-session' ? 7 : 5).every(input => !input.includes('PRIVATE_MAIN_REPORT'))).toBe(true)
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.failure).toBeNull(); expect(replay.reviewJobs).toEqual(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs)
+  expect(job.recovery?.consumed).toBe(['fault', 'missing-session'].includes(mode) ? 1 : 0)
+  expect(job.sessionChain).toHaveLength(mode === 'missing-session' ? 2 : 1)
+  if (mode === 'missing-session') expect(job.verification?.checkHistory?.[0]?.sessionId).toBe(originalSession)
+})
+
+it('reuses only raw unchanged node execution evidence in a native completion review, with fresh stream receipts', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-reuse-review-')); roots.push(root)
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'sum.mjs'), 'export const value = 5')
+  const check = { id: 'sum', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'Sum equals five', method: 'run', expected: '5', coverage: 'Exact two operands', basis: 'explicit' }
+  let checkId = '', sourceId = '', phase = 0, calls = 0
+  const inputs: string[] = []
+  const result = () => ({ checkId: 'sum', status: 'satisfied', finding: 'Read actual independent output: 5', coverage: check.coverage, limitations: 'Exact operands only', evidenceIds: [checkId] })
+  const adapter = new class extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      inputs.push(JSON.stringify(options.messages))
+      const steps: [string, Record<string, unknown>][] = [
+        ['task_review_check_plan', { checks: [check] }],
+        ...phase ? [['reuse_review_check', { action: 'list', planned_check_id: 'sum' }], ['reuse_review_check', { action: 'import', planned_check_id: 'sum', source_job_id: sourceId, check_id: checkId }]] as [string, Record<string, unknown>][] : [['run_review_check', { argv: ['node', 'sum.mjs'], cwd: 'tree' }]] as [string, Record<string, unknown>][],
+        ['read_review_evidence', { check_id: checkId, stream: 'stdout' }], ['read_review_evidence', { check_id: checkId, stream: 'stderr' }],
+        ['task_review_check_result', { result: result() }], ['task_review_observations', {}],
+        ['read_task_evidence', { from_seq: 0, limit: 30 }], ['task_review_decision', { verdict: 'pass', finding: 'Combined delivery independently checked.', evidence_seqs: [0] }],
+      ]
+      const step = steps[calls++]
+      yield* step ? toolResponse(step[0], step[1], `cached-${phase}-${calls}`) : textResponse('done')
+    }
+  }()
+  const ctx = await host(join(root, 'sessions'), adapter, false); await ctx.sessionProjections.register(taskProjection); await ctx.plugin(LocalFileSystem)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('reuse-completion'), agentOptions: { provider: 'scripted', model: 'main' }, meta: { cwd: workspace } })
+  const input = newTask('Compute sum of two operands as five.'); input.planVersion = 1
+  input.criteria = [{ id: 'c', text: 'Sum equals five', provenance: { kind: 'user', reference: 'objective' } }]
+  input.stages = [{ id: 'a', title: 'Compute', criterionIds: ['c'] }]; input.nodeRuns = [{ id: 'a', status: 'pending', attempt: 1 }]; appendTask(ctx, agent, input)
+  const policy = { repairAttempts: 0, checkProtocol: 1 as const, incrementalProtocol: 1 as const, budget: reviewBudgetPolicySchema.parse({}),
+    verification: verificationPolicy({ storageRoot: join(root, 'snapshots'), container: { context: 'test', image: 'sha256:' + 'a'.repeat(64), cpus: 1, memoryMiB: 512, pids: 64 } }) }
+  // Controlled native runner result; this fixture tests receipts and reuse, not Docker confinement.
+  const executed = vi.spyOn(ReviewChecks, 'runCheck').mockImplementation(async (_ctx, snapshot, _session, argv, cwd, config) => {
+    checkId = '00000000-0000-4000-8000-000000000008'
+    const value: ReviewChecks.CheckResult = { id: checkId, snapshotId: snapshot.id, argv, cwd, startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(),
+      exitCode: 0, signal: null, timedOut: false, cancelled: false, stdout: '5', stderr: '', outputIncomplete: false, changed: [], runtime: { kind: 'docker', context: 'test', image: config.container.image, containerName: 'controlled' } }
+    await writeFile(join(snapshot.root, `check-${checkId}.json`), JSON.stringify(value)); return value
+  })
+  const signal = new AbortController().signal
+  await reviewStage(ctx, agent, input, 'a', 'PRIVATE_NODE_REPORT', signal, { provider: 'scripted', model: 'reviewer' }, 'stage', policy)
+  const original = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  sourceId = original.id; await recordReview(ctx, agent, { ...original, status: 'applied', revision: original.revision + 1 })
+  const completed = { ...input, revision: input.revision + 1, nodeRuns: [{ id: 'a', status: 'passed' as const, attempt: 1 }] }
+  appendTask(ctx, agent, completed); phase = 1; calls = 0; inputs.length = 0
+  const decision = await reviewStage(ctx, agent, completed, 'completion', 'PRIVATE_COMPLETION_REPORT', signal, { provider: 'scripted', model: 'reviewer' }, 'completion', policy)
+  expect(decision.verdict).toBe('pass'); expect(executed).toHaveBeenCalledOnce()
+  const current = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs.at(-1)!
+  expect(current.verification?.reusedChecks).toMatchObject([{ sourceJobId: original.id, sourceSnapshotId: original.verification!.snapshot.id }])
+  expect(current.verification?.readChecks).toHaveLength(2)
+  expect(inputs.slice(0, 7).every(input => !input.includes('PRIVATE_NODE_REPORT') && !input.includes('PRIVATE_COMPLETION_REPORT'))).toBe(true)
+  const reader = await ctx.sessionPersistence.open(SessionId(current.reviewerSessionId!), 'read')
+  try {
+    const events = (await reader.read(0, 256)).events
+    expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toEqual([])
+    const { restoreReviewReads } = await import('../../src/review-read-ledger.ts')
+    expect(restoreReviewReads(events, current).checks).toHaveLength(2)
+    expect(restoreReviewReads(events.filter(event => event.type !== 'tool/result' || event.data.message.source.callId !== 'cached-1-5'), current).checks).toHaveLength(1)
+  } finally { await reader.close() }
 })

@@ -27,6 +27,7 @@ export const reviewJobSchema = z.object({
   planVersion: z.number().int().nonnegative(), stageId: z.string().min(1), nodeAttempt: z.number().int().positive().nullable(),
   kind: z.enum(['planning', 'plan', 'stage', 'progress', 'completion']), cutoff: z.number().int().min(-1),
   reviewerSessionId: z.string().nullable(), model: z.object({ provider: z.string(), model: z.string(), reasoningEffort: z.string().optional() }).nullable(),
+  sessionChain: z.array(z.object({ sessionId: z.string(), at: z.string(), reason: z.enum(['initial', 'missing-session']) }).strict()).min(1).max(2).optional(),
   runtimeId: z.string().uuid(), owner: z.literal('controller').optional(),
   status: z.enum(['queued', 'repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
   attempt: z.number().int().positive(), repairLimit: z.number().int().nonnegative(),
@@ -46,7 +47,7 @@ export const reviewJobSchema = z.object({
   verificationMode: z.enum(['log', 'independent']).optional(),
   requirementsProtocol: z.literal(1).optional(),
   resultProtocol: z.literal(1).optional(),
-  checkProtocol: z.literal(1).optional(),
+  checkProtocol: z.literal(1).optional(), incrementalProtocol: z.literal(1).optional(),
   confirmation: z.object({ callId: z.string().min(1), submittedAt: z.string(),
     resultSeq: z.number().int().nonnegative().optional(), appliedAt: z.string().optional(),
     appliedTaskRevision: z.number().int().positive().optional() }).strict().optional(),
@@ -58,6 +59,9 @@ export const reviewJobSchema = z.object({
     requirements: z.array(requirementResultSchema).min(1).max(100).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict().superRefine((job, ctx) => {
+  if (job.incrementalProtocol && !job.checkProtocol) ctx.addIssue({ code: 'custom', message: 'incremental findings require independent check protocol' })
+  if (job.sessionChain && (job.sessionChain[0]!.reason !== 'initial' || job.sessionChain.at(-1)!.sessionId !== job.reviewerSessionId
+    || job.sessionChain.length === 2 && (job.sessionChain[1]!.reason !== 'missing-session' || !job.recovery?.consumed))) ctx.addIssue({ code: 'custom', message: 'review Session chain does not bind its recovery' })
   if (job.budget && (job.deadlineAt !== job.budget.deadlineAt || Date.parse(job.budget.deadlineAt) > Date.parse(job.budget.capAt))) ctx.addIssue({ code: 'custom', message: 'review budget does not bind the original job cutoff' })
   if (job.readCorrections && !job.scope) ctx.addIssue({ code: 'custom', message: 'read corrections require a bound review scope' })
   if (job.resultProtocol && !job.scope) ctx.addIssue({ code: 'custom', message: 'requirement results require a bound review scope' })

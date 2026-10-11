@@ -13,7 +13,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.budget || job.cleanupHistory || job.confirmation ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.incrementalProtocol || job.sessionChain || job.budget || job.cleanupHistory || job.confirmation ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -27,7 +27,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
-    || job.cutoff !== previous.cutoff || job.reviewerSessionId !== previous.reviewerSessionId
+    || job.cutoff !== previous.cutoff || job.reviewerSessionId !== previous.reviewerSessionId && !validReplacement(previous, job)
     || job.mainSessionId !== previous.mainSessionId || job.planVersion !== previous.planVersion
     || job.stageId !== previous.stageId || job.kind !== previous.kind || job.nodeAttempt !== previous.nodeAttempt
     || job.evidence !== previous.evidence || JSON.stringify(job.input) !== JSON.stringify(previous.input)
@@ -35,7 +35,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
     || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
     || job.owner !== previous.owner || job.checkProtocol !== previous.checkProtocol || JSON.stringify(job.scope) !== JSON.stringify(previous.scope)
-    || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol || job.resultProtocol !== previous.resultProtocol
+    || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol || job.resultProtocol !== previous.resultProtocol || job.incrementalProtocol !== previous.incrementalProtocol
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
   if (previous?.recovery) {
@@ -63,10 +63,23 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (previous?.cleanupHistory?.some((entry, index) => !job.cleanupHistory?.[index]
     || entry.runtimeId !== job.cleanupHistory[index]!.runtimeId || entry.startedAt !== job.cleanupHistory[index]!.startedAt
     || entry.finishedAt && JSON.stringify(entry) !== JSON.stringify(job.cleanupHistory[index]))) throw new Error('cleanup history changed')
+  const oldHistory = previous?.verification?.checkHistory ?? [], nextHistory = job.verification?.checkHistory ?? []
+  if (JSON.stringify(nextHistory.slice(0, oldHistory.length)) !== JSON.stringify(oldHistory) || nextHistory.some((entry, index) => entry.revision !== index + 1)) throw new Error('incremental finding history changed')
   const priorPlan = previous?.verification?.checkPlan ?? [], plan = job.verification?.checkPlan ?? []
   if (JSON.stringify(plan.slice(0, priorPlan.length)) !== JSON.stringify(priorPlan) || plan.some((entry, index) => entry.revision !== index + 1)) throw new Error('check plan history changed')
   if (previous?.verification?.phase === 'comparison' && JSON.stringify(previous.verification.checkFindings) !== JSON.stringify(job.verification?.checkFindings)) throw new Error('independent check findings changed')
+  const reused = previous?.verification?.reusedChecks ?? []
+  if (JSON.stringify(job.verification?.reusedChecks?.slice(0, reused.length) ?? []) !== JSON.stringify(reused)) throw new Error('reused evidence history changed')
+  if (previous?.sessionChain && JSON.stringify(job.sessionChain?.slice(0, previous.sessionChain.length)) !== JSON.stringify(previous.sessionChain)) throw new Error('review Session inheritance changed')
   return [...jobs.filter(item => item.id !== job.id), job].slice(-50)
+}
+
+function validReplacement(previous: ReviewJob, next: ReviewJob): boolean {
+  return previous.sessionChain?.length === 1 && next.sessionChain?.length === 2
+    && previous.sessionChain[0]!.sessionId === previous.reviewerSessionId
+    && next.sessionChain[1]!.sessionId === next.reviewerSessionId && next.sessionChain[1]!.reason === 'missing-session'
+    && (next.recovery?.consumed ?? 0) > 0 && !previous.decision && previous.cleanupHistory?.at(-1)?.confirmed === true
+    && !previous.cleanupHistory.some(entry => !entry.finishedAt || entry.confirmed !== true)
 }
 
 export function faultFrom(error: unknown): ReviewFault | undefined { return error instanceof ReviewFailure ? error.fault : undefined }

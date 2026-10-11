@@ -169,7 +169,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
-  const selectedReviewPolicy = { ...reviewerPolicy, budget: reviewBudgetPolicySchema.parse(config.reviewBudget ?? {}), scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
+  const selectedReviewPolicy = { ...reviewerPolicy, budget: reviewBudgetPolicySchema.parse(config.reviewBudget ?? {}), incrementalProtocol: 1 as const, scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
     ...effectiveVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,

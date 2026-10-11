@@ -2,6 +2,7 @@
 import { controlEvent } from './session-records.ts'
 import { ExecutionBudgetError } from './execution-budget.ts'
 
+import { currentCheckResults, criterionSummary } from './review-findings.ts'
 import { restoreReviewReads } from './review-read-ledger.ts'
 import { transientReviewFault, waitReviewRetry, type FaultRecoveryPolicy } from './review-recovery.ts'
 import { randomUUID } from 'node:crypto'
@@ -24,7 +25,7 @@ import { languagePolicy } from './task-context.ts'
 import { recordReview, ReviewFailure, type ReviewJob, type PlanningSummary } from './review-records.ts'
 import { planningSummarySchema } from './state-schema.ts'
 import { NAMESPACE, taskSchema, type TaskSnapshot } from './state.ts'
-import { prepareVerification, installVerification, validateFindings, findingParameters, type VerificationPolicy } from './verification.ts'
+import { prepareVerification, installVerification, sealIncrementalFindings, validateFindings, findingParameters, type VerificationPolicy } from './verification.ts'
 import { snapshotFresh } from './artifact-snapshot.ts'
 import { checkResultsAsEvidence, checkFindingSchema, checkFindingParameters } from './review-check-plan.ts'
 import { reviewCapabilities } from './review-capabilities.ts'
@@ -49,6 +50,7 @@ export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorre
   beforeFaultRetry?: (job: ReviewJob, runtimeId: string) => Promise<void>
   faultRetryStarted?: (job: ReviewJob) => Promise<void>
   budget?: ReviewBudgetPolicy
+  incrementalProtocol?: 1
 }
 
 function reviewDeadline(policy: ReviewPolicy, deadlineMs: number): string {
@@ -195,7 +197,7 @@ export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string
       manualOnly: false, manualPending: false, nextRetryAt: null, failures: [] } } : {},
     ...policy.verificationMode ? { verificationMode: verification ? 'independent' : 'log' } : {},
     ...policy.requirementsProtocol ? { requirementsProtocol: policy.requirementsProtocol } : {},
-    ...verification && policy.checkProtocol ? { checkProtocol: policy.checkProtocol } : {} }
+    ...verification && policy.checkProtocol ? { checkProtocol: policy.checkProtocol, ...policy.incrementalProtocol ? { incrementalProtocol: policy.incrementalProtocol } : {} } : {} }
 
 }
 
@@ -303,6 +305,18 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
         code: String(error).includes('SNAPSHOT_STALE') ? 'stale' : String(error).includes('CHECK_INFRASTRUCTURE') ? 'check-infrastructure' : 'snapshot',
         message: String(error), retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false }, { cause: error }) }
     }
+    if (job.sessionChain && await ctx.sessionPersistence.stat(SessionId(job.reviewerSessionId!)) === undefined) {
+      if (job.sessionChain.length !== 1 || !job.recovery || job.recovery.manualOnly
+        || !job.cleanupHistory?.length || job.cleanupHistory.some(entry => !entry.finishedAt || entry.confirmed !== true)) throw new Error('Review Session is missing; replacement is not authorized or prior cleanup is unconfirmed')
+      if (!job.recovery.consumed) {
+        if (!job.recovery.retryLimit) throw new Error('Review Session is missing and recovery budget is exhausted')
+        await policy.beforeFaultRetry?.(job, job.runtimeId)
+        job.recovery.consumed++
+      }
+      job.reviewerSessionId = `task-review-${randomUUID()}`
+      job.sessionChain = [...job.sessionChain, { sessionId: job.reviewerSessionId, at: new Date().toISOString(), reason: 'missing-session' }]
+      await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    }
     job.model ??= reviewerOptions(ctx, main, fixedModel).model
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
     const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job, verification,
@@ -401,7 +415,7 @@ async function runReviewStage(
       installImageEvidence(agentCtx, ctx, main, cutoff, imageAfterSeq, observedSeqs, imageSeqs, model, assertComparison)
       agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_evidence_batch', 'read_task_evidence_index', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_input', 'task_review_decision',
         ...reviewKind === 'planning' ? [] : ['read_task_worker'],
-        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'task_review_check_plan'] : []].includes(exec.name)
+        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'task_review_check_plan', 'task_review_check_result', 'reuse_review_check'] : []].includes(exec.name)
         ? undefined : 'reviewers may only inspect evidence and submit a decision')
       agentCtx.tools.register(defineTool({ name: 'read_task_evidence_index', description: 'Locate relevant bound main Session events by type, tool and errors, with paired call/result seqs and redacted truncation-aware summaries. Available after independent findings. Index summaries are NOT citable evidence: expand originals with read_task_call/read_task_text before citing.',
         parameters: { from_seq: { type: 'integer', description: 'First Session seq, nonnegative; default 0.' },
@@ -584,11 +598,12 @@ async function runReviewStage(
           }
           if (job.verification) {
             assertComparison()
-            const findings = (args.criteria ?? []).map(item => findingSchema.parse(item))
+            const findings = (args.criteria ?? (job.incrementalProtocol ? criterionSummary(job.verification, currentCheckResults(job.verification), reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds ?? []) : [])).map(item => findingSchema.parse(item))
             const applicable = reviewKind === 'completion' ? task.criteria : task.criteria.filter(item => stage?.criterionIds.includes(item.id))
             let state = job.verification
             if (job.checkProtocol) {
-              const results = (args.checks ?? state.checkFindings ?? []).map(item => checkFindingSchema.parse(item))
+              const results = (args.checks ?? (job.incrementalProtocol ? currentCheckResults(state) : state.checkFindings) ?? []).map(item => checkFindingSchema.parse(item))
+              if (job.incrementalProtocol && args.checks && results.some(result => JSON.stringify(result) !== JSON.stringify(currentCheckResults(state).find(saved => saved.checkId === result.checkId)))) throw new Error('persist changed final findings with task_review_check_result before deciding; sealed independent findings cannot be replaced')
               const facts = checkResultsAsEvidence(state, results, args.verdict === 'pass')
               const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
               validateFindings(basic, facts.map(item => item.criterionId), facts, false, actual?.ranges)
@@ -620,7 +635,7 @@ async function runReviewStage(
           let requirements: RequirementResult[] | undefined
           if (job.resultProtocol && ['plan', 'stage', 'completion'].includes(reviewKind)) {
             if (job.verification) {
-              requirements = independentRequirementResults(job, (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)), actual?.ranges)
+              requirements = independentRequirementResults(job, (args.checks ?? (job.incrementalProtocol ? currentCheckResults(job.verification) : job.verification.checkFindings) ?? []).map(item => checkFindingSchema.parse(item)), actual?.ranges)
               if (!requirements.some(item => item.basis === 'explicit' && item.source.kind === 'objective')) throw new Error('independent checks must cover the original objective, including omitted requirements')
             } else {
               if (!actual) throw new Error('actual native read results are unavailable')
@@ -638,7 +653,7 @@ async function runReviewStage(
             ...requirements ? { requirements } : {},
             ...planning ? { planning } : {},
             ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
-            ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
+            ...job.verification ? { criteria: (args.criteria ?? (job.incrementalProtocol ? criterionSummary(job.verification, currentCheckResults(job.verification), reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds ?? []) : [])).map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? (job.incrementalProtocol ? currentCheckResults(job.verification) : job.verification.checkFindings) ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
           const call = exec.agent?.session.snapshotEvents().findLast(event => event.type === 'tool/call' && event.data.callId === exec.callId)
           if (!exec.agent || call?.type !== 'tool/call' || !await ctx.sessions.flush(exec.agent.session)) throw new Error('review call is not durable')
           job.decision = { ...decision, imageSeqs: [...imageSeqs], decisionSeq: call.seq }
@@ -670,7 +685,7 @@ async function runReviewStage(
   for (const key of ledger.workers) workerEvents.add(key)
   for (const id of ledger.inspectedWorkers) inspectedWorkers.add(id)
   for (const seq of ledger.images) imageSeqs.add(seq)
-  if (exists && job.verification) {
+  if ((exists || job.sessionChain?.length === 2) && job.verification) {
     job.verification.readFiles = ledger.files
     job.verification.readChecks = ledger.checks
     job.verification.readInputs = (job.verification.readInputs ?? []).filter(seq => ledger.observed.has(seq))
@@ -693,6 +708,10 @@ async function runReviewStage(
   signal.addEventListener('abort', abort, { once: true })
   try {
     signal.throwIfAborted()
+    if (job.budget && !job.sessionChain) {
+      job.sessionChain = [{ sessionId: reviewerSessionId, at: new Date().toISOString(), reason: 'initial' }]
+      await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    }
     await retryStarted?.(job)
     signal.throwIfAborted()
     if (exists && job.verification) await recordReview(ctx, main, { ...job, revision: ++job.revision })
@@ -715,7 +734,7 @@ async function runReviewStage(
           : reviewKind === 'progress'
             ? 'Assess recent progress toward the current stage. Pass means keep working on this stage; revise means course-correct; needs-user means a user decision is required. A progress pass does not complete a stage.'
             : 'Review the main Agent stage report against the objective and acceptance criteria.',
-        ...job.checkProtocol ? ['REQUIREMENT-DRIVEN INDEPENDENT REVIEW. Read the complete original objective and necessary original user input via read_task_input; list the artifact manifest and capabilities first. Record task_review_check_plan before expanding deliverable contents or executing checks. Input/constraint files may be read with an explicit purpose. Each check must identify a source requirement, fact/result, appropriate method, expected outcome, coverage and explicit requirement vs derived hypothesis. No mandatory task-category checklist: choose reads for static facts and runs/reproductions for computations or behavior; missing capabilities mean unverified. Examine whether existing test assertions and operation paths support requirements. A zero exit, existing file or test count alone is insufficient.', 'Facts whose authority is the bound Session, such as operation order, authorization or source, use method=log: record them unverified during independent discovery, then cite fully read original seq:<N> evidence in the final comparison decision. Log evidence never substitutes for independent product behavior verification. Keep earlier independent observations unchanged; final checks may resolve deferred log facts. Include original requirements omitted or weakened by the main criteria (omit criterionId for them). Persist every check result alongside criteria in task_review_observations, then compare main claims/logs and investigate discrepancies. You may append supplementary checks, preserving earlier independent findings, and include their results in the final decision. Final acceptance checks the current combined deliverable and relationships, not prior node passes. Optional inferred preferences cannot block an otherwise correct product.'] : [],
+        ...job.checkProtocol ? ['REQUIREMENT-DRIVEN INDEPENDENT REVIEW. Read the complete original objective and necessary original user input via read_task_input; list the artifact manifest and capabilities first. Record task_review_check_plan before expanding deliverable contents or executing checks. Input/constraint files may be read with an explicit purpose. Each check must identify a source requirement, fact/result, appropriate method, expected outcome, coverage and explicit requirement vs derived hypothesis. No mandatory task-category checklist: choose reads for static facts and runs/reproductions for computations or behavior; missing capabilities mean unverified. Examine whether existing test assertions and operation paths support requirements. A zero exit, existing file or test count alone is insufficient.', 'Facts whose authority is the bound Session, such as operation order, authorization or source, use method=log: record them unverified during independent discovery, then cite fully read original seq:<N> evidence in the final comparison decision. Log evidence never substitutes for independent product behavior verification. Keep earlier independent observations unchanged; final checks may resolve deferred log facts. Include original requirements omitted or weakened by the main criteria (omit criterionId for them). Persist each acquired finding immediately with task_review_check_result; amendments retain history. The controller derives criterion summaries and seals unfinished items as unverified when task_review_observations is called. The legacy batch remains available. Then compare main claims/logs and investigate discrepancies. You may append supplementary checks, preserving earlier independent findings, and include their results in the final decision. Final acceptance checks the current combined deliverable and relationships, not prior node passes. Optional inferred preferences cannot block an otherwise correct product.'] : [],
         'DAG execution semantics: dependsOn requires that predecessors have PASSED independent review, not merely returned worker reports. Read the full proposed stages using read_task_context before a plan pass. Reject any downstream node that performs a check needed to accept its own predecessors: this creates a semantic deadlock even in an acyclic graph. Main-Agent integration checks belong inside delegated-node acceptance before its review. Preserve explicitly requested node counts; validation and reporting can be steps inside a node rather than extra DAG nodes.',
         'Explicit objective requirements must use provenance kind=user, reference=objective. Marking them implementation is source misclassification and requires revision.',
         'For delegated nodes, read_task_worker exposes the exact attempt’s settled native child log. A worker report never implies acceptance. Inspect main-Session integration checks after worker settlement, then apply the node criteria. The final task review must check the combined deliverable.',
@@ -760,6 +779,7 @@ async function runReviewStage(
         if (phase === 'converging' || phase === 'decision') {
           job.budget = moveReviewBudget(job.budget, phase)
           await recordReview(ctx, main, { ...job, revision: ++job.revision })
+          if (phase === 'decision') await sealIncrementalFindings(ctx, main, job, handle.agent, signal)
           refreshPhases()
           handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
             content: [{ type: 'text', text: `${languagePolicy(task)}\nBudget phase: ${phase}. The canceled native range has settled. Keep the same job, snapshot, acquired reads and original deadline ${job.deadlineAt}. ${phase === 'converging' ? 'Stop expanding checks. Persist acquired findings and mark unfinished coverage unverified.' : 'Enter comparison and submit the decision now. Seal independent gaps as unverified before reading main reports; do not claim pass without required coverage.'} Do not replay canceled tool effects. This boundary does not grant another budget or count as a protocol repair.` }] }))

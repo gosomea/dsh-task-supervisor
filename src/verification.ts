@@ -1,9 +1,10 @@
 /** Artifact-first tool admission and evidence validation for necessary reviews. */
 import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { appendCheckPlan, checkResultsAsEvidence, reviewCheckSchema, checkFindingSchema, checkPlanParameters, checkFindingParameters } from './review-check-plan.ts'
@@ -14,6 +15,10 @@ import { runCheck, readCheck, recoverCheckContainers, checkPolicy, type CheckPol
 import { findingSchema, type CriterionFinding, type VerificationState } from './verification-schema.ts'
 import { recordReview, ReviewFailure, type ReviewJob } from './review-records.ts'
 import { CheckInputError } from './check-errors.ts'
+import { appendCheckResult, currentCheckResults, criterionSummary } from './review-findings.ts'
+import { restoreReviewReads } from './review-read-ledger.ts'
+import { controlEvent } from './session-records.ts'
+import { reusableChecks } from './review-reuse.ts'
 import { narrowReviewBudget, remainingCheckMs } from './review-budget.ts'
 
 export interface VerificationConfig {
@@ -104,7 +109,8 @@ export function validateFindings(state: VerificationState, criterionIds: string[
         if (!file || !complete(file.ranges, file.total)) throw new Error('artifact evidence has not been fully inspected')
       } else {
         const check = state.checks.find(item => item.id === id)
-        if (!check || check.snapshotId !== state.snapshot.id || check.changed.length || check.timedOut || check.cancelled || check.outputIncomplete) throw new Error('check evidence is incomplete, modified, timed out, cancelled or foreign')
+        const reused = state.reusedChecks?.find(item => item.checkId === id && item.sourceSnapshotId === check?.snapshotId && item.digest === state.snapshot.digest)
+        if (!check || check.snapshotId !== state.snapshot.id && !reused || check.changed.length || check.timedOut || check.cancelled || check.outputIncomplete) throw new Error('check evidence is incomplete, modified, timed out, cancelled or foreign')
         if (finding.status === 'satisfied' && check.exitCode !== 0) throw new Error('a failed check cannot support a satisfied criterion')
         for (const stream of ['stdout', 'stderr'] as const) {
           const read = state.readChecks.find(item => item.id === id && item.stream === stream)
@@ -215,27 +221,91 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     async execute(args) {
       signal.throwIfAborted()
       if (!state.checks.some(item => item.id === args.check_id)) throw new Error('check does not belong to this review')
-      const result = await readCheck(state.snapshot, args.check_id), content = result[args.stream], page = textPage(content, args.offset, args.limit)
+      const reuse = state.reusedChecks?.find(item => item.checkId === args.check_id)
+      const result = await readCheck(reuse ? { ...state.snapshot, id: reuse.sourceSnapshotId, root: reuse.sourceRoot } : state.snapshot, args.check_id), content = result[args.stream], page = textPage(content, args.offset, args.limit)
+      if (result.snapshotId !== (reuse?.sourceSnapshotId ?? state.snapshot.id)) throw new Error('check snapshot identity changed')
       const read = state.readChecks.find(item => item.id === result.id && item.stream === args.stream) ?? { id: result.id, stream: args.stream, ranges: [], total: page.totalChars }
       read.ranges.push([page.offset, page.offset + page.text.length]); if (!state.readChecks.includes(read)) state.readChecks.push(read)
       await persist()
-      return { snapshotId: state.snapshot.id, checkId: result.id, stream: args.stream, ...page }
+      return { snapshotId: result.snapshotId, ...reuse ? { reusedForSnapshotId: state.snapshot.id, sourceJobId: reuse.sourceJobId } : {}, checkId: result.id, stream: args.stream, ...page }
+    },
+  }))
+  if (job.incrementalProtocol) ctx.tools.register(defineTool({ name: 'reuse_review_check', description: 'Locate or import still-valid raw independent command evidence for a planned run check. No historical verdicts or findings are exposed. Exact requirement, method, expected result, coverage, whole snapshot and dependency attempt must match. Imported metadata alone is not citable: read both output streams, then form your own finding.',
+    parameters: { action: { type: 'string', required: true, enum: ['list', 'import'] }, planned_check_id: { type: 'string', required: true }, check_id: { type: 'string' }, source_job_id: { type: 'string' } }, output,
+    async execute(args) {
+      requirePlan(); signal.throwIfAborted()
+      const planned = state.checkPlan!.flatMap(revision => revision.checks).find(check => check.id === args.planned_check_id)
+      if (!planned) throw new CheckInputError('select a planned run check')
+      const prior = owner.sessionProjections.stateOf(main.session, 'taskSupervisor')?.reviewJobs ?? []
+      const candidates = reusableChecks(job, prior, planned, policy.checks?.container.image)
+      if (args.action === 'list') return { snapshotId: state.snapshot.id, candidates: candidates.map(({ source, check }) => ({ sourceJobId: source.id, checkId: check.id, argv: check.argv, cwd: check.cwd, sourceSnapshotId: check.snapshotId, coverage: planned.coverage })) }
+      const selected = candidates.find(({ source, check }) => source.id === args.source_job_id && check.id === args.check_id)
+      if (!selected || state.checks.some(check => check.id === selected.check.id)) throw new Error('select an unimported compatible original check')
+      const { source, check } = selected
+      const reader = await owner.sessionPersistence.open(SessionId(source.reviewerSessionId!), 'read', { signal })
+      const events: SessionEvent[] = []
+      try { for (let offset = 0;;) {
+        const page = await reader.read(offset, 256, { signal }); if (!page.events.length) break
+        events.push(...page.events); offset += page.events.length
+      } } finally { await reader.close() }
+      const reads = restoreReviewReads(events.map(controlEvent), source)
+      if (['stdout', 'stderr'].some(stream => !reads.checks.some(read => read.id === check.id && read.stream === stream && complete(read.ranges, read.total)))) throw new Error('original successful read receipts cannot be recovered; execute a new check')
+      const actual = await readCheck(source.verification!.snapshot, check.id), { stdout: _out, stderr: _err, ...summary } = actual
+      if (!isDeepStrictEqual(summary, check)) throw new Error('original execution evidence changed')
+      state.checks.push(check)
+      state.reusedChecks = [...state.reusedChecks ?? [], { checkId: check.id, plannedCheckId: planned.id, sourceJobId: source.id,
+        sourceSessionId: source.reviewerSessionId!, sourceNodeId: source.stageId, sourceAttempt: source.nodeAttempt!,
+        sourceSnapshotId: check.snapshotId, sourceRoot: source.verification!.snapshot.root, digest: state.snapshot.digest,
+        importedAt: new Date().toISOString(), method: 'run', scope: planned.coverage }]
+      await persist()
+      return { imported: true, checkId: check.id, sourceSnapshotId: check.snapshotId, currentSnapshotId: state.snapshot.id, coverage: planned.coverage, nextAction: 'Read both original streams and persist your own finding.' }
+    },
+  }))
+  if (job.incrementalProtocol) ctx.tools.register(defineTool({ name: 'task_review_check_result', description: 'Persist one validated check finding immediately. Cite only actually delivered evidence. Revisions retain history; sealed independent findings cannot be rewritten in comparison. Unverified gaps are explicit, never successful checks.',
+    parameters: { result: { ...checkFindingParameters.items, required: true } }, output,
+    async execute(args, exec) {
+      requirePlan(); signal.throwIfAborted(); exec.signal.throwIfAborted()
+      const result = checkFindingSchema.parse(args.result)
+      const check = state.checkPlan!.flatMap(revision => revision.checks).find(check => check.id === result.checkId)
+      if (!check) throw new CheckInputError('select a check ID from task_review_check_plan')
+      if (result.evidenceIds.some(id => state.reusedChecks?.some(reuse => reuse.checkId === id && (reuse.plannedCheckId !== check.id || reuse.scope !== check.coverage || reuse.method !== check.method)))) throw new Error('reused evidence does not cover this check')
+      if (!exec.agent) throw new Error('actual reviewer Session is required')
+      const reads = restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+      const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
+      const inspected = { ...basic, readFiles: reads.files, readChecks: reads.checks }
+      validateFindings(inspected, [check.id], [{ criterionId: check.id, method: check.method, status: result.status,
+        finding: result.finding, evidenceIds: result.evidenceIds }], false, reads.ranges)
+      const call = exec.agent.session.snapshotEvents().find(event => event.type === 'tool/call' && event.data.callId === exec.callId)
+      if (call?.type !== 'tool/call') throw new Error('native check result call is missing')
+      appendCheckResult(state, result, { sessionId: exec.agent.id, callId: exec.callId, callSeq: call.seq })
+      state.readFiles = reads.files; state.readChecks = reads.checks
+      await persist()
+      return { recorded: true, checkId: result.checkId, status: result.status, revision: state.checkHistory!.length, snapshotId: state.snapshot.id }
     },
   }))
   ctx.tools.register(defineTool({ name: 'task_review_observations', description: 'Persist independent findings for every applicable criterion, then unlock the main-session report. Use unverified with an explicit limitation when independent evidence is missing. Findings cannot be rewritten after comparison.',
-    parameters: { findings: { ...findingParameters, required: true }, checks: { ...checkFindingParameters, ...job.checkProtocol ? { required: true as const } : {} } }, output,
-    async execute(args) {
+    parameters: { findings: { ...findingParameters, ...job.incrementalProtocol ? {} : { required: true as const } }, checks: { ...checkFindingParameters, ...job.checkProtocol && !job.incrementalProtocol ? { required: true as const } : {} } }, output,
+    async execute(args, exec) {
       if (state.phase !== 'independent') throw new Error('independent observations already recorded')
       requirePlan()
+      if (job.incrementalProtocol) {
+        if (!exec.agent) throw new Error('actual reviewer Session is required')
+        const reads = restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+        state.readFiles = reads.files; state.readChecks = reads.checks
+      }
       let checkedState = state
       if (job.checkProtocol) {
-        const results = (args.checks ?? []).map(item => checkFindingSchema.parse(item))
+        const results = (args.checks ?? (job.incrementalProtocol ? currentCheckResults(state) : [])).map(item => checkFindingSchema.parse(item))
+        if (job.incrementalProtocol && args.checks && state.checkHistory?.some(entry =>
+          JSON.stringify(results.find(result => result.checkId === entry.result.checkId)) !== JSON.stringify(currentCheckResults(state).find(result => result.checkId === entry.result.checkId)))) {
+          throw new Error('persist amended findings with task_review_check_result before sealing; the batch cannot replace incremental history')
+        }
         const evidence = checkResultsAsEvidence(state, results, false)
         const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
         validateFindings(basic, evidence.map(item => item.criterionId), evidence, false)
         checkedState = { ...state, checkFindings: results }
       }
-      const findings = args.findings.map(item => findingSchema.parse(item))
+      const findings = (args.findings ?? (job.incrementalProtocol ? criterionSummary(checkedState, checkedState.checkFindings ?? [], applicable) : [])).map(item => findingSchema.parse(item))
       const ids = job.kind === 'completion' ? job.input.criteria.map(item => item.id) : job.input.stages.find(item => item.id === job.stageId)!.criterionIds
       validateFindings(checkedState, ids, findings, false)
       // Visibility changes only after the comparison record is durably flushed.
@@ -246,4 +316,34 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { recorded: true, snapshotId: state.snapshot.id, phase: state.phase }
     },
   }))
+}
+
+/** At the decision boundary the controller seals already validated findings and unfinished coverage. */
+export async function sealIncrementalFindings(ctx: Context, main: Agent, job: ReviewJob,
+  reviewer: Agent, signal: AbortSignal): Promise<void> {
+  const state = job.verification
+  if (!job.incrementalProtocol || state?.phase !== 'independent' || !state.checkPlan?.length) return
+  signal.throwIfAborted()
+  const reads = restoreReviewReads(reviewer.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+  let results = currentCheckResults(state)
+  const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
+  const inspected = { ...basic, readFiles: reads.files, readChecks: reads.checks }
+  results = results.map(result => {
+    const planned = state.checkPlan!.flatMap(revision => revision.checks).find(check => check.id === result.checkId)!
+    try {
+      validateFindings(inspected, [planned.id], [{ criterionId: planned.id, method: planned.method, status: result.status,
+        finding: result.finding, evidenceIds: result.evidenceIds }], false, reads.ranges)
+      return result
+    } catch (error) {
+      return { ...result, status: 'unverified' as const, evidenceIds: [], finding: 'Saved finding requires renewed evidence qualification.', limitations: `Original history retained; the active Session cannot establish this read: ${String(error)}` }
+    }
+  })
+  const facts = checkResultsAsEvidence(state, results, false)
+  validateFindings(inspected, facts.map(fact => fact.criterionId), facts, false, reads.ranges)
+  const applicable = job.kind === 'completion' ? job.input.criteria.map(item => item.id) : job.input.stages.find(stage => stage.id === job.stageId)?.criterionIds ?? []
+  const next: VerificationState = { ...state, readFiles: reads.files, readChecks: reads.checks, checkFindings: results,
+    phase: 'comparison', observations: criterionSummary(state, results, applicable),
+    ...state.phaseTimes ? { phaseTimes: { ...state.phaseTimes, comparison: new Date().toISOString() } } : {} }
+  await recordReview(ctx, main, { ...job, verification: next, revision: ++job.revision })
+  Object.assign(state, next)
 }

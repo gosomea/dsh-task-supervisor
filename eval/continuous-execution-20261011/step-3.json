@@ -1,0 +1,53 @@
+{
+  "step": 3,
+  "status": "validated",
+  "sourceParent": "b03aa22b3425cbf0a75ec99d337d5d10e7fa95c9",
+  "sourceSha256": {
+    "src/review-findings.ts": "9debfdda89945c5e633086eb8126709c5c2a81658bd1a7db5c6eb69e3f250183",
+    "src/review-reuse.ts": "21a9431046ee122b19c7bd589aa54ca0ae10f7589ce8e0a3fbfaa11a5490bd44",
+    "src/review-check-plan.ts": "780ed6ae0b8dee265ff3187bde62e5ca98acf7f395837f0cf81e587ff856293a",
+    "src/review-read-ledger.ts": "af5a456729ce5189887acc076da38fd704f7161678660274980af379856a148c",
+    "src/review-results.ts": "51d1f37b59abca19c9624140c763648fc8a935f3cd53f8a9aba6a06cb81309e1",
+    "src/review-records.ts": "52f91838e50eb0977fb67e2d3303c13951b5272ad2e7efc207b0ecb16e522bdb",
+    "src/review-schema.ts": "7357468f068621ad9f4003a28ae5e8888647f57b6b62987b6371c27cf3296432",
+    "src/verification-schema.ts": "c7c3ff50f144996caffc035f33ff1a14f75b704accc8053f9c0f36f0dda2b797",
+    "src/verification.ts": "978815f5fc2e7abcfd8ff5d6fab19c211c68c502c041ef8b9147d392b3f8aec5",
+    "src/reviewer.ts": "4f8c3d955e4b1369f3ae0cc67c69f00ea362f758b0837c9b86f2be00beb8ff13",
+    "src/index.ts": "27d2cd09b57aaa4d37708ec6daa77be15320f30355718e6f90287d52e3b1b33d",
+    "src/state.ts": "019ecbf933e9a433e93e0bd2d6d5c78b48c33c8d0b5f194671cf5ce247ca10a2"
+  },
+  "checks": [
+    {
+      "command": "Node24 spikes/kernel/run.mjs review-findings.spec.ts review-read-ledger.spec.ts verification.spec.ts supervisor.spec.ts planning-review.spec.ts review-results.spec.ts",
+      "exitCode": 0,
+      "passed": 243,
+      "skipped": 1
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts -t 'reuses only raw|incremental native review'",
+      "exitCode": 0,
+      "passed": 8
+    },
+    {
+      "command": "Node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "result": "Host/Client strict"
+    },
+    {
+      "command": "Node24 pnpm build",
+      "exitCode": 0
+    },
+    {
+      "command": "negative control: remove incremental history lookup",
+      "expectedExitCode": 1,
+      "result": "correct-product regression rejects missing required findings"
+    }
+  ],
+  "limits": [
+    "Controlled native models; real-model and browser gates pending",
+    "Cache runner result injected; Docker confinement is not newly validated",
+    "Static evidence is reread; command reuse requires an identical whole snapshot and image",
+    "Automatic repair and eight-run regression gates pending"
+  ],
+  "dailyHostRestarted": false
+}

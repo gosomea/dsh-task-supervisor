@@ -1,5 +1,7 @@
 /** Wire schemas shared by durable review records and the native check consumer. */
 import { z } from 'zod'
+import { checkHistorySchema } from './review-findings.ts'
+import { reusedCheckSchema } from './review-reuse.ts'
 import { checkPlanRevisionSchema, checkFindingSchema } from './review-check-plan.ts'
 
 export const snapshotSchema = z.object({
@@ -23,6 +25,8 @@ export const verificationSchema = z.object({ snapshot: snapshotSchema, phase: z.
   observations: z.array(findingSchema),
   phaseTimes: z.object({ planning: z.string(), independent: z.string().optional(), comparison: z.string().optional() }).strict().optional(),
   checkPlan: z.array(checkPlanRevisionSchema).optional(), checkFindings: z.array(checkFindingSchema).optional(),
+  checkHistory: checkHistorySchema.optional(),
+  reusedChecks: z.array(reusedCheckSchema).optional(),
   readInputs: z.array(z.number().int().nonnegative()).optional(), checks: z.array(checkResultSchema.omit({ stdout: true, stderr: true })),
   readFiles: z.array(z.object({ path: z.string(), purpose: z.enum(['input', 'constraint', 'deliverable']).optional(), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()),
   readChecks: z.array(z.object({ id: z.string(), stream: z.enum(['stdout', 'stderr']), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()),
