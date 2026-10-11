@@ -7,18 +7,21 @@ import shlex
 from launch import select_model_patch
 from records import exclusive_json
 from runtime_rpc import RuntimeDshRpc
+from execution import bind_registry
 
 
 def run(runtime, *, image: str, tarball: Path, daily_patch: str,
-        credential: bytes, out: Path, host_gateway: str) -> dict:
+        credential: bytes, out: Path, host_gateway: str, bootstrap_registry_ipv4=None,
+        platform='linux/amd64') -> dict:
     exclusive_json(out / 'intent.json', {'kind': 'real-route-calibration', 'image': image,
-        'publicTaskDelivered': False, 'executionApprovals': 0})
+        'platform': platform, 'publicTaskDelivered': False, 'executionApprovals': 0})
     box = runtime.create(image=image, snapshot_id=None, metadata={'role': 'route-calibration'},
-        timeout_minutes=15, cpu='2', memory='8Gi', network_policy='allow')
+        timeout_minutes=15, cpu='2', memory='8Gi', network_policy='allow', platform=platform)
     exclusive_json(out / 'started.json', {'sandboxId': box.id})
     rpc = None
     session_id = None
     try:
+        bind_registry(runtime, box, {'bootstrapRegistryIpv4': bootstrap_registry_ipv4})
         runtime.write(box, '/workspace/README.md', b'Route calibration: this fixture contains a single static text file.\n')
         runtime.write(box, '/opt/eval/plugin.tgz', tarball.read_bytes())
         runtime.write(box, '/opt/eval/route-audit.mjs', Path(__file__).resolve().parents[1].joinpath('deepswe/model-route/route-audit.mjs').read_bytes())

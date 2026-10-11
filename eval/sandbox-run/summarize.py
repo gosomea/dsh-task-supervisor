@@ -17,6 +17,8 @@ def measured_sum(results, key):
 
 def summarize(order, root):
     positions = order['positions']
+    development = order.get('scope') == 'exposed-supervisor-development'
+    selected_conditions = ('supervisor-independent',) if development else CONDITIONS
     identities = [row['id'] for row in positions]
     if len(identities) != len(set(identities)): raise ValueError('duplicate planned position')
     rows = []
@@ -32,7 +34,7 @@ def summarize(order, root):
         rows.append({**position, 'state': state, 'result': result,
             'notDeliveredReason': json.loads(failure.read_text()).get('reason') if failure.exists() else None})
     conditions = {}
-    for condition in CONDITIONS:
+    for condition in selected_conditions:
         subset = [row for row in rows if row['condition'] == condition]
         done = [row['result'] for row in subset if row['result']]
         strict = sum(result['strictSuccess'] for result in done)
@@ -65,7 +67,7 @@ def summarize(order, root):
     task_ids = sorted({row['taskId'] for row in rows})
     for task_id in task_ids:
         values = {}
-        for condition in CONDITIONS:
+        for condition in selected_conditions:
             subset = [row for row in rows if row['taskId'] == task_id and row['condition'] == condition]
             values[condition] = {'positions': [row['id'] for row in subset],
                 'strictSuccessRate': statistics.mean(row['result']['strictSuccess'] for row in subset)
@@ -73,7 +75,7 @@ def summarize(order, root):
                 'rewards': [row['result']['reward'] if row['result'] else None for row in subset]}
         paired.append({'taskId': task_id, 'conditions': values})
     comparisons = {}
-    for baseline in ('goal', 'plan'):
+    for baseline in (() if development else ('goal', 'plan')):
         differences = [row['conditions']['supervisor-independent']['strictSuccessRate'] - row['conditions'][baseline]['strictSuccessRate']
             for row in paired if row['conditions']['supervisor-independent']['strictSuccessRate'] is not None
             and row['conditions'][baseline]['strictSuccessRate'] is not None]
@@ -86,7 +88,8 @@ def summarize(order, root):
             'meanStrictSuccessDifference': statistics.mean(differences) if differences else None,
             'taskClusterBootstrap95Percent': interval,
             'interpretation': 'exploratory small sample; four tasks, repetitions are paired, no general long-horizon claim'}
-    return {'schemaVersion': 1, 'kind': 'dsh-long-horizon-public-comparison', 'seed': order['seed'],
+    return {'schemaVersion': 1, 'kind': 'dsh-supervisor-exposed-development' if development else 'dsh-long-horizon-public-comparison',
+        'scope': order.get('scope', 'public-heldout-comparison'), 'seed': order['seed'],
         'planned': len(rows), 'sealed': sum(row['state'] == 'sealed' for row in rows),
         'complete': all(row['state'] == 'sealed' for row in rows), 'conditions': conditions,
         'pairedTasks': paired, 'comparisons': comparisons, 'positions': rows,
@@ -94,7 +97,8 @@ def summarize(order, root):
 
 
 def report(summary):
-    lines = ['# 长程公开题对照结果', '',
+    development = summary.get('scope') == 'exposed-supervisor-development'
+    lines = ['# Supervisor 已曝光题开发回归' if development else '# 长程公开题对照结果', '',
         f"已封口 **{summary['sealed']}/{summary['planned']}** 个计划位置。基础设施和评分异常保留在分母中，未知奖励记为 null。", '',
         '| 条件 | 封口/计划 | reward=1 | reward=0 | 未知 | 严格成功 |',
         '|---|---:|---:|---:|---:|---:|']
@@ -102,14 +106,16 @@ def report(summary):
         lines.append(f"| {key} | {row['sealed']}/{row['planned']} | {row['rewardOne']} | {row['rewardZero']} | {row['rewardUnknown']} | {row['strictSuccesses']} |")
     lines += ['', '严格成功要求截止前控制器完成、官方 reward=1 且无基础设施或评分异常。',
         '已恢复的收集异常单列计数，保留实际官方评分和执行侧首次停止原因，不计为严格成功。', '',
-        '## 逐题配对', '', '| 题目 | Goal | Plan | Supervisor |', '|---|---:|---:|---:|']
+        '## 逐题重复', '', '| 题目 | Supervisor |' if development else '| 题目 | Goal | Plan | Supervisor |', '|---|---:|' if development else '|---|---:|---:|---:|']
     for task in summary['pairedTasks']:
-        values = [task['conditions'][key]['strictSuccessRate'] for key in CONDITIONS]
+        values = [task['conditions'][key]['strictSuccessRate'] for key in (('supervisor-independent',) if development else CONDITIONS)]
         lines.append('| ' + task['taskId'] + ' | ' + ' | '.join('未封口' if value is None else f'{value:.0%}' for value in values) + ' |')
     lines += ['', '## 解读范围', '',
         '仅四道软件任务，两次重复用于同题配对。区间按题目聚类；这批结果不能证明一般长程优势。',
         '无人工或盲审标注的误验收、误暂停和纠偏收益保持 null。宣布完成但官方失败另行机械统计。',
         '完整机器结果包含每个计划位置、首次停止原因、奖励、评分证据、token 完整性及恢复成本。']
+    if development:
+        lines += ['', '四题已用于执行与分析，本轮仅作 Supervisor 开发回归；没有 Goal／Plan 条件，不用于未见题或条件优劣结论。']
     return '\n'.join(lines) + '\n'
 
 

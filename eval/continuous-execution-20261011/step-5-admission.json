@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "step": 5,
+  "status": "admission-validated; eight-regressions-pending",
+  "pluginSourceCommit": "8169e84471d4d32ce286fd9177d1e4000d9a8ad1",
+  "tarballSha256": "a2437bedc9cbe83f0339aad03fb0bd9df0350d920a3e7ffd5da7f226ee2e84a1",
+  "publicTaskDelivered": false,
+  "plannedPositions": 8,
+  "scope": "exposed-supervisor-development",
+  "rows": [
+    {
+      "taskId": "updo-policy-alerting",
+      "baseCommit": "9ecd74f5bd56fa915501e5b77da044d97c450a74",
+      "image": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "sourceUnchanged": true,
+      "untrackedCaptured": true,
+      "independentCheckExitCode": 0,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "de2fcddf0a7fe0af85ab5112ebb1ae5dbf251aac41c217e355755a730a8354fa",
+        "baseline": "8eb0a7df97bf00d0ca1a4d093884984cae6889e4f095cb19e634f7918bc6ee5b",
+        "check": "2dc9d10ed171681f5b9e7e6f8f45ad080e8c2eab086c762e7fc3270b7396659b"
+      },
+      "officialControls": {
+        "nop": {
+          "passed": true,
+          "reward": 0,
+          "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54",
+          "sourceSha256": "91fcc901e2b857575c3749b05db2d22ae4bea8e75d98834ec9d88effbb2a51b3"
+        },
+        "oracle": {
+          "passed": true,
+          "reward": 1,
+          "imageDigest": "sha256:91b20a45b0445cf1bb97a96b9749c2caad0c4747de538c6df700c48e1a88cf54",
+          "sourceSha256": "2df9253430452aa778d6f7ad81e29728925bd8eabeb0b7995d7f26b3e41fc131"
+        }
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+      "image": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "sourceUnchanged": true,
+      "untrackedCaptured": true,
+      "independentCheckExitCode": 0,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "230694699339520a8ab714e03052d1eee4373d36eb381d4a85b7b1bf51e8aa9f",
+        "baseline": "d33930f151774f9516a29d25f62c5d5315b92775c4c1b22bab72043cdfe7793f",
+        "check": "e8800286f1a2c506d6a687b568cd9b04bced16fe93104ffb97a1d73a184b23d2"
+      },
+      "officialControls": {
+        "nop": {
+          "passed": true,
+          "reward": 0,
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "sourceSha256": "98ed65fdc10d730659f0e24983339644d99e64a4a0f8b2cf92ca61d3f7f684e9"
+        },
+        "oracle": {
+          "passed": true,
+          "reward": 1,
+          "imageDigest": "sha256:4600e819ba93437df00f1d1ddb07597818bf53e0a3153bd689093e946ccb52d7",
+          "sourceSha256": "1de24ccf56cfc91b2e9ffff13d443344b8f3b7f27df43ec801b737765712ca21"
+        }
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "baseCommit": "010c4bdb4b8758844fd44eacf38e42b22eba8aea",
+      "image": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "sourceUnchanged": true,
+      "untrackedCaptured": true,
+      "independentCheckExitCode": 0,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "3041978efe87956bd82ed8558fd9a44d0cac4b25de7a8e15ff6d51ecc0024101",
+        "baseline": "1f0a374b44fe4a43474b7863f86cf23eae2269b9f55a65ea218f4af04a0e0ea0",
+        "check": "9e082d4a7f21d9c10fdd3b3083cbb42a953cee3d3eedc120a4c35b6b08d9d016"
+      },
+      "officialControls": {
+        "nop": {
+          "passed": true,
+          "reward": 0,
+          "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387",
+          "sourceSha256": "328fddcefc7f7f86f82d1a90df28881c9a8e5cecdd5f8c04a725976e9022e547"
+        },
+        "oracle": {
+          "passed": true,
+          "reward": 1,
+          "imageDigest": "sha256:ada56382a90fbe2dd01bde0f685a1bbd0ceac556f7b802199e60dbbca6e76387",
+          "sourceSha256": "4638638868d173376cad8fe0c89ecdc1bbb5e926da1ead6381c48034ff433727"
+        }
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "baseCommit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c",
+      "image": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "sourceUnchanged": true,
+      "untrackedCaptured": true,
+      "independentCheckExitCode": 0,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "2b86c5c17ec36006a35ec3c9b3bfb45063e9d8e1005c34fcca44067c7d9a80cb",
+        "baseline": "93922c930fa218e5d8a039528f0a0608637f4e715929d6aa2ce9986235a7a7f9",
+        "check": "05e74405e41b2d8e16abbe07969a5ea47de52bc2f37f3e36ef0b9b266a93947e"
+      },
+      "officialControls": {
+        "nop": {
+          "passed": true,
+          "reward": 0,
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "sourceSha256": "3bb46da3b1d7feb160d34a7dc5dd1c25f4b93435c24dd624185838354b88f758"
+        },
+        "oracle": {
+          "passed": true,
+          "reward": 1,
+          "imageDigest": "sha256:7a3afca50b7b8a2181ec2706f235ea85eebaa731500e9137c434a4190567ac27",
+          "sourceSha256": "5e46d7e14a21f614082734663781e686a6107b92e5de5579f32f76794d98a2ae"
+        }
+      }
+    }
+  ],
+  "route": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "mainSessionId": "session-58c830ce-c327-4364-939f-23160938d788",
+    "reviewerSessionId": "task-review-76a43940-b0a1-4d9b-baad-f3f2693051e2",
+    "mainSuccessfulRequests": 4,
+    "reviewerSuccessfulRequests": 2,
+    "actualHttpRequests": 8,
+    "routesMatched": true,
+    "selectedModelPatchMatchesDaily": true,
+    "executionApprovals": 0,
+    "benchmarkModelAttempts": 0,
+    "receiptSha256": "2387191b827594eb08ec83c32f76dfbd6e8cc016071208e66eb75b831b288c32"
+  },
+  "controlsReuse": {
+    "recheckedOriginalScorerImagesAndRuntimeBytes": true,
+    "runtimeFilesMatched": 19832,
+    "controlsMatched": 8,
+    "identityReceiptSha256": "7062f54e6193a08d6196c050d9f0ac7e9a0c45a0d489e49a366bc195e5acc35a"
+  },
+  "preDeliveryFailure": {
+    "kind": "npm-dns",
+    "modelAdmitted": false,
+    "preserved": true,
+    "faultReceiptSha256": "df766601adf38fea2f54e04ca33fb36e132408fbc351678d44708cf1f7888a84"
+  },
+  "checks": [
+    {
+      "command": "/private/tmp/opensandbox-eval-venv/bin/python -m unittest discover -s eval/sandbox-run -p test_*.py -v",
+      "exitCode": 0,
+      "passed": 123,
+      "logSha256": "e029930a768f2e2dfd079fe321004c96b8881d2cd4ebfba8e9b2ef8764136213"
+    },
+    {
+      "command": "Node 24 DSH Markdown structure parser for sandbox-run README pair",
+      "exitCode": 0,
+      "logSha256": "e65c98dff4fcf0707bac7e2f685eb4dd461c6f7a352bf1ee0af20875135569e9"
+    }
+  ],
+  "limits": {
+    "unseenTaskPerformance": false,
+    "goalOrPlanExecuted": false,
+    "blindFalseAcceptance": null,
+    "blindFalsePause": null,
+    "correctionBenefit": null,
+    "sdkPython314ImportFailurePreserved": true,
+    "routePlatformFailureBeforeSessionPreserved": true,
+    "frameworkCliTsxUnavailableUsedNode24Parser": true
+  }
+}

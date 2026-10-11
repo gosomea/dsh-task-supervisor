@@ -86,6 +86,28 @@ class GatewayCollectionTests(unittest.TestCase):
             self.assertEqual(sum(call.args[1:3] == ('volume', 'rm') for call in docker.call_args_list), 1)
         self.assertTrue(json.loads((self.root / 'check-storage-released.json').read_text())['archivedBeforeRemoval'])
 
+    def test_new_archive_uses_one_collection_cpu_and_seals_before_release(self):
+        self.receipt['adminImage'] = 'frozen'
+        def reply(context, *args):
+            if args[:2] == ('volume', 'inspect'):
+                return json.dumps([{'Labels': {LABEL: 'lease'}, 'Mountpoint': '/private/owned'}])
+            if args[:2] == ('volume', 'ls'): return 'owned'
+            return ''
+        def export(args, **kwargs):
+            self.assertEqual(args[args.index('--cpus') + 1], '1')
+            self.assertEqual(args[args.index('--memory') + 1], '256m')
+            self.assertEqual(kwargs['timeout'], 600)
+            with tarfile.open(fileobj=kwargs['stdout'], mode='w:gz') as archive:
+                for role in ('client', 'private', 'channel'):
+                    info = tarfile.TarInfo(role + '/evidence'); info.size = 1
+                    archive.addfile(info, io.BytesIO(b'x'))
+        with patch('gateway.docker', side_effect=reply), patch('gateway.subprocess.run', side_effect=export) as run:
+            archive_storage(self.receipt, root=self.root)
+            archive_storage(self.receipt, root=self.root)
+            self.assertEqual(run.call_count, 1)
+        self.assertTrue((self.root / 'check-storage.json').exists())
+        self.assertTrue((self.root / 'check-storage-released.json').exists())
+
     def test_changed_archive_never_releases_original_storage(self):
         (self.root / 'check-storage.tar.gz').write_bytes(b'changed')
         (self.root / 'check-storage.json').write_text(json.dumps({'lease': 'lease', 'sha256': 'wrong'}))

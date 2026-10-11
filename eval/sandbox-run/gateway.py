@@ -207,7 +207,7 @@ def archive_storage(receipt, *, root):
         else:
             exclusive_json(intent, {'lease': lease, 'volumes': receipt['volumes'], 'helper': helper})
         args = ['docker', '--context', context, 'run', '--rm', '--name', 'dsh-lh-archive-' + lease,
-            '--pull', 'never', '--network', 'none', '--read-only', '--cpus', '.25', '--memory', '256m',
+            '--pull', 'never', '--network', 'none', '--read-only', '--cpus', '1', '--memory', '256m',
             '--label', LABEL + '=' + lease]
         for role, item in receipt['volumes'].items():
             row = json.loads(docker(context, 'volume', 'inspect', item['name']))[0]

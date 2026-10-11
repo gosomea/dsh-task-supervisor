@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "step": 5,
+  "kind": "model-free-collection-resource-smoke",
+  "passed": true,
+  "modelRequests": 0,
+  "publicTaskDelivered": false,
+  "collectionResources": {
+    "cpus": 1,
+    "memoryMiB": 256,
+    "afterExecutionStopped": true
+  },
+  "fixtureBytes": 3145728,
+  "archiveBytes": 3378,
+  "wallSeconds": 0.31627370906062424,
+  "contentsMatched": true,
+  "sealedBeforeOwnedVolumeRemoval": true,
+  "ownedResourcesReleased": true,
+  "sourceSha256": "c9c18094ab415f1fae621f59800688234fc2669eda1a13558502de26cba7ab34",
+  "archiveSha256": "1fef118898c8543074fa2d4c799ddaa02f7ec92335a0a5a85b1658f9d98f35cb",
+  "notAPerformanceComparison": true
+}

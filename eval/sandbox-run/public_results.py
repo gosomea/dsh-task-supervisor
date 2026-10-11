@@ -101,6 +101,7 @@ def result(value):
     return {
         'schemaVersion': 1, **{key: code(value[key]) for key in ('id', 'condition', 'taskId')},
         'repeat': number(value['repeat']), 'formal': value.get('formal') is True,
+        'developmentRegression': value.get('developmentRegression') is True,
         'reward': number(value.get('reward')), 'strictSuccess': value.get('strictSuccess') is True,
         'gradingFault': code(value.get('gradingFault')),
         'collectionInfrastructureFault': value.get('collectionInfrastructureFault') is True,
@@ -212,6 +213,18 @@ def detail_report(value):
               '未封口位置不代表失败；当前成功数与完整分母同时保留，最终比较等待全部位置封口。',
               'Token 总和包含独立列出的 uncached/cache-read/cache-write/output；缺失用量不补为零。',
               '各 Session 用量、审查阶段耗时、读取失败、独立检查与资源限制见机器记录及冻结 release。']
+    lines += ['', '## 固定预算与阶段墙钟', '',
+        '| 位置 / 作业 | 总预算秒 | 作业墙钟秒 | 检查秒 | 收束秒 | 裁决秒 | 清理秒 | 超过600秒 / 超配置 | 原因 |',
+        '|---|---:|---:|---:|---:|---:|---:|---|---|']
+    def sec(value): return 'null' if value is None else f'{value / 1000:.3f}'
+    for row in value['positions']:
+        windows = ((row.get('trajectory') or {}).get('supervisorTask') or {}).get('reviewWindows') or {}
+        for job in windows.get('jobs', []):
+            phases = job.get('budgetPhaseDurationsMs') or {}
+            lines.append(f"| {row['id']} / {job['jobId']} | {sec(job.get('configuredBudgetMs'))} | {sec(job.get('admittedJobWallMs'))} | "
+                f"{sec(phases.get('checking'))} | {sec(phases.get('converging'))} | {sec(phases.get('decision'))} | {sec(job.get('cleanupWallMs'))} | "
+                f"{job.get('over600Seconds')} / {job.get('overConfiguredBudget')} | {job.get('overrunReason') or '—'} |")
+    lines += ['', '作业墙钟按持久 admittedAt 与 finishedAt 计算；清理另计，终态记录的排队与落盘延迟不当作新预算。旧作业缺少预算或阶段边界时为 null。']
     return '\n'.join(lines) + '\n'
 
 

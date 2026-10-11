@@ -3,10 +3,21 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from summarize import CONDITIONS, summarize
+from summarize import CONDITIONS, summarize, report
+from freeze import matrix
 
 
 class SummaryTests(unittest.TestCase):
+    def test_eight_exposed_positions_do_not_claim_a_goal_plan_comparison(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = summarize(matrix(['a', 'b', 'c', 'd'], development=True), Path(directory))
+            self.assertEqual(value['planned'], 8)
+            self.assertEqual(value['sealed'], 0)
+            self.assertEqual(set(value['conditions']), {'supervisor-independent'})
+            self.assertEqual(value['comparisons'], {})
+            self.assertEqual(value['conditions']['supervisor-independent']['notDelivered'], 8)
+            self.assertIn('已曝光题开发回归', report(value))
+            self.assertNotIn('| 题目 | Goal', report(value))
     def test_full_denominator_infra_unknown_tokens_and_task_pairing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

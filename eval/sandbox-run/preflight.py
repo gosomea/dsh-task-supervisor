@@ -6,6 +6,7 @@ from pathlib import Path
 
 from runtime_rpc import RuntimeDshRpc
 from records import exclusive_json
+from execution import bind_registry
 
 
 def file_digest(path: Path) -> str:
@@ -13,7 +14,7 @@ def file_digest(path: Path) -> str:
 
 
 def native_preflight(runtime, *, image: str, tarball: Path, tarball_sha256: str,
-                     probe: Path, out: Path, platform=None) -> dict:
+                     probe: Path, out: Path, platform=None, bootstrap_registry_ipv4=None) -> dict:
     if file_digest(tarball) != tarball_sha256:
         raise ValueError('frozen tarball digest differs')
     exclusive_json(out / 'native-intent.json', {'image': image, 'tarballSha256': tarball_sha256,
@@ -23,6 +24,7 @@ def native_preflight(runtime, *, image: str, tarball: Path, tarball_sha256: str,
     exclusive_json(out / 'native-started.json', {'sandboxId': box.id})
     result = None
     try:
+        bind_registry(runtime, box, {'bootstrapRegistryIpv4': bootstrap_registry_ipv4})
         runtime.write(box, '/opt/eval/plugin.tgz', tarball.read_bytes())
         runtime.write(box, '/opt/eval/native-probe.mjs', probe.read_bytes())
         runtime.write(box, '/opt/eval/relay.py', Path(__file__).with_name('loopback_relay.py').read_bytes())

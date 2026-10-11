@@ -5,11 +5,21 @@ kind: "scratch"
 
 # OpenSandbox long-horizon evaluation
 
-This directory implements the [long-horizon protocol](protocol.md) with a new denominator of 24 positions. Python owns external monitoring, the Task controller owns continuation and recovery, and the official scorer independently evaluates committed patches. Earlier DeepSWE and SWE-bench results remain unchanged.
+This directory implements the [long-horizon protocol](protocol.md). The historical batch froze 24 positions; the current eight-position development regression is described next, with separate denominators retained. Python owns external monitoring, the Task controller owns continuation and recovery, and the official scorer independently evaluates committed patches.
+
+## Continuous-execution development regression
+
+The [continuous-execution Note](../../.agents/notes/proposed/architecture/2026-10-11-supervisor-continuous-execution.md) owns this change; [step validation](../continuous-execution-20261011/validation.md) records its actual gates. This batch repeats the original four exposed tasks twice: eight Supervisor-independent positions. Goal and Plan are excluded, this is not a held-out comparison, and prior batches remain unchanged.
+
+`freeze.py` with `developmentRegression: true` requires the original exposed order, current-package cross-product validation, actual native permission and independent gateway admission for all four tasks, actual main/reviewer requests, and official scoring controls. It freezes anomaly-triggered progress reviews and the 120/300/600-second workload budgets. `formal: true` only selects official grading; separate `developmentRegression` and exposure fields prevent it from implying unseen-task results. Each position receives one initial approval, the literal original instruction, official deadline, native permissions and only Agent-committed patches; paused runs receive no rescue.
+
+For a pre-delivery npm DNS failure, `bootstrapRegistryIpv4` can explicitly freeze an installation mapping while retaining npm HTTPS hostname and certificate checks. Native admission and route calibration share that mapping; failed receipts remain unchanged. Model-free scoring controls may be reused only after checking exact versions, dependency files and image digests and saving the identity receipt. Older-plugin native installation, snapshot and gateway admission cannot substitute for current-package checks.
+
+Development summaries separately report actual review wall time, recorded phases, cleanup and reasons for exceeding 600 seconds or the actual budget; missing legacy fields remain null. All eight planned positions stay in the denominator, with scoring and infrastructure faults separate. Repetitions are grouped by task and do not support comparisons with conditions that were not run.
 
 ## Implementation status
 
-The [environment admission record](admission-20261009.json) verifies native workspace permissions, snapshot restore, the administrator check gateway, cancellation cleanup, actual main/reviewer requests, and official empty/reference controls for four candidates. Formal execution has started; [result snapshots](long-horizon-20261009/reports/) retain the full denominator. Task-wide budgets, deterministic monitoring, collection and grading are implemented. The revision development fixture completed with external fixture reward=1. Strict fault recovery, final installation and snapshot integration passed for all four candidates. The [formal batch](long-horizon-20261009/README.md) freezes all 24 positions. Initial failures and fixes remain recorded in [runner validation](validation-20261009.md).
+The [2026-10-09 environment admission](admission-20261009.json) verifies native permissions, snapshots, the administrator gateway, cancellation cleanup, actual requests and official scoring controls. That historical batch froze 24 positions; the user subsequently stopped Goal and remaining comparisons, completing only eight Supervisor positions. [Original results](long-horizon-20261009/supervisor-final-20261010.md) and [full position snapshots](long-horizon-20261009/reports/) remain available. The continuous-execution change rechecks installation and gateway integration; old admission cannot release a new package. Earlier revision and fault recovery gates are recorded in [runner validation](validation-20261009.md).
 
 | Entry point | Purpose |
 | --- | --- |

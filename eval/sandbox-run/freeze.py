@@ -2,6 +2,7 @@
 """Freeze the admitted four-task matrix without model delivery or secret export."""
 import argparse
 import hashlib
+import ipaddress
 import json
 from pathlib import Path
 import subprocess
@@ -25,18 +26,30 @@ def require(value, message):
     if not value: raise ValueError(message)
 
 
-def matrix(tasks):
+def matrix(tasks, *, development=False):
     require(len(tasks) == 4 and len(set(tasks)) == 4, 'four distinct admitted tasks required')
     rows = []
     for task in tasks:
-        for condition in CONDITIONS:
+        for condition in (('supervisor-independent',) if development else CONDITIONS):
             for repeat in (1, 2):
                 rank = hashlib.sha256(f'{SEED}|{task}|{condition}|{repeat}'.encode()).hexdigest()
                 rows.append({'taskId': task, 'condition': condition, 'repeat': repeat, 'rank': rank})
     rows.sort(key=lambda row: row['rank'])
     for index, row in enumerate(rows, 1):
         row['id'] = f'lh-{index:02}-{row["taskId"]}-{row["condition"]}-r{row["repeat"]}'
-    return {'schemaVersion': 1, 'seed': SEED, 'positions': rows}
+    return {'schemaVersion': 1, 'seed': SEED, 'scope': 'exposed-supervisor-development' if development else 'public-heldout-comparison', 'positions': rows}
+
+
+def development_gate(value, tarball_sha256):
+    require(value.get('step') == 4 and value.get('status') == 'validated', 'current Step 4 gate missing')
+    require(value.get('candidate7', {}).get('tarballSha256') == tarball_sha256, 'development gate package differs')
+    cases = {row.get('case'): row for row in value.get('cases', [])}
+    require(set(cases) == {'delivery', 'negative', 'capability'} and all(row.get('reward') == 1 and row.get('artifactOracle') is True for row in cases.values()), 'cross-product development gate failed')
+    require(cases['delivery']['terminal'] == 'complete' and cases['negative']['terminal'] == 'paused'
+        and cases['capability']['terminal'] == 'capability-unavailable', 'development oracle terminal differs')
+    require(all(job.get('status') == 'applied' and job.get('confirmation', {}).get('appliedAt')
+        and job.get('cleanupHistory') and all(item.get('confirmed') is True for item in job['cleanupHistory'])
+        for row in cases.values() for job in row['jobs']), 'development applications or cleanup unconfirmed')
 
 
 def freeze(config, out):
@@ -45,10 +58,19 @@ def freeze(config, out):
     selection = read(config['selection'])
     require(selection['seed'] == SEED, 'selection seed differs')
     tasks = selection['selectedTaskIds']
+    development = config.get('developmentRegression') is True
+    registry = config.get('bootstrapRegistryIpv4', [])
+    if registry:
+        registry = [str(ipaddress.IPv4Address(value)) for value in registry]
     candidates = {row['id']: row for rows in selection['candidates'].values() for row in rows}
     require([candidates[task]['language'] for task in tasks].count('go') == 2
         and [candidates[task]['language'] for task in tasks].count('typescript') == 2, 'two Go and two TypeScript tasks required')
-    require(not set(tasks) & set(selection['excludedTaskIds']), 'an exposed task was selected')
+    if not development:
+        require(not set(tasks) & set(selection['excludedTaskIds']), 'an exposed task was selected')
+    else:
+        original = read(config['originalExposedOrder'])
+        exposed = {row['taskId'] for row in original['positions'] if row['condition'] == 'supervisor-independent'}
+        require(set(tasks) == exposed and len(exposed) == 4, 'development tasks must be the original four exposed Supervisor tasks')
     template = read(config['templateSpec'])
     for key in ('protocolControls', 'routeAudit', 'modelPatch'):
         require(digest(template[key]) == template[key + 'Sha256'], 'template runtime bytes changed')
@@ -56,12 +78,16 @@ def freeze(config, out):
     def gate(path):
         gates.append({'sha256': digest(path), 'privateSource': str(Path(path).resolve())})
         return read(path)
-    require(gate(config['revisionResult'])['strictSuccess'] is True, 'revision gate failed')
-    fault = gate(config['faultResult'])
-    checks = fault['officialGrade']['checks']
-    require(fault['strictSuccess'] is True and all(checks.get(key) is True for key in
-        ('sameJobAndSession', 'sameCutoffAndSnapshot', 'nodeAppliedOnce', 'preRetryReadQualificationsPreserved'))
-        and checks['retryCount'] == 1, 'strict artifact recovery gate failed')
+    if development:
+        gate(config['originalExposedOrder'])
+        development_gate(gate(config['developmentGate']), digest(config['tarball']))
+    else:
+        require(gate(config['revisionResult'])['strictSuccess'] is True, 'revision gate failed')
+        fault = gate(config['faultResult'])
+        checks = fault['officialGrade']['checks']
+        require(fault['strictSuccess'] is True and all(checks.get(key) is True for key in
+            ('sameJobAndSession', 'sameCutoffAndSnapshot', 'nodeAppliedOnce', 'preRetryReadQualificationsPreserved'))
+            and checks['retryCount'] == 1, 'strict artifact recovery gate failed')
     route = gate(config['routeEvidence'])
     require(route['routesMatched'] is True and route['main']['successfulRequestAndDurableAnswer'] is True
         and any(row.get('successfulRequestAndDurableAnswer') is True for row in route['reviewers']), 'actual main/reviewer route evidence missing')
@@ -106,7 +132,7 @@ def freeze(config, out):
         for path in sorted((source / 'eval' / directory).glob('*.py')):
             copy(path, 'runner/' + directory + '/' + path.name)
     copy(source / 'eval/session_records.py', 'runner/session_records.py')
-    order = matrix(tasks); exclusive_json(out / 'order.json', order)
+    order = matrix(tasks, development=development); exclusive_json(out / 'order.json', order)
     specs = {}
     for position in order['positions']:
         task = position['taskId']; candidate = candidates[task]; baseline = baselines[task]
@@ -114,7 +140,7 @@ def freeze(config, out):
         require(hashlib.sha256(instruction.encode()).hexdigest() == candidate['instructionSha256'], 'literal UTF-8 instruction differs')
         spec = {key: template[key] for key in ('schemaVersion', 'cwd', 'adminImage', 'adminPlatform',
             'dockerContext', 'credential', 'hostGateway')}
-        spec.update(**position, formal=True, dataset=str(dataset.resolve()), pierBin=config['pierBin'],
+        spec.update(**position, formal=True, developmentRegression=development, dataset=str(dataset.resolve()), pierBin=config['pierBin'],
             deadlineSec=candidate['agentTimeoutSec'], mainCpus=candidate['mainCpus'],
             mainMemoryMiB=candidate['mainMemoryMiB'], reviewDeadlineMs=600000,
             image=baseline['image'], checkImage=baseline['checkImage'], platform='linux/amd64',
@@ -124,6 +150,10 @@ def freeze(config, out):
             nativePresetSha256=config['nativePresetSha256'],
             storageLimitBytes=candidate['storageMiB'] * 1024 * 1024,
             checkStorageLimitBytes=4 * 1024 ** 3)
+        if development:
+            spec.update(progressReviewMode='anomaly', reviewBudget={'minMs': 120000,
+                'maxMs': 600000, 'lightMs': 120000, 'regularMs': 300000, 'complexMs': 600000})
+        if registry: spec['bootstrapRegistryIpv4'] = registry
         if position['condition'] != 'supervisor-independent':
             spec['nativeControllerSha256'] = config['nativeControllerSha256'][position['condition']]
         for key in artifacts: spec[key + 'Sha256'] = digest(artifacts[key])
@@ -133,7 +163,7 @@ def freeze(config, out):
     for task in tasks:
         for path in sorted((dataset / 'tasks' / task).rglob('*')):
             if path.is_file(): runtime_files[str(path.resolve())] = digest(path)
-    release = {'schemaVersion': 1, 'modelAdmitted': True, 'planned': 24, 'datasetCommit': selection['datasetCommit'],
+    release = {'schemaVersion': 1, 'modelAdmitted': True, 'planned': len(order['positions']), 'scope': order['scope'], 'datasetCommit': selection['datasetCommit'],
         'runnerCommit': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
         'pluginSourceCommit': config['pluginSourceCommit'], 'tarballSha256': digest(config['tarball']),
         'orderSha256': digest(out / 'order.json'), 'specsSha256': specs,
@@ -141,7 +171,8 @@ def freeze(config, out):
         'runtimeFilesSha256': runtime_files, 'gates': gates, 'capacity': config['capacity'],
         'runtimeInventory': config['runtimeInventory'], 'storageEnforcement': '60-second-sampled-stop-not-hard-quota',
         'noRescue': True, 'initialApprovalMaximum': 1, 'formalRevisionMaximum': 0,
-        'independentResources': {'cpus': 2, 'memoryMiB': 8192}, 'administratorResources': {'cpus': 1, 'memoryMiB': 1024}}
+        'independentResources': {'cpus': 2, 'memoryMiB': 8192}, 'administratorResources': {'cpus': 1, 'memoryMiB': 1024},
+        'collectionResources': {'cpus': 1, 'memoryMiB': 256, 'runsAfterExecutionStopped': True}}
     exclusive_json(out / 'release.json', release)
     return release
 

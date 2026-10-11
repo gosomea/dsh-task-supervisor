@@ -197,7 +197,8 @@ def grade(spec, journal):
         and not terminal['infrastructureFault'] and not recovery and not official.get('fault')
     return journal.write('result.json', {'schemaVersion': 1, 'id': started['id'],
         'condition': started['condition'], 'taskId': spec.get('taskId') or spec.get('case'),
-        'repeat': spec.get('repeat'), 'formal': spec.get('formal', False), 'terminal': terminal,
+        'repeat': spec.get('repeat'), 'formal': spec.get('formal', False),
+        'developmentRegression': spec.get('developmentRegression', False), 'terminal': terminal,
         'reward': reward, 'strictSuccess': strict, 'gradingFault': official.get('fault'),
         'officialGrade': official, 'metrics': metrics, 'artifactHashes': collection['filesSha256'],
         'collectionInfrastructureFault': recovery is not None, 'collectionRecovery': recovery,

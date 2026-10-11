@@ -179,6 +179,8 @@ def prepare(runtime, spec, journal):
                 'longHorizon': {'taskDeadlineMs': spec['deadlineSec'] * 1000,
                     'outerDeadlineAt': datetime.fromtimestamp(deadline_at, timezone.utc).isoformat().replace('+00:00', 'Z')},
                 'reviewDeadlineMs': spec.get('reviewDeadlineMs', 600000),
+                **({'progressReviewMode': spec['progressReviewMode']} if 'progressReviewMode' in spec else {}),
+                **({'reviewBudget': spec['reviewBudget']} if 'reviewBudget' in spec else {}),
                 'independentVerification': {**gateway['verification'],
                     'deadlineMs': spec.get('reviewDeadlineMs', 600000)}}}])
         runtime.write(box, '/opt/eval/home/profiles/web/cordis.patch.yml', patch.encode())

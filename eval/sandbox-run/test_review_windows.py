@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from review_windows import summarize_review_windows
+from review_windows import summarize_review_windows, budget_metrics
 
 
 def row(seq, time, status, attempt=1, job='review', kind='stage', task='task', **extra):
@@ -10,6 +10,35 @@ def row(seq, time, status, attempt=1, job='review', kind='stage', task='task', *
 
 
 class ReviewWindowTests(unittest.TestCase):
+    def test_fixed_budget_phases_and_cleanup_are_not_a_second_600_seconds(self):
+        budget = {'admittedAt': '2026-10-11T00:00:00Z', 'deadlineAt': '2026-10-11T00:10:00Z',
+            'history': [{'at': '2026-10-11T00:00:00Z', 'phase': 'checking'}, {'at': '2026-10-11T00:07:00Z', 'phase': 'converging'}, {'at': '2026-10-11T00:08:00Z', 'phase': 'decision'}]}
+        job = {'budget': budget, 'finishedAt': '2026-10-11T00:10:02Z', 'cleanupHistory': [{'startedAt': '2026-10-11T00:10:02Z', 'finishedAt': '2026-10-11T00:10:06Z', 'confirmed': True}]}
+        value = budget_metrics(job)
+        self.assertEqual(value['admittedJobWallMs'], 602000)
+        self.assertEqual(value['configuredBudgetMs'], 600000)
+        self.assertEqual(value['budgetPhaseDurationsMs'], {'checking': 420000, 'converging': 60000, 'decision': 122000})
+        self.assertEqual(value['cleanupWallMs'], 4000)
+        self.assertTrue(value['overConfiguredBudget'])
+        self.assertEqual(value['overrunReason'], 'job-finished-after-fixed-deadline')
+        old = budget_metrics({})
+        self.assertIsNone(old['admittedJobWallMs']); self.assertIsNone(old['budgetPhaseDurationsMs']); self.assertIsNone(old['over600Seconds'])
+
+    def test_invalid_phase_history_and_private_fault_detail_remain_unknown(self):
+        value = budget_metrics({'budget': {'admittedAt': '2026-10-11T00:00:00Z', 'history': [{'at': 'invalid', 'phase': 'checking'}]},
+            'fault': {'code': 'https://private.example/auth?token=canary'}})
+        self.assertIsNone(value['budgetPhaseDurationsMs'])
+        self.assertNotIn('canary', json.dumps(value))
+
+    def test_failed_job_settlement_after_deadline_reports_actual_cleanup_overlap(self):
+        value = budget_metrics({'budget': {'admittedAt': '2026-10-11T00:00:00Z', 'deadlineAt': '2026-10-11T00:10:00Z'},
+            'finishedAt': '2026-10-11T00:10:10Z', 'cleanupHistory': [{'startedAt': '2026-10-11T00:09:59Z',
+                'finishedAt': '2026-10-11T00:10:09Z', 'confirmed': True}]})
+        self.assertEqual(value['admittedJobWallMs'], 610000)
+        self.assertEqual(value['cleanupWallMs'], 10000)
+        self.assertEqual(value['cleanupOverrunOverlapMs'], 9000)
+        self.assertEqual(value['overrunReason'], 'resource-cleanup-overlaps-budget-overrun')
+        self.assertIsNone(value['budgetPhaseDurationsMs'])
     def test_same_job_retry_and_duplicate_terminal_are_one_window(self):
         records = [row(1, 1000, 'queued'), row(2, 1100, 'started'),
             row(3, 5100, 'failed'), row(4, 5300, 'queued'),
