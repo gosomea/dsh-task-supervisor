@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "candidate7-retired-development-denominator",
+  "candidate": 7,
+  "planned": 8,
+  "sealed": 2,
+  "notDelivered": 6,
+  "officiallyScored": 1,
+  "infrastructureScoreSkipped": 1,
+  "strictSuccessful": 0,
+  "results": [
+    {
+      "id": "lh-01-updo-policy-alerting-supervisor-independent-r2",
+      "resultSha256": "c5e5ccd5590a77d45fcb47695a5ac049d904aa5f79e8c9cd2d12cf0e10b4ad4f",
+      "reward": 1
+    },
+    {
+      "id": "lh-02-koota-pair-relation-tracking-supervisor-independent-r2",
+      "resultSha256": "0aefbdf6e6354d04875c58576aae6fad3cc098bc6dcc8c3de007e7e8460f0491",
+      "reward": null
+    }
+  ],
+  "releaseSha256": "37ac39818bf006a2686430e204ad023a9536dc1b75151abd6c3af55a15f32690",
+  "retirementReceiptSha256": "76a9defefdf10a706c01ce9b3436ca6b954693b6da984f287fcb8c13410a2242",
+  "summarySha256": "a5f4b904d9c24c75c66c301f067d3828cb80f077fa281d96ec7b5e12f346c9f0",
+  "sourceReportStatus": "requires-reconciliation",
+  "sourceReportStatusReason": "Six positions were intentionally not delivered after a confirmed defect; all started positions have immutable results. No new deliveries may use Candidate7.",
+  "supersedesSnapshot": "candidate7-budget-stop",
+  "mustNotMixWithCandidate8": true,
+  "oldAgentRedeliveries": 0,
+  "oldBatchResumed": false
+}

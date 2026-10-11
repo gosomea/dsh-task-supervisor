@@ -1,0 +1,595 @@
+{
+  "schemaVersion": 1,
+  "step": 5,
+  "status": "candidate8-admission-validated; eight-regressions-running; not-accepted",
+  "recordedAt": "2026-10-11T15:34:33.831278+00:00",
+  "candidate": 8,
+  "pluginSourceCommit": "bca1e7819687169b476fbe31f1f78df35a722106",
+  "runnerCommit": "89bdd1133bcac6cf533de5bab3bc7a112225935b",
+  "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+  "rows": [
+    {
+      "taskId": "updo-policy-alerting",
+      "baseCommit": "9ecd74f5bd56fa915501e5b77da044d97c450a74",
+      "image": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "nativeEnforcement": "full",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "gatewayPassed": true,
+      "snapshot": {
+        "id": "a04227d4-3600-4432-b74d-f7b126caf319",
+        "entries": 116,
+        "bytes": 3555353,
+        "digest": "72dd62c3859b7bafc21e764bd880e2501bc545a3bc9b4265b646672b3217b8c2",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "argv": [
+          "go",
+          "test",
+          "./...",
+          "-run",
+          "^$"
+        ],
+        "startedAt": "2026-10-11T14:53:11.179Z",
+        "finishedAt": "2026-10-11T14:53:33.970Z",
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "isolation": "fresh-copy"
+      },
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "admissionDeadlineMs": 180000,
+      "probeTimings": null,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "684075fe2312a2cd67f6ccaf337da45c2ab669e71a9e2b8c8c0a8eae3d8c3dc3",
+        "baseline": "183025027621efe67481b2cd0aa2b44dfb1164297fd68b7619b200aad31f40c1",
+        "check": "623017ced0373f4d3534de7353a0b67db679d789a347169c0cdfef06ddc17343",
+        "nativeCleanup": "44352e8e702794b5755d419480855acd12599e365100b7b7af9f8ecb98377bf7",
+        "gatewayCleanup": "432c67185a6afaed2f4d82aea0b0f07dd016b60b0267493b003af94f4dfd2286",
+        "checkCleanup": "d4c49a00a0dc5021098c3cf4e5ceed325643a6f0f894a07d44886ec3995a3907"
+      }
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+      "image": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "nativeEnforcement": "full",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "gatewayPassed": true,
+      "snapshot": {
+        "id": "af2470ee-a15a-4a75-91e1-1121dd5bd76f",
+        "entries": 164,
+        "bytes": 1776502,
+        "digest": "e13bc52c13b2455b0a54055d0d0a7a81ee3a1f220bca20957a044104dc178d5a",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "argv": [
+          "go",
+          "test",
+          "./...",
+          "-run",
+          "^$"
+        ],
+        "startedAt": "2026-10-11T14:55:21.455Z",
+        "finishedAt": "2026-10-11T14:55:48.509Z",
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "isolation": "fresh-copy"
+      },
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "admissionDeadlineMs": 180000,
+      "probeTimings": null,
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "06469147b5de22b294775531f4237849198012aeb7553d31485aae7d2cc59734",
+        "baseline": "9f8b48898e42b5f1604cd6b9164b7895b83bf9779fdff93385ee1ae893089ae5",
+        "check": "cc32eeae0ac6e719aaeec1fc5bace8522182f1f6b03513b4e707c3422ce16507",
+        "nativeCleanup": "dbecd9b3762de551ff3814c7bd83b52c77b7555376cfe17d09c0541dd05bab37",
+        "gatewayCleanup": "947a5f9b0d7a23f8fb0e1318ee865f8ec9a56df4df63a6e4e1e3e6d6d8caaf5c",
+        "checkCleanup": "86f80c75f619be910a519844aeb914c2621f067cb99e4033e9d8773ff04b5daa"
+      }
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "baseCommit": "010c4bdb4b8758844fd44eacf38e42b22eba8aea",
+      "image": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "nativeEnforcement": "full",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "gatewayPassed": true,
+      "snapshot": {
+        "id": "611fb38a-53a6-46a1-9a4a-1c175629d769",
+        "entries": 26907,
+        "bytes": 246156753,
+        "digest": "6b6173e59cd9dfd68ee8c935dd075854ccdc7369d6871133fb4aa4a544d8221d",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "argv": [
+          "node",
+          "-e",
+          "const fs=require('node:fs'); if(fs.readFileSync('.dsh-untracked-probe','utf8')!=='untracked artifact\\n')throw Error('snapshot input');console.log(require('./package.json').name,process.arch)"
+        ],
+        "startedAt": "2026-10-11T15:18:49.213Z",
+        "finishedAt": "2026-10-11T15:18:59.081Z",
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "isolation": "fresh-copy"
+      },
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "admissionDeadlineMs": 600000,
+      "probeTimings": {
+        "snapshotReadyMs": 33393.814557,
+        "checkFinishedMs": 118376.241473,
+        "recoveryFinishedMs": 118532.890681,
+        "totalMs": 118535.006473
+      },
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "ed41016402d7579122bdf82b8b88e0995998fa1ee2c9432d8c9091d3236d3e1a",
+        "baseline": "4101044b0db5f1a988ca20571b1b39d4dd7dc716797044437396cd18208a1d5b",
+        "check": "ec422c90fa806ac634e92ab64ebe968c6f7d16f872ae5b1a824cb1b341ac3679",
+        "nativeCleanup": "afaeeb1de4354822363a3cbbc3973f843df96fc31ddbdb70c6254dcaf08427ce",
+        "gatewayCleanup": "32b3a6d1b54423c5e674d4be612e44bcead1510d7f6a352e215d9fce03f21ec9",
+        "checkCleanup": "db025285cbac93dd4280e0b7c3335e49f2ff9acbdd936356817cdba8ec8870ea"
+      }
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "baseCommit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c",
+      "image": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+      "nativePassed": true,
+      "nativePolicy": "workspace-write",
+      "nativeEnforcement": "full",
+      "outsideWriteRejected": true,
+      "outsideUnchanged": true,
+      "gatewayPassed": true,
+      "snapshot": {
+        "id": "76fc99ce-1ce2-498f-92b1-e7c6c9032349",
+        "entries": 15145,
+        "bytes": 374251745,
+        "digest": "70c4d830556da8837d9e57e81ec089ee707cb6bbba2d2e93cfdc7dace6a1e2dc",
+        "untrackedCaptured": true
+      },
+      "check": {
+        "argv": [
+          "node",
+          "-e",
+          "const fs=require('node:fs'); if(fs.readFileSync('.dsh-untracked-probe','utf8')!=='untracked artifact\\n')throw Error('snapshot input');console.log(require('./package.json').name,process.arch)"
+        ],
+        "startedAt": "2026-10-11T15:22:18.323Z",
+        "finishedAt": "2026-10-11T15:22:27.514Z",
+        "exitCode": 0,
+        "timedOut": false,
+        "cancelled": false,
+        "outputIncomplete": false,
+        "isolation": "fresh-copy"
+      },
+      "sourceUnchanged": true,
+      "dockerSocketMounted": false,
+      "baselineHasCredentials": false,
+      "baselineHasGatewayMounts": false,
+      "admissionDeadlineMs": 600000,
+      "probeTimings": {
+        "snapshotReadyMs": 19998.330343,
+        "checkFinishedMs": 91232.53471,
+        "recoveryFinishedMs": 91368.19096,
+        "totalMs": 91370.509585
+      },
+      "ownedResourcesDestroyed": true,
+      "receiptSha256": {
+        "native": "9066f735ea236f2652cf158a0a421d9598e8313625ff95af25a4941160d33209",
+        "baseline": "1e98a616762298b38edfc04acb3dda0a876ee49433820c7a1ed1108313b17f27",
+        "check": "04e877bf51da090138a2bba2b206b6de54eb2f84ae18ad104d94a218fd44874f",
+        "nativeCleanup": "d7e95cdeccc3ae3deb6d32f51454d369bad9251459b69640e08b3737c9e826cc",
+        "gatewayCleanup": "f8ed5d70289d7bc59b147ae8f540f452f77f884f89d5613dcb783a328e2809e5",
+        "checkCleanup": "322b37a0275f1dc56a0d7bf95eba1ed9418fec919676474d9d75dd019fc55456"
+      }
+    }
+  ],
+  "route": {
+    "provider": "deepseek-codebuddy",
+    "model": "deepseek-v4.1-flash",
+    "main": {
+      "sessionId": "session-e942152f-c364-4034-a896-a4857703ae4b",
+      "modelRequests": 5,
+      "successfulRequests": 5,
+      "actualHttpRequests": 5,
+      "routeMismatchCount": 0,
+      "durableAssistantCount": 4,
+      "successfulRequestAndDurableAnswer": true,
+      "routeStatus": "matched",
+      "httpStatusCounts": {
+        "200": 5
+      },
+      "finishKindCounts": {
+        "tool-calls": 4,
+        "stop": 1
+      },
+      "transportErrorTypeCounts": {}
+    },
+    "reviewers": [
+      {
+        "sessionId": "task-review-1516e18c-e034-414d-98fd-969874fdc0be",
+        "modelRequests": 2,
+        "successfulRequests": 1,
+        "actualHttpRequests": 2,
+        "routeMismatchCount": 0,
+        "durableAssistantCount": 1,
+        "successfulRequestAndDurableAnswer": true,
+        "routeStatus": "matched",
+        "httpStatusCounts": {
+          "200": 1
+        },
+        "finishKindCounts": {
+          "tool-calls": 1
+        },
+        "transportErrorTypeCounts": {
+          "AbortError": 1
+        }
+      }
+    ],
+    "routesMatched": true,
+    "allObservedIntended": true,
+    "protocolDeviation": false,
+    "benchmarkModelAttempts": 0,
+    "executionApprovals": 0,
+    "gateCalibrationNotProductAcceptance": true,
+    "calibrationReviewCancelledAfterRouteEvidence": true,
+    "productReviewDecisionVerified": false,
+    "independentExecutionCoveredByKeylessGate": true,
+    "ownedSandboxDestroyed": true,
+    "receiptSha256": "644c63b5447c1a8e94902844bed7ba4282493ff759e0656d4a8a0bda247f897a",
+    "rawAnalysisSha256": "f2937a562d68f9f0cb273e0d2a3f62b4adf9b859d817d2e96540baf0918ba18a",
+    "actualRouteReceiptSha256": "7b1883e9b943fe0f9b216a3591507df48504877a82b1c938fb348442e5b82a34"
+  },
+  "controlsReuse": {
+    "originalOfficialControls": {
+      "recheckedOriginalScorerImagesAndRuntimeBytes": true,
+      "runtimeFilesMatched": 19832,
+      "controlsMatched": 8,
+      "identityReceiptSha256": "7062f54e6193a08d6196c050d9f0ac7e9a0c45a0d489e49a366bc195e5acc35a"
+    },
+    "sameOfficialControlsFrozenForCandidate8": true,
+    "notReusedAsCurrentPluginAdmission": true
+  },
+  "developmentGate": {
+    "priorCrossArtifactModelCandidate": 7,
+    "priorCrossArtifactRerunOnCandidate8": false,
+    "allowedProductionDiff": [
+      "src/review-budget.ts"
+    ],
+    "explicitAmendmentSha256": "b1880bd7a366fe7ada6799c1cff5c93f767908225803b1a1c32fa8cdf545061a"
+  },
+  "frozen": {
+    "releaseSha256": "e8cac8c8056473a2a5c86459baf72efc69c3878022c7e23f04596c90ffd3c508",
+    "orderSha256": "2795ea4a9302832106df8c4facdfde7a9647615d173e80d60891a892e8c1d9f6",
+    "planned": 8,
+    "scope": "exposed-supervisor-development",
+    "datasetCommit": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea",
+    "noRescue": true,
+    "initialApprovalMaximum": 1,
+    "formalRevisionMaximum": 0,
+    "storageEnforcement": "60-second-sampled-stop-not-hard-quota",
+    "resources": {
+      "independent": {
+        "cpus": 2,
+        "memoryMiB": 8192
+      },
+      "administrator": {
+        "cpus": 1,
+        "memoryMiB": 1024
+      },
+      "collection": {
+        "cpus": 1,
+        "memoryMiB": 256,
+        "runsAfterExecutionStopped": true
+      }
+    },
+    "capacity": {
+      "dockerContext": "colima-dsh-eval-rosetta",
+      "colimaProfile": "dsh-eval-rosetta",
+      "minimumDockerFreeBytes": 32212254720,
+      "minimumHostFreeBytes": 8589934592,
+      "requiredCpus": 5,
+      "requiredMemoryBytes": 18253611008
+    },
+    "runtimeInventory": {
+      "server": {
+        "containerId": "8a062dca7a6d4a80a145f3af20725b9c3bb438b5f9e771bf870bbadc908d61d4",
+        "imageId": "sha256:68ca0212a2749b2c73096ce2ec0264455c64442c45f81007db442f52bf84c9d1",
+        "startedAt": "2026-10-09T09:49:19.127553869Z",
+        "version": "1.1.0"
+      },
+      "sdk": "1.1.0",
+      "sdkPython": "Python 3.13.3",
+      "node": "24.21.0",
+      "dsh": "0.2.0-rc.2",
+      "pnpm": "11.7.0",
+      "execd": "1.1.0",
+      "egress": "1.1.7",
+      "pier": "0.3.1",
+      "harbor": "0.23.0",
+      "pierSourceCommit": "0c802fc067a425345b24d1c69411aa98acf61a1d"
+    },
+    "gateReceiptHashes": [
+      "8c367e84b359b50c861c73635dc6fae48812b585c450b4be21c5ef3fd7b35c39",
+      "37ac39818bf006a2686430e204ad023a9536dc1b75151abd6c3af55a15f32690",
+      "0222ff150dc5b907e606820499ba870ec55aaf02e778d09376eaf9272b199f2f",
+      "b1880bd7a366fe7ada6799c1cff5c93f767908225803b1a1c32fa8cdf545061a",
+      "644c63b5447c1a8e94902844bed7ba4282493ff759e0656d4a8a0bda247f897a",
+      "183025027621efe67481b2cd0aa2b44dfb1164297fd68b7619b200aad31f40c1",
+      "684075fe2312a2cd67f6ccaf337da45c2ab669e71a9e2b8c8c0a8eae3d8c3dc3",
+      "91fcc901e2b857575c3749b05db2d22ae4bea8e75d98834ec9d88effbb2a51b3",
+      "2df9253430452aa778d6f7ad81e29728925bd8eabeb0b7995d7f26b3e41fc131",
+      "9f8b48898e42b5f1604cd6b9164b7895b83bf9779fdff93385ee1ae893089ae5",
+      "06469147b5de22b294775531f4237849198012aeb7553d31485aae7d2cc59734",
+      "98ed65fdc10d730659f0e24983339644d99e64a4a0f8b2cf92ca61d3f7f684e9",
+      "1de24ccf56cfc91b2e9ffff13d443344b8f3b7f27df43ec801b737765712ca21",
+      "4101044b0db5f1a988ca20571b1b39d4dd7dc716797044437396cd18208a1d5b",
+      "ed41016402d7579122bdf82b8b88e0995998fa1ee2c9432d8c9091d3236d3e1a",
+      "328fddcefc7f7f86f82d1a90df28881c9a8e5cecdd5f8c04a725976e9022e547",
+      "4638638868d173376cad8fe0c89ecdc1bbb5e926da1ead6381c48034ff433727",
+      "1e98a616762298b38edfc04acb3dda0a876ee49433820c7a1ed1108313b17f27",
+      "9066f735ea236f2652cf158a0a421d9598e8313625ff95af25a4941160d33209",
+      "3bb46da3b1d7feb160d34a7dc5dd1c25f4b93435c24dd624185838354b88f758",
+      "5e46d7e14a21f614082734663781e686a6107b92e5de5579f32f76794d98a2ae"
+    ],
+    "specs": [
+      {
+        "id": "lh-01-updo-policy-alerting-supervisor-independent-r2",
+        "taskId": "updo-policy-alerting",
+        "condition": "supervisor-independent",
+        "repeat": 2,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "5f57493c1865cf900c66f0b505499e2e58c3cfe2da297d43ce3b89b95ec47ff5",
+        "baseCommit": "9ecd74f5bd56fa915501e5b77da044d97c450a74",
+        "image": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+        "checkImage": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-02-koota-pair-relation-tracking-supervisor-independent-r2",
+        "taskId": "koota-pair-relation-tracking",
+        "condition": "supervisor-independent",
+        "repeat": 2,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "7b15510d617d38ac1fab6cdf902aa577aedb34516e047bd469f4e8ec868d778b",
+        "baseCommit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c",
+        "image": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+        "checkImage": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-03-geo-shapeindex-serialization-supervisor-independent-r2",
+        "taskId": "geo-shapeindex-serialization",
+        "condition": "supervisor-independent",
+        "repeat": 2,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+        "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+        "image": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+        "checkImage": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-04-geo-shapeindex-serialization-supervisor-independent-r1",
+        "taskId": "geo-shapeindex-serialization",
+        "condition": "supervisor-independent",
+        "repeat": 1,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "963f10993838f2f3f33935632d2b1181a1fa0b1174991a8b52ca8a66d40e5afd",
+        "baseCommit": "87f5a40ea07a4ea629ee5623c72660f3d1b217fa",
+        "image": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+        "checkImage": "sha256:b4a72db33cabff332c92fd67b9cb3f4c3da24e05aac0e2657422186241d51b35",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-05-updo-policy-alerting-supervisor-independent-r1",
+        "taskId": "updo-policy-alerting",
+        "condition": "supervisor-independent",
+        "repeat": 1,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "5f57493c1865cf900c66f0b505499e2e58c3cfe2da297d43ce3b89b95ec47ff5",
+        "baseCommit": "9ecd74f5bd56fa915501e5b77da044d97c450a74",
+        "image": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+        "checkImage": "sha256:3bbaf3747785153f8f6c6474f2a894735e3e1c9595d7e0a62b97b6dfa7b56923",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-06-koota-pair-relation-tracking-supervisor-independent-r1",
+        "taskId": "koota-pair-relation-tracking",
+        "condition": "supervisor-independent",
+        "repeat": 1,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "7b15510d617d38ac1fab6cdf902aa577aedb34516e047bd469f4e8ec868d778b",
+        "baseCommit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c",
+        "image": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+        "checkImage": "dsh-long-horizon@sha256:10786f7726d29c50776c3411fb4f7269e2627a419fd40b68336c04e295ad85d9",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-07-superjson-error-stack-serialization-supervisor-independent-r2",
+        "taskId": "superjson-error-stack-serialization",
+        "condition": "supervisor-independent",
+        "repeat": 2,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "cb5e04f0f6c01180a47f1205b6d86126a8a7f9e7d5662e4f9477daa862826e30",
+        "baseCommit": "010c4bdb4b8758844fd44eacf38e42b22eba8aea",
+        "image": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+        "checkImage": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      },
+      {
+        "id": "lh-08-superjson-error-stack-serialization-supervisor-independent-r1",
+        "taskId": "superjson-error-stack-serialization",
+        "condition": "supervisor-independent",
+        "repeat": 1,
+        "deadlineSec": 10800.0,
+        "mainCpus": 2,
+        "mainMemoryMiB": 8192,
+        "reviewDeadlineMs": 600000,
+        "reviewBudget": {
+          "minMs": 120000,
+          "maxMs": 600000,
+          "lightMs": 120000,
+          "regularMs": 300000,
+          "complexMs": 600000
+        },
+        "progressReviewMode": "anomaly",
+        "storageLimitBytes": 21474836480,
+        "checkStorageLimitBytes": 4294967296,
+        "instructionSha256": "cb5e04f0f6c01180a47f1205b6d86126a8a7f9e7d5662e4f9477daa862826e30",
+        "baseCommit": "010c4bdb4b8758844fd44eacf38e42b22eba8aea",
+        "image": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+        "checkImage": "dsh-long-horizon@sha256:0dbbcb378934a938a34f3244b81b7082ef89dac65e46e5bc16a38ba0bfb40600",
+        "modelPatchSha256": "eb6fd50153a2abaf4f081d94bc0c71211d1e448675390e7e3704f159b4b113c9",
+        "tarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f"
+      }
+    ]
+  },
+  "batchLaunch": {
+    "startedAt": "2026-10-11T15:25:28Z",
+    "pid": 99880,
+    "pipelinePid": 88699,
+    "observedAt": "2026-10-11T15:28:30Z",
+    "exclusiveBatchLockHeld": true,
+    "exclusivePipelineLockHeld": true,
+    "firstPosition": "lh-01-updo-policy-alerting-supervisor-independent-r2",
+    "sealedAtObservation": 0,
+    "independentPythonController": true
+  },
+  "limits": {
+    "copyPerformanceImprovementNotEstablished": true,
+    "currentReviewCompletionNotEstablished": true,
+    "unseenTaskPerformance": false,
+    "goalOrPlanExecuted": false,
+    "blindFalseAcceptance": null,
+    "blindFalsePause": null,
+    "correctionBenefit": null,
+    "daily3080Untouched": true,
+    "priorResultsSeparate": true
+  }
+}

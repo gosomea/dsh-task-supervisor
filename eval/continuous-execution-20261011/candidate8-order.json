@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "seed": "dsh-opensandbox-long-horizon-v1",
+  "scope": "exposed-supervisor-development",
+  "positions": [
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "22f3300159e183b4e8f7e0c8e88e8353bfb44c77815046d8752dbb097cbac4f2",
+      "id": "lh-01-updo-policy-alerting-supervisor-independent-r2"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "239b8a18a8e2f198a1a20f91cffce579891378067febb5bdb219e242377ccab5",
+      "id": "lh-02-koota-pair-relation-tracking-supervisor-independent-r2"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "2726f406cea8a40daab8181e4263e42a5267483fcf2f66db7587caa801a333ad",
+      "id": "lh-03-geo-shapeindex-serialization-supervisor-independent-r2"
+    },
+    {
+      "taskId": "geo-shapeindex-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "6002d124fcadd81f3bcd86aa563eaa8f3f9c98a24de3a548e0ceab77d957aaee",
+      "id": "lh-04-geo-shapeindex-serialization-supervisor-independent-r1"
+    },
+    {
+      "taskId": "updo-policy-alerting",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "68d3aadeb49760be497dfee9aac80f984f8bf418772ac532ec00881317960170",
+      "id": "lh-05-updo-policy-alerting-supervisor-independent-r1"
+    },
+    {
+      "taskId": "koota-pair-relation-tracking",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "d0fd870ae434b05146942107360da92ed5f490f89eaea42828d51e85a006ffeb",
+      "id": "lh-06-koota-pair-relation-tracking-supervisor-independent-r1"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 2,
+      "rank": "d796298c402edecf20b0d7be4c436d1a7a356308f337426f78c0bcdf610d5387",
+      "id": "lh-07-superjson-error-stack-serialization-supervisor-independent-r2"
+    },
+    {
+      "taskId": "superjson-error-stack-serialization",
+      "condition": "supervisor-independent",
+      "repeat": 1,
+      "rank": "f13f256df4241698d268e4dfeaaf880240578750e0df9ff18c64ef11b539ec0b",
+      "id": "lh-08-superjson-error-stack-serialization-supervisor-independent-r1"
+    }
+  ]
+}
