@@ -80,3 +80,5 @@ Three sequential batches deliver recovery, planning supervision and preauthorize
 Additional reviews and continuations cost time and tokens. These thresholds are not a measured optimum. Summaries can omit facts and reviewers can make incorrect recommendations despite valid citations; original evidence and independent outcome scoring remain necessary. Long-horizon improvement, correction yield and false pauses remain unmeasured without a new frozen comparison and blind annotations.
 
 This note extends [review policy](../../../../docs/review-policy.md) and [Session runtime](../../../../docs/session-runtime.md). Related records remain active because their ownership and lifecycle rules still apply; no earlier history is overwritten.
+
+[Continuous execution follow-up](../../proposed/architecture/2026-10-11-supervisor-continuous-execution.md) owns the subsequent shared review budget and scheduling changes; this planning supervision decision remains active.

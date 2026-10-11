@@ -8,3 +8,4 @@ Evaluation content is consolidated in [Evaluation design and execution roadmap](
 - [Required metrics](evaluation.md#required-metrics): primary outcomes, denominators, diagnostics, and missing data.
 - [Later multi-task Sessions](evaluation.md#later-multi-task-sessions): consecutive Tasks, Plans, or Goals and fresh-Session controls.
 - [Existing evidence and next actions](evaluation.md#existing-evidence-and-next-actions): development results and the sole checklist.
+- [Continuous execution implementation plan](../.agents/notes/proposed/architecture/2026-10-11-supervisor-continuous-execution.md):Gated implementation and separate commits, followed by eight Supervisor development regressions.

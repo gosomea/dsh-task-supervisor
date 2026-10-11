@@ -8,3 +8,4 @@
 - [必须采集的指标](evaluation.zh.md#必须采集的指标)：首要结果、分母、诊断指标和缺失数据。
 - [后续多任务 Session](evaluation.zh.md#后续多任务-session)：Task／Plan／Goal 连续执行与新 Session 对照。
 - [已有证据与下一步](evaluation.zh.md#已有证据与下一步)：开发结果与唯一待办清单。
+- [持续执行实施计划](../.agents/notes/proposed/architecture/2026-10-11-supervisor-continuous-execution.zh.md)：按步骤验收、提交与推送，之后只运行八次 Supervisor 开发回归。

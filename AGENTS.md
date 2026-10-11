@@ -27,3 +27,7 @@ DSH 源码仓库的 13 个 skill 已从仓库根目录的 `.agents/skills/` 通�
 当前源码使用公开 DSH 原生 Inbox 记录与 Agent 作用域门禁，保留原生 preset，不要求私有 Host 扩展。原生控制记录不得进入模型对话或标记为 `ignorable`；插入与取消交付必须同步完成，防止破坏工具调用／结果配对。0.1.0 的旧扩展日志继续使用原宿主，本版本不改写历史日志。[安装验收](docs/native-install.zh.md)记录公开发行版测试与边界，[实现状态](docs/implementation.zh.md)区分已运行代码与后续设计。
 
 新任务不注册 Supervisor 模式；`legacyPresets: true` 仅用于恢复 0.1.1 专用 preset 的旧 Session，不改写其历史。原生模式下插件冷缺失时，公开 Host 无法安装插件门禁，不得声称仍有冷缺失保护。热卸载和装有插件的重启恢复分别验证。
+
+## 持续执行改造
+
+本轮按[已批准计划](.agents/notes/proposed/architecture/2026-10-11-supervisor-continuous-execution.zh.md)逐步实施；每步验收、更新中英文证据后单独提交推送，未通过不得进入下一步，全部验收前 Note 保持 proposed。

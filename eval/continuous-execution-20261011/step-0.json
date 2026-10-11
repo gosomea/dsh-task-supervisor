@@ -1,0 +1,37 @@
+{
+  "step": 0,
+  "status": "validated",
+  "baseline": "2edbbc3c2e92645a71c4da294b6e059e0899babf",
+  "sourceBaseline": "44b2a42d4ce9fb0bed12ed08b878ed10fa8c979b",
+  "sourceAndKernelIdentical": true,
+  "worktree": "/Users/yuqixian/.cache/dsh-supervisor-worktrees/continuous-execution-20261011",
+  "branch": "codex/continuous-execution",
+  "note": ".agents/notes/proposed/architecture/2026-10-11-supervisor-continuous-execution.zh.md",
+  "previousImplementedNote": "retained-partial-overlap",
+  "steps": {
+    "1": "not-started",
+    "2": "not-started",
+    "3": "not-started",
+    "4": "not-started",
+    "5": "not-started",
+    "6": "not-started"
+  },
+  "dailyHostRestarted": false,
+  "modelRequests": 0,
+  "checks": [
+    {
+      "command": "git diff 44b2a42 2edbbc3 -- src spikes",
+      "exitCode": 0,
+      "output": "empty"
+    },
+    {
+      "command": "Node 24: DSH translation-pairing parsers, Note header/sections, Git blob hashes and local-link checks for new and retained Note pairs",
+      "exitCode": 0,
+      "output": "two pairs passed; scoped external-plugin check, not full DSH doc-sync"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ]
+}
