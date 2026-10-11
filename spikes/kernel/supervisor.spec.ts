@@ -3379,3 +3379,84 @@ it('answers only one exact native Plan review through the public question seam',
   expect((await ctx.commands.execute(agent, '/eval-protocol ' + JSON.stringify({ ...action, questionId: next.id, actionId: 'second-grant' }), [], controller.signal))?.result.kind).toBe('error')
   controller.abort(); await expect(second).rejects.toThrow('aborted')
 })
+
+
+it('durably confirms a decision before acknowledgement and retains it after cancellation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-decision-confirm-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('decision-confirm'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = newTask('Build import'); appendTask(ctx, agent, task)
+  const entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>(), abort = new AbortController()
+  ctx.on('tools/execute', async (exec, next) => {
+    const result = await next()
+    if (exec.name === 'task_review_decision') { entered.resolve(); await release.promise }
+    return result
+  })
+  const run = reviewStage(ctx, agent, task, 'plan', 'controlled input', abort.signal, { provider: 'scripted', model: 'reviewer' }, 'plan')
+  const outcome = run.then(() => null, error => error)
+  try {
+    await entered.promise
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+    expect(job).toMatchObject({ status: 'submitted', decision: { verdict: 'pass' }, confirmation: { callId: 'coverage-decision' } })
+    const reader = await ctx.sessionPersistence.open(agent.id, 'read')
+    try {
+      const events = (await reader.read(0, 256)).events.map(controlEvent)
+      expect(events.some(event => event.type === 'extension/record' && event.data.schemaVersion === 9
+        && event.data.namespace === 'dsh-task-supervisor-review' && JSON.stringify(event.data.payload).includes('"confirmation"'))).toBe(true)
+    } finally { await reader.close() }
+    abort.abort(new Error('controlled user cancellation'))
+  } finally { release.resolve() }
+  expect(await outcome).toBeInstanceOf(Error)
+  const saved = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(saved.decision?.verdict).toBe('pass'); expect(saved.status).toBe('submitted')
+  const requests = adapter.requests
+  const result = await savedReviewDecision(ctx, agent, saved, {}, new AbortController().signal)
+  expect(result.verdict).toBe('pass'); expect(adapter.requests).toBe(requests)
+  expect(taskOf(ctx, agent)?.everApproved).toBe(false)
+})
+
+it('continues a revised plan after same-job request recovery without granting implementation', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-recovered-revise-')); roots.push(root)
+  class Adapter extends ScriptedAdapter {
+    first = true
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      if (options.model === 'reviewer' && this.first) { this.first = false; throw new LlmError('temporary transport', 'TRANSPORT') }
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ main: [toolResponse('task_submit_plan', smallPlan, 'first-plan'), toolResponse('task_submit_plan', smallPlan, 'revised-plan'), textResponse('await approval')],
+    reviewer: [...coverageChecks('revise'), ...coverageChecks()] })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, true, 3, true, [], { reviewFaultRetryDelayMs: 0 })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('recovered-revise'), agentOptions: { provider: 'scripted', model: 'main' } })
+  await ctx.commands.execute(agent, '/task Build import', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs.map(job => job.decision?.verdict)).toEqual(['revise', 'pass'])
+  expect(jobs[0]?.recovery?.consumed).toBe(1)
+  expect(taskOf(ctx, agent)?.everApproved).toBe(false)
+  expect(jobs.every(job => job.status === 'applied')).toBe(true)
+})
+
+it('reconciles continuation identity and never replays an uncertain or confirmed dispatch', async () => {
+  const { deliverContinuation, dispatches } = await import('../../src/dispatch-records.ts')
+  const root = await mkdtemp(join(tmpdir(), 'dsh-dispatch-identity-')); roots.push(root)
+  const adapter = new ScriptedAdapter(), ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('dispatch-identity'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = newTask('Build import'); appendTask(ctx, agent, task)
+  const message = createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'controlled continuation' }] })
+  await agent.runMaintenance(async signal => {
+    await deliverContinuation(ctx, agent, task, message, signal, () => true)
+    await deliverContinuation(ctx, agent, task, message, signal, () => true)
+  })
+  await agent.whenIdle()
+  expect(adapter.requests).toBe(1)
+  expect(dispatches(agent.session.snapshotEvents())).toMatchObject([{ id: message.id, status: 'confirmed' }])
+  const uncertain = createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'not authorized' }] })
+  await agent.runMaintenance(async signal => {
+    await expect(deliverContinuation(ctx, agent, task, uncertain, signal, () => false)).rejects.toThrow('changed before')
+    await expect(deliverContinuation(ctx, agent, task, uncertain, signal, () => true)).rejects.toThrow('DISPATCH_UNKNOWN')
+  })
+  expect(adapter.requests).toBe(1)
+})

@@ -200,3 +200,7 @@ Workers may report through task_worker_done or a nonempty final text after a nor
 ## Complete reports and scoped review
 
 The accepted optimization is implemented through record 8: full reports separate from native process folds, immutable review scope, original-evidence batches, bounded extra correction Turns, requirement outcomes and concrete handoff. Source gates, registered real-model positive/negative cases and the frozen two-fixture baseline comparison are recorded in [0.1.4 acceptance](releases/0.1.4.md). Release state is reported there; the original runtime and capability boundaries remain.
+
+## Continuous execution: decision handoff
+
+Step 1 now persists and flushes the validated decision before acknowledging the reviewer tool. Record 9 distinguishes the call receipt, native result and effective Task application. Cancellation preserves a submitted decision while stopping application and continuation. A recovered plan revision continues planning at the unchanged plan version; it grants no implementation permission. Continuations reserve a durable native Inbox identity before delivery and confirm it afterwards; an uncertain identity is not replayed. Fast completed active turns are reinspected after the scheduling lock releases. Source regressions and remaining gates are tracked in [continuous execution validation](../eval/continuous-execution-20261011/validation.md). Budget, incremental findings, repair policy, browser and eight-case development regression gates remain pending.

@@ -7,7 +7,7 @@ import { reviewScopeSchema } from './review-scope-schema.ts'
 import { requirementResultSchema } from './review-results.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
-export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8]
+export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
@@ -43,6 +43,9 @@ export const reviewJobSchema = z.object({
   requirementsProtocol: z.literal(1).optional(),
   resultProtocol: z.literal(1).optional(),
   checkProtocol: z.literal(1).optional(),
+  confirmation: z.object({ callId: z.string().min(1), submittedAt: z.string(),
+    resultSeq: z.number().int().nonnegative().optional(), appliedAt: z.string().optional(),
+    appliedTaskRevision: z.number().int().positive().optional() }).strict().optional(),
   decision: z.object({ verdict: z.enum(['pass', 'revise', 'needs-user']), finding: z.string(), evidenceSeqs: z.array(z.number().int()),
     requiredCapabilities: z.array(z.enum(['read', 'run', 'visual'])).optional(),
     programs: z.array(z.string().min(1)).optional(),

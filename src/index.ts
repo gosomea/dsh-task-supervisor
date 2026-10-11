@@ -1,3 +1,4 @@
+import { deliverContinuation } from './dispatch-records.ts'
 import type { ReviewJob } from './review-records.ts'
 import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
 /** Native DSH task controller: durable state, human commands, and model tools. */
@@ -12,7 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { installClosingResponse, CLOSING_MESSAGE } from './closing-response.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { CommandResult } from '@deepseek-ai/dsh-commands'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -214,6 +215,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     }
   }
 
+  async function handoff(agent: Agent, task: TaskSnapshot, message: UserMessage, signal: AbortSignal) {
+    await deliverContinuation(ctx, agent, task, message, signal, () => !disposed
+      && current(agent)?.id === task.id && current(agent)?.revision === task.revision && task.enabled
+      && ![...agent.inbox.nextStep, ...agent.inbox.nextTurn].some(item => item.id !== message.id && item.source.kind !== 'task-supervisor-record'))
+  }
+
   /** A Task owns continuation; native Goal remains a durable planning record. */
   function ownContinuation(agent: Agent): void {
     const task = taskOf(ctx, agent)
@@ -298,8 +305,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (disposed || persisted?.id !== committed.id || persisted.revision !== committed.revision || hasPending(agent)) throw new Error('task or inbox changed before delivery')
       runtime(agent).armed = committed.phase === 'active' || committed.phase === 'planning'
       budgets.requireTime(agent)
-      agent.followup(message)
       try {
+        await handoff(agent, committed, message, signal)
         await flush(agent)
         signal.throwIfAborted()
         const delivered = current(agent)
@@ -331,7 +338,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (disposed || latest?.id !== committed.id || latest.revision !== committed.revision) return
       budgets.requireTime(agent)
       runtime(agent).armed = true
-      agent.followup(inputFor(committed, instruction))
+      await handoff(agent, committed, inputFor(committed, instruction), signal)
       await flush(agent)
     })
   }
@@ -520,7 +527,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === jobId)
-    if (job && job.status === 'submitted') await recordReview(ctx, agent, { ...job, revision: job.revision + 1, status })
+    if (job && job.status === 'submitted') await recordReview(ctx, agent, { ...job, revision: job.revision + 1, status,
+      ...status === 'applied' && job.confirmation ? { confirmation: { ...job.confirmation,
+        appliedAt: new Date().toISOString(), appliedTaskRevision: current(agent)?.revision } } : {} })
   }
 
   async function pauseForReviewFailure(agent: Agent, expected: TaskSnapshot, error: unknown): Promise<TaskSnapshot | null> {
@@ -677,9 +686,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         await flush(agent)
         runtime(agent).armed = next.phase === 'active' && canContinueReview(agent, decision.jobId, next)
         if (next.phase === 'active' && runtime(agent).armed) {
-          agent.followup(inputFor(next,
+          await handoff(agent, next, inputFor(next,
             `Continue stage ${stageId} under the progress review: ${decision.finding}. `
-            + 'Report concrete stage evidence with task_report_stage when ready.'))
+            + 'Report concrete stage evidence with task_report_stage when ready.'), signal)
           await flush(agent)
         }
       } catch (error: unknown) {
@@ -761,9 +770,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         seq: agent.session.seq, time: Date.now() }
       if (revisePlan) runtime(agent).armed = true
       if (!completeNext && !revisePlan) closeWithResponse(agent, latest.revision, true)
-      agent.followup(inputFor(latest, `Supervisor review result: ${JSON.stringify(result)}\n${completeNext
+      await handoff(agent, latest, inputFor(latest, `Supervisor review result: ${JSON.stringify(result)}\n${completeNext
         ? 'All nodes passed. Inspect the current whole deliverable and call task_request_completion with concrete evidence; the task is not complete yet.'
-        : revisePlan ? 'Revise the proposed plan under this finding and the original user requirements, then submit it for another review. Implementation is not approved.' : CLOSING_MESSAGE}`))
+        : revisePlan ? 'Revise the proposed plan under this finding and the original user requirements, then submit it for another review. Implementation is not approved.' : CLOSING_MESSAGE}`), signal)
       await flush(agent)
     },
   })
@@ -836,7 +845,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         scheduling.delete(agent)
         // A very short continuation can finish while the previous maintenance job releases.
         // Reinspect only a newer native ending; never re-drive the same idle notification.
-        if (!disposed && ctx.agents.get(agent.id) === agent && agent.status === 'idle' && taskOf(ctx, agent)?.phase === 'planning'
+        if (!disposed && ctx.agents.get(agent.id) === agent && agent.status === 'idle' && ['active', 'planning'].includes(taskOf(ctx, agent)?.phase ?? '')
           && (agent.session.snapshotEvents().map(controlEvent).findLast(event => event.type === 'turn/end')?.seq ?? -1) > admittedEnd) onIdle(agent)
       }
     })
@@ -1119,7 +1128,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       await flush(agent)
       runtime(agent).armed = true
       exec.concludeTurn()
-      agent.followup(inputFor(next, executionPrompt(agent, next, 'Execute the approved stage and report its evidence.')))
+      await handoff(agent, next, inputFor(next, executionPrompt(agent, next, 'Execute the approved stage and report its evidence.')), exec.signal)
       await flush(agent)
       return { approved: true, planVersion: next.planVersion }
     },
@@ -1249,7 +1258,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         && ['user', 'restart'].includes(expected.pauseReason ?? ''))
     if (!job || !expected.enabled || reviewAbort.has(agent)
       || !(stopped && ['paused', 'reviewing'].includes(expected.phase)
-        || job.status === 'failed' && expected.phase === 'paused' && ['review-fault', 'execution-budget'].includes(expected.pauseReason ?? '') && job.fault?.retryable)) throw new Error('no retryable review fault')
+        || ['failed', 'submitted'].includes(job.status) && expected.phase === 'paused' && ['review-fault', 'execution-budget'].includes(expected.pauseReason ?? '') && job.fault?.retryable)) throw new Error('no retryable review fault')
     if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')

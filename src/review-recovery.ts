@@ -22,7 +22,8 @@ export function recoveryCanContinue(job: ReviewJob | undefined, task: TaskSnapsh
   const recovery = job.recovery, permit = recovery.permit
   return recovery.resume && !recovery.manualOnly && permit.armed && job.taskId === task.id
     && permit.requirementsVersion === task.requirementsVersion
-    && (job.kind === 'plan' ? permit.planVersion + 1 === task.planVersion : permit.planVersion === task.planVersion)
+    && (job.kind === 'plan' && job.decision?.verdict === 'pass'
+      ? permit.planVersion + 1 === task.planVersion : permit.planVersion === task.planVersion)
     && (task.phase === 'planning' || task.everApproved && task.approvedPlanVersion === task.planVersion
       && (job.kind === 'plan' || permit.approvedPlanVersion === permit.planVersion))
 }

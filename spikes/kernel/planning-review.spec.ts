@@ -88,7 +88,7 @@ it.each(['pass', 'revise', 'needs-user'] as const)('records a %s planning decisi
   expect(task).toMatchObject({ phase: 'planning', everApproved: false, stages: [] })
   const records = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'extension/record' && event.data.namespace === REVIEW_NAMESPACE)
   expect(records.length).toBeGreaterThan(0)
-  expect(records.every(event => event.type === 'extension/record' && event.data.schemaVersion === 3)).toBe(true)
+  expect(records.every(event => event.type === 'extension/record' && [3, 9].includes(event.data.schemaVersion))).toBe(true)
   let jobs: ReviewJob[] = []
   for (const record of records) jobs = foldReviewJobs(jobs, record)
   expect(jobs[0]).toMatchObject({ kind: 'planning', nodeAttempt: null, status: 'submitted', decision: { planning } })

@@ -1,0 +1,40 @@
+{
+  "step": 1,
+  "status": "validated",
+  "baseline": "48a1d4c425b36a46430160c3e900c9e534e4c630",
+  "checks": [
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts planning-review.spec.ts review-presentation.spec.ts review-read-ledger.spec.ts",
+      "result": "219 passed, one platform skip; three old record-version expectations failed and were updated for the new durable receipt"
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs planning-review.spec.ts",
+      "exitCode": 0,
+      "passed": 53
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts -t handoff/recovery/cancel/dispatch focused selection",
+      "exitCode": 0,
+      "passed": 15
+    },
+    {
+      "command": "Node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "result": "Host and Client strict checks"
+    },
+    {
+      "command": "pnpm build with Node24",
+      "exitCode": 0
+    },
+    {
+      "command": "negative control: restore unconditional planVersion+1 recovery check",
+      "expectedExitCode": 1,
+      "result": "recovered revise regression detects the old defect"
+    }
+  ],
+  "limits": [
+    "No workload budget or incremental finding gate yet",
+    "No new real-model/browser/public regression run yet"
+  ],
+  "dailyHostRestarted": false
+}

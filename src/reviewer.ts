@@ -232,7 +232,7 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
       if (!(error instanceof ReviewFailure) || signal.aborted || !transientReviewFault(error.fault)) throw error
       const job = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === error.fault.jobId)
       const strategy = job?.recovery
-      if (!job || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
+      if (!job || job.decision || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
       const actual = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
       if (!actual?.enabled || actual.id !== task.id || actual.revision !== taskRevision) throw error
       const retryRuntimeId = randomUUID()
@@ -305,7 +305,8 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
       job.recovery.failures.push({ at: new Date().toISOString(), fault })
       if (fault.code === 'cancelled') job.recovery.manualOnly = true
     }
-    await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
+    // A canceled transport cannot erase a decision already durably acknowledged.
+    await recordReview(ctx, main, { ...job, revision: ++job.revision, status: job.decision ? 'submitted' : 'failed', fault, finishedAt: new Date().toISOString() })
     throw new ReviewFailure(fault, { cause: error })
   } finally { clearTimeout(timer) }
 }
@@ -606,11 +607,21 @@ async function runReviewStage(
               }
             }
           }
-          submitted = { verdict: args.verdict, finding: args.finding.trim(), evidenceSeqs,
+          signal.throwIfAborted()
+          exec.signal.throwIfAborted()
+          const decision = { verdict: args.verdict, finding: args.finding.trim(), evidenceSeqs,
             ...requirements ? { requirements } : {},
             ...planning ? { planning } : {},
             ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
             ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
+          const call = exec.agent?.session.snapshotEvents().findLast(event => event.type === 'tool/call' && event.data.callId === exec.callId)
+          if (!exec.agent || call?.type !== 'tool/call' || !await ctx.sessions.flush(exec.agent.session)) throw new Error('review call is not durable')
+          job.decision = { ...decision, imageSeqs: [...imageSeqs], decisionSeq: call.seq }
+          job.confirmation = { callId: exec.callId, submittedAt: new Date().toISOString() }
+          job.status = 'submitted'
+          job.fault = null
+          await recordReview(ctx, main, { ...job, revision: ++job.revision })
+          submitted = decision
           exec.concludeTurn()
           return { recorded: true, cutoff }
         },
@@ -699,6 +710,7 @@ async function runReviewStage(
     const firstAttempt = job.attempt
     while (true) {
       await handle.agent.whenIdle()
+      signal.throwIfAborted()
       if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
       if (submitted !== undefined) break
       signal.throwIfAborted()
@@ -760,7 +772,7 @@ async function runReviewStage(
     if (job.verification && verification && !await snapshotFresh(job.verification.snapshot, verification.limits, signal)) {
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code: 'stale', message: 'Original artifacts changed during independent review; this decision cannot be applied.', retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false })
     }
-    job.decision = { ...submitted, imageSeqs: [...imageSeqs], decisionSeq: result.seq }
+    job.confirmation = { ...job.confirmation!, resultSeq: result.seq }
     job.fault = null
     job.status = 'submitted'
     job.finishedAt = new Date().toISOString()

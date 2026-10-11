@@ -13,7 +13,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.confirmation ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -23,7 +23,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (event.type !== 'extension/record' || event.data.namespace !== REVIEW_NAMESPACE) return [...jobs]
   if (!REVIEW_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'job') throw new Error('unsupported review record')
   const job = reviewJobSchema.parse(event.data.payload)
-  if (job.kind === 'planning' && ![3, 4, 5, 6, 7, 8].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
+  if (job.kind === 'planning' && ![3, 4, 5, 6, 7, 8, 9].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
@@ -49,6 +49,11 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || job.readCorrections.consumed < previous.readCorrections.consumed
     || JSON.stringify(job.readCorrections.history.slice(0, previous.readCorrections.history.length)) !== JSON.stringify(previous.readCorrections.history))) throw new Error('read correction history changed')
   if (previous?.decision && JSON.stringify(job.decision) !== JSON.stringify(previous.decision)) throw new Error('recorded decision changed')
+  if (previous?.confirmation && (!job.confirmation || job.confirmation.callId !== previous.confirmation.callId
+    || job.confirmation.submittedAt !== previous.confirmation.submittedAt
+    || previous.confirmation.resultSeq !== undefined && job.confirmation.resultSeq !== previous.confirmation.resultSeq
+    || previous.confirmation.appliedAt !== undefined && job.confirmation.appliedAt !== previous.confirmation.appliedAt
+    || previous.confirmation.appliedTaskRevision !== undefined && job.confirmation.appliedTaskRevision !== previous.confirmation.appliedTaskRevision)) throw new Error('decision confirmation changed')
   const priorPlan = previous?.verification?.checkPlan ?? [], plan = job.verification?.checkPlan ?? []
   if (JSON.stringify(plan.slice(0, priorPlan.length)) !== JSON.stringify(priorPlan) || plan.some((entry, index) => entry.revision !== index + 1)) throw new Error('check plan history changed')
   if (previous?.verification?.phase === 'comparison' && JSON.stringify(previous.verification.checkFindings) !== JSON.stringify(job.verification?.checkFindings)) throw new Error('independent check findings changed')
