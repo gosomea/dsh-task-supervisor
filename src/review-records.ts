@@ -13,7 +13,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.confirmation ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.budget || job.cleanupHistory || job.confirmation ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -49,11 +49,20 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || job.readCorrections.consumed < previous.readCorrections.consumed
     || JSON.stringify(job.readCorrections.history.slice(0, previous.readCorrections.history.length)) !== JSON.stringify(previous.readCorrections.history))) throw new Error('read correction history changed')
   if (previous?.decision && JSON.stringify(job.decision) !== JSON.stringify(previous.decision)) throw new Error('recorded decision changed')
+  if (previous?.budget && (!job.budget || job.budget.admittedAt !== previous.budget.admittedAt
+    || job.budget.capAt !== previous.budget.capAt || JSON.stringify(job.budget.policy) !== JSON.stringify(previous.budget.policy)
+    || previous.budget.workloadBound && (!job.budget.workloadBound || job.budget.tier !== previous.budget.tier || job.budget.deadlineAt !== previous.budget.deadlineAt)
+    || Date.parse(job.deadlineAt!) > Date.parse(previous.deadlineAt!)
+    || job.deadlineAt !== job.budget.deadlineAt
+    || JSON.stringify(job.budget.history.slice(0, previous.budget.history.length)) !== JSON.stringify(previous.budget.history))) throw new Error('review budget renewed or history changed')
   if (previous?.confirmation && (!job.confirmation || job.confirmation.callId !== previous.confirmation.callId
     || job.confirmation.submittedAt !== previous.confirmation.submittedAt
     || previous.confirmation.resultSeq !== undefined && job.confirmation.resultSeq !== previous.confirmation.resultSeq
     || previous.confirmation.appliedAt !== undefined && job.confirmation.appliedAt !== previous.confirmation.appliedAt
     || previous.confirmation.appliedTaskRevision !== undefined && job.confirmation.appliedTaskRevision !== previous.confirmation.appliedTaskRevision)) throw new Error('decision confirmation changed')
+  if (previous?.cleanupHistory?.some((entry, index) => !job.cleanupHistory?.[index]
+    || entry.runtimeId !== job.cleanupHistory[index]!.runtimeId || entry.startedAt !== job.cleanupHistory[index]!.startedAt
+    || entry.finishedAt && JSON.stringify(entry) !== JSON.stringify(job.cleanupHistory[index]))) throw new Error('cleanup history changed')
   const priorPlan = previous?.verification?.checkPlan ?? [], plan = job.verification?.checkPlan ?? []
   if (JSON.stringify(plan.slice(0, priorPlan.length)) !== JSON.stringify(priorPlan) || plan.some((entry, index) => entry.revision !== index + 1)) throw new Error('check plan history changed')
   if (previous?.verification?.phase === 'comparison' && JSON.stringify(previous.verification.checkFindings) !== JSON.stringify(job.verification?.checkFindings)) throw new Error('independent check findings changed')

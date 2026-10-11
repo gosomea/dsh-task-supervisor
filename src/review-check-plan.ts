@@ -7,6 +7,7 @@ export const reviewCheckSchema = z.object({
   source: z.object({ kind: z.enum(['objective', 'user-message', 'project-rule']), reference: z.string().min(1) }).strict(),
   fact: z.string().min(1), method: z.enum(['read', 'run', 'visual', 'log']),
   expected: z.string().min(1), coverage: z.string().min(1), basis: z.enum(['explicit', 'derived']),
+  expectedBytes: z.number().int().nonnegative().optional(), expectedCommandMs: z.number().int().nonnegative().optional(),
 }).strict()
 export const checkPlanRevisionSchema = z.object({ revision: z.number().int().positive(), recordedAt: z.string(), phase: z.enum(['independent', 'comparison']).optional(), checks: z.array(reviewCheckSchema).min(1).max(100) }).strict()
 export const checkFindingSchema = z.object({ checkId: z.string().min(1), status: z.enum(['satisfied', 'failed', 'unverified']),
@@ -47,6 +48,8 @@ export const checkPlanParameters = { type: 'array', items: { type: 'object', add
   source: { type: 'object', required: true, additionalProperties: false, properties: { kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule'] }, reference: { type: 'string', required: true, description: 'objective, seq:<direct user event>, or inspected constraint file path' } } },
   fact: { type: 'string', required: true }, method: { type: 'string', required: true, enum: ['read', 'run', 'visual', 'log'], description: 'log is only for facts whose authority is the bound Session (operation order, authorization or source). Record unverified during independent discovery; verify only after comparison with fully read originals. It does not verify product behavior.' },
   expected: { type: 'string', required: true }, coverage: { type: 'string', required: true }, basis: { type: 'string', required: true, enum: ['explicit', 'derived'] },
+  expectedBytes: { type: 'integer', description: 'Estimated original bytes to inspect; omit when unknown, not zero.' },
+  expectedCommandMs: { type: 'integer', description: 'Estimated total execution milliseconds for a run check; omit when unknown.' },
 } } } as const
 export const checkFindingParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
   checkId: { type: 'string', required: true }, status: { type: 'string', required: true, enum: ['satisfied', 'failed', 'unverified'] },

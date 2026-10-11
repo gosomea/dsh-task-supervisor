@@ -1,0 +1,48 @@
+{
+  "step": 2,
+  "status": "validated",
+  "sourceParent": "485105bbd2753063e69c7618ae611115684892e0",
+  "sourceSha256": {
+    "src/review-budget.ts": "916b8173c88ae0c9066e232be52df1d042480416449b269e0fa2d4abb4f17762",
+    "src/reviewer.ts": "36a2aaf309b40117272ac69e73d03d2a200224da1905934e528551bf346cb5ac",
+    "src/verification.ts": "aea7fb050a21ff951a3ed6069ddbe0292f2b5e29071b6460731e9536054cd8db",
+    "src/review-schema.ts": "93bfecfba794f794b74785fba352cfdf18f5f45e1ae6387b3a6d06d4e6b9c186",
+    "src/review-records.ts": "610b51d9c98b9e0dbbfb5d6ae7e2ebf1ccb9dabf03aa3417acf852f7dc2c8118",
+    "src/index.ts": "ceb69d32907b98a9c6c883401d1cbcfebaa4da018cad36ba31e0a9139a5b9de8",
+    "src/state.ts": "fdb9b91078bf9176d7a7ced8077b3975b9fa981773a192b0373be3935477b02c",
+    "src/review-check-plan.ts": "288abe2bb9e724461a1c13143359d1bdadf305c3ac8249ef3460e7f462ace5b4"
+  },
+  "checks": [
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts planning-review.spec.ts verification.spec.ts review-budget.spec.ts",
+      "exitCode": 0,
+      "passed": 221,
+      "skipped": 1
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts -t 'saved decision after|disposal cannot'",
+      "exitCode": 0,
+      "passed": 2
+    },
+    {
+      "command": "Node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "result": "Host and Client strict checks"
+    },
+    {
+      "command": "Node24 pnpm build",
+      "exitCode": 0
+    },
+    {
+      "command": "negative control: renew deadline at retry",
+      "expectedExitCode": 1,
+      "result": "same-job recovery rejects renewed identity and focused regression fails"
+    }
+  ],
+  "limits": [
+    "Controlled models and native services; real provider quality is not tested",
+    "No new Docker command isolation run at this step; native execution settlement contract is mocked",
+    "Incremental findings, automatic repair and integration gates pending"
+  ],
+  "dailyHostRestarted": false
+}

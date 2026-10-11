@@ -45,9 +45,21 @@ Tools durably submit plan, node and whole-task reviews; Supervisor runs them aft
 
 Stage review normally holds the next continuation or stage transition, not an arbitrary tool call. The user may continue the proposed next step, accept advice and return the task to replanning, or stop. An automatic reminder is delivered through a logged main-agent instruction. Corrective continuation must change the next step or supply useful missing evidence; repeatedly delivering the same reminder is not progress.
 
-For ordinary review prompts configured with a timeout, keep the agreed default: timeout permits the held next step and records automatic continuation. The exact duration remains open. Immediately before continuation, recheck task revision, supervisor enablement, execution permission, and newer user input. A stale timeout never revives an edited, stopped, or cleared task.
+A job deadline stops new review work and rejects late decisions. It never releases a dependency or grants execution. Request failures may recover within the original deadline; an expired review waits for a new valid job or user action, without renewing that job's budget. User pause, restart, closure and essential user decisions remain manual.
 
-Initial plan approval, an unresolved essential user decision, confirmed-stall recovery, manual pause, restart, and disabled Supervisor do not receive this timeout permission. Timeout cannot mark a task complete or grant a separate DSH permission. Accepting review advice cancels the held continuation and gives the main agent a concrete replanning instruction.
+## Workload budget
+
+New jobs persist `reviewBudget` at admission. The initial check plan may narrow the deadline once; supplementary checks, protocol repairs and internal retries cannot extend it. Unknown costs use 600 seconds. Explicit configuration may raise the ceiling; the Task deadline always wins.
+
+| Tier | Scope and estimated cost | Total |
+|---|---|---:|
+| Light | At most four deduplicated read checks, at most 256 KiB | 120 s |
+| Regular | At most eight checks, at most 1 MiB, commands totaling at most 120 s | 300 s |
+| Complex or unknown | Larger scope or missing reliable estimates | 600 s |
+
+Costs follow methods and coverage, not task categories. `expectedBytes` and `expectedCommandMs` are optional check-plan estimates; missing values are unknown. `minMs`, `maxMs`, `lightMs`, `regularMs`, `complexMs`, `reserveMs`, `convergenceRatio` and `decisionRatio` configure the policy. Defaults reserve at least 60 seconds when narrowing; an earlier Task deadline can shorten that reserve.
+
+At 70% the controller settles the active native range and asks the same reviewer to converge. At 80% it settles again and requests comparison and decision. These are phase interventions, not fault retries or protocol repairs. New checks and probes stop at convergence; artifact expansion stops in the decision reserve. Commands use the smaller configured limit and remaining check time, and honor the native tool cancellation signal. The controller awaits disposal before retrying. Cleanup starts and finishes are recorded separately; unconfirmed cleanup blocks replacement. Source gates and remaining integration checks are in [continuous execution validation](../eval/continuous-execution-20261011/validation.md).
 
 ## Evidence access
 

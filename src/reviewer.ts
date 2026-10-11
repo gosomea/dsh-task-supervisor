@@ -30,6 +30,7 @@ import { checkResultsAsEvidence, checkFindingSchema, checkFindingParameters } fr
 import { reviewCapabilities } from './review-capabilities.ts'
 import { findingSchema, type CriterionFinding } from './verification-schema.ts'
 import { independentRequirementResults, logRequirementResults, logRequirementsParameters, type RequirementResult } from './review-results.ts'
+import { admitReviewBudget, moveReviewBudget, reviewBudgetPhase, type ReviewBudgetPolicy } from './review-budget.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -47,6 +48,7 @@ export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorre
   taskDeadlineAt?: string
   beforeFaultRetry?: (job: ReviewJob, runtimeId: string) => Promise<void>
   faultRetryStarted?: (job: ReviewJob) => Promise<void>
+  budget?: ReviewBudgetPolicy
 }
 
 function reviewDeadline(policy: ReviewPolicy, deadlineMs: number): string {
@@ -174,12 +176,14 @@ export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string
   const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
   const cutoff = task.pendingReview?.cutoff ?? main.session.seq - 1
   const scope = policy.scopeProtocol ? buildReviewScope(main.session.snapshotEvents(), task, stageId, cutoff, main.id) : undefined
+  const now = Date.now(), budget = policy.budget ? admitReviewBudget(policy.budget, Date.parse(reviewDeadline(policy, limits.deadlineMs)), now) : undefined
   return { id: id ?? randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: kind === 'planning' ? null : runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
     kind, cutoff, reviewerSessionId: `task-review-${randomUUID()}`,
-    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: reviewDeadline(policy, limits.deadlineMs),
-    startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
+    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: budget?.deadlineAt ?? reviewDeadline(policy, limits.deadlineMs),
+    ...budget ? { budget } : {},
+    startedAt: new Date(now).toISOString(), attemptStartedAt: new Date(now).toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
     ...scope ? { scope, readCorrections: { limit: limits.readCorrectionAttempts, consumed: 0, history: [] } } : {},
@@ -200,6 +204,9 @@ export async function savedReviewDecision(ctx: Context, main: Agent, job: Review
   policy: ReviewPolicy, signal: AbortSignal): Promise<ReviewDecision> {
   if (job.status !== 'submitted' || !job.decision || !job.model || !job.reviewerSessionId) throw new Error('no durable review decision')
   signal.throwIfAborted()
+  if (job.budget && Date.now() >= Date.parse(job.deadlineAt!)) throw new ReviewFailure({ jobId: job.id,
+    stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, code: 'timeout',
+    message: 'The original review deadline expired; recovery cannot renew it.', retryable: false, attempt: job.attempt, errorSeq: null, outcomeKnown: true })
   if (job.verification && (!policy.verification || !await snapshotFresh(job.verification.snapshot, policy.verification.limits, signal))) {
     const fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId,
       code: 'stale' as const, message: 'The saved review cannot accept changed or unverifiable artifacts.', retryable: true,
@@ -232,7 +239,8 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
       if (!(error instanceof ReviewFailure) || signal.aborted || !transientReviewFault(error.fault)) throw error
       const job = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === error.fault.jobId)
       const strategy = job?.recovery
-      if (!job || job.decision || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
+      if (!job || job.decision || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit
+        || job.budget && Date.now() + strategy.delayMs >= Date.parse(job.deadlineAt!)) throw error
       const actual = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
       if (!actual?.enabled || actual.id !== task.id || actual.revision !== taskRevision) throw error
       const retryRuntimeId = randomUUID()
@@ -247,7 +255,7 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
       prior = { ...job, revision: job.revision + 1, status: 'queued', runtimeId: retryRuntimeId, recovery: { ...strategy,
         consumed: strategy.consumed + 1, nextRetryAt: new Date(Date.now() + strategy.delayMs).toISOString() } }
       await recordReview(ctx, main, prior)
-      try { await waitReviewRetry(Math.min(strategy.delayMs, policy.taskDeadlineAt ? Math.max(0, Date.parse(policy.taskDeadlineAt) - Date.now()) : strategy.delayMs), signal) }
+      try { await waitReviewRetry(Math.min(strategy.delayMs, Math.max(0, Date.parse(job.deadlineAt!) - Date.now())), signal) }
       catch (cause) {
         const fault = { ...error.fault, code: 'cancelled' as const, retryable: false, message: 'Review recovery cancelled before the next attempt.',
           cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' }
@@ -275,12 +283,16 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     attempt: previous.attempt + (queued ? 0 : 1), repairLimit: limits.repairAttempts,
     runtimeId: queued || previous.recovery?.nextRetryAt ? previous.runtimeId : randomUUID(),
     attemptStartedAt: new Date().toISOString(),
-    deadlineAt: queued ? previous.deadlineAt : reviewDeadline(policy, limits.deadlineMs) }
+    deadlineAt: previous.budget ? previous.deadlineAt : queued ? previous.deadlineAt : reviewDeadline(policy, limits.deadlineMs) }
     : createReviewJob(main, task, stageId, evidence, kind, policy)
   const deadline = new AbortController()
-  const timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')),
-    Math.max(0, Date.parse(job.deadlineAt!) - Date.now()))
-  timer.unref()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const refreshDeadline = () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')), Math.max(0, Date.parse(job.deadlineAt!) - Date.now()))
+    timer.unref()
+  }
+  refreshDeadline()
   signal = AbortSignal.any([signal, deadline.signal])
   try {
     await recordReview(ctx, main, job)
@@ -294,13 +306,14 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     job.model ??= reviewerOptions(ctx, main, fixedModel).model
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
     const decision = await runReviewStage(ctx, main, task, stageId, previous?.evidence ?? evidence, signal, fixedModel, kind, job, verification,
-      job.trigger === 'fault-retry' ? policy.faultRetryStarted : undefined)
+      job.trigger === 'fault-retry' ? policy.faultRetryStarted : undefined, refreshDeadline)
+    signal.throwIfAborted()
     return { ...decision, jobId: job.id }
   } catch (error) {
     const fault = !signal.aborted && error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
       reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? signal.reason instanceof Error && signal.reason.name === 'TimeoutError' ? 'timeout' as const : 'cancelled' as const : 'internal' as const,
       ...signal.aborted && signal.reason?.name !== 'TimeoutError' ? { cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' } : {},
-      message: String(error), retryable: !signal.aborted || signal.reason?.name === 'TimeoutError', attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+      message: String(error), retryable: (!signal.aborted || signal.reason?.name === 'TimeoutError') && (!job.budget || Date.now() < Date.parse(job.deadlineAt!)), attempt: job.attempt, errorSeq: null, outcomeKnown: false }
     if (job.recovery) {
       job.recovery.failures.push({ at: new Date().toISOString(), fault })
       if (fault.code === 'cancelled') job.recovery.manualOnly = true
@@ -324,6 +337,7 @@ async function runReviewStage(
   job: ReviewJob,
   verification?: VerificationPolicy,
   retryStarted?: ReviewPolicy['faultRetryStarted'],
+  refreshDeadline?: () => void,
 ): Promise<ReviewDecision> {
   signal.throwIfAborted()
   if (!await ctx.sessions.flush(main.session)) throw new Error('main Session is not durable')
@@ -350,10 +364,21 @@ async function runReviewStage(
     && task.criteria.some(criterion => criterion.evidenceKind === 'visual' && (reviewKind === 'completion' || stage?.criterionIds.includes(criterion.id)))
   const imageAfterSeq = runsOf(task).find(run => run.id === stageId)?.evidenceAfterSeq ?? task.readOnlyGateStartSeq ?? 0
   const assertComparison = () => { if (job.verification?.phase === 'independent') throw new Error('record independent task_review_observations before reading the main Agent report or Session evidence') }
+  let phaseTimer: ReturnType<typeof setTimeout> | undefined
+  let phaseIntervention = false
+  let refreshPhases = () => {}
   const setup = {
     setup(agentCtx: Context) {
       agentCtx.tools.restrict({ allow: [] })
-      if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal)
+      if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal, () => { refreshDeadline?.(); refreshPhases() })
+      agentCtx.tools.guard(exec => {
+        if (!job.budget) return undefined
+        const phase = reviewBudgetPhase(job.budget)
+        if (phase === 'expired') return 'REVIEW_DEADLINE: original job time exhausted; no recovery renews it'
+        if (phase !== 'checking' && (['write_review_probe', 'run_review_check'].includes(exec.name) || exec.name === 'task_review_check_plan' && !!job.verification?.checkPlan?.length)) return 'REVIEW_CONVERGENCE: stop expanding checks; save acquired findings and explicit gaps'
+        if (phase === 'decision' && exec.name === 'inspect_task_artifact') return 'REVIEW_DECISION_RESERVE: use acquired evidence, seal unverified gaps and submit the decision'
+        return undefined
+      })
       agentCtx.tools.register(defineTool({ name: 'read_task_input', description: 'Read original direct user messages only, bounded by this job cutoff. Available before independent discovery; excludes injected prompts, assistant reports and execution logs.',
         parameters: { from_seq: { type: 'integer' }, limit: { type: 'integer' }, seq: { type: 'integer' }, offset: { type: 'integer' }, chars: { type: 'integer' } },
         output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
@@ -651,6 +676,20 @@ async function runReviewStage(
     job.verification.readInputs = (job.verification.readInputs ?? []).filter(seq => ledger.observed.has(seq))
   }
   const abort = () => handle.agent.cancel({ kind: 'parent' })
+  refreshPhases = () => {
+    clearTimeout(phaseTimer)
+    if (!job.budget || submitted || signal.aborted) return
+    const boundary = job.budget.phase === 'checking' ? job.budget.convergenceAt : job.budget.phase === 'converging' ? job.budget.decisionAt : null
+    if (!boundary) return
+    phaseTimer = setTimeout(() => {
+      if (signal.aborted || submitted) return
+      phaseIntervention = true
+      // Cancel only this native request/tool range; the job's original lifetime remains.
+      handle.agent.cancel({ kind: 'hook', reason: 'Supervisor review budget phase boundary' })
+    }, Math.max(0, Date.parse(boundary) - Date.now()))
+    phaseTimer.unref()
+  }
+  refreshPhases()
   signal.addEventListener('abort', abort, { once: true })
   try {
     signal.throwIfAborted()
@@ -703,6 +742,7 @@ async function runReviewStage(
         `Earlier failed reviews in this task: ${job.verification ? 'locked until independent observations' : safeText(JSON.stringify(failedReviews), 10000)}.`,
         `${reviewKind === 'planning' ? 'Planning observation' : reviewKind === 'plan' ? 'Proposed plan' : reviewKind === 'completion' ? 'Completion' : reviewKind === 'progress' ? 'Progress' : 'Stage'}: ${stageId}; reported evidence: ${job.verification ? 'locked until independent observations; then read_task_context(report)' : safeText(reportedEvidence, 5000)}`,
         ...job.verification ? [`Capabilities: ${JSON.stringify(reviewCapabilities(verification))}. Snapshot ${job.verification.snapshot.id}; phase ${job.verification.phase}; applicable criteria: ${JSON.stringify(reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds)}. Command time limit ${verification!.checks?.commandMs ?? 'unavailable'}ms; review deadline ${job.deadlineAt}. Checks use cwd tree or probes; snapshot excludes ${JSON.stringify(job.verification.snapshot.excluded)}. Container runtime: ${JSON.stringify(verification!.checks?.container ?? null)}; use executable names or Linux paths inside the image, never host paths.`] : [],
+        ...job.budget ? [`Fixed review budget: ${JSON.stringify(job.budget)}. Stop expanding at convergence, compare and decide by the decision boundary. Check-plan expectedBytes/expectedCommandMs may narrow the initial budget once; omit unknown costs. Recovery never extends this cutoff.`] : [],
         `Review deadline: ${job.deadlineAt}. Finish with a valid decision before this deadline; use explicit unverified findings when evidence is insufficient instead of analysing indefinitely.`,
         'Submit exactly one task_review_decision with supporting Session seqs.',
       ].join('\n') }],
@@ -713,6 +753,20 @@ async function runReviewStage(
       signal.throwIfAborted()
       if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
       if (submitted !== undefined) break
+      if (phaseIntervention && job.budget) {
+        phaseIntervention = false
+        const phase = reviewBudgetPhase(job.budget)
+        if (phase === 'expired') throw new DOMException('Review deadline exceeded', 'TimeoutError')
+        if (phase === 'converging' || phase === 'decision') {
+          job.budget = moveReviewBudget(job.budget, phase)
+          await recordReview(ctx, main, { ...job, revision: ++job.revision })
+          refreshPhases()
+          handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
+            content: [{ type: 'text', text: `${languagePolicy(task)}\nBudget phase: ${phase}. The canceled native range has settled. Keep the same job, snapshot, acquired reads and original deadline ${job.deadlineAt}. ${phase === 'converging' ? 'Stop expanding checks. Persist acquired findings and mark unfinished coverage unverified.' : 'Enter comparison and submit the decision now. Seal independent gaps as unverified before reading main reports; do not claim pass without required coverage.'} Do not replay canceled tool effects. This boundary does not grant another budget or count as a protocol repair.` }] }))
+          continue
+        }
+        refreshPhases()
+      }
       signal.throwIfAborted()
       const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
@@ -779,7 +833,19 @@ async function runReviewStage(
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
     return { jobId: job.id, ...submitted, imageSeqs: [...imageSeqs], cutoff, model, reviewerSessionId }
   } finally {
+    clearTimeout(phaseTimer)
     signal.removeEventListener('abort', abort)
-    try { await handle.dispose() } catch (error) { if (job.status !== 'submitted') throw error }
+    const cleanup = { runtimeId: job.runtimeId, startedAt: new Date().toISOString() }
+    job.cleanupHistory = [...job.cleanupHistory ?? [], cleanup]
+    try { await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
+    finally {
+      try {
+        await handle.dispose()
+        job.cleanupHistory[job.cleanupHistory.length - 1] = { ...cleanup, finishedAt: new Date().toISOString(), confirmed: true }
+      } catch (error) {
+        job.cleanupHistory[job.cleanupHistory.length - 1] = { ...cleanup, finishedAt: new Date().toISOString(), confirmed: false, error: String(error) }
+        throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code: 'check-infrastructure', message: `Review cleanup unconfirmed: ${String(error)}`, retryable: false, attempt: job.attempt, errorSeq: null, outcomeKnown: false })
+      } finally { await recordReview(ctx, main, { ...job, revision: ++job.revision }) }
+    }
   }
 }

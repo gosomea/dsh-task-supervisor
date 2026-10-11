@@ -9,6 +9,7 @@ import * as Records from '../../src/review-records.ts'
 import { newTask } from '../../src/state.ts'
 import { complete, validateFindings, verificationPolicy, installVerification } from '../../src/verification.ts'
 import type { VerificationState, CriterionFinding } from '../../src/verification-schema.ts'
+import { admitReviewBudget, reviewBudgetPolicySchema } from '../../src/review-budget.ts'
 import { appendCheckPlan, type CheckFinding } from '../../src/review-check-plan.ts'
 
 function state(): VerificationState {
@@ -65,7 +66,7 @@ afterEach(() => vi.restoreAllMocks())
 
 /** Execute the registered tool body while mocking only native execution and the durable record boundary. */
 function verificationTool() {
-  type Tool = { name: string; execute(args: object, exec: { concludeTurn(): void }): Promise<unknown> }
+  type Tool = { name: string; execute(args: object, exec: { concludeTurn(): void; signal: AbortSignal }): Promise<unknown> }
   const tools = new Map<string, Tool>()
   const ctx = { tools: { register: (tool: Tool) => { tools.set(tool.name, tool) } } } as unknown as Context
   const main = {} as Agent, controller = new AbortController()
@@ -84,9 +85,9 @@ function verificationTool() {
   })
   const container = { context: 'test', image: 'sha256:' + 'a'.repeat(64), cpus: 1, memoryMiB: 512, pids: 64 }
   installVerification(ctx, ctx, main, job, SessionId('review'), verificationPolicy({ storageRoot: '/private/evidence', container }), controller.signal)
-  const tool = tools.get('run_review_check')!, concludeTurn = vi.fn()
-  return { job, persisted, record, controller, concludeTurn, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn }),
-    observe: (findings: CriterionFinding[], checks: CheckFinding[]) => tools.get('task_review_observations')!.execute({ findings, checks }, { concludeTurn }) }
+  const tool = tools.get('run_review_check')!, concludeTurn = vi.fn(), execution = new AbortController()
+  return { job, persisted, record, controller, execution, concludeTurn, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn, signal: execution.signal }),
+    observe: (findings: CriterionFinding[], checks: CheckFinding[]) => tools.get('task_review_observations')!.execute({ findings, checks }, { concludeTurn, signal: execution.signal }) }
 }
 
 it('explains check associations and leaves rejected observations uncommitted before a valid same-job retry', async () => {
@@ -190,4 +191,30 @@ it('defers Session-only facts until comparison and never upgrades them to indepe
   expect(() => validateFindings(value, ['c'], [{ ...log, evidenceIds: ['file:code.js'] }], true, evidence)).toThrow('not a fully read original')
   expect(() => validateFindings(value, ['c'], [{ ...log, method: 'run' }], true, evidence)).toThrow('check evidence')
   expect(() => validateFindings(value, ['c'], [{ ...log, method: 'read' }], true, evidence)).toThrow('check evidence')
+})
+
+// The execution boundary cancels a check even though the overall job remains live.
+it('waits for a phase-canceled command to settle and preserves the decision reserve', async () => {
+  const f = verificationTool(), now = Date.now()
+  f.job.budget = admitReviewBudget(reviewBudgetPolicySchema.parse({}), now + 600000, now - 479000)
+  f.job.deadlineAt = f.job.budget.deadlineAt
+  let started!: () => void, settled!: () => void
+  const entered = new Promise<void>(resolve => { started = resolve })
+  const release = new Promise<void>(resolve => { settled = resolve })
+  const native = vi.spyOn(ReviewCheck, 'runCheck').mockImplementation(async (_ctx, _snapshot, _session, _argv, _cwd, policy, signal) => {
+    expect(policy.commandMs).toBeLessThanOrEqual(1000)
+    started()
+    await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }))
+    await release
+    return { ...successfulCheck(), cancelled: true, exitCode: null }
+  })
+  const pending = f.invoke(); await entered
+  let returned = false; void pending.then(() => { returned = true })
+  f.execution.abort(new Error('budget phase boundary'))
+  await Promise.resolve()
+  expect(returned).toBe(false); expect(f.controller.signal.aborted).toBe(false)
+  settled(); await pending
+  expect(native).toHaveBeenCalledOnce()
+  expect(f.job.verification!.checks[0]!.cancelled).toBe(true)
+  expect(f.job.fault).toBeNull()
 })

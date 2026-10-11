@@ -14,6 +14,7 @@ import { runCheck, readCheck, recoverCheckContainers, checkPolicy, type CheckPol
 import { findingSchema, type CriterionFinding, type VerificationState } from './verification-schema.ts'
 import { recordReview, ReviewFailure, type ReviewJob } from './review-records.ts'
 import { CheckInputError } from './check-errors.ts'
+import { narrowReviewBudget, remainingCheckMs } from './review-budget.ts'
 
 export interface VerificationConfig {
   storageRoot: string
@@ -125,7 +126,7 @@ export const findingParameters = { type: 'array', items: { type: 'object', addit
 
 /** Install snapshot-only tools. Successful durable observations unlock comparison with the main report. */
 export function installVerification(ctx: Context, owner: Context, main: Agent, job: ReviewJob, sessionId: SessionId,
-  policy: VerificationPolicy, signal: AbortSignal): void {
+  policy: VerificationPolicy, signal: AbortSignal, budgetChanged?: () => void): void {
   const state = job.verification!
   const output = { schema: { type: 'json' as const }, render: (_args: object, value: JsonValue) => [{ type: 'text' as const, text: JSON.stringify(value) }] }
   async function persist() { signal.throwIfAborted(); await recordReview(owner, main, { ...job, revision: ++job.revision }) }
@@ -135,11 +136,17 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     parameters: { checks: { ...checkPlanParameters, required: true } }, output,
     async execute(args) {
       appendCheckPlan(state, args.checks.map(item => reviewCheckSchema.parse({ ...item, criterionId: item.criterionId ?? null })), applicable, new Date().toISOString())
+      if (job.budget && state.checkPlan!.length === 1) {
+        job.budget = narrowReviewBudget(job.budget, state.checkPlan![0]!.checks)
+        job.deadlineAt = job.budget.deadlineAt
+      }
       if (state.phaseTimes && !state.phaseTimes.independent) state.phaseTimes.independent = new Date().toISOString()
       await persist()
+      budgetChanged?.()
       const checks = state.checkPlan!.flatMap(item => item.checks)
       return { recorded: true, revision: state.checkPlan!.length, capabilities: reviewCapabilities(policy),
-        checkPlan: state.checkPlan!.map(({ phase, ...revision }) => ({ ...revision, phase: phase ?? null })), criterionChecks: applicable.map(criterionId => ({ criterionId,
+        ...job.budget ? { budget: { tier: job.budget.tier, deadlineAt: job.deadlineAt!, convergenceAt: job.budget.convergenceAt, decisionAt: job.budget.decisionAt } } : {},
+        checkPlan: JSON.parse(JSON.stringify(state.checkPlan!.map(({ phase, ...revision }) => ({ ...revision, phase: phase ?? null })))) as JsonValue, criterionChecks: applicable.map(criterionId => ({ criterionId,
           checkIds: checks.filter(item => item.criterionId === criterionId).map(item => item.id) })),
         unmappedCheckIds: checks.filter(item => item.criterionId === null).map(item => item.id) }
     },
@@ -182,12 +189,14 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     async execute(args, exec) {
       requirePlan()
       if (!policy.checks) throw new CheckInputError('CAPABILITY_UNAVAILABLE: independent command execution is not configured; mark the requirement unverified')
-      const remaining = Date.parse(job.deadlineAt!) - Date.now()
+      const remaining = job.budget ? remainingCheckMs(job.budget) : Date.parse(job.deadlineAt!) - Date.now()
       const commandMs = Math.min(policy.checks.commandMs, remaining, args.timeout_ms ?? policy.checks.commandMs)
       if (!Number.isSafeInteger(commandMs) || commandMs < 1) throw new Error('check deadline has expired or timeout_ms is invalid')
       let result
-      try { result = await runCheck(owner, state.snapshot, sessionId, args.argv, args.cwd, { ...policy.checks, commandMs }, signal) }
+      const commandSignal = AbortSignal.any([signal, exec.signal])
+      try { result = await runCheck(owner, state.snapshot, sessionId, args.argv, args.cwd, { ...policy.checks, commandMs }, commandSignal) }
       catch (error) {
+        if (commandSignal.aborted && !signal.aborted && !(error instanceof Error && error.message.includes('CHECK_INFRASTRUCTURE'))) throw error
         if (error instanceof CheckInputError && !signal.aborted) throw error
         job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId,
           code: signal.aborted ? 'cancelled' : 'check-infrastructure', message: String(error), retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false }

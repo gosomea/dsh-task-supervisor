@@ -5,6 +5,7 @@ import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
 import { reviewScopeSchema } from './review-scope-schema.ts'
 import { requirementResultSchema } from './review-results.ts'
+import { reviewBudgetSchema } from './review-budget.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
 export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -30,6 +31,9 @@ export const reviewJobSchema = z.object({
   status: z.enum(['queued', 'repairing', 'started', 'submitted', 'failed', 'applied', 'stale']),
   attempt: z.number().int().positive(), repairLimit: z.number().int().nonnegative(),
   deadlineAt: z.string().optional(),
+  budget: reviewBudgetSchema.optional(),
+  cleanupHistory: z.array(z.object({ runtimeId: z.string().uuid(), startedAt: z.string(),
+    finishedAt: z.string().optional(), confirmed: z.boolean().optional(), error: z.string().optional() }).strict()).optional(),
   attemptStartedAt: z.string().optional(), observationSettings: observationSettingsSchema.optional(),
   startedAt: z.string(), finishedAt: z.string().nullable(), trigger: z.string(),
   input: taskSchema, evidence: z.string(), fault: reviewFaultSchema.nullable(),
@@ -54,6 +58,7 @@ export const reviewJobSchema = z.object({
     requirements: z.array(requirementResultSchema).min(1).max(100).optional(),
     imageSeqs: z.array(z.number().int()), decisionSeq: z.number().int().nonnegative() }).nullable(),
 }).strict().superRefine((job, ctx) => {
+  if (job.budget && (job.deadlineAt !== job.budget.deadlineAt || Date.parse(job.budget.deadlineAt) > Date.parse(job.budget.capAt))) ctx.addIssue({ code: 'custom', message: 'review budget does not bind the original job cutoff' })
   if (job.readCorrections && !job.scope) ctx.addIssue({ code: 'custom', message: 'read corrections require a bound review scope' })
   if (job.resultProtocol && !job.scope) ctx.addIssue({ code: 'custom', message: 'requirement results require a bound review scope' })
   if (job.resultProtocol && job.decision && ['plan', 'stage', 'completion'].includes(job.kind) && !job.decision.requirements) ctx.addIssue({ code: 'custom', message: 'requirement results are missing' })

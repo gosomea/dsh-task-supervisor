@@ -58,7 +58,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 23,
+  stateVersion: 24,
   stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), budgets: z.array(executionBudgetSchema), currentSeq: z.number().int().nonnegative(),

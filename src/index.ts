@@ -1,4 +1,5 @@
 import { deliverContinuation } from './dispatch-records.ts'
+import { reviewBudgetPolicySchema, type ReviewBudgetConfig } from './review-budget.ts'
 import type { ReviewJob } from './review-records.ts'
 import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
 /** Native DSH task controller: durable state, human commands, and model tools. */
@@ -79,6 +80,7 @@ export interface Config {
   reviewReadCorrectionAttempts?: number
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
+  reviewBudget?: ReviewBudgetConfig
   reviewFaultRetryAttempts?: number
   reviewFaultRetryDelayMs?: number
   resumeAfterReviewRecovery?: boolean
@@ -167,7 +169,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
-  const selectedReviewPolicy = { ...reviewerPolicy, scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
+  const selectedReviewPolicy = { ...reviewerPolicy, budget: reviewBudgetPolicySchema.parse(config.reviewBudget ?? {}), scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
     ...effectiveVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,
