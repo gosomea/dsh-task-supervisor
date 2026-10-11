@@ -2138,7 +2138,7 @@ it('restores a legacy Task without inventing execution budget or new automatic p
 
 it('clips review deadlines to the Task and cancels an active reviewer at that absolute cutoff', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-task-budget-cutoff-')); roots.push(root)
-  const entered = [Promise.withResolvers<void>(), Promise.withResolvers<void>(), Promise.withResolvers<void>()]
+  const entered = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]
   class Adapter extends ScriptedAdapter {
     reviewerRequests = 0
     override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
@@ -2160,14 +2160,15 @@ it('clips review deadlines to the Task and cancels an active reviewer at that ab
     await entered[0]!.promise
     const projection = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
     expect(projection.reviewJobs[0]!.deadlineAt).toBe(projection.budgets[0]!.deadlineAt)
-    await vi.advanceTimersByTimeAsync(7000); await entered[1]!.promise
-    await vi.advanceTimersByTimeAsync(1000); await entered[2]!.promise
-    await vi.advanceTimersByTimeAsync(2000)
+    // A Task with less than the decision reserve skips further checking, without extending its cutoff.
+    await vi.advanceTimersByTimeAsync(0); await entered[1]!.promise
+    expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!.budget?.phase).toBe('decision')
+    await vi.advanceTimersByTimeAsync(10000)
     await vi.waitFor(() => expect(taskOf(ctx, agent)?.pauseReason).toBe('task-deadline'))
     await vi.waitFor(() => expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!.cleanupHistory?.at(-1)?.confirmed).toBe(true))
     await agent.whenIdle()
     expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'task-deadline', everApproved: false })
-    expect(adapter.reviewerRequests).toBe(3)
+    expect(adapter.reviewerRequests).toBe(2)
     const before = adapter.requests
     expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
     expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
@@ -3593,10 +3594,12 @@ it('blocks recovery when reviewer disposal cannot be confirmed', async () => {
   expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toHaveLength(0)
 })
 
-it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'relabel', 'boundary'] as const)('incremental native review persists actual findings and derives coverage across recovery: %s', async mode => {
+it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'relabel', 'boundary', 'light-boundary'] as const)('incremental native review persists actual findings and derives coverage across recovery: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-incremental-review-')); roots.push(root)
   const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'brief.md'), ['wrong', 'relabel'].includes(mode) ? '# Wrong title' : '# Required title')
-  const check = { id: 'title', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'Required title', method: 'read', expected: '# Required title', coverage: 'Complete document', basis: 'explicit' }
+  const check = { id: 'title', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'Required title', method: 'read', expected: '# Required title', coverage: 'Complete document', basis: 'explicit',
+    ...mode === 'light-boundary' ? { expectedBytes: 2000 } : {} }
+  const boundary = mode === 'boundary' || mode === 'light-boundary'
   const result = { checkId: 'title', status: ['wrong', 'relabel'].includes(mode) ? 'failed' : 'satisfied', finding: ['wrong', 'relabel'].includes(mode) ? 'Required title absent' : 'Read and verified required title', coverage: check.coverage, limitations: 'Static content only', evidenceIds: ['file:brief.md'] }
   const steps: [string, Record<string, unknown>][] = [
     ['task_review_check_plan', { checks: [check, { ...check, id: 'extra', basis: mode === 'missing' ? 'explicit' : 'derived' }] }],
@@ -3605,7 +3608,7 @@ it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'r
     ['task_review_check_result', { result }],
     ...['fault', 'missing-session'].includes(mode) ? [['FAULT', {}] as [string, Record<string, unknown>]] : [],
     ...mode === 'missing-session' ? [['inspect_task_artifact', { action: 'read', path: 'brief.md' }] as [string, Record<string, unknown>]] : [],
-    ...mode === 'boundary' ? [['WAIT', {}], ['WAIT', {}]] as [string, Record<string, unknown>][] : [['task_review_observations', {}]] as [string, Record<string, unknown>][],
+    ...boundary ? [['WAIT', {}], ['WAIT', {}]] as [string, Record<string, unknown>][] : [['task_review_observations', {}]] as [string, Record<string, unknown>][],
     ...mode === 'relabel' ? [['task_review_check_result', { result: { ...result, status: 'satisfied', finding: 'The checking activity finished' } }]] as [string, Record<string, unknown>][] : [],
     ['read_task_context', { field: 'report' }],
     ['read_task_evidence', { from_seq: 0, limit: 30 }],
@@ -3639,20 +3642,30 @@ it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'r
     if (missing && String(id) === originalSession) return undefined
     return stat(id, options)
   })
-  if (mode === 'boundary') vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  if (boundary) vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  const startedAt = Date.now()
   const pending = reviewStage(ctx, agent, task, 's', 'PRIVATE_MAIN_REPORT', new AbortController().signal,
     { provider: 'scripted', model: 'reviewer' }, 'stage', { repairAttempts: 0, checkProtocol: 1, incrementalProtocol: 1,
       budget: reviewBudgetPolicySchema.parse({}), verification: verificationPolicy({ storageRoot: join(root, 'snapshots') }),
       faultRecovery: { attempts: 1, delayMs: 0, resume: true, armed: false } })
   let decision: Awaited<typeof pending>
   try {
-    if (mode === 'boundary') {
-      await waiting[0]!.promise; await vi.advanceTimersByTimeAsync(420000); await waiting[1]!.promise
-      await vi.advanceTimersByTimeAsync(60000)
+    if (boundary) {
+      await waiting[0]!.promise; await vi.advanceTimersByTimeAsync(mode === 'light-boundary' ? 48000 : 420000); await waiting[1]!.promise
+      await vi.advanceTimersByTimeAsync(mode === 'light-boundary' ? 12000 : 60000)
     }
     decision = await pending
-  } finally { if (mode === 'boundary') vi.useRealTimers() }
+  } finally { if (boundary) vi.useRealTimers() }
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  if (mode === 'light-boundary') {
+    expect(job.budget?.tier).toBe('light')
+    expect(job.deadlineAt).toBe(new Date(startedAt + 120000).toISOString())
+    expect(job.budget?.decisionAt).toBe(new Date(startedAt + 60000).toISOString())
+    expect(job.budget?.history.map(entry => entry.phase)).toEqual(['checking', 'converging', 'decision'])
+    expect(job.confirmation?.submittedAt).toBe(new Date(startedAt + 60000).toISOString())
+    expect(job.attempt).toBe(1)
+    expect(job.cleanupHistory?.at(-1)?.confirmed).toBe(true)
+  }
   expect(job.verification?.checkHistory).toMatchObject([{ result }])
   expect(job.verification?.checkFindings?.[1]?.status).toBe('unverified')
   expect(decision.criteria?.[0]?.status).toBe(mode === 'missing' ? 'unverified' : ['wrong', 'relabel'].includes(mode) ? 'failed' : 'satisfied')

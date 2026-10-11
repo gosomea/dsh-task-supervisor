@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "step": 5,
+  "status": "budget-fix-source-validated-new-batch-pending",
+  "sourceParent": "e81a84917b0c276f29d44ba2cf1018957c78707e",
+  "candidate": 8,
+  "candidateTarballSha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+  "oldCandidateTarballSha256": "a2437bedc9cbe83f0339aad03fb0bd9df0350d920a3e7ffd5da7f226ee2e84a1",
+  "snapshot": "reports/candidate7-budget-stop/summary.json",
+  "observed": {
+    "positionId": "lh-01-updo-policy-alerting-supervisor-independent-r2",
+    "reward": 1,
+    "strictSuccess": false,
+    "F2P": {
+      "total": 17,
+      "passed": 17,
+      "failed": 0,
+      "rate": 1.0
+    },
+    "P2P": {
+      "total": 123,
+      "passed": 123,
+      "failed": 0,
+      "rate": 1.0
+    },
+    "fault": {
+      "jobId": "c164f2dc-400d-43be-8f0d-517454b4058c",
+      "configuredBudgetMs": 120000.0,
+      "admittedJobWallMs": 120098.0,
+      "over600Seconds": false,
+      "overConfiguredBudget": true,
+      "overrunReason": "resource-cleanup-overlaps-budget-overrun",
+      "budgetPhaseDurationsMs": {
+        "checking": 84065.0,
+        "converging": 12320.0,
+        "decision": 23713.0
+      },
+      "cleanupWallMs": 59.0,
+      "cleanupOverrunOverlapMs": 59.0,
+      "cleanupConfirmed": true,
+      "faultCode": "timeout",
+      "incrementalResults": 3,
+      "reusedChecks": null,
+      "kind": "stage",
+      "finalStatus": "failed",
+      "observedReviewAttempts": 1,
+      "firstRecordSeq": 2418,
+      "terminalRecordSeq": 2477,
+      "observedJobWindowMs": 120093,
+      "observedStartedWindowMs": 118988
+    },
+    "configuredReserveMs": 60000,
+    "oldDecisionReserveMs": 24000,
+    "additionalReadErrorsObserved": true,
+    "causalLimitation": "The reduced reserve is a confirmed defect; it is not proven to be the only cause of the model timeout."
+  },
+  "change": {
+    "newLightConvergenceMs": 48000,
+    "newLightDecisionMs": 60000,
+    "newLightDeadlineMs": 120000,
+    "regularBoundariesMs": [
+      210000,
+      240000
+    ],
+    "complexBoundariesMs": [
+      420000,
+      480000
+    ],
+    "earlierTaskDeadlineExtends": false,
+    "persistedOldBudgetRewritten": false
+  },
+  "checks": [
+    {
+      "command": "DSH_SOURCE=<local DSH> node24 spikes/kernel/run.mjs review-budget",
+      "result": "2 new cases failed against original boundaries; all 6 pass with correction",
+      "exitCodeBefore": 1,
+      "exitCodeAfter": 0
+    },
+    {
+      "command": "DSH_SOURCE=<local DSH> node24 spikes/kernel/run.mjs",
+      "exitCode": 0,
+      "passed": 505,
+      "skipped": 15,
+      "files": 37,
+      "durationSec": 45.49,
+      "skipReason": "Docker/check-gateway integration environment was not enabled; new-package sandbox admission remains pending.",
+      "logSha256": "4faeb50e672ce2eed807f80e4735be6f57bd8976aaddb5a0e501035a066f8edc"
+    },
+    {
+      "command": "DSH_SOURCE=<local DSH> node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "hostStrict": true,
+      "clientStrict": true,
+      "logSha256": "229e7569dc8dd01a2f5c6c04ca879592eb63308ccb19927a5261b265cf8c5fe6"
+    },
+    {
+      "command": "PATH=<node24>:PATH LC_ALL=C pnpm build",
+      "exitCode": 0,
+      "logSha256": "465e95f8133fd4b2c41de3eb47045179ced05d80e4e12411045135646c4388bc"
+    },
+    {
+      "command": "npm pack --json --pack-destination <candidate8>",
+      "exitCode": 0,
+      "candidate": 8,
+      "sha256": "1144b389579c07118709bb51bdea287f627a780c41345481c60f7dec1888415f",
+      "entriesResolve": true,
+      "files": 12,
+      "version": "0.1.4"
+    },
+    {
+      "command": "DSH_HOME=<new clean home> official-dsh plugin --profile web add <candidate8 tarball> --offline; official-dsh --profile web --dump-config; compare every installed package file",
+      "exitCode": 0,
+      "officialDsh": "0.2.0-rc.2",
+      "cleanHome": true,
+      "installedBytesMatchTarball": true,
+      "profileRowPresent": true,
+      "files": 12,
+      "runtimeLoad": "pending-native-admission",
+      "modelRequests": 0
+    }
+  ],
+  "initialFullRun": {
+    "passed": 503,
+    "failed": 2,
+    "skipped": 15,
+    "failures": [
+      "short Task fixture awaited superseded 70/80-percent boundaries",
+      "continuation fixture used planning for execution and counted new fixed instructions toward a legacy total-length assertion"
+    ],
+    "fixedFixturesOnly": true,
+    "productionChangesOutsideReviewBudget": false,
+    "logSha256": "55042cea4f822608f8accd13ed73790e74339db5dd7b8701bf01a8139b357710"
+  },
+  "next": {
+    "oldSecondPositionContinues": true,
+    "oldBatchNewDeliveriesStopped": true,
+    "newCandidateNativeAndGatewayAdmission": "pending",
+    "newCandidateRealRoute": "pending",
+    "newFreeze": "pending",
+    "eightNewRegressionPositions": "pending",
+    "oldResultsMixedWithNew": false,
+    "dailyHostRestarted": false
+  },
+  "at": "2026-10-11T14:02:13.755032+00:00"
+}

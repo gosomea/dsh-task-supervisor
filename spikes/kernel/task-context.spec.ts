@@ -12,7 +12,8 @@ it('keeps Chinese prose authoritative over English code and supports explicit pr
 })
 
 it('persists language and stage detail and retains the full objective in bounded continuation summaries', () => {
-  const task = { ...newTask('请实现场景，不能添加 UI'), responseLanguage: 'zh-CN', planVersion: 1,
+  const task = { ...newTask('请实现场景，不能添加 UI'), phase: 'active' as const, everApproved: true,
+    responseLanguage: 'zh-CN', planVersion: 1,
     criteria: [{ id: 'C1', text: '无 UI' }],
     stages: [{ id: 'S1', title: '创建场景', criterionIds: ['C1'] },
       { id: 'S2', title: '验收', description: '检查场景截图', criterionIds: ['C1'] }], stageIndex: 1,
@@ -24,7 +25,9 @@ it('persists language and stage detail and retains the full objective in bounded
   expect(prompt).toContain('Current node: S2 — 验收')
   expect(prompt).toContain('不能添加 UI')
   expect(prompt).toContain('summary truncated; use task_status')
-  expect(prompt.length).toBeLessThan(3500)
+  const withoutLongFinding = continuationContext({ ...restored,
+    lastReview: { ...restored.lastReview!, finding: '已确认' } }, '检查截图后汇报')
+  expect(prompt.length - withoutLongFinding.length).toBeLessThan(1600)
   expect(languagePolicy(restored)).toContain('zh-CN')
 })
 

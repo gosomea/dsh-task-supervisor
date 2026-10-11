@@ -23,10 +23,15 @@ export const reviewBudgetSchema = z.object({ policy: reviewBudgetPolicySchema,
 export type ReviewBudget = z.infer<typeof reviewBudgetSchema>
 
 function boundaries(budget: ReviewBudget, deadline: number) {
-  const start = Date.parse(budget.admittedAt), duration = deadline - start
+  const start = Date.parse(budget.admittedAt), duration = Math.max(0, deadline - start)
+  // Ratios are latest boundaries; short windows advance them to preserve the configured reserve.
+  const decision = Math.max(start, Math.min(start + Math.floor(duration * budget.policy.decisionRatio),
+    deadline - budget.policy.reserveMs))
+  const convergenceGap = Math.floor(duration * (budget.policy.decisionRatio - budget.policy.convergenceRatio))
+  const convergence = Math.max(start, Math.min(start + Math.floor(duration * budget.policy.convergenceRatio),
+    decision - convergenceGap))
   return { deadlineAt: new Date(deadline).toISOString(),
-    convergenceAt: new Date(start + Math.floor(duration * budget.policy.convergenceRatio)).toISOString(),
-    decisionAt: new Date(Math.min(start + Math.floor(duration * budget.policy.decisionRatio), deadline - Math.min(budget.policy.reserveMs, duration * 0.2))).toISOString() }
+    convergenceAt: new Date(convergence).toISOString(), decisionAt: new Date(decision).toISOString() }
 }
 export function admitReviewBudget(policy: ReviewBudgetPolicy, cap: number, now = Date.now()): ReviewBudget {
   const deadline = Math.min(now + policy.complexMs, now + policy.maxMs, cap)
