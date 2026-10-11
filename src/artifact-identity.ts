@@ -4,7 +4,7 @@ import type { FileSystem, FsTarget } from '@deepseek-ai/dsh-fs'
 import { TaskActionError, type ArtifactStamp } from './repairs.ts'
 
 export async function artifactIdentity(fs: FileSystem, cwd: string, signal: AbortSignal,
-  limits = { files: 10000, bytes: 256 * 1024 * 1024 }): Promise<ArtifactStamp> {
+  limits = { files: 10000, bytes: 256 * 1024 * 1024 }, contentOnly = false, paths?: readonly string[]): Promise<ArtifactStamp> {
   const root = await fs.resolve(cwd, { cwd, signal })
   if ((await fs.stat(root, signal))?.type !== 'directory') throw new TaskActionError('ARTIFACT_UNAVAILABLE', 'Bind an existing task workspace.')
   async function capture() {
@@ -16,12 +16,13 @@ export async function artifactIdentity(fs: FileSystem, cwd: string, signal: Abor
       for (const entry of listing) {
         if (prefix === '' && entry.name === '.git') continue
         const path = prefix ? `${prefix}/${entry.name}` : entry.name
+        if (paths?.length && !paths.some(target => path === target || path.startsWith(`${target}/`) || target.startsWith(`${path}/`))) continue
         if (++entries > limits.files) throw new TaskActionError('ARTIFACT_LIMIT', 'Workspace entry count exceeds repair identity limits; no files were silently omitted.')
         const info = await fs.lstat(path, { cwd }, signal)
         if (!info || info.type === 'symlink' || info.type === 'other' || !fs.contains(root, entry.target)) {
           throw new TaskActionError('ARTIFACT_UNSUPPORTED', `Cannot safely fingerprint ${path}; links and special files require an explicit dependency policy.`)
         }
-        digest.update(JSON.stringify([path, info.type, String(info.version)]))
+        digest.update(JSON.stringify([path, info.type, ...contentOnly ? [] : [String(info.version)]]))
         if (info.type === 'directory') await visit(entry.target, path)
         else {
           let content: Uint8Array

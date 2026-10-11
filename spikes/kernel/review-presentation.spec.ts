@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { newTask } from '../../src/state.ts'
 import { reviewJobSchema, type ReviewJob } from '../../src/review-schema.ts'
 import type { PanelState } from '../../src/client/task-store.ts'
-import { reviewPresentation, reviewFaultDescription, createReviewDisclosureState } from '../../src/client/review-presentation.ts'
+import { currentReviewJob, reviewPresentation, reviewFaultDescription, createReviewDisclosureState, reviewTranscriptReady, inspectionPlanHint } from '../../src/client/review-presentation.ts'
 
 function fixture() {
   const task = newTask('读取输入并核对总数')
@@ -87,6 +87,19 @@ it('does not invent running status before the controller state loads', () => {
   const { job } = fixture()
   expect(reviewPresentation(job, null)).toMatchObject({ active: false, label: 'reading', tone: 'neutral' })
 })
+it('keeps unsettled cleanup visible after the pending review has cleared without claiming generation', () => {
+  const { job, state } = fixture()
+  job.status = 'failed'
+  const cleanup = { runtimeId: job.runtimeId, startedAt: job.startedAt, confirmed: false, finishedAt: undefined as string | undefined }
+  job.cleanupHistory = [cleanup]
+  state.reviewing = false
+  expect(currentReviewJob(state)?.id).toBe(job.id)
+  expect(reviewPresentation(job, state).active).toBe(false)
+  cleanup.finishedAt = '2026-10-09T00:10:05Z'
+  expect(currentReviewJob(state)?.id).toBe(job.id)
+  cleanup.confirmed = true
+  expect(currentReviewJob(state)).toBeUndefined()
+})
 it('preserves separate report and process preferences across a browser reload with bounded, optional storage', () => {
   let saved = ''
   const storage = { getItem: () => saved, setItem: (_: string, value: string) => { saved = value } }
@@ -149,4 +162,27 @@ it('renders the entire recorded tool-only report using native Markdown without t
   expect(html).toContain('末尾未验证事项')
   expect(html).toContain('const')
   expect(html).not.toContain('max-height')
+})
+
+it('loads completed transcripts following the main model without treating null as no Session', () => {
+  const { job, state } = fixture()
+  expect(job.model).toBeNull()
+  expect(reviewTranscriptReady({ ...job, status: 'applied' }, false, state)).toBe(true)
+  expect(reviewTranscriptReady({ ...job, status: 'failed' }, false, state)).toBe(true)
+  expect(reviewTranscriptReady({ ...job, status: 'queued' }, false, state)).toBe(false)
+  expect(reviewTranscriptReady({ ...job, reviewerSessionId: null }, false, state)).toBe(false)
+  expect(reviewTranscriptReady(job, true, state)).toBe(false)
+})
+
+it('does not show a new check-plan activity beside an already recorded requirement decision', () => {
+  const { job } = fixture()
+  job.status = 'applied'; job.checkProtocol = 1
+  job.verification = { snapshot: { id: randomUUID(), workspace: '/source', digest: 'bound', root: '/e', baseline: '/e/b', check: '/e/c', excluded: [], entries: [] },
+    phase: 'comparison', observations: [], checks: [], readFiles: [], readChecks: [] }
+  job.decision = { verdict: 'needs-user', finding: 'Required behavior failed', evidenceSeqs: [], imageSeqs: [], decisionSeq: 30, requirements: [] }
+  expect(inspectionPlanHint(job)).toBeNull()
+  delete job.decision.requirements
+  expect(inspectionPlanHint(job)).toBe('inspectionPlanAbsent')
+  job.decision = null; job.status = 'started'; job.verification.phase = 'independent'
+  expect(inspectionPlanHint(job)).toBe('inspectionPlanPending')
 })

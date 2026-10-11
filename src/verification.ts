@@ -20,6 +20,8 @@ import { restoreReviewReads } from './review-read-ledger.ts'
 import { controlEvent } from './session-records.ts'
 import { reusableChecks } from './review-reuse.ts'
 import { narrowReviewBudget, remainingCheckMs } from './review-budget.ts'
+import { complete } from './read-coverage.ts'
+export { complete } from './read-coverage.ts'
 
 export interface VerificationConfig {
   storageRoot: string
@@ -65,13 +67,6 @@ export async function prepareVerification(ctx: Context, main: Agent, job: Review
   const snapshot = await captureSnapshot(workspace, policy.storage, policy.limits, signal)
   job.verification = { snapshot, phase: 'independent', observations: [], checks: [], readFiles: [], readChecks: [], ...job.checkProtocol ? { phaseTimes: { planning: new Date().toISOString() } } : {} }
   await recordReview(ctx, main, { ...job, revision: ++job.revision })
-}
-
-/** Full coverage requires a contiguous union of pages; reading only the last page does not qualify. */
-export function complete(ranges: [number, number][], total: number): boolean {
-  let end = 0
-  for (const [start, stop] of [...ranges].sort((a, b) => a[0] - b[0])) { if (start > end) return false; end = Math.max(end, stop) }
-  return end >= total
 }
 
 /** Reject missing, foreign, partial or modified evidence, while retaining explicit unverified findings. */
@@ -261,7 +256,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { imported: true, checkId: check.id, sourceSnapshotId: check.snapshotId, currentSnapshotId: state.snapshot.id, coverage: planned.coverage, nextAction: 'Read both original streams and persist your own finding.' }
     },
   }))
-  if (job.incrementalProtocol) ctx.tools.register(defineTool({ name: 'task_review_check_result', description: 'Persist one validated check finding immediately. Cite only actually delivered evidence. Revisions retain history; sealed independent findings cannot be rewritten in comparison. Unverified gaps are explicit, never successful checks.',
+  if (job.incrementalProtocol) ctx.tools.register(defineTool({ name: 'task_review_check_result', description: 'Persist one validated check finding immediately. Cite only actually delivered evidence. During comparison, resolve an earlier check by submitting its SAME checkId with acquired evidence of its planned method and scope. The original independent observations remain sealed; comparison resolutions are separate history receipts. Supplementary checks do not automatically resolve prior gaps. A sealed failed explicit check requires additional acquired evidence of its method before a satisfied resolution; the same failing evidence or main report cannot establish success. Preserve its original fact and expected outcome, rather than reinterpreting product correctness as completion of checking. Unverified gaps are explicit, never successful checks.',
     parameters: { result: { ...checkFindingParameters.items, required: true } }, output,
     async execute(args, exec) {
       requirePlan(); signal.throwIfAborted(); exec.signal.throwIfAborted()
@@ -280,10 +275,12 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       appendCheckResult(state, result, { sessionId: exec.agent.id, callId: exec.callId, callSeq: call.seq })
       state.readFiles = reads.files; state.readChecks = reads.checks
       await persist()
-      return { recorded: true, checkId: result.checkId, status: result.status, revision: state.checkHistory!.length, snapshotId: state.snapshot.id }
+      return { recorded: true, checkId: result.checkId, status: result.status, revision: state.checkHistory!.length, phase: state.phase, snapshotId: state.snapshot.id }
     },
   }))
-  ctx.tools.register(defineTool({ name: 'task_review_observations', description: 'Persist independent findings for every applicable criterion, then unlock the main-session report. Use unverified with an explicit limitation when independent evidence is missing. Findings cannot be rewritten after comparison.',
+  ctx.tools.register(defineTool({ name: 'task_review_observations', description: job.incrementalProtocol
+    ? 'Seal the already saved task_review_check_result findings and unlock comparison. Call with {} to derive checks and criterion summaries; do not rewrite or duplicate saved findings here. Amend individual findings with task_review_check_result before sealing. Unfinished coverage remains unverified.'
+    : 'Persist independent findings for every applicable criterion, then unlock the main-session report. Use unverified with an explicit limitation when independent evidence is missing. Findings cannot be rewritten after comparison.',
     parameters: { findings: { ...findingParameters, ...job.incrementalProtocol ? {} : { required: true as const } }, checks: { ...checkFindingParameters, ...job.checkProtocol && !job.incrementalProtocol ? { required: true as const } : {} } }, output,
     async execute(args, exec) {
       if (state.phase !== 'independent') throw new Error('independent observations already recorded')

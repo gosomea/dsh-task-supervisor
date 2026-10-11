@@ -1,4 +1,7 @@
 import { deliverContinuation } from './dispatch-records.ts'
+import { initialRepairBudget, hasRepairPermit, repairTransition } from './repair-budget.ts'
+import { repairProgress } from './repair-progress.ts'
+import { artifactIdentity } from './artifact-identity.ts'
 import { reviewBudgetPolicySchema, type ReviewBudgetConfig } from './review-budget.ts'
 import type { ReviewJob } from './review-records.ts'
 import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
@@ -70,7 +73,7 @@ export interface Config {
   maxParallelNodes?: number
   integrationTools?: string[]
   observeLongTurns?: boolean
-  progressReviewMode?: 'current' | 'configured' | 'required-only'
+  progressReviewMode?: 'anomaly' | 'current' | 'configured' | 'required-only'
   observationToolCalls?: number
   observationIntervalMs?: number
   observationConsecutiveErrors?: number
@@ -163,8 +166,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (!Number.isSafeInteger(maxAutomaticRoundsWithoutReport) || maxAutomaticRoundsWithoutReport < 1) {
     throw new TypeError('maxAutomaticRoundsWithoutReport must be a positive integer')
   }
-  const progressReviewMode = config.progressReviewMode ?? 'current'
-  if (!['current', 'configured', 'required-only'].includes(progressReviewMode)) throw new TypeError('invalid progressReviewMode')
+  const progressReviewMode = config.progressReviewMode ?? 'anomaly'
+  if (!['anomaly', 'current', 'configured', 'required-only'].includes(progressReviewMode)) throw new TypeError('invalid progressReviewMode')
   if (config.reviewVerification !== undefined && !['log', 'independent'].includes(config.reviewVerification)) throw new TypeError('reviewVerification must be log or independent')
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
@@ -409,7 +412,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (inTurn && !entryActive(agent)) throw new Error('Task planning entry was canceled during admission')
     const task = current(agent)
     if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
-    let next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
+    let next: TaskSnapshot = { ...newTask(objective), repairBudget: initialRepairBudget(), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
     const grant = () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } }
     if (inTurn || ctx.agents.currentInitiator() === agent && agent.status === 'running') {
@@ -517,6 +520,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     return recoveryCanContinue(job, task)
   }
 
+  function inheritedPlan(task: TaskSnapshot, jobId: string | undefined): TaskSnapshot {
+    if (!hasRepairPermit(task)) return task
+    if (!jobId) throw new Error('Replacement plan requires coverage review before inheriting execution permission')
+    return { ...task, lastApproval: { planVersion: task.planVersion, userMessageSeq: null, source: 'inherited',
+      sourcePlanVersion: task.repairBudget!.permit!.planVersion, authorizationSeq: task.repairBudget!.permit!.approvalSeq, reviewJobId: jobId } }
+  }
+
   function approvalFor(agent: Agent, task: TaskSnapshot) {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === task.lastReview?.jobId)
     return policyApproval(task, agent.id, agent.session.snapshotEvents().map(controlEvent), job)
@@ -525,6 +535,26 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   function boundReview(agent: Agent, task: TaskSnapshot) {
     return task.pendingReview?.jobId ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs
       .find(job => job.id === task.pendingReview!.jobId) : undefined
+  }
+
+  async function applyRepair(agent: Agent, task: TaskSnapshot, action: { id: string; kind: 'replan' | 'rework'; nodeId?: string; reason: string }, signal: AbortSignal, job?: ReviewJob): Promise<TaskSnapshot> {
+    let fingerprint = job ? await repairProgress(job, action.nodeId ? task.stages.find(stage => stage.id === action.nodeId)?.writePaths : undefined) : null
+    if (fingerprint === null) {
+      const fs = ctx.get('fs'), cwd = agent.session.header.cwd
+      if (fs && cwd) fingerprint = (await artifactIdentity(fs, cwd, signal, repairLimits, true, action.nodeId ? task.stages.find(stage => stage.id === action.nodeId)?.writePaths : undefined)).digest
+    }
+    signal.throwIfAborted()
+    return repairTransition(task, { ...action, fingerprint, seq: agent.session.seq })
+  }
+
+  async function repairVerdict(agent: Agent, task: TaskSnapshot, jobId: string, kind: string, stageId: string, signal: AbortSignal): Promise<TaskSnapshot> {
+    if (task.lastReview?.verdict !== 'revise' || !hasRepairPermit(task) || !['plan', 'stage', 'completion'].includes(kind)) return task
+    const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === jobId)
+    const next = await applyRepair(agent, task, { id: `review:${jobId}`, kind: kind === 'stage' ? 'rework' : 'replan',
+      ...kind === 'stage' ? { nodeId: stageId } : {}, reason: task.lastReview.finding }, signal, job)
+    // Check against the review input, not the locally advanced transition revision.
+    if (current(agent)?.id !== task.id || current(agent)?.revision !== task.revision - 1 || hasPending(agent)) throw new Error('Task changed during repair admission')
+    return next
   }
 
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
@@ -564,7 +594,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       life.observation = { key, seq: agent.session.seq, time: Date.now() }
       if (!atIdle) return null
     }
-    const reason = atIdle ? 'Planning turn ended without a submitted plan' : observationReason(agent.session.snapshotEvents().map(controlEvent), life.observation, observationPolicy, Date.now())
+    const reason = atIdle ? 'Planning turn ended without a submitted plan' : observationReason(agent.session.snapshotEvents().map(controlEvent), life.observation, observationPolicy, Date.now(), !planning && progressReviewMode === 'anomaly')
     if (reason === null) return null
     const stageId = planning ? 'planning' : node?.id ?? 'completion'
     const abort = new AbortController()
@@ -678,6 +708,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           || latest.phase !== 'reviewing') { await finishReviewRecord(agent, decision.jobId, 'stale'); return }
         const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
           phase: decision.verdict === 'needs-user' ? 'paused' : 'active',
+          executionProgress: { endSeq: agent.session.seq, fingerprint: planningEvidenceFingerprint(agent.session.snapshotEvents(), latest, agent.session.seq).fingerprint, noProgress: 0 },
           pendingReview: null, roundsSinceReview: 0,
           reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
         lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict,
@@ -763,7 +794,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       // Deliver the next permitted response through the durable native Inbox.
       const completeNext = pending.kind === 'stage' && latest.phase === 'active'
         && runtime(agent).armed && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
-      const revisePlan = pending.kind === 'plan' && latest.phase === 'planning' && config.automaticContinuation !== false
+      const revisePlan = latest.phase === 'planning' && config.automaticContinuation !== false
         && canContinueReview(agent, latest.lastReview?.jobId ?? '', latest)
       const node = latest.stages[latest.stageIndex]
       // A formal checkpoint covers earlier work. Reviewer time is not main-Agent activity.
@@ -830,11 +861,14 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           else runtime(agent).armed = false
           return
         }
-        if (progressReviewMode !== 'required-only' && latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
+        const progress = planningEvidenceFingerprint(agent.session.snapshotEvents(), latest, agent.session.seq)
+        const noProgress = latest.executionProgress?.fingerprint === progress.fingerprint ? latest.executionProgress.noProgress + 1 : 0
+        if (progressReviewMode === 'anomaly' ? noProgress >= 2 : progressReviewMode !== 'required-only' && latest.roundsSinceReview >= maxAutomaticRoundsWithoutReport) {
           await reviewProgress(agent, latest)
           return
         }
         const next: TaskSnapshot = { ...latest, revision: latest.revision + 1,
+          executionProgress: { endSeq: ending?.seq ?? agent.session.seq, fingerprint: progress.fingerprint, noProgress },
           roundsSinceReview: latest.roundsSinceReview + 1 }
         await commitAndWake(agent, latest, next,
           executionPrompt(agent, next,
@@ -1033,6 +1067,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             objective, requirementsVersion: task.requirementsVersion + 1,
             planVersion: task.planVersion + 1, criteria: [], stages: [], nodeRuns: [], stageIndex: 0, roundsSinceReview: 0,
             approvedPlanVersion: null, everApproved: false, lastApproval: undefined, approvalPolicy: undefined, readOnlyTurnsBeforeWrite: 0, readOnlyGateStartSeq: null,
+            ...task.repairBudget ? { repairBudget: { ...task.repairBudget, permit: null } } : {},
             phase: 'planning', pendingReview: null, lastReview: null, reviewFault: null, pauseReason: null, recovery: undefined, planning: undefined }
           if (!next.enabled) {
             appendTask(ctx, agent, next)
@@ -1142,6 +1177,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       criteria: { type: 'array', required: true, items: {
         type: 'object', additionalProperties: false, properties: {
           id: { type: 'string', required: true }, text: { type: 'string', required: true },
+          delivery: { type: 'string', enum: ['artifact', 'action'], description: 'Mark actual delivery requested by the user: artifact for files/exports; action for commit/push or another requested operation. Do not invent Git requirements.' },
           evidenceKind: { type: 'string', enum: ['text', 'runtime', 'visual'], description: 'Use runtime for behavior requiring execution or reproduction, visual for judging actual appearance, and text for static artifacts. Independent verification cannot accept runtime criteria using code reads alone.' },
           provenance: { type: 'object', required: true, additionalProperties: false, properties: {
             kind: { type: 'string', required: true, enum: ['user', 'project', 'implementation'] },
@@ -1179,9 +1215,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (readOnlyTurnsBeforeWrite > 0 && gateReadTools.size === 0) {
       throw new Error('a read-only turn gate requires read, glob, or grep in planningReadTools')
     }
-    if (admit && (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review')) return queuedReviews.enqueue(agent, task, { kind: 'plan', stageId: 'plan', evidence: JSON.stringify(parsed) }, exec)
+    const requiresReview = config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review' || hasRepairPermit(task) && task.repairBudget!.history.some(item => item.kind === 'replan' && item.admitted)
+    if (admit && requiresReview) return queuedReviews.enqueue(agent, task, { kind: 'plan', stageId: 'plan', evidence: JSON.stringify(parsed) }, exec)
     let planDecision: Awaited<ReturnType<typeof reviewStage>> | undefined
-    if (config.planCoverageReview !== false || task.approvalPolicy?.mode === 'after-review') {
+    if (requiresReview) {
       const abort = new AbortController()
       reviewAbort.set(agent, abort)
       try {
@@ -1202,15 +1239,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         throw new Error('plan review became stale after a task change')
       }
       if (planDecision.verdict !== 'pass') {
-        appendTask(ctx, agent, { ...task, revision: task.revision + 1,
+        const rejected = await repairVerdict(agent, { ...task, revision: task.revision + 1,
           phase: planDecision.verdict === 'needs-user' ? 'paused' : 'planning',
           pauseReason: planDecision.verdict === 'needs-user' ? 'decision' : null, reviewFault: null, pendingReview: null,
           lastReview: { jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff,
             verdict: planDecision.verdict, finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
-            reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } })
+            reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }, planDecision.jobId, 'plan', 'plan', exec.signal)
+        appendTask(ctx, agent, rejected)
         await finishReviewRecord(agent, planDecision.jobId, 'applied')
         await flush(agent)
-        if (planDecision.verdict === 'needs-user') { runtime(agent).armed = false; exec.concludeTurn() }
+        if (rejected.phase === 'paused') { runtime(agent).armed = false; exec.concludeTurn() }
         return { verdict: planDecision.verdict, finding: planDecision.finding,
           reviewerSessionId: planDecision.reviewerSessionId,
           message: 'Revise the acceptance criteria and ordered stages, then resubmit the plan.' }
@@ -1227,7 +1265,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         jobId: planDecision.jobId, stageId: 'plan', cutoff: planDecision.cutoff, verdict: planDecision.verdict,
         finding: planDecision.finding, evidenceSeqs: planDecision.evidenceSeqs,
         reviewerSessionId: planDecision.reviewerSessionId, model: planDecision.model } }
-    let settled = appendTask(ctx, agent, withRuns(next, runsOf(next)))
+    if (next.phase === 'active' && hasRepairPermit(next)) await verifyBeforeApproval(agent, next, exec.signal)
+    if (disposed || current(agent)?.id !== task.id || current(agent)?.revision !== task.revision || hasPending(agent)) throw new Error('Task changed before inherited plan application')
+    let settled = appendTask(ctx, agent, inheritedPlan(withRuns(next, runsOf(next)), planDecision?.jobId))
     if (planDecision) await finishReviewRecord(agent, planDecision.jobId, 'applied')
     await flush(agent)
     exec.signal.throwIfAborted()
@@ -1323,11 +1363,18 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         } else if (job.kind === 'planning') next = { ...next, phase: decision.verdict === 'needs-user' ? 'paused' : 'planning',
           ...decision.planning ? { planning: { ...decision.planning, requirementsVersion: next.requirementsVersion, cutoff: decision.cutoff, jobId: decision.jobId, evidenceSeqs: decision.evidenceSeqs, noProgress: 0 } } : {} }
         else if (job.kind === 'stage') next = finishNode(next, job.stageId, decision.verdict, agent.session.seq)
+        next = await repairVerdict(agent, next, decision.jobId, job.kind, job.stageId, signal)
         if (job.kind === 'plan' && next.phase === 'awaiting-approval' && !job.recovery?.manualOnly) {
           const authorization = policyApproval(next, agent.id, agent.session.snapshotEvents().map(controlEvent),
             ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === decision.jobId))
           if (authorization) { await verifyBeforeApproval(agent, next, signal); next = { ...approvedTask(next, agent.session.seq),
             lastApproval: { planVersion: next.planVersion, userMessageSeq: null, ...authorization } } }
+        }
+        if (job.kind === 'plan' && decision.verdict === 'pass' && next.phase === 'active' && hasRepairPermit(next)) {
+          await verifyBeforeApproval(agent, next, signal)
+          signal.throwIfAborted()
+          if (current(agent)?.id !== actual.id || current(agent)?.revision !== actual.revision || hasPending(agent)) throw new Error('Task changed before recovered inherited plan application')
+          next = inheritedPlan(next, decision.jobId)
         }
         appendTask(ctx, agent, next)
         await finishReviewRecord(agent, decision.jobId, 'applied')
@@ -1370,11 +1417,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         reviewFault: null, pauseReason: decision.verdict === 'needs-user' ? 'decision' : null,
         lastReview: { jobId: decision.jobId, stageId, cutoff: decision.cutoff, verdict: decision.verdict, finding: decision.finding,
           imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId, model: decision.model } }
-      const settled = kind === 'stage' ? finishNode(next, stageId, decision.verdict, agent.session.seq) : next
+      const settled = await repairVerdict(agent, kind === 'stage' ? finishNode(next, stageId, decision.verdict, agent.session.seq) : next, decision.jobId, kind, stageId, signal)
       appendTask(ctx, agent, settled)
       await finishReviewRecord(agent, decision.jobId, 'applied')
       await flush(agent)
-      runtime(agent).armed = settled.phase === 'active' && canContinueReview(agent, decision.jobId, settled)
+      runtime(agent).armed = (settled.phase === 'active' || settled.phase === 'planning') && canContinueReview(agent, decision.jobId, settled)
       const awaitsCompletion = kind === 'stage' && settled.phase === 'active'
         && acceptedNodes(settled).length === settled.stages.length
       if (awaitsCompletion) exec.concludeTurn()
@@ -1445,6 +1492,23 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   }))
 
   ctx.tools.register(defineTool({
+    name: 'task_replan', description: 'Request a bounded plan repair within the already approved ORIGINAL requirements. Record why and the affected DAG; does not change the objective or grant new implementation permission. Submit a replacement plan for coverage review. Requirements changes require a user edit; completed Tasks require impact confirmation.',
+    parameters: { reason: { type: 'string', required: true } }, output: textOutput,
+    async execute(args, exec) {
+      const agent = toolAgent(exec), task = current(agent)
+      if (!task || task.phase !== 'active' || !runtime(agent).armed) throw taskExecutionError(task)
+      const next = await applyRepair(agent, task, { id: `tool:${exec.callId}`, kind: 'replan', reason: args.reason }, exec.signal)
+      if (current(agent)?.id !== task.id || current(agent)?.revision !== task.revision || hasPending(agent)) throw new Error('Task changed during plan repair')
+      const saved = appendTask(ctx, agent, { ...next, revision: task.revision + 1 })
+      await flush(agent)
+      runtime(agent).armed = saved.phase === 'planning'
+      exec.concludeTurn()
+      if (saved.phase === 'planning') await handoff(agent, saved, inputFor(saved, 'Repair the DAG under the recorded reason and ORIGINAL requirements. Submit task_submit_plan for coverage review; implementation is not approved during planning.'), exec.signal)
+      return { task: taskJson(saved), implementationAuthorized: false, nextAction: saved.phase === 'paused' ? 'Inspect repair limit and wait for user action.' : 'Submit a replacement DAG with the original objective. Its coverage review must pass before implementation continues under the original permit.' }
+    },
+  }))
+
+  ctx.tools.register(defineTool({
     name: 'task_rework_node', description: 'Rework a node only in an active, armed task and invalidate dependent acceptance. Completed tasks require task_propose_repair and user click confirmation. Inspect task_status for the new attempt IDs before executing.',
     parameters: { stage_id: { type: 'string', required: true }, reason: { type: 'string', required: true } }, output: textOutput,
     async execute(args, exec) {
@@ -1452,9 +1516,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const task = current(agent)
       if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
       if (!args.reason.trim()) throw new Error('rework needs a reason')
-      const next = { ...reworkNode(task, args.stage_id, agent.session.seq), revision: task.revision + 1, pendingReview: null, lastReview: null }
+      const repaired = task.repairBudget ? await applyRepair(agent, task, { id: `tool:${exec.callId}`, kind: 'rework', nodeId: args.stage_id, reason: args.reason }, exec.signal)
+        : reworkNode(task, args.stage_id, agent.session.seq)
+      if (current(agent)?.id !== task.id || current(agent)?.revision !== task.revision || hasPending(agent)) throw new Error('Task changed during rework admission')
+      const next = { ...repaired, revision: task.revision + 1, pendingReview: null }
       appendTask(ctx, agent, next)
       await flush(agent)
+      runtime(agent).armed = next.phase === 'active'
       exec.concludeTurn()
       return { task: taskJson(next), readyNodeIds: readyNodes(next), reason: args.reason,
         rework: { nodes: changedAttempts(task, next) } }

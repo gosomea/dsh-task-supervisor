@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ReviewJob } from './review-records.ts'
 import { runsOf } from './graph.ts'
+import { complete } from './read-coverage.ts'
 
 const page = z.object({ cutoff: z.number().int(), sessionId: z.string().optional(),
   events: z.array(z.object({ seq: z.number().int().nonnegative(), type: z.string() }).passthrough()).optional(),
@@ -23,7 +24,10 @@ export function restoreReviewReads(events: readonly SessionEvent[], job: ReviewJ
     const item = value.data, prior = ranges.get(item.seq)
     if (prior && prior.total !== item.totalChars) return false
     const range = prior ?? { total: item.totalChars, ranges: [], truncated: false }
-    range.ranges.push([item.offset, item.offset + item.text.length]); range.truncated ||= item.truncated
+    range.ranges.push([item.offset, item.offset + item.text.length])
+    // Each page's truncation is relative to that page. Native stored output is
+    // unchanged; subsequent successful pages may complete this stored original.
+    range.truncated = !complete(range.ranges, range.total)
     ranges.set(item.seq, range); observed.add(item.seq); return true
   }
   const calls = new Map<string, Extract<SessionEvent, { type: 'tool/call' }>>()

@@ -7,9 +7,10 @@ import type { SupervisorKey } from './locales.ts'
 export function currentReviewJob(state: PanelState | null): ReviewJob | undefined {
   const task = state?.task
   if (!task) return undefined
-  const id = task.pendingReview?.jobId ?? state.reviewActivity?.jobId
+  const id = task.pendingReview?.jobId ?? state.reviewActivity?.jobId ?? task.reviewFault?.jobId
   return id ? state.reviewJobs?.find(job => job.taskId === task.id && job.id === id)
-    : state.reviewJobs?.findLast(job => job.taskId === task.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
+    : state.reviewJobs?.findLast(job => job.taskId === task.id && (['queued', 'started', 'repairing', 'submitted'].includes(job.status)
+      || job.cleanupHistory?.some(item => !item.finishedAt || item.confirmed !== true)))
 }
 
 export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
@@ -36,7 +37,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
     label = `reviewVerdict.${job.decision.verdict}`
     tone = job.decision.verdict === 'pass' ? 'success' : 'warning'
   }
-  const duration = job.finishedAt ? Math.max(0, Math.floor((Date.parse(job.finishedAt) - Date.parse(job.startedAt)) / 1000)) : null
+  const duration = job.finishedAt ? Math.max(0, Math.floor((Date.parse(job.finishedAt) - Date.parse(job.budget?.admittedAt ?? job.startedAt)) / 1000)) : null
   let next: SupervisorKey | null = null
   if (job.status === 'submitted') next = 'reviewSubmitted'
   else if (job.status === 'stale') next = 'reviewStale'
@@ -59,6 +60,26 @@ const FAULT_LABELS: Record<ReviewFault['code'], SupervisorKey> = {
   snapshot: 'reviewFaultSnapshot', 'check-infrastructure': 'reviewFaultInfrastructure', internal: 'reviewFaultInternal',
 }
 export function reviewFaultDescription(fault: ReviewFault): SupervisorKey { return FAULT_LABELS[fault.code] }
+
+export function reviewNextAction(kind: ReviewJob['kind']): SupervisorKey {
+  return { plan: 'reviewNextPlan', planning: 'reviewNextPlanning', stage: 'reviewNextNode',
+    progress: 'reviewNextProgress', completion: 'reviewNextCompletion' }[kind] as SupervisorKey
+}
+
+/** Following the main model is represented by null, not by an absent transcript. */
+export function reviewTranscriptReady(job: ReviewJob, active: boolean, state: PanelState | null): boolean {
+  if (!job.reviewerSessionId) return false
+  if (!active) return job.status !== 'queued'
+  return state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null
+    || !!job.recovery?.failures.length
+}
+
+/** A saved requirement outcome supersedes the empty-plan hint. */
+export function inspectionPlanHint(job: ReviewJob): SupervisorKey | null {
+  if (!job.verification || job.decision?.requirements || job.verification.checkPlan?.some(entry => entry.checks.length)) return null
+  if (!job.checkProtocol) return 'inspectionLegacyPlan'
+  return ['queued', 'started', 'repairing'].includes(job.status) ? 'inspectionPlanPending' : 'inspectionPlanAbsent'
+}
 
 /** Native transcript virtualization can remount rows while their reviewer streams. */
 export function createReviewDisclosureState(limit = 256, persistence?: Pick<Storage, 'getItem' | 'setItem'>) {

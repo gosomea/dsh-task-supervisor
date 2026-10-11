@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { VerificationState, CriterionFinding } from './verification-schema.ts'
 
 export const reviewCheckSchema = z.object({
+  delivery: z.enum(['artifact', 'action']).optional(),
   id: z.string().min(1).max(100), criterionId: z.string().min(1).nullable(),
   source: z.object({ kind: z.enum(['objective', 'user-message', 'project-rule']), reference: z.string().min(1) }).strict(),
   fact: z.string().min(1), method: z.enum(['read', 'run', 'visual', 'log']),
@@ -22,6 +23,8 @@ export function appendCheckPlan(state: VerificationState, checks: ReviewCheck[],
   if (checks.some(item => item.criterionId !== null && !applicable.includes(item.criterionId))) throw new Error('check criterion is outside this review')
   if (applicable.some(id => !all.some(item => item.criterionId === id))) throw new Error('initial check plan must cover every applicable criterion and any omitted original requirements')
   for (const check of checks) {
+    if (check.delivery === 'artifact' && check.method === 'log') throw new Error('Artifact delivery needs read/run/visual evidence of the current product. Omit delivery for ordering, authorization or provenance checks; use action only for an actual requested operation.')
+    if (check.delivery === 'action' && check.method !== 'log') throw new Error('Requested action delivery needs method=log and paired native operation receipts in comparison; artifact reads do not establish execution.')
     if (check.source.kind === 'objective' && check.source.reference !== 'objective') throw new Error('objective source must reference objective')
     if (check.source.kind === 'user-message' && !state.readInputs?.includes(Number(check.source.reference.replace(/^seq:/, '')))) throw new Error('read the original direct user message before citing its requirement')
     if (check.source.kind === 'project-rule' && !state.readFiles.some(item => item.path === check.source.reference && item.purpose === 'constraint')) throw new Error('read the applicable project constraint before citing it')
@@ -40,12 +43,13 @@ export function checkResultsAsEvidence(state: VerificationState, results: CheckF
     const check = checks.find(item => item.id === result.checkId)!
     if (result.evidenceIds.some(id => state.reusedChecks?.some(reuse => reuse.checkId === id &&
       (reuse.plannedCheckId !== check.id || reuse.method !== check.method || reuse.scope !== check.coverage || reuse.digest !== state.snapshot.digest)))) throw new Error('reused evidence cannot expand its bound method or scope')
-    if (passing && check.basis === 'explicit' && result.status !== 'satisfied') throw new Error('failed or unverified original requirements cannot pass')
+    if (passing && check.basis === 'explicit' && result.status !== 'satisfied') throw new Error(`failed or unverified original requirements cannot pass: check ${check.id}, status ${result.status}, method ${check.method}. Persist a resolution for this check with task_review_check_result and acquired evidence of that method, or submit revise/needs-user. Supplementary checks do not resolve this check automatically.`)
     return { criterionId: check.id, method: check.method, status: result.status, finding: result.finding, evidenceIds: result.evidenceIds }
   })
 }
 
 export const checkPlanParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
+  delivery: { type: 'string', enum: ['artifact', 'action'], description: 'Only for an explicitly requested delivered file (artifact, with read/run/visual) or actual operation (action, with log), e.g. commit/push/export. Omit this field for ordering, authorization, provenance and preservation constraints; these are requirements, not additional delivery actions. Do not impose Git. Artifact delivery requires current inspected material; action requires paired native receipts in comparison.' },
   id: { type: 'string', required: true }, criterionId: { type: 'string', description: 'Applicable criterion ID; omit for an original requirement missing from the main plan.' },
   source: { type: 'object', required: true, additionalProperties: false, properties: { kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule'] }, reference: { type: 'string', required: true, description: 'objective, seq:<direct user event>, or inspected constraint file path' } } },
   fact: { type: 'string', required: true }, method: { type: 'string', required: true, enum: ['read', 'run', 'visual', 'log'], description: 'log is only for facts whose authority is the bound Session (operation order, authorization or source). Record unverified during independent discovery; verify only after comparison with fully read originals. It does not verify product behavior.' },

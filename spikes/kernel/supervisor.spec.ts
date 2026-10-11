@@ -165,7 +165,7 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
   await installNativePresets(ctx)
-  if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
+  if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, progressReviewMode: 'current', ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
     maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
     ...reviewerModel === undefined ? {} : { reviewerModel } })
   ctx.on('agent/created', async ({ agent, source }) => {
@@ -2389,6 +2389,52 @@ function coverageChecks(verdict = 'pass'): StreamChunk[][] {
     toolResponse('task_review_decision', { verdict, finding: '计划覆盖当前要求', evidence_seqs: [0] }, 'coverage-decision')]
 }
 
+it.each(['node-repair', 'replan', 'completion-repair'] as const)('continues a two-node native DAG with one original authorization: %s', async mode => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-continuous-dag-')); roots.push(root)
+  const workspace = join(root, 'workspace'); await mkdir(workspace)
+  const plan = { criteria: [{ id: 'c', text: 'Deliver both required values', provenance: { kind: 'user', reference: 'objective' } }],
+    stages: [{ id: 'a', title: 'First value', criterionIds: ['c'], writePaths: ['a.txt'] }, { id: 'b', title: 'Second value', criterionIds: ['c'], writePaths: ['b.txt'] }] }
+  const main: StreamChunk[][] = [toolResponse('task_submit_plan', plan, 'initial-plan'), textResponse('Original approved plan')]
+  const reviewers: StreamChunk[][] = [...coverageChecks()]
+  if (mode === 'replan') {
+    main.push(toolResponse('task_replan', { reason: 'Implementation needs a revised dependency description under the same objective' }, 'repair-plan'),
+      toolResponse('task_submit_plan', plan, 'replacement-plan'), textResponse('Replacement passed under the original grant'))
+    reviewers.push(...coverageChecks())
+  }
+  const implement = (node: string, attempt: number, value: string) => [toolResponse('task_start_node', { stage_id: node, attempt }, `${node}-start-${attempt}`),
+    toolResponse('write_value', { node, value }, `${node}-work-${attempt}`), toolResponse('task_report_stage', { stage_id: node, attempt, evidence: `Actual ${node} output` }, `${node}-report-${attempt}`)]
+  if (mode === 'node-repair') {
+    main.push(...implement('a', 1, 'wrong'), textResponse('Reviewer found a defect'))
+    reviewers.push(...coverageChecks('revise'))
+  }
+  main.push(...implement('a', mode === 'node-repair' ? 2 : 1, 'correct-a'), textResponse('First node accepted'),
+    ...implement('b', mode === 'node-repair' ? 2 : 1, 'correct-b'), toolResponse('task_request_completion', { evidence: 'Current combined values' }, 'final-submit'))
+  reviewers.push(...coverageChecks(), ...coverageChecks())
+  if (mode === 'completion-repair') {
+    reviewers.push(...coverageChecks('revise'), ...coverageChecks(), ...coverageChecks(), ...coverageChecks())
+    main.push(toolResponse('task_submit_plan', plan, 'whole-replacement'), textResponse('Whole-product repair plan reviewed'),
+      ...implement('a', 1, 'correct-a-v2'), textResponse('First repaired'), ...implement('b', 1, 'correct-b-v2'),
+      toolResponse('task_request_completion', { evidence: 'Current repaired combined values' }, 'final-resubmit'))
+  }
+  reviewers.push(...coverageChecks()); main.push(textResponse('Complete'))
+  const ctx = await host(join(root, 'sessions'), new ScriptedAdapter({ scripted: main, reviewer: reviewers }), true,
+    { provider: 'scripted', model: 'reviewer' }, true, 3, true, [], { executionApproval: 'after-review', progressReviewMode: 'anomaly' })
+  await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  ctx.tools.register(defineContentToolFixture({ name: 'write_value', description: 'Controlled actual artifact writer', parameters: { node: { type: 'string', required: true }, value: { type: 'string', required: true } },
+    execute: async args => { await writeFile(join(workspace, `${args.node}.txt`), args.value); return [{ type: 'text', text: `Written ${args.node}: ${args.value}` }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`continuous-${mode}`), meta: { cwd: workspace }, agentOptions: { provider: 'scripted', model: 'scripted' } })
+  await ctx.commands.execute(agent, '/task Deliver both required values', [], new AbortController().signal)
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('complete'), { timeout: 7000 }); await agent.whenIdle()
+  const task = taskOf(ctx, agent)!, state = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!
+  expect(state.failure).toBeNull(); expect(task.nodeRuns?.every(run => run.status === 'passed')).toBe(true)
+  expect(task.repairBudget?.history.filter(item => item.admitted)).toHaveLength(1)
+  expect(task.repairBudget?.permit?.approvalSeq).toBe(task.repairBudget?.history[0]?.permitSeq)
+  expect(state.reviewJobs.every(job => job.status === 'applied')).toBe(true)
+  expect(state.reviewJobs.filter(job => job.kind === 'progress')).toHaveLength(0)
+  expect(agent.session.snapshotEvents().filter(event => event.type === 'user/message' && event.data.source.kind === 'user')).toHaveLength(1)
+  expect((await readFile(join(workspace, 'a.txt'), 'utf8')).startsWith('correct-a')).toBe(true)
+})
+
 const handoffCases = process.env.DSH_LONG_REVIEW_TEST === '1' ? ['long-plan'] as const : ['plan', 'stage', 'completion'] as const
 it.each(handoffCases)('hands a %s review off before PTC settles, preserves its identity and blocks implementation', async scenario => {
   const kind = scenario === 'long-plan' ? 'plan' : scenario
@@ -3547,11 +3593,11 @@ it('blocks recovery when reviewer disposal cannot be confirmed', async () => {
   expect(ctx.agents.list().filter(item => item.id.startsWith('task-review-'))).toHaveLength(0)
 })
 
-it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'boundary'] as const)('incremental native review persists actual findings and derives coverage across recovery: %s', async mode => {
+it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'relabel', 'boundary'] as const)('incremental native review persists actual findings and derives coverage across recovery: %s', async mode => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-incremental-review-')); roots.push(root)
-  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'brief.md'), mode === 'wrong' ? '# Wrong title' : '# Required title')
+  const workspace = join(root, 'source'); await mkdir(workspace); await writeFile(join(workspace, 'brief.md'), ['wrong', 'relabel'].includes(mode) ? '# Wrong title' : '# Required title')
   const check = { id: 'title', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'Required title', method: 'read', expected: '# Required title', coverage: 'Complete document', basis: 'explicit' }
-  const result = { checkId: 'title', status: mode === 'wrong' ? 'failed' : 'satisfied', finding: mode === 'wrong' ? 'Required title absent' : 'Read and verified required title', coverage: check.coverage, limitations: 'Static content only', evidenceIds: ['file:brief.md'] }
+  const result = { checkId: 'title', status: ['wrong', 'relabel'].includes(mode) ? 'failed' : 'satisfied', finding: ['wrong', 'relabel'].includes(mode) ? 'Required title absent' : 'Read and verified required title', coverage: check.coverage, limitations: 'Static content only', evidenceIds: ['file:brief.md'] }
   const steps: [string, Record<string, unknown>][] = [
     ['task_review_check_plan', { checks: [check, { ...check, id: 'extra', basis: mode === 'missing' ? 'explicit' : 'derived' }] }],
     ...mode === 'unread' ? [['task_review_check_result', { result }] as [string, Record<string, unknown>]] : [],
@@ -3560,9 +3606,10 @@ it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'b
     ...['fault', 'missing-session'].includes(mode) ? [['FAULT', {}] as [string, Record<string, unknown>]] : [],
     ...mode === 'missing-session' ? [['inspect_task_artifact', { action: 'read', path: 'brief.md' }] as [string, Record<string, unknown>]] : [],
     ...mode === 'boundary' ? [['WAIT', {}], ['WAIT', {}]] as [string, Record<string, unknown>][] : [['task_review_observations', {}]] as [string, Record<string, unknown>][],
+    ...mode === 'relabel' ? [['task_review_check_result', { result: { ...result, status: 'satisfied', finding: 'The checking activity finished' } }]] as [string, Record<string, unknown>][] : [],
     ['read_task_context', { field: 'report' }],
     ['read_task_evidence', { from_seq: 0, limit: 30 }],
-    ['task_review_decision', { verdict: ['missing', 'wrong'].includes(mode) ? 'revise' : 'pass', finding: '# Verified title\n\nFull report remains readable.', evidence_seqs: [0] }],
+    ['task_review_decision', { verdict: ['missing', 'wrong', 'relabel'].includes(mode) ? 'revise' : 'pass', finding: '# Verified title\n\nFull report remains readable.', evidence_seqs: [0] }],
   ]
   let calls = 0, missing = false, originalSession: string | undefined
   const waiting = [Promise.withResolvers<void>(), Promise.withResolvers<void>()]; let waitIndex = 0
@@ -3608,13 +3655,14 @@ it.each(['correct', 'missing', 'fault', 'missing-session', 'unread', 'wrong', 'b
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
   expect(job.verification?.checkHistory).toMatchObject([{ result }])
   expect(job.verification?.checkFindings?.[1]?.status).toBe('unverified')
-  expect(decision.criteria?.[0]?.status).toBe(mode === 'missing' ? 'unverified' : mode === 'wrong' ? 'failed' : 'satisfied')
-  expect(decision.verdict).toBe(['missing', 'wrong'].includes(mode) ? 'revise' : 'pass')
+  expect(decision.criteria?.[0]?.status).toBe(mode === 'missing' ? 'unverified' : ['wrong', 'relabel'].includes(mode) ? 'failed' : 'satisfied')
+  expect(decision.verdict).toBe(['missing', 'wrong', 'relabel'].includes(mode) ? 'revise' : 'pass')
   const reviewer = await ctx.sessionPersistence.open(SessionId(job.reviewerSessionId!), 'read')
   try {
     const events = (await reviewer.read(0, 300)).events
     expect(events.filter(event => event.type === 'tool/call' && event.data.name === 'inspect_task_artifact')).toHaveLength(1)
-    expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(mode === 'unread' ? 1 : 0)
+    expect(events.filter(event => event.type === 'tool/result' && event.data.message.isError)).toHaveLength(['unread', 'relabel'].includes(mode) ? 1 : 0)
+    if (mode === 'relabel') expect(JSON.stringify(events.filter(event => event.type === 'tool/result' && event.data.message.isError))).toContain('FAILED_CHECK_UNRESOLVED')
   } finally { await reviewer.close() }
   expect(inputs.slice(0, mode === 'fault' ? 6 : mode === 'missing-session' ? 7 : 5).every(input => !input.includes('PRIVATE_MAIN_REPORT'))).toBe(true)
   const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())

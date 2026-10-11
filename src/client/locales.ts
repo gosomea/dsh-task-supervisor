@@ -1,5 +1,11 @@
 /** Compact Supervisor navigation and proposal actions use the native locale service. */
 export const zh = {
+  inspectionPlanPending: '正在按原始要求制定检查方案。', inspectionPlanAbsent: '此作业没有保存逐项检查方案，请核对裁决与原始记录。', inspectionLegacyPlan: '旧版作业未记录逐项检查方案，保留原有证据级别。',
+  taskReplans: '自动重规划', taskReworks: '自动返工', taskRepairLimit: '修订次数已耗尽，已停止自动循环。手动恢复不会补充次数。', taskRepairStalled: '连续两轮修订没有新增相关产物或验证结果，已停止自动循环。',
+  reviewWorkload: '检查工作量', 'reviewTier.light': '轻量', 'reviewTier.regular': '常规', 'reviewTier.complex': '复杂或未知',
+  'reviewPhase.checking': '获取证据', 'reviewPhase.converging': '收束检查', 'reviewPhase.decision': '对照与裁决',
+  reviewRemaining: '剩余', reviewBudgetTotal: '作业总预算', reviewCleaning: '正在清理审查资源', reviewCleanupFault: '审查资源清理未确认',
+  reviewCleanupNext: '等待原运行实例停止，清理确认前不会启动替代实例。', reviewPreviousSession: '此前审查 Session（展开读取）',
   taskDeadline: '任务截止', taskTruncations: '截断续行', taskFaultRetries: '任务故障重试', taskManualRounds: '手动恢复', taskLastActivity: '最近活动',
   taskDeadlineStopped: '任务预算时间已到，自动执行与审查已停止。恢复不能延长原截止时间。',
   taskBudgetStopped: '自动恢复预算已耗尽。可核对现场后手动恢复一轮；原截止和累计次数保持不变。',
@@ -39,6 +45,7 @@ export const zh = {
   reviewDecidingAction: '正在提交裁决', reviewApplyingAction: '正在保存与应用裁决', reviewGeneratingAction: '审查者正在生成回复',
   reviewPrimaryWaiting: '主 Agent 本轮结束，Supervisor 正在审查。', reviewNextPlan: '通过后按批准策略执行；需修订时返回规划。',
   reviewNextPlanning: '检查结束后接续规划。', reviewNextNode: '裁决有效后才能推进依赖节点。',
+  reviewNextProgress: '进展裁决决定继续或纠偏，不接受节点。', reviewNextCompletion: '有效通过后完成整体验收；需修订时补做交付。',
   reviewAwaitApproval: '计划审查通过，等待你批准后执行。', reviewFaultPaused: '审查故障，任务已暂停且尚未验收。可重试审查。',
   reviewOpenPrimary: '在主对话中查看审查过程', reviewUnavailable: '此审查不在当前记录窗口中',
   reviewPreviousDecision: '此前已结束的审查；不是当前活动的结论',
@@ -50,6 +57,12 @@ export const zh = {
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
 export const en: Record<SupervisorKey, string> = {
+  inspectionPlanPending: 'Forming checks from the original requirements.', inspectionPlanAbsent: 'This job saved no individual check plan. Inspect its decision and original records.', inspectionLegacyPlan: 'This older job saved no individual check plan; its original evidence level is retained.',
+  taskReplans: 'Automatic replans', taskReworks: 'Automatic reworks', taskRepairLimit: 'Repair limit exhausted; automatic cycling stopped. Manual resume does not replenish the limit.', taskRepairStalled: 'Two consecutive repair rounds acquired no new related artifacts or verification results; automatic cycling stopped.',
+  reviewWorkload: 'Check workload', 'reviewTier.light': 'Light', 'reviewTier.regular': 'Regular', 'reviewTier.complex': 'Complex or unknown',
+  'reviewPhase.checking': 'Acquiring evidence', 'reviewPhase.converging': 'Converging checks', 'reviewPhase.decision': 'Comparison and decision',
+  reviewRemaining: 'Remaining', reviewBudgetTotal: 'Total job budget', reviewCleaning: 'Cleaning review resources', reviewCleanupFault: 'Review cleanup unconfirmed',
+  reviewCleanupNext: 'Waiting for the original runtime to stop. No replacement starts until cleanup is confirmed.', reviewPreviousSession: 'Previous review Session (expand to read)',
   taskDeadline: 'Task deadline', taskTruncations: 'Truncation continuations', taskFaultRetries: 'Task fault retries', taskManualRounds: 'Manual recoveries', taskLastActivity: 'Last activity',
   taskDeadlineStopped: 'The Task deadline has expired. Execution and review stopped. Recovery cannot extend the original deadline.',
   taskBudgetStopped: 'Automatic recovery budget exhausted. Inspect the existing state before manually recovering a round; the original deadline and counters remain unchanged.',
@@ -89,6 +102,7 @@ export const en: Record<SupervisorKey, string> = {
   reviewDecidingAction: 'Submitting a decision', reviewApplyingAction: 'Saving and applying the decision', reviewGeneratingAction: 'Reviewer generating a response',
   reviewPrimaryWaiting: 'The primary Turn ended; Supervisor is reviewing.', reviewNextPlan: 'Pass follows the approval policy; revisions return to planning.',
   reviewNextPlanning: 'Planning continues after the check.', reviewNextNode: 'Dependent nodes wait for an applicable decision.',
+  reviewNextProgress: 'Progress review guides continuation or correction; it does not accept a node.', reviewNextCompletion: 'An applied pass completes final acceptance; revisions return to delivery work.',
   reviewAwaitApproval: 'Plan review passed; execution awaits your approval.', reviewFaultPaused: 'Review fault; task paused without acceptance. You can retry the review.',
   reviewOpenPrimary: 'View the review process in the primary conversation', reviewUnavailable: 'Review is outside the current record window',
   reviewPreviousDecision: 'Earlier settled review; this is not the current activity outcome',

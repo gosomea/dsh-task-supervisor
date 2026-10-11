@@ -12,7 +12,7 @@ import { taskStore } from './task-store.ts'
 import type { ReviewPortals } from './review-portal-store.ts'
 import { ReviewProgress } from './review-progress.tsx'
 import { ReviewReport } from './review-report.tsx'
-import { reviewPresentation, reviewFaultDescription, type createReviewDisclosureState } from './review-presentation.ts'
+import { reviewPresentation, reviewFaultDescription, reviewTranscriptReady, type createReviewDisclosureState } from './review-presentation.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } }
@@ -20,6 +20,16 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export type ReviewNodeProps = PropsRuntime<'conversation.chat.node'> & ChatNodeOwnerProps &
   { node: { data: ReviewJob } }
 function ReviewView({ renderSlot }: ConversationViewsProps) { return renderSlot('conversation.session', { view: 'chat' }) }
+function PreviousReviewProcess({ job, id, portals, t }: { job: ReviewJob; id: string; portals: ReviewPortals; t: SupervisorTranslate }) {
+  const [open, setOpen] = useState(false)
+  const [target, setTarget] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (open && target) return portals.attach({ key: `${job.id}:${id}`, sessionId: id, parentSessionId: job.mainSessionId, element: target })
+    return undefined
+  }, [open, target, portals, job.id, job.mainSessionId, id])
+  return <div><DisclosureRow icon={null} title={`${t('reviewPreviousSession')} · ${id}`} open={open} expandable expandOnRowClick onToggle={() => setOpen(value => !value)} />
+    {open && <div ref={setTarget} className="dsh-task-review-transcript" />}</div>
+}
 export function ReviewConversation({ renderFactorySlot }: PropsRuntime<'task-supervisor.review-session'> & PropsRenderFactories) {
   return renderFactorySlot('conversation.content', { variant: 'embedded', phase: 'active', hero: false }, { slots: { views: ReviewView } })
 }
@@ -45,7 +55,7 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
   const { state, busy, error } = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const summary = reviewPresentation(job, state)
   const { active } = summary
-  const ready = active ? state?.reviewActivity?.jobId === job.id && state.reviewActivity.lastSeq !== null || !!job.recovery?.failures.length : job.model !== null
+  const ready = reviewTranscriptReady(job, active, state)
   const [, refresh] = useState(0)
   const open = disclosures.open(job.id, active)
   const reportOpen = disclosures.open(`result:${job.id}`, true)
@@ -81,6 +91,7 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
     <DisclosureRow icon={null} className="dsh-task-review-heading" title={t('reviewProcess')} open={open} expandable expandOnRowClick running={active}
       onToggle={() => { disclosures.set(job.id, active, !open); refresh(value => value + 1) }} />
     {open && <div className="dsh-task-review-process">
+      {job.sessionChain?.filter(entry => entry.sessionId !== job.reviewerSessionId).map(entry => <PreviousReviewProcess key={entry.sessionId} job={job} id={entry.sessionId} portals={portals} t={t} />)}
       {job.fault && <p className="dsh-task-meta">{job.fault.message}</p>}
       {open && !ready && <p className="dsh-task-meta">{t('reviewQueued')}</p>}
       {open && ready && job.reviewerSessionId && <div ref={setTarget} className="dsh-task-review-transcript" />}

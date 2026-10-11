@@ -49,3 +49,16 @@ it('restores v8 batch read ranges but never failed items, metadata, malformed pa
   expect(restoreReviewReads([...index, ...pair('read_task_text', { seq: 9, text: 'summary' })], scoped).observed.size).toBe(0)
   expect(restoreReviewReads([...index, ...pair('read_task_text', { seq: 9, text: 'overflow', offset: 9, totalChars: 10, truncated: true, nextOffset: null })], scoped).observed.size).toBe(0)
 })
+it('completes a paged original without sticky truncation, but rejects gaps, failed pages and changing totals', () => {
+  const scoped = { ...job, scope: { protocol: 1 } } as ReviewJob
+  const index = pair('read_task_evidence_index', { sessionId: 'main', cutoff: 20, entries: [{ seq: 9 }] })
+  const first = pair('read_task_text', { seq: 9, text: 'abcd', offset: 0, totalChars: 8, truncated: true, nextOffset: 4 })
+  const tail = { seq: 9, text: 'efgh', offset: 4, totalChars: 8, truncated: true, nextOffset: null }
+  expect(restoreReviewReads([...index, ...first], scoped).ranges.get(9)?.truncated).toBe(true)
+  expect(restoreReviewReads([...index, ...first, ...pair('read_task_text', tail, true)], scoped).ranges.get(9)?.truncated).toBe(true)
+  expect(restoreReviewReads([...index, ...first, ...pair('read_task_text', { ...tail, offset: 5, text: 'fgh' })], scoped).ranges.get(9)?.truncated).toBe(true)
+  const paged = restoreReviewReads([...index, ...first, ...pair('read_task_evidence_batch', { sessionId: 'main', cutoff: 20, items: [{ ok: true, ...tail }] })], scoped)
+  expect(paged.ranges.get(9)).toEqual({ total: 8, ranges: [[0, 4], [4, 8]], truncated: false })
+  expect(restoreReviewReads([...index, ...first, ...pair('read_task_text', { ...tail, totalChars: 9 })], scoped).ranges.get(9)?.truncated).toBe(true)
+  expect(restoreReviewReads([...index, ...first, ...pair('read_task_text', { ...tail, text: 'abcdefgh', offset: 0, truncated: false })], scoped).ranges.get(9)?.truncated).toBe(false)
+})

@@ -1,0 +1,542 @@
+{
+  "step": 4,
+  "status": "validated",
+  "sourceParent": "12b4532675f82b9b704ae2785d5f1fe6664baa10",
+  "cases": [
+    {
+      "case": "delivery",
+      "sessionId": "session-9e2e2a5c-6ca8-444c-b349-074bd7bc4566",
+      "taskId": "7cc24fd8-0634-47c2-bb77-c4f20e6887c7",
+      "terminal": "complete",
+      "controllerPhase": null,
+      "elapsedSeconds": 753.279,
+      "initialApprovals": 1,
+      "approvalAttempts": null,
+      "reward": 1,
+      "artifactOracle": true,
+      "collectorCorrection": null,
+      "jobs": [
+        {
+          "id": "5115d267-80d3-45ba-8665-fd8fbda043aa",
+          "kind": "plan",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_Nj0eIOxJG1b4I9UJB2tC1294",
+            "submittedAt": "2026-10-11T09:33:55.456Z",
+            "resultSeq": 56,
+            "appliedAt": "2026-10-11T09:33:55.509Z",
+            "appliedTaskRevision": 3
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "84bd00fe-209e-4293-81a4-8d1482cf9c36",
+              "startedAt": "2026-10-11T09:33:55.483Z",
+              "finishedAt": "2026-10-11T09:33:55.495Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": null,
+          "checks": 0,
+          "incrementalFindings": 0,
+          "repeatedReads": 0,
+          "toolCalls": 11,
+          "wallSeconds": 66.874,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:32:48.597Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 8,
+          "nativeExecutionTurns": 1
+        },
+        {
+          "id": "c0cfdeaa-bf1d-47f0-979f-6349593a80d0",
+          "kind": "stage",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_guxdbS265hSJXauQPofz0358",
+            "submittedAt": "2026-10-11T09:38:16.490Z",
+            "resultSeq": 254,
+            "appliedAt": "2026-10-11T09:38:16.558Z",
+            "appliedTaskRevision": 8
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "833895d1-c3a5-45df-8bce-99cf0e4985f9",
+              "startedAt": "2026-10-11T09:38:16.526Z",
+              "finishedAt": "2026-10-11T09:38:16.539Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": null,
+          "checks": 1,
+          "incrementalFindings": 11,
+          "repeatedReads": 1,
+          "toolCalls": 59,
+          "wallSeconds": 239.959,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:34:16.555Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 42,
+          "nativeExecutionTurns": 1
+        },
+        {
+          "id": "5068cb05-7b05-4d02-ae1c-7a1ef94f6881",
+          "kind": "stage",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_ET_qgEve0C7EoIPpcY7TKR39390",
+            "submittedAt": "2026-10-11T09:41:46.861Z",
+            "resultSeq": 267,
+            "appliedAt": "2026-10-11T09:41:46.927Z",
+            "appliedTaskRevision": 12
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "5d946e2a-d66e-4453-b91f-c1f457c7d8d6",
+              "startedAt": "2026-10-11T09:41:46.896Z",
+              "finishedAt": "2026-10-11T09:41:46.907Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": null,
+          "checks": 2,
+          "incrementalFindings": 6,
+          "repeatedReads": 0,
+          "toolCalls": 67,
+          "wallSeconds": 192.318,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:38:34.567Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 41,
+          "nativeExecutionTurns": 1
+        },
+        {
+          "id": "e9f9897c-ee86-46fe-9f0f-0e7f7cf0b513",
+          "kind": "completion",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_yXCJOSkKqCMThrkWnMhV0647",
+            "submittedAt": "2026-10-11T09:45:06.235Z",
+            "resultSeq": 297,
+            "appliedAt": "2026-10-11T09:45:06.295Z",
+            "appliedTaskRevision": 14
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "7621f112-0874-4e20-a4de-e37e125e84e4",
+              "startedAt": "2026-10-11T09:45:06.266Z",
+              "finishedAt": "2026-10-11T09:45:06.278Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": null,
+          "checks": 3,
+          "incrementalFindings": 7,
+          "repeatedReads": 1,
+          "toolCalls": 79,
+          "wallSeconds": 190.479,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:41:55.774Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 43,
+          "nativeExecutionTurns": 1
+        }
+      ]
+    },
+    {
+      "case": "negative",
+      "sessionId": "session-9e2e2a5c-6ca8-444c-b349-074bd7bc4566",
+      "taskId": "e00ad058-e916-4cc5-b68b-7e440092625d",
+      "terminal": "paused",
+      "controllerPhase": null,
+      "elapsedSeconds": 309.403,
+      "initialApprovals": 1,
+      "approvalAttempts": null,
+      "reward": 1,
+      "artifactOracle": true,
+      "collectorCorrection": null,
+      "jobs": [
+        {
+          "id": "afa60491-8858-49ba-a384-b020141431e5",
+          "kind": "plan",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_8YPBvmEYKJnZ8jU5YkXs8105",
+            "submittedAt": "2026-10-11T09:47:59.022Z",
+            "resultSeq": 59,
+            "appliedAt": "2026-10-11T09:47:59.071Z",
+            "appliedTaskRevision": 3
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "b3a95207-a8d3-4f78-8679-fb5571caecad",
+              "startedAt": "2026-10-11T09:47:59.047Z",
+              "finishedAt": "2026-10-11T09:47:59.061Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": null,
+          "checks": 0,
+          "incrementalFindings": 0,
+          "repeatedReads": 0,
+          "toolCalls": 11,
+          "wallSeconds": 131.841,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:45:47.197Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 9,
+          "nativeExecutionTurns": 1
+        },
+        {
+          "id": "4151340a-bcb6-4e11-af1b-5bda19d427f6",
+          "kind": "stage",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_ET_6b7YFGKPTRCICtuwWsXE0464",
+            "submittedAt": "2026-10-11T09:50:21.799Z",
+            "resultSeq": 178,
+            "appliedAt": "2026-10-11T09:50:21.861Z",
+            "appliedTaskRevision": 8
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "40bf57b2-da26-4d20-a02e-d2b9da3f8a0a",
+              "startedAt": "2026-10-11T09:50:21.836Z",
+              "finishedAt": "2026-10-11T09:50:21.849Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "needs-user",
+          "requiredCapabilities": null,
+          "checks": 1,
+          "incrementalFindings": 11,
+          "repeatedReads": 0,
+          "toolCalls": 48,
+          "wallSeconds": 110.444,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:48:31.378Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 24,
+          "nativeExecutionTurns": 1
+        }
+      ]
+    },
+    {
+      "case": "capability",
+      "sessionId": "session-236fc8ba-a9cc-4ca9-8c1d-818f5a5f6d9f",
+      "taskId": "a9292d90-d78d-433b-af52-2d903b3e8526",
+      "terminal": "capability-unavailable",
+      "controllerPhase": "awaiting-approval",
+      "elapsedSeconds": null,
+      "initialApprovals": 0,
+      "approvalAttempts": 1,
+      "reward": 1,
+      "artifactOracle": true,
+      "collectorCorrection": "The original driver assumed approval success and stopped after persisting the refusal. This read-only collector seals that original Session as a permitted preparation fault. No redelivery or second approval.",
+      "jobs": [
+        {
+          "id": "35cce9a0-a2f2-42a1-a6d5-f626efb4c218",
+          "kind": "plan",
+          "status": "applied",
+          "attempt": 1,
+          "confirmation": {
+            "callId": "call_00_wwg5fSYH6PjjfZfwyYtv4915",
+            "submittedAt": "2026-10-11T09:55:18.633Z",
+            "resultSeq": 67,
+            "appliedAt": "2026-10-11T09:55:18.687Z",
+            "appliedTaskRevision": 3
+          },
+          "cleanupHistory": [
+            {
+              "runtimeId": "c4187903-05c6-4400-a92b-b394464b7f57",
+              "startedAt": "2026-10-11T09:55:18.665Z",
+              "finishedAt": "2026-10-11T09:55:18.677Z",
+              "confirmed": true
+            }
+          ],
+          "verdict": "pass",
+          "requiredCapabilities": [
+            "read",
+            "run",
+            "visual"
+          ],
+          "checks": null,
+          "incrementalFindings": null,
+          "repeatedReads": null,
+          "toolCalls": 15,
+          "wallSeconds": 190.784,
+          "budgetSeconds": 600.0,
+          "over600Seconds": false,
+          "overBudget": false,
+          "phaseHistory": [
+            {
+              "at": "2026-10-11T09:52:07.867Z",
+              "phase": "checking"
+            }
+          ],
+          "modelSteps": 9,
+          "nativeExecutionTurns": 1
+        }
+      ]
+    }
+  ],
+  "tokensByUniqueSession": {
+    "session-9e2e2a5c-6ca8-444c-b349-074bd7bc4566": {
+      "uncachedInputTokens": 235076,
+      "outputTokens": 17195,
+      "cacheReadTokens": 760448,
+      "cacheWriteTokens": 0
+    },
+    "task-review-2be46048-1dc3-4b08-a666-fd0306f3b683": {
+      "uncachedInputTokens": 19306,
+      "outputTokens": 13653,
+      "cacheReadTokens": 87552,
+      "cacheWriteTokens": 0
+    },
+    "task-review-a5953013-508e-4801-9822-9437883e6f2c": {
+      "uncachedInputTokens": 69279,
+      "outputTokens": 40588,
+      "cacheReadTokens": 1662080,
+      "cacheWriteTokens": 0
+    },
+    "task-review-339f4892-7e2b-45de-b383-b5e5214ef696": {
+      "uncachedInputTokens": 98880,
+      "outputTokens": 30873,
+      "cacheReadTokens": 2057856,
+      "cacheWriteTokens": 0
+    },
+    "task-review-565e9c3f-9416-4b9c-83ee-f0f10f8ff144": {
+      "uncachedInputTokens": 112302,
+      "outputTokens": 27298,
+      "cacheReadTokens": 2564224,
+      "cacheWriteTokens": 0
+    },
+    "task-review-0d497b29-eee2-4755-bffd-7bac37fc957f": {
+      "uncachedInputTokens": 19407,
+      "outputTokens": 29449,
+      "cacheReadTokens": 101376,
+      "cacheWriteTokens": 0
+    },
+    "task-review-a3672834-230d-487b-a918-f1c9d0f73916": {
+      "uncachedInputTokens": 43288,
+      "outputTokens": 17809,
+      "cacheReadTokens": 654976,
+      "cacheWriteTokens": 0
+    },
+    "session-236fc8ba-a9cc-4ca9-8c1d-818f5a5f6d9f": {
+      "uncachedInputTokens": 33947,
+      "outputTokens": 11700,
+      "cacheReadTokens": 116608,
+      "cacheWriteTokens": 0
+    },
+    "task-review-ef104b96-c253-4fd0-990f-423a45839fce": {
+      "uncachedInputTokens": 21948,
+      "outputTokens": 38594,
+      "cacheReadTokens": 110208,
+      "cacheWriteTokens": 0
+    }
+  },
+  "tokenTotals": {
+    "uncachedInputTokens": 653433,
+    "outputTokens": 227159,
+    "cacheReadTokens": 8115328,
+    "cacheWriteTokens": 0
+  },
+  "tokenScope": "Deduplicate the shared root Session using its latest cumulative projection. These are acquired native projections; cache tokens are reported separately.",
+  "candidate7": {
+    "tarballSha256": "a2437bedc9cbe83f0339aad03fb0bd9df0350d920a3e7ffd5da7f226ee2e84a1",
+    "hostArtifactSha256": "188b1dd9fd673b909ff21c23bb381cd1bb7e77f3c843e5c3657f5eab6db1ed78",
+    "clientArtifactSha256": "252c7b281145ede98842fa695d7467f0466199b029a5a844941518fdf0e3122a",
+    "realModelCandidate6HostArtifactIdentical": true,
+    "ordinaryOfficialHostInstalled": true
+  },
+  "checks": [
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts planning-review.spec.ts review-findings.spec.ts repair-budget.spec.ts review-results.spec.ts verification.spec.ts review-presentation.spec.ts review-read-ledger.spec.ts review-portal-store.spec.ts capabilities.spec.ts review-budget.spec.ts",
+      "exitCode": 0,
+      "passed": 288,
+      "skipped": 1
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs review-presentation.spec.ts (final UI change)",
+      "exitCode": 0,
+      "passed": 18
+    },
+    {
+      "command": "Node24 spikes/kernel/run.mjs supervisor.spec.ts -t incremental (failed-check relabel guard)",
+      "exitCode": 0,
+      "passed": 8
+    },
+    {
+      "command": "Node24 spikes/kernel/typecheck.mjs",
+      "exitCode": 0,
+      "result": "Host/Client strict"
+    },
+    {
+      "command": "LC_ALL=C Node24 pnpm build; pnpm pack; official dsh plugin add",
+      "exitCode": 0
+    }
+  ],
+  "browser": {
+    "sameSessionTwoTasksDistinctJobs": 6,
+    "nativeHistoryToolsLoadedWithoutNewTurn": true,
+    "reportAndProcessFoldIndependent": true,
+    "refreshNoDuplicate": true,
+    "historyScrollTopBefore": 5387,
+    "historyScrollTopAfter": 5387,
+    "narrowWidth": 430,
+    "documentWidth": 430,
+    "visibleReviewerComposers": 0,
+    "stalePlanHintRemoved": true,
+    "historicalNullModelProof": "unit only; the observed historical model was resolved",
+    "subscriptionCleanupProof": "targeted kernel; no browser memory instrumentation"
+  },
+  "diagnostics": "development-diagnostics.json",
+  "limits": [
+    "No current actual-wire route proof; Step5 admission still required. Model configuration/HTTP200 are not route evidence.",
+    "Correct two-node fixture took 753.279s, with errors/repeated reads; no efficiency or benchmark advantage claim.",
+    "Capability plan passed coverage but approval refused unavailable visual; Task stayed awaiting-approval. Original driver assertion and read-only collection correction retained.",
+    "Initial UI server-render test failed from two React copies; replaced with pure presentation regression and real browser replay.",
+    "Progress fingerprint hashes acquired output bytes, not semantic normalization.",
+    "Eight exposed Supervisor regressions have not started. No blind false-acceptance, false-pause or correction-benefit labels."
+  ],
+  "falseAcceptance": null,
+  "falsePause": null,
+  "correctionBenefit": null,
+  "dailyHostRestarted": false,
+  "sourceSha256": {
+    "src/artifact-identity.ts": "ca23e9876dee9921b43d5c3e312cf4a20f9dddd739fe76945e10803ed036f570",
+    "src/artifact-snapshot.ts": "2b3f8cb82b3d22c0eb41de856b40f66032551385893150160def9d9b686e37fb",
+    "src/check-channel.ts": "6e3ee6a0d0c1fbf94320f8883ac0d24855bc8fa34be637d3585e8bb2dbc61471",
+    "src/check-errors.ts": "74a6acd4b29bd4939659541c823796338f5f42e2c829d42813dd8c2e782d1516",
+    "src/check-gateway.ts": "a953ba6eea3d1908236b34e8ad4af1474876a25e4a9358426ea1958604cfb0f9",
+    "src/client/attempt-details.tsx": "b636bb46a8a61ebaeeed73f2181a2491409bd0496720b4d02a9da0e7cb7c8308",
+    "src/client/consultation.tsx": "853d116af436a93727dc4fbc063eeefb6b805cabf9ca4f9ee6f47485895e9a16",
+    "src/client/disclosure.tsx": "e8ed3ec3ee0e2f9e1d2bad69d5a4f839aa040fc7f78e0f455ee7320e10996c66",
+    "src/client/draft-events.ts": "fc9702ee3601cadc53af191853dd28b37d3e83904770845a457253e32b9be77e",
+    "src/client/execution-budget.tsx": "7bc3c2046a1a1bd66b3b2bbc6c470b653de86423ddb396b517168b87ad63dfd0",
+    "src/client/index.tsx": "3d6f02abb274b75530b5a2fbc8656819cc7e1bc12361a2d12e07357da3263a96",
+    "src/client/inline-task.tsx": "c7a8c4dffae4b91f92e5dfa8809265cc7113ff233ba309aafd50184ebc9d64c2",
+    "src/client/locales.ts": "fd079a9ca19f60bda10fc8e36fc6d48df96ab7636cb7dbe5def45c56872a64a8",
+    "src/client/milestones.ts": "c623395702e3cd9cee7c8b2dcd0f7b9a270e7418487f694d3afad26278dfc913",
+    "src/client/presentation.ts": "2c7987fcd9d80d75653151e432dd0adf23a5cb5ec7f5f207e3f6bddf4e191145",
+    "src/client/repair-panel.tsx": "6691b28d79918ba2c4229100ec20e32ca0e1d736102cd2b6889bb25feec2c110",
+    "src/client/review-events.ts": "853f4b15991f68f31f201826d9270184080af41c4ca09da43af93d7cbbc3ad28",
+    "src/client/review-inspection.tsx": "9bbeed586c19e4d1cf682f25decb146bd9503ec23d05f3053aa86f6ec8b26cc0",
+    "src/client/review-portal-store.ts": "7c35ff301382b856df701bf72d2714236d6f8c5c165cc9eb8f88644c8d8a0167",
+    "src/client/review-portals.tsx": "2458da5b2549cafd2289e41b4ca42a8d77fe4ca1851bc710b7d2a000b1c0b59f",
+    "src/client/review-presentation.ts": "782b75604e964e277b58f4bea7e79af4c100e80ffaa7cbbfc71dfa635ba881a9",
+    "src/client/review-progress.tsx": "94859246948479443055e668849639c06d02700d56cc43f081f9d508bc26e58c",
+    "src/client/review-report.tsx": "2d58f64798c5809a45e0e8cde6f97c38ff69db05efa90885dedd1cc71dde3b6a",
+    "src/client/review-requirements.tsx": "022e784bd8a05737b83f793d86ca9f61ed6e27bdc9faa8eba4202a0797dab990",
+    "src/client/review-session.tsx": "b9c786e40f455a57733324e57908709beeb87ace76095c45adb99b57b8a46c44",
+    "src/client/styles.ts": "a9cf601beb121b0aa961fa623ccc87f54a06733661c7c04433b300433fb76b0d",
+    "src/client/task-graph.tsx": "1080c5df449fb678a3306512540c942337dbd34c794c91abb26a56ca9c688260",
+    "src/client/task-store.ts": "34f6c1e74d75b26b554c1048be4fc4752de0ccd757d944839d45595992ffb2ad",
+    "src/closing-response.ts": "99e7b914646d69e2cc33f00f407fead6345acfc7dc4dd49017d6a8f56dc1b2d2",
+    "src/consultation.ts": "651df23b761a042ec95e7799c181be9046d33e150ae7d0e8ac18c38aa9794b3c",
+    "src/decisions.ts": "378c6685960925ed4d85ceae91f9a2bdae79db03e58ff2ae5af1a6c2c0631f23",
+    "src/delegation.ts": "8de51ca074291ee64abdc5d044826217ef96483f7c72b4e64e44f300d9923477",
+    "src/delivery.ts": "9230c3ef7000747aabf142b246e205a36f477d7e1f97339bcfa13bb1d347ce35",
+    "src/dispatch-records.ts": "f97e806b59dc3e585c52d61b46406443b415f8640575cd72426d8c2a53cac712",
+    "src/drafts.ts": "a96dd63c2e7cf152068883e4bffba23632ddfe25fbbe7140bfbe40ae38fac8b1",
+    "src/evidence-index.ts": "5ac70f8838e2c46f13bcec007c5988f318356bef6c33de21cad2c427a7d5d196",
+    "src/evidence-read.ts": "8388631d8d2ebadd6b3c4d7cddb78a79764fa6b3b868e630da701de5b136e942",
+    "src/evidence.ts": "fd9abef1b70141853c0dba7674b97e2f186f9430f02761b23978c937ae1329ca",
+    "src/execution-budget-runtime.ts": "481e4d06d847b0ba89e6ba16fe10be40f8e18920fd5fad02b00b50d78131eb13",
+    "src/execution-budget.ts": "8ff79596ae1d46abb65b46e47962ba90ea15f4d2af0f94baeb6af060282d7cb9",
+    "src/execution-policy.ts": "1ff6feb2ace8f1af9f0ba1ade9a316270496147c8a192f8e2aee223e3f6e95ad",
+    "src/graph.ts": "b8fc6f4acbefc2ee45a88c16125eefbb751f2aefdd16268e81e2f61e655de9ec",
+    "src/image-evidence.ts": "73090ff42f2f49021ae00d7e81bb23926e4dfc06094601f89e33ca4d1e132c30",
+    "src/index.ts": "5389874da25a705ea3d7bfc897dc86c7c3f1047d1d5c7aa6a54dcda7ef69ccd3",
+    "src/observation.ts": "a672e58d4f418758a58243772bcba7e9b5f2e440e9c641c24f12ddef730d3de3",
+    "src/panel-api.ts": "87814e47fde83097131ec79818087c055554ea0df8d3b3dbc1e2ba00e62d35e5",
+    "src/process-provenance.ts": "8a07d003f79a59b75b5763a7632fdf825286855221382cfc5df08b70fda6f148",
+    "src/progress-evidence.ts": "f0f1354e0ecef74e775da20dc68ce2b4a28922c672a0d7b275649c51c472dcb1",
+    "src/provenance-docker.ts": "337c5bed8eae2c8123156133cffc2b0683dabd15439eb2fd575fae3b046ee4f1",
+    "src/provenance-findings.ts": "e6eaef3265f9ea53e94fbaa510a9ca372caabdc5d21a587521ce80aed0d28ea4",
+    "src/provenance-git.ts": "76209cfc5b8d0752e630d9859e8abc1e6a82689ec382c14448a6eba384418e3b",
+    "src/provenance-schema.ts": "d54013b4c4d09501773aec705d8cf86d7db33b71b079c444e29f4578a61b48f5",
+    "src/provenance-store.ts": "4ee5bc09addd54b6fbd99271e06a2e347b49d2bb48d0b645b512d72cd28fa32e",
+    "src/provenance.ts": "ed9f41123039776c757011ae433d14b2f17f43b076e5dc1b1d80d12da85edbc2",
+    "src/read-coverage.ts": "401d0b95a791858d1be3e1eafeba8e6e5411b01fc96624d2286acc242027443d",
+    "src/recovery.ts": "1cb59b6577560938f749c3cd1b44c8b354910f639e27d6baf2579adfb486a7a0",
+    "src/repair-budget.ts": "606f19ef03a1eb9ebf7ff3d752c9a6d82cfcec2bd5f2eff90be46fd01e2e51f8",
+    "src/repair-progress.ts": "26e6dd1b4f10a1b8883dbe98b99c6d326b5d24f1b86db68e5f3ed600756f9744",
+    "src/repair-runtime.ts": "d4088e3a1504d7f555a697599fe1b4feeadd59f06819d3af9cacaaeccccc9111",
+    "src/repairs.ts": "f88bb00e7c6e31c404cba401abd7113a82959413cbd97f319312972634c59397",
+    "src/review-activity.ts": "578cdc097647dd82e36b09f05ae891d102dabfb1db3d0601c4b2d4c378df74a7",
+    "src/review-budget.ts": "081546832f9796c754e4e1200810c07a82d2a723a735f6feef2b8b84551c4118",
+    "src/review-capabilities.ts": "4f01690fa17d030bceadb9c44a3150536e69d82b7a823dcba1dd6fdbde8d1d62",
+    "src/review-check-plan.ts": "a5861edd48158f002fb54cafc1602ba160750dfe1faca2cc1b5459461a4dd8b8",
+    "src/review-check.ts": "30b47a4bd2d5d9a2aa1a757b7def725bdfdf5f1fbf7f558cff7bde6a787870ed",
+    "src/review-findings.ts": "e3a434eb131294f01e84d6078311a40da87904bf56301e5535d0d6e09d922f79",
+    "src/review-handoff.ts": "7b3f2baebda96a2fbffafc93ed54d92dc32a31a9521cd5073af32a3aa7c13c11",
+    "src/review-queue.ts": "f526b2fc7935f0902ed2ec4733461ad831a55c81dbe45b63c3db511513408ccd",
+    "src/review-read-ledger.ts": "ff38568144c798314af52637cb5aa05b45d7bd9b8df24b823f28c3428b45d37d",
+    "src/review-records.ts": "52f91838e50eb0977fb67e2d3303c13951b5272ad2e7efc207b0ecb16e522bdb",
+    "src/review-recovery.ts": "998370a753cd6bd13c9e2769a31d5ef56c87e85b0fa411a33c5fe843ef857fd0",
+    "src/review-results.ts": "f03129c5a689715ac81361e33b070867e0662898e3fa033f304682170c77c2e8",
+    "src/review-reuse.ts": "21a9431046ee122b19c7bd589aa54ca0ae10f7589ce8e0a3fbfaa11a5490bd44",
+    "src/review-schema.ts": "1588c23262ca36705066defb3cc91e7889b8b3c887ebb046b1e6ac927102dbba",
+    "src/review-scope-schema.ts": "442a1fb4996c423f718aa95ba8427f63b0e31fca1569ca16109a01c2f80e2adb",
+    "src/review-scope.ts": "7d9349515d219da01fb47763d1b4854bcea810c1869ad1b54d8d957ac0c86e84",
+    "src/review-transport-recovery.ts": "854fcb4d9a0d052612d82449c48449d43ccb13fddf753bf291cc39194a568c19",
+    "src/reviewer.ts": "3e3640dcbdf0e25c0486e97c02e25142d591933ac39696388af33663a8ccf278",
+    "src/rework-records.ts": "61412b237083c6ecf6b960208f7ef819c6cfbd4ce9c7dede7c0fc1fd482007fc",
+    "src/session-records.ts": "b465fe155541128185a53266d41665a50f4d5a58706e0b1abe2b58529b12a524",
+    "src/standard-host.ts": "9f728d481d8707e6ff409a30052a9b345819b712a4091a798e119cd98fc8dda5",
+    "src/state-schema.ts": "a17aa4ab053679f750e605f845435a572c29c11b4a681c33024dbfb4118dc462",
+    "src/state.ts": "184ee84319e5e1e04fab71b9540b88da1a05b5170edcf76aa7a6e71b17a4a6e2",
+    "src/task-context.ts": "92951e66f6092fd955011d90714b36a81f131acbfde8783f5a4a26f1bd3bf92b",
+    "src/task-tool-presentation.ts": "814849a37c529142685c9cf56e41dfa77cb6c834d01cc5e918244a78377d3a4e",
+    "src/verification-schema.ts": "c7c3ff50f144996caffc035f33ff1a14f75b704accc8053f9c0f36f0dda2b797",
+    "src/verification.ts": "e244ce0ae2b1b36f1f3f748ea3922e90eb33cb8012a55f653a84ef4de0efdaa3"
+  }
+}

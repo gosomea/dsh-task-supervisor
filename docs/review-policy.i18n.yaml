@@ -1,3 +1,6 @@
-# Bilingual-pair consistency record. Both languages carry equal authority.
-review-policy.md: 485d3cf90378a7cf1bae91f472f5cb7d2f7f3e29
-review-policy.zh.md: 8254aa23a6bd967e2ad3cded9aa7343b6814508a
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write review-policy.md
+review-policy.md: e7b0f360e5dc9ebd86cfa2428ecc7bf74e1074bb
+review-policy.zh.md: ba3de6f16e148b11cfed6e8f43dae7d3939e0b81

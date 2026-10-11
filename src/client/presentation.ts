@@ -15,6 +15,8 @@ export function taskStatus(state: PanelState): string {
   if (!task.enabled) return '督导已关闭'
   if (task.phase === 'paused' && task.pauseReason === 'task-deadline') return '任务截止 · 已停止'
   if (task.phase === 'paused' && task.pauseReason === 'execution-budget') return '恢复预算耗尽 · 等待手动核对'
+  if (task.phase === 'paused' && task.pauseReason === 'repair-budget') return '修订次数耗尽 · 等待核对'
+  if (task.phase === 'paused' && task.pauseReason === 'repair-stalled') return '修订无进展 · 等待核对'
   if (task.phase === 'paused' && task.pauseReason === 'review-fault') return '审查故障 · 等待恢复'
   if (task.phase === 'paused' && task.pauseReason === 'decision') return '等待用户决策'
   if (state.reviewing) {
@@ -25,6 +27,7 @@ export function taskStatus(state: PanelState): string {
   return task.acceptanceCycle && task.acceptanceCycle > 1 ? `${PHASE[task.phase]} · 第 ${task.acceptanceCycle} 轮验收` : PHASE[task.phase]
 }
 export function progress(task: TaskSnapshot): string {
+  if (task.phase === 'planning' && task.planVersion > 0) return `正在修订计划 · 原计划 ${acceptedNodes(task).length}/${task.stages.length} 已通过`
   return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过` : task.pendingReview?.kind === 'plan' ? '计划已提交' : '正在准备计划'
 }
 /** A proposal is a preview, never an approved task or an execution grant. */
@@ -48,6 +51,8 @@ export function nodeRework(task: TaskSnapshot, id: string, records: readonly Rew
   const recorded = records.findLast(record => record.planVersion === task.planVersion
     && record.nodes.some(node => node.id === id && node.nextAttempt === run?.attempt))
   if (recorded) return recorded
+  const automatic = task.repairBudget?.history.findLast(item => item.kind === 'rework' && item.admitted && item.planVersion === task.planVersion && item.affectedNodeIds.includes(id))
+  if (automatic) return { stageId: automatic.nodeId!, reason: automatic.reason }
   const repair = task.repairHistory?.findLast(cycle => cycle.affectedNodeIds.includes(id)
     && cycle.previousRuns.some(prior => prior.id === id && prior.attempt + 1 === run?.attempt))
   return repair ? { stageId: repair.rootNodeIds.includes(id) ? id : repair.rootNodeIds[0]!, reason: repair.reason } : undefined

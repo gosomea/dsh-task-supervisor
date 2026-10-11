@@ -5,7 +5,7 @@ export interface ObservationPolicy { toolCalls: number; elapsedMs: number; conse
 export interface ObservationCursor { key: string; seq: number; time: number }
 
 export function observationReason(events: readonly SessionEvent[], cursor: ObservationCursor,
-  policy: ObservationPolicy, now: number): string | null {
+  policy: ObservationPolicy, now: number, anomalyOnly = false): string | null {
   const results = events.filter(event => event.seq >= cursor.seq && event.type === 'tool/result')
   if (!results.length) return null
   let failures = 0
@@ -14,6 +14,7 @@ export function observationReason(events: readonly SessionEvent[], cursor: Obser
     failures++
   }
   if (failures >= policy.consecutiveErrors) return `${failures} consecutive tool errors`
+  if (anomalyOnly) return null
   if (results.length >= policy.toolCalls) return `${results.length} tool results since the previous observation`
   if (now - cursor.time >= policy.elapsedMs) return `${now - cursor.time} milliseconds of active work since the previous observation`
   return null

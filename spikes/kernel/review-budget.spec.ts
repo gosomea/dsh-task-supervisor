@@ -7,6 +7,10 @@ const start = Date.parse('2026-10-11T00:00:00Z')
 const read: CheckCost = { source: { kind: 'objective', reference: 'objective' }, fact: 'Exact table', expected: 'required rows', method: 'read', expectedBytes: 2000 }
 it('selects workload from deduplicated checks and costs rather than artifact class', () => {
   expect(workloadTier([read, read])).toBe('light')
+  // A bounded original-log read is a read, not an unknown execution capability.
+  expect(workloadTier([read, { ...read, fact: 'Approval receipt', method: 'log', expectedBytes: 3000 }])).toBe('light')
+  expect(workloadTier([{ ...read, method: 'log' }, { ...read, method: 'run', expectedCommandMs: 5000 }])).toBe('regular')
+  expect(workloadTier([{ ...read, method: 'log', expectedBytes: undefined }])).toBe('complex')
   expect(workloadTier([{ ...read, method: 'run', expectedCommandMs: 10000 }])).toBe('regular')
   for (const checks of [[{ ...read, expectedBytes: undefined }], [{ ...read, method: 'run' }],
     [{ ...read, method: 'visual' }], [{ ...read, expectedBytes: 2 * 1024 * 1024 }], []]) expect(workloadTier(checks)).toBe('complex')

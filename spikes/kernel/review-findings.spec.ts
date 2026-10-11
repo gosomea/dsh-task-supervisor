@@ -28,13 +28,26 @@ it('retains incremental amendments and explicit unfinished gaps without treating
   expect(() => validateFindings(value, ['c'], criterionSummary(value, results, ['c']), true)).not.toThrow()
   expect(() => appendCheckResult(value, first, { sessionId: 'review', callId: 'one', callSeq: 8 })).toThrow('receipt')
   value.phase = 'comparison'
-  expect(() => appendCheckResult(value, first, { sessionId: 'review', callId: 'three', callSeq: 20 })).toThrow('sealed')
+  const sealed = structuredClone(value.checkFindings)
+  appendCheckResult(value, { ...first, finding: 'Comparison confirmed title' }, { sessionId: 'review', callId: 'three', callSeq: 20 })
+  expect(value.checkFindings).toEqual(sealed)
+  expect(value.checkHistory?.at(-1)?.phase).toBe('comparison')
+  expect(currentCheckResults(value)[0]?.finding).toBe('Comparison confirmed title')
 })
 it('never turns an unfinished explicit check into pass, while optional preferences remain nonblocking', () => {
   const value = state(), results = currentCheckResults(value)
   expect(criterionSummary(value, results, ['c'])[0]?.status).toBe('unverified')
   expect(() => checkResultsAsEvidence(value, results, true)).toThrow('cannot pass')
   expect(() => appendCheckResult(value, { ...results[0]!, checkId: 'unknown' }, { sessionId: 'review', callId: 'one', callSeq: 1 })).toThrow('bound check plan')
+})
+it('rejects incompatible delivery methods before sealing so a valid ordering check can be corrected', () => {
+  const value = state()
+  const ordering = { ...check, id: 'ordering', method: 'log' as const }
+  expect(() => appendCheckPlan(value, [{ ...ordering, delivery: 'artifact' }], ['c'], 'now')).toThrow('Omit delivery for ordering')
+  expect(value.checkPlan).toHaveLength(1)
+  expect(() => appendCheckPlan(value, [ordering], ['c'], 'corrected')).not.toThrow()
+  expect(() => appendCheckPlan(value, [{ ...check, id: 'commit', delivery: 'action' }], ['c'], 'later')).toThrow('paired native operation')
+  expect(() => appendCheckPlan(value, [{ ...ordering, id: 'commit', delivery: 'action' }], ['c'], 'corrected')).not.toThrow()
 })
 function jobs() {
   const input = newTask('Compute required value'); input.planVersion = 1
@@ -79,4 +92,51 @@ it('retains original snapshot identity and requires fresh output reads before re
   expect(evidence).toMatchObject({ snapshotId: executed.snapshotId, reusedForSnapshotId: state.snapshot.id, sourceJobId: source.id })
   state.reusedChecks[0]!.scope = 'narrower'
   expect(() => checkResultsAsEvidence(state, [result], true)).toThrow('scope')
+})
+
+it('resolves a sealed coverage gap only through method-qualified evidence while retaining the original observations', () => {
+  const { current, source, planned } = jobs(), value = current.verification!
+  value.checks = [{ ...source.verification!.checks[0]!, snapshotId: value.snapshot.id }]
+  value.checkPlan![0]!.checks = [planned]
+  value.phase = 'independent'
+  const gap = { checkId: planned.id, status: 'unverified' as const, finding: 'Not executed yet', coverage: planned.coverage, limitations: 'Missing independent run', evidenceIds: [] }
+  appendCheckResult(value, gap, { sessionId: 'review', callId: 'gap', callSeq: 1 })
+  value.checkFindings = currentCheckResults(value)
+  value.observations = criterionSummary(value, value.checkFindings, ['c'])
+  value.phase = 'comparison'
+  const sealed = structuredClone({ checks: value.checkFindings, observations: value.observations })
+  const resolved = { ...gap, status: 'satisfied' as const, finding: 'Independent reproduction confirmed', limitations: '', evidenceIds: [value.checks[0]!.id] }
+  const { checkPlan: _plan, checkFindings: _findings, ...basic } = value
+  const facts = checkResultsAsEvidence(value, [resolved], false)
+  expect(() => validateFindings(basic, [planned.id], [{ ...facts[0]!, evidenceIds: ['seq:4'] }], false, new Map([[4, { total: 1, ranges: [[0, 1]], truncated: false }]]))).toThrow()
+  expect(() => validateFindings(basic, [planned.id], facts, false)).toThrow('complete check')
+  value.readChecks = ['stdout', 'stderr'].map(stream => ({ id: value.checks[0]!.id, stream: stream as 'stdout' | 'stderr', total: 0, ranges: [[0, 0]] }))
+  expect(() => validateFindings({ ...basic, readChecks: value.readChecks }, [planned.id], facts, false)).not.toThrow()
+  appendCheckResult(value, resolved, { sessionId: 'review', callId: 'resolution', callSeq: 12 })
+  expect({ checks: value.checkFindings, observations: value.observations }).toEqual(sealed)
+  const restored = JSON.parse(JSON.stringify(value)) as VerificationState
+  const results = currentCheckResults(restored)
+  expect(results[0]?.status).toBe('satisfied')
+  expect(() => checkResultsAsEvidence(restored, results, true)).not.toThrow()
+  expect(criterionSummary(restored, results, ['c'])[0]?.status).toBe('satisfied')
+  restored.checks[0]!.snapshotId = '00000000-0000-4000-8000-000000000099'
+  expect(() => validateFindings({ ...restored, checkPlan: undefined, checkFindings: undefined }, [planned.id], facts, true)).toThrow('foreign')
+})
+
+it('does not wash a sealed explicit failure into satisfaction using the same runtime evidence or new log claims', () => {
+  const { current, source, planned } = jobs(), value = current.verification!
+  value.checks = [{ ...source.verification!.checks[0]!, snapshotId: value.snapshot.id }]
+  const failed = { checkId: planned.id, status: 'failed' as const, finding: 'Observed value contradicts original expectation', coverage: planned.coverage, limitations: '', evidenceIds: [value.checks[0]!.id] }
+  appendCheckResult(value, failed, { sessionId: 'review', callId: 'original-failure', callSeq: 10 })
+  value.checkFindings = currentCheckResults(value); value.phase = 'comparison'
+  const candidate = { ...failed, status: 'satisfied' as const, finding: 'The checking activity is done' }
+  expect(() => appendCheckResult(value, candidate, { sessionId: 'review', callId: 'same-failure', callSeq: 20 })).toThrow('FAILED_CHECK_UNRESOLVED')
+  expect(() => appendCheckResult(value, { ...candidate, evidenceIds: [...failed.evidenceIds, 'seq:5', 'file:brief.md'] }, { sessionId: 'review', callId: 'main-claim', callSeq: 21 })).toThrow('additional acquired evidence of method run')
+  expect(value.checkHistory).toHaveLength(1)
+  const other = { ...value.checks[0]!, id: '00000000-0000-4000-8000-000000000010' }
+  value.checks.push(other)
+  appendCheckResult(value, { ...candidate, evidenceIds: [other.id], finding: 'Additional independent reproduction resolves the original observation' }, { sessionId: 'review', callId: 'additional', callSeq: 22 })
+  expect(currentCheckResults(value)[0]?.status).toBe('satisfied')
+  expect(value.checkFindings[0]?.status).toBe('failed')
+  expect(value.checkHistory).toHaveLength(2)
 })

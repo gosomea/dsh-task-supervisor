@@ -28,6 +28,7 @@ export function approvalMessage(events: readonly SessionEvent[], task: TaskSnaps
 export function approvedTask(task: TaskSnapshot, startSeq: number, userMessageSeq?: number): TaskSnapshot {
   if (task.phase !== 'awaiting-approval' || !task.enabled) throw new Error('the current plan is not awaiting approval')
   return { ...task, revision: task.revision + 1, approvedPlanVersion: task.planVersion,
+    ...task.repairBudget ? { repairBudget: { ...task.repairBudget, permit: { requirementsVersion: task.requirementsVersion, planVersion: task.planVersion, approvalSeq: startSeq } } } : {},
     everApproved: true, phase: 'active', readOnlyGateStartSeq: startSeq,
     lastApproval: { planVersion: task.planVersion, userMessageSeq: userMessageSeq ?? null } }
 }

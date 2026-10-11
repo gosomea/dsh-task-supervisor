@@ -3,6 +3,7 @@ import type { ReviewJob } from '../review-records.ts'
 import { Disclosure } from './disclosure.tsx'
 import type { SupervisorKey, SupervisorTranslate } from './locales.ts'
 import { ReviewRequirements } from './review-requirements.tsx'
+import { inspectionPlanHint } from './review-presentation.ts'
 
 export function inspectionPhase(job: ReviewJob): SupervisorKey {
   if (job.status === 'queued') return 'reviewQueuedAction'
@@ -16,13 +17,14 @@ export function ReviewInspection({ job, t }: { job: ReviewJob; t: SupervisorTran
   const checks = state?.checkPlan?.flatMap(entry => entry.checks) ?? []
   const findings = job.decision?.checks ?? state?.checkFindings ?? []
   const phase = inspectionPhase(job)
+  const hint = inspectionPlanHint(job)
   const phases: SupervisorKey[] = job.checkProtocol ? ['phasePlan', 'phaseIndependent', 'phaseComparison', 'phaseDecision'] : state ? ['phaseIndependent', 'phaseComparison', 'phaseDecision'] : ['phaseLog', 'phaseDecision']
   return <section className="dsh-task-section" aria-label={t('reviewProcess')}>
     <h3>{t('reviewProcess')} · {t(phase)}</h3>
     <p className="dsh-task-muted">{t(state ? 'independentScope' : 'logScope')}{state && ` · ${t('executedChecks')} ${state.checks.length}`} · {t('sessionEvidenceBoundary')}</p>
     <ol className="dsh-task-review-phases" aria-label={t('reviewProcess')}>{phases.map(name => <li key={name} aria-current={name === phase ? 'step' : undefined}>{t(name)}</li>)}</ol>
     <ReviewRequirements job={job} t={t} />
-    {!job.decision?.requirements && checks.length ? <Disclosure title={`要求检查 · ${checks.length} 项`}>
+    {!job.decision?.requirements && (checks.length ? <Disclosure title={`要求检查 · ${checks.length} 项`}>
       {checks.map(check => {
         const result = findings.find(item => item.checkId === check.id)
         return <Disclosure key={check.id} title={`${result ? { satisfied: '已满足', failed: '未满足', unverified: '未验证' }[result.status] : '待检查'} · ${check.fact}`}>
@@ -31,7 +33,7 @@ export function ReviewInspection({ job, t }: { job: ReviewJob; t: SupervisorTran
           {result && <p>结果：{result.finding}<br />实际覆盖：{result.coverage}<br />局限：{result.limitations || '未声明额外局限'}<br />证据：{result.evidenceIds.join('、') || '无独立证据'}</p>}
         </Disclosure>
       })}
-    </Disclosure> : state && <p className="dsh-task-muted">{job.checkProtocol ? '正在按原始要求制定检查方案。' : '旧版作业未记录逐项检查方案，保留原有证据级别。'}</p>}
+    </Disclosure> : hint && <p className="dsh-task-muted">{t(hint)}</p>)}
     {state && <Disclosure title="产物与能力范围"><p>快照 {state.snapshot.id}<br />已读取 {state.readFiles.length} 个文件 · 已运行 {state.checks.length} 个检查<br />本轮没有独立浏览器观察能力。</p></Disclosure>}
   </section>
 }

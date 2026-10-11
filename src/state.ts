@@ -13,14 +13,15 @@ import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
   type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 16
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+export const RECORD_VERSION = 17
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
 import { DRAFT_NAMESPACE, draftSchema, foldDraft, type TaskDraft } from './drafts.ts'
 import { REVIEW_NAMESPACE, reviewJobSchema, foldReviewJobs, type ReviewJob } from './review-records.ts'
 import { taskSchema, reviewSchema, type TaskSnapshot, type TaskStage, type TaskCriterion } from './state-schema.ts'
+import { validateRepairHistory } from './repair-budget.ts'
 import { REPAIR_NAMESPACE, repairProposalSchema, foldRepairs, reopenTask, type RepairProposal } from './repairs.ts'
 import { BUDGET_NAMESPACE, executionBudgetSchema, foldExecutionBudgets, type ExecutionBudget } from './execution-budget.ts'
 
@@ -58,7 +59,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 25,
+  stateVersion: 26,
   stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), budgets: z.array(executionBudgetSchema), currentSeq: z.number().int().nonnegative(),
@@ -105,6 +106,7 @@ export const taskProjection = {
         throw new Error('new task identity requires a terminal predecessor')
       }
       const source = previous?.id === next.id ? previous : archived?.task
+      validateRepairHistory(source, next)
       if (source?.phase === 'complete' && next.phase === 'active') {
         const proposal = state.repairs.find(p => p.id === next.reopenedFromProposalId)
         if (!proposal || JSON.stringify(taskJson(reopenTask(source, proposal, event.seq))) !== JSON.stringify(taskJson(next))) {
@@ -166,6 +168,8 @@ export function taskJson(state: TaskSnapshot): JsonValue {
   return {
     id: state.id,
     revision: state.revision,
+    ...state.repairBudget === undefined ? {} : { repairBudget: JSON.parse(JSON.stringify(state.repairBudget)) as JsonValue },
+    ...state.executionProgress === undefined ? {} : { executionProgress: { ...state.executionProgress } },
     ...state.acceptanceCycle === undefined ? {} : { acceptanceCycle: state.acceptanceCycle },
     ...state.completedAt === undefined ? {} : { completedAt: state.completedAt },
     ...state.reopenedFromProposalId === undefined ? {} : { reopenedFromProposalId: state.reopenedFromProposalId },
@@ -177,12 +181,14 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     ...state.responseLanguage === undefined ? {} : { responseLanguage: state.responseLanguage },
     ...state.lastApproval === undefined ? {} : { lastApproval: { planVersion: state.lastApproval.planVersion, userMessageSeq: state.lastApproval.userMessageSeq,
       ...state.lastApproval.source === undefined ? {} : { source: state.lastApproval.source },
+      ...state.lastApproval.sourcePlanVersion === undefined ? {} : { sourcePlanVersion: state.lastApproval.sourcePlanVersion },
       ...state.lastApproval.authorizationSeq === undefined ? {} : { authorizationSeq: state.lastApproval.authorizationSeq },
       ...state.lastApproval.reviewJobId === undefined ? {} : { reviewJobId: state.lastApproval.reviewJobId } } },
     ...state.approvalPolicy === undefined ? {} : { approvalPolicy: { ...state.approvalPolicy } },
     requirementsVersion: state.requirementsVersion,
     planVersion: state.planVersion,
     criteria: state.criteria.map(item => ({ id: item.id, text: item.text,
+      ...item.delivery === undefined ? {} : { delivery: item.delivery },
       ...item.evidenceKind === undefined ? {} : { evidenceKind: item.evidenceKind },
       ...item.provenance === undefined ? {} : { provenance: { kind: item.provenance.kind, reference: item.provenance.reference,
         ...item.provenance.sourceSeq === undefined ? {} : { sourceSeq: item.provenance.sourceSeq } } } })),

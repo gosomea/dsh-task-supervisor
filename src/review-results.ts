@@ -5,6 +5,7 @@ import type { CheckFinding } from './review-check-plan.ts'
 
 export const requirementSourceSchema = z.object({ kind: z.enum(['objective', 'user-message', 'project-rule', 'implementation', 'unknown']), reference: z.string().min(1) }).strict()
 const logRequirementSchema = z.object({ id: z.string().min(1).max(100), criterionId: z.string().min(1).nullable(),
+  delivery: z.enum(['artifact', 'action']).optional(),
   requirement: z.string().min(1), source: requirementSourceSchema, basis: z.enum(['explicit', 'derived']),
   status: z.enum(['satisfied', 'failed', 'unverified']), finding: z.string().min(1), coverage: z.string().min(1), limitations: z.string(),
   evidenceSeqs: z.array(z.number().int().nonnegative()),
@@ -19,6 +20,7 @@ export const requirementResultSchema = logRequirementSchema.omit({ evidenceSeqs:
 }).strict()
 export type RequirementResult = z.infer<typeof requirementResultSchema>
 export const logRequirementsParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
+  delivery: { type: 'string', enum: ['artifact', 'action'], description: 'Identify delivery requested by the original requirement; actual actions need original successful native operation receipts, not main-Agent prose.' },
   id: { type: 'string', required: true }, criterionId: { type: 'string', description: 'Applicable criterion ID; omit for an original requirement missing from the plan.' },
   requirement: { type: 'string', required: true }, source: { type: 'object', required: true, additionalProperties: false, properties: {
     kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule', 'implementation', 'unknown'] }, reference: { type: 'string', required: true },
@@ -78,6 +80,7 @@ export function independentRequirementResults(job: ReviewJob, findings: CheckFin
         streams: state.readChecks.filter(item => item.id === id).map(item => ({ stream: item.stream, ranges: item.ranges, total: item.total })) }
     })
     return { id: check.id, criterionId: check.criterionId, requirement: check.fact, source: check.source, basis: check.basis, method: check.method,
+      ...check.delivery ? { delivery: check.delivery } : {},
       status: result.status, finding: result.finding, coverage: result.coverage, limitations: result.limitations, evidence }
   })
 }

@@ -10,7 +10,7 @@ import { reviewBudgetSchema } from './review-budget.ts'
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
 export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
-export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
+export const observationSettingsSchema = z.object({ mode: z.enum(['anomaly', 'current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
   rounds: z.number().int().positive(), inTurn: z.boolean() }).strict()
 export const reviewRecoverySchema = z.object({

@@ -11,8 +11,13 @@ export function appendCheckResult(state: VerificationState, result: CheckFinding
   receipt: { sessionId: string; callId: string; callSeq: number }, now = new Date().toISOString()): void {
   const check = state.checkPlan?.flatMap(revision => revision.checks).find(check => check.id === result.checkId)
   if (!check) throw new Error('select an ID from the bound check plan')
-  const plan = state.checkPlan!.find(revision => revision.checks.some(check => check.id === result.checkId))!
-  if (state.phase === 'comparison' && plan.phase !== 'comparison' && check.method !== 'log') throw new Error('sealed independent findings cannot be changed during comparison')
+  const sealed = state.checkFindings?.find(finding => finding.checkId === check.id)
+  if (state.phase === 'comparison' && check.basis === 'explicit' && sealed?.status === 'failed' && result.status === 'satisfied') {
+    const additional = result.evidenceIds.filter(id => !sealed.evidenceIds.includes(id))
+    const supported = check.method === 'run' ? additional.some(id => state.checks.some(executed => executed.id === id))
+      : check.method === 'log' ? additional.some(id => id.startsWith('seq:')) : additional.some(id => !id.startsWith('seq:'))
+    if (!supported) throw new Error(`FAILED_CHECK_UNRESOLVED: ${check.id} failed its original fact and expected result. Comparison needs additional acquired evidence of method ${check.method}; the same evidence or a main report cannot turn failure into satisfaction. Do not reinterpret product correctness as completion of the checking activity. Preserve the failure and submit revise/needs-user when no new evidence resolves it.`)
+  }
   const history = state.checkHistory ?? []
   if (history.some(entry => entry.sessionId === receipt.sessionId && entry.callId === receipt.callId)) throw new Error('check result receipt already recorded')
   state.checkHistory = [...history, { revision: history.length + 1, recordedAt: now, ...receipt, phase: state.phase, result }]
@@ -21,9 +26,9 @@ export function appendCheckResult(state: VerificationState, result: CheckFinding
 /** Unfinished checks retain explicit gaps; a deadline never converts them to success. */
 export function currentCheckResults(state: VerificationState): CheckFinding[] {
   return (state.checkPlan?.flatMap(revision => revision.checks) ?? []).map(check => {
-    const independent = state.checkPlan!.find(revision => revision.checks.some(item => item.id === check.id))!.phase !== 'comparison'
-    const sealed = state.phase === 'comparison' && independent && check.method !== 'log' ? state.checkFindings?.find(result => result.checkId === check.id) : undefined
-    const saved = sealed ?? state.checkHistory?.findLast(entry => entry.result.checkId === check.id)?.result
+    // Sealed observations remain immutable. Validated comparison receipts resolve
+    // the same check separately, without erasing its earlier coverage gap.
+    const saved = state.checkHistory?.findLast(entry => entry.result.checkId === check.id)?.result
       ?? state.checkFindings?.find(result => result.checkId === check.id)
     return saved ?? { checkId: check.id, status: 'unverified', finding: 'No validated incremental finding was recorded.',
       coverage: check.coverage, limitations: 'The controller sealed this unfinished check as unverified.', evidenceIds: [] }

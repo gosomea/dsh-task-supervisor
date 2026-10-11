@@ -41,11 +41,11 @@ export interface CheckCost { source: { kind: string; reference: string }; fact: 
 /** Missing cost is unknown, never a cheap task-category assumption. */
 export function workloadTier(checks: readonly CheckCost[]): ReviewBudget['tier'] {
   const unique = [...new Map(checks.map(check => [JSON.stringify([check.source, check.fact, check.method, check.expected]), check])).values()]
-  if (!unique.length || unique.some(check => check.method !== 'read' && check.method !== 'run'
+  if (!unique.length || unique.some(check => !['read', 'log', 'run'].includes(check.method)
     || !Number.isSafeInteger(check.expectedBytes) || check.expectedBytes! < 0
     || check.method === 'run' && (!Number.isSafeInteger(check.expectedCommandMs) || check.expectedCommandMs! < 0))) return 'complex'
   const bytes = unique.reduce((sum, check) => sum + check.expectedBytes!, 0)
-  if (unique.length <= 4 && unique.every(check => check.method === 'read') && bytes <= 256 * 1024) return 'light'
+  if (unique.length <= 4 && unique.every(check => check.method === 'read' || check.method === 'log') && bytes <= 256 * 1024) return 'light'
   if (unique.length <= 8 && bytes <= 1024 * 1024 && unique.reduce((sum, check) => sum + (check.expectedCommandMs ?? 0), 0) <= 120000) return 'regular'
   return 'complex'
 }

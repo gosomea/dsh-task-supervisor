@@ -1,5 +1,6 @@
 /** Host/client shared wire schema; no runtime service dependencies. */
 import { z } from 'zod'
+import { repairBudgetSchema } from './repair-budget.ts'
 
 export const provenanceSchema = z.object({
   kind: z.enum(['user', 'project', 'implementation']),
@@ -7,6 +8,7 @@ export const provenanceSchema = z.object({
   sourceSeq: z.number().int().nonnegative().optional(),
 }).strict()
 export const criterionSchema = z.object({
+  delivery: z.enum(['artifact', 'action']).optional(),
   id: z.string().min(1), text: z.string().min(1), provenance: provenanceSchema.optional(), evidenceKind: z.enum(['text', 'runtime', 'visual']).optional(),
 }).strict()
 export const stageSchema = z.object({
@@ -59,6 +61,8 @@ export const reviewFaultSchema = z.object({
 }).strict()
 
 export const taskSchema = z.object({
+  repairBudget: repairBudgetSchema.optional(),
+  executionProgress: z.object({ endSeq: z.number().int().nonnegative(), fingerprint: z.string(), noProgress: z.number().int().nonnegative() }).strict().optional(),
   id: z.string().uuid(),
   revision: z.number().int().positive(),
   acceptanceCycle: z.number().int().positive().optional(),
@@ -83,7 +87,7 @@ export const taskSchema = z.object({
   approvalPolicy: z.object({ mode: z.enum(['manual', 'after-review']), source: z.enum(['profile', 'user-command']),
     mainSessionId: z.string().min(1), requirementsVersion: z.number().int().positive(), grantSeq: z.number().int().nonnegative() }).strict().optional(),
   lastApproval: z.object({ planVersion: z.number().int().nonnegative(), userMessageSeq: z.number().int().nonnegative().nullable(),
-    source: z.literal('policy').optional(), authorizationSeq: z.number().int().nonnegative().optional(), reviewJobId: z.string().uuid().optional() }).strict().optional(),
+    source: z.enum(['policy', 'inherited']).optional(), sourcePlanVersion: z.number().int().positive().optional(), authorizationSeq: z.number().int().nonnegative().optional(), reviewJobId: z.string().uuid().optional() }).strict().optional(),
   requirementsVersion: z.number().int().positive(),
   planVersion: z.number().int().nonnegative(),
   criteria: z.array(criterionSchema),
@@ -100,7 +104,7 @@ export const taskSchema = z.object({
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
   reviewFault: reviewFaultSchema.nullable().optional(),
-  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled', 'planning-stalled', 'execution-budget', 'task-deadline']).nullable().optional(),
+  pauseReason: z.enum(['user', 'decision', 'review-fault', 'restart', 'recovery-stalled', 'planning-stalled', 'execution-budget', 'task-deadline', 'repair-budget', 'repair-stalled']).nullable().optional(),
 }).strict()
 
 export type TaskSnapshot = z.infer<typeof taskSchema>
