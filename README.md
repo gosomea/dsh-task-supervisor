@@ -31,14 +31,14 @@ Use `/task` to track, pause and rework a goal, follow its DAG, and obtain review
 <a id="get-started"></a>
 ## Get started
 
-This page describes **0.1.4**, which creates Tasks in native DSH modes. Complete reports are separate from tool process details; requirement outcomes, Task/attempt evidence scope and bounded read correction are described in [review experience](docs/review-experience.md). Earlier native-process and recovery changes are in [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
+This page describes **0.1.5**, which creates Tasks in native DSH modes. Reviewer initialization, fault classification and recovery changes are in [the 0.1.5 release](docs/releases/0.1.5.md). Complete reports are separate from tool process details; requirement outcomes, Task/attempt evidence scope and bounded read correction are described in [review experience](docs/review-experience.md). Earlier native-process and recovery changes are in [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
 
 ### Install into a Web profile
 
 Node 24 and official DSH `0.2.0-rc.2` are validated without Host or native sandbox modifications. Retain the profile's model configuration and install the public package:
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.4
+dsh plugin --profile web add dsh-task-supervisor@0.1.5
 dsh web
 ```
 

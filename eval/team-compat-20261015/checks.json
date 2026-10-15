@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-15",
+  "purpose": "Supervisor reviewer initialization compatibility fix",
+  "baseCommit": "de75f7a632b5f43c6a460b00fcb0aaccf9d0dcb9",
+  "runtimeCommit": "ead0a037e57fde4a48c6953a2fa9319f792b5b0c",
+  "package": {
+    "version": "0.1.5",
+    "filename": "dsh-task-supervisor-0.1.5.tgz",
+    "sha256": "a23850888df25a3b93134780e8a2aa1d5fe423e2c46e88199be724cb20672b41",
+    "published": false,
+    "publicationBlocker": "npm ENEEDAUTH"
+  },
+  "checks": {
+    "legacyFocusedTests": {
+      "passed": 241,
+      "skipped": 1,
+      "skipReason": "Docker independent-run fixture requires image/context configuration",
+      "hostCommit": "00102833dfaee1da9f48a3a8eae9d34005a75218",
+      "agentVersion": "0.1.7-alpha.2"
+    },
+    "teamCompositionTests": {
+      "passed": 9,
+      "hostCommit": "571902028a75c64c1d767f4ae5fd099485f0ddf0",
+      "agentVersion": "0.2.1-alpha.3"
+    },
+    "legacyStrictTypes": {
+      "host": "passed",
+      "client": "passed"
+    },
+    "latestWholeCheckoutTypes": "not passed: stale built declarations; source-only attempt also reaches existing vendor diagnostics",
+    "clientPresentationTests": {
+      "passed": 21,
+      "includedInLegacyFocusedTests": true
+    },
+    "browserInteraction": "not verified: local Chrome debugging permission unavailable"
+  },
+  "realModel": {
+    "passed": true,
+    "testedPackageSha256": "91e04a79e3d550967a4153303078a0d2bf0f04492f28ceee28dc2e4342054208",
+    "finalHostModulesByteIdentical": {
+      "lib/artifact-snapshot-DHu4fJ4E.mjs": "91ecf568bee2ed4dfe9cb566e1ff90191096e04c26b6adc6bcb228a75fffdfd2",
+      "lib/check-gateway.mjs": "4be066527149fa9e33dc1f9f397dcdf1213bc496029f6fef45a0e3f064c098d0",
+      "lib/evidence-BuyAWIxB.mjs": "da472c3598ed1af107c1774ca432b00d049a2b619b43a75dc2da2a1c4ebe1bec",
+      "lib/index.mjs": "4afb88c027891034abc304881b5476453af10e36a6622456e558ca427b300cc0",
+      "lib/process-provenance.mjs": "137c8add59e6048453a91702c7858ba37ab7014a5a663740ed3796a5084c3e0c",
+      "lib/review-check-BeONnj0X.mjs": "81fe387574c1e5059e705a015c0f2bd7dc5fa8a9f33d309fc8b5dc41ae7dea3f"
+    },
+    "probeSessionId": "session-1b50bd19-42bb-4e9c-b054-f9941419066e",
+    "mainSessionId": "session-644e8042-0a12-4fbc-a91c-23422da91c16",
+    "phase": "complete",
+    "actualApprovals": 1,
+    "approvalTransportNote": "A raw session/prompt slash string did not invoke a command. Approval was applied once through the supported version-bound control API.",
+    "reviews": [
+      {
+        "id": "c339b6a0-cc59-4bec-a43c-2b42ce6395fd",
+        "kind": "plan",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-fa3e65ee-5de0-41d3-b63a-f5b1984273c3",
+        "verdict": "pass",
+        "descriptorCount": 1,
+        "teamIdentityInjected": false,
+        "faultRetries": 0,
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "elapsedSeconds": 40.503,
+        "configuredBudgetSeconds": 600,
+        "startedAt": "2026-10-15T09:35:33.437Z",
+        "finishedAt": "2026-10-15T09:36:13.940Z"
+      },
+      {
+        "id": "b4235e50-bac7-469a-9243-4c2e7415748a",
+        "kind": "stage",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-b7ecc04f-62e7-4036-9347-6be7213a8a1c",
+        "verdict": "pass",
+        "descriptorCount": 1,
+        "teamIdentityInjected": false,
+        "faultRetries": 0,
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "elapsedSeconds": 75.931,
+        "configuredBudgetSeconds": 600,
+        "startedAt": "2026-10-15T09:39:49.318Z",
+        "finishedAt": "2026-10-15T09:41:05.249Z"
+      },
+      {
+        "id": "0174c784-8032-4a6d-b1d3-e8897ef00cca",
+        "kind": "completion",
+        "status": "applied",
+        "attempt": 1,
+        "reviewerSessionId": "task-review-9a57335e-55a4-4c62-88ba-f6b336b7ca04",
+        "verdict": "pass",
+        "descriptorCount": 1,
+        "teamIdentityInjected": false,
+        "faultRetries": 0,
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "elapsedSeconds": 139.182,
+        "configuredBudgetSeconds": 600,
+        "startedAt": "2026-10-15T09:41:15.842Z",
+        "finishedAt": "2026-10-15T09:43:35.024Z"
+      }
+    ],
+    "result": {
+      "sum": 12
+    },
+    "inputUnchanged": true
+  },
+  "finalPackageReload": {
+    "passed": true,
+    "version": "0.1.5",
+    "artifactSha256": "a23850888df25a3b93134780e8a2aa1d5fe423e2c46e88199be724cb20672b41",
+    "replayedSessionId": "session-644e8042-0a12-4fbc-a91c-23422da91c16",
+    "phase": "complete",
+    "reviewStatuses": [
+      "applied",
+      "applied",
+      "applied"
+    ],
+    "live": false,
+    "newModelRequests": 0
+  },
+  "officialPackageSmoke": {
+    "passed": true,
+    "hostVersion": "0.2.0-rc.2",
+    "packageVersion": "0.1.5",
+    "artifactSha256": "a23850888df25a3b93134780e8a2aa1d5fe423e2c46e88199be724cb20672b41",
+    "sessionId": "session-73b5b150-644c-437a-9f35-e39a1ffa1c15",
+    "modelRequests": 0,
+    "runtimeLoaded": true,
+    "liveStatus": true
+  },
+  "dailyInstance": {
+    "port": 3080,
+    "pid": 48313,
+    "supervisorVersion": "0.1.4",
+    "changedByThisFix": false
+  },
+  "historicalRegressionResultsChanged": false
+}
