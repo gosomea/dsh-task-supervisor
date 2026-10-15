@@ -12,7 +12,7 @@ import { taskStore } from './task-store.ts'
 import type { ReviewPortals } from './review-portal-store.ts'
 import { ReviewProgress } from './review-progress.tsx'
 import { ReviewReport } from './review-report.tsx'
-import { reviewPresentation, reviewFaultDescription, type createReviewDisclosureState } from './review-presentation.ts'
+import { reviewPresentation, reviewFaultDescription, reviewRetryExplanation, type createReviewDisclosureState } from './review-presentation.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } }
@@ -75,6 +75,7 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
       <span>{t(summary.canRetry ? 'reviewRetryNeeded' : summary.currentFault ? 'reviewManualRecovery' : 'reviewHistoricalFault')}</span>
       {summary.canRetry && <Button size="sm" variant="primary" disabled={busy} onClick={() => { void store.act('retry-review') }}>{t('reviewRetry')}</Button>}
     </div>}
+    {job.status === 'failed' && summary.currentFault && <p className="dsh-task-meta">{t(reviewRetryExplanation(job))}</p>}
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     {!!job.recovery?.protocolRepairs && <p className="dsh-task-meta">{t('reviewProtocolRepairs')} {job.recovery.protocolRepairs}/{job.repairLimit}</p>}
     {summary.canRetry && error && <p role="alert">{error}</p>}

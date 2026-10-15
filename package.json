@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-supervisor",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "DSH-native supervised task lifecycle",
   "type": "module",
   "main": "lib/index.mjs",
@@ -37,6 +37,7 @@
   "scripts": {
     "build": "tsdown",
     "test:kernel": "node spikes/kernel/run.mjs --reporter=verbose",
+    "test:team-compat": "node spikes/kernel/run.mjs --team-compat --reporter=verbose",
     "check:kernel": "node spikes/kernel/typecheck.mjs"
   },
   "engines": {

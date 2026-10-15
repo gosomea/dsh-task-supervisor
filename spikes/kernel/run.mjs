@@ -8,7 +8,8 @@ const project = fileURLToPath(new URL('../..', import.meta.url))
 const source = resolve(process.env.DSH_SOURCE ?? resolve(project, '../../deepseek-harness'))
 const requireFromDsh = createRequire(resolve(source, 'package.json'))
 const vitest = resolve(requireFromDsh.resolve('vitest/package.json'), '../vitest.mjs')
-const result = spawnSync(process.execPath, [vitest, 'run', '--config', resolve(project, 'spikes/kernel/vitest.config.mjs'), ...process.argv.slice(2)], {
+const team = process.argv.includes('--team-compat')
+const result = spawnSync(process.execPath, [vitest, 'run', '--config', resolve(project, team ? 'spikes/team-compat/vitest.config.mjs' : 'spikes/kernel/vitest.config.mjs'), ...process.argv.slice(2).filter(arg => arg !== '--team-compat')], {
   cwd: project,
   env: { ...process.env, DSH_SOURCE: source },
   stdio: 'inherit',

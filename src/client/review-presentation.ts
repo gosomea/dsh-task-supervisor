@@ -1,5 +1,6 @@
 /** Durable outcomes stay visible when native process details are collapsed. */
 import type { ReviewJob, ReviewFault } from '../review-schema.ts'
+import { automaticReviewRetryBlock } from '../review-retry-policy.ts'
 import type { PanelState } from './task-store.ts'
 import type { SupervisorKey } from './locales.ts'
 
@@ -58,7 +59,24 @@ const FAULT_LABELS: Record<ReviewFault['code'], SupervisorKey> = {
   timeout: 'reviewFaultTimeout', provider: 'reviewFaultProvider', cancelled: 'reviewFaultCancelled', stale: 'reviewFaultStale',
   snapshot: 'reviewFaultSnapshot', 'check-infrastructure': 'reviewFaultInfrastructure', internal: 'reviewFaultInternal',
 }
-export function reviewFaultDescription(fault: ReviewFault): SupervisorKey { return FAULT_LABELS[fault.code] }
+export function reviewFaultDescription(fault: ReviewFault): SupervisorKey {
+  return fault.code === 'provider' && fault.providerCode === 'UNKNOWN' && fault.providerStatus === undefined
+    ? 'reviewFaultUnknown' : FAULT_LABELS[fault.code]
+}
+
+/**
+ * Explain a stopped review without promising that manual recovery is permitted.
+ * @param job - failed review and its recorded policy.
+ * @returns the localized explanation key.
+ */
+export function reviewRetryExplanation(job: ReviewJob): SupervisorKey {
+  if (job.fault?.code === 'timeout' && !job.fault.retryable) return 'reviewRetryDeadline'
+  const reason = automaticReviewRetryBlock(job)
+  return reason === 'non-transient' ? 'reviewRetryNonTransient'
+    : reason === 'disabled' ? 'reviewRetryDisabled'
+    : reason === 'manual-only' ? 'reviewRetryManualOnly'
+    : reason === 'exhausted' ? 'reviewRetryExhausted' : 'reviewManualRecovery'
+}
 
 /** Native transcript virtualization can remount rows while their reviewer streams. */
 export function createReviewDisclosureState(limit = 256, persistence?: Pick<Storage, 'getItem' | 'setItem'>) {

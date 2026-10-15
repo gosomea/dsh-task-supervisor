@@ -7,7 +7,8 @@ import { randomUUID } from 'node:crypto'
 import { newTask } from '../../src/state.ts'
 import { reviewJobSchema, type ReviewJob } from '../../src/review-schema.ts'
 import type { PanelState } from '../../src/client/task-store.ts'
-import { reviewPresentation, reviewFaultDescription, createReviewDisclosureState } from '../../src/client/review-presentation.ts'
+import { reviewPresentation, reviewFaultDescription, reviewRetryExplanation, createReviewDisclosureState } from '../../src/client/review-presentation.ts'
+import { automaticReviewRetryBlock } from '../../src/review-retry-policy.ts'
 
 function fixture() {
   const task = newTask('读取输入并核对总数')
@@ -19,6 +20,36 @@ function fixture() {
   const state: PanelState = { task, live: true, armed: true, reviewing: true, actions: ['pause', 'off'], reviewJobs: [job] }
   return { job, state }
 }
+
+it.each([
+  ['internal', undefined, false, 0, 'non-transient', 'reviewRetryNonTransient'],
+  ['provider', 'UNKNOWN', false, 0, 'non-transient', 'reviewRetryNonTransient'],
+  ['provider', 'AUTH', false, 0, 'non-transient', 'reviewRetryNonTransient'],
+  ['provider', 'SERVER', false, 1, 'exhausted', 'reviewRetryExhausted'],
+  ['provider', 'SERVER', true, 0, 'manual-only', 'reviewRetryManualOnly'],
+] as const)('explains automatic retry policy for %s/%s without promising recovery', (code, providerCode, manualOnly, consumed, reason, label) => {
+  const { job } = fixture()
+  job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: 'review', code,
+    ...providerCode ? { providerCode } : {}, message: 'fault', attempt: 1, retryable: true, outcomeKnown: true, errorSeq: null }
+  job.recovery = { retryLimit: 1, delayMs: 0, resume: false, consumed, protocolRepairs: 0,
+    permit: { armed: false, requirementsVersion: 1, planVersion: 0, approvedPlanVersion: null }, manualOnly, manualPending: false, nextRetryAt: null, failures: [] }
+  expect(automaticReviewRetryBlock(job)).toBe(reason)
+  expect(reviewRetryExplanation(job)).toBe(label)
+})
+
+it('distinguishes disabled retries from a transient failure eligible under the recorded policy', () => {
+  const { job } = fixture()
+  job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: 'review', code: 'provider', providerStatus: 502,
+    message: 'unavailable', attempt: 1, retryable: true, outcomeKnown: true, errorSeq: null }
+  expect(automaticReviewRetryBlock(job)).toBe('disabled')
+  expect(reviewRetryExplanation(job)).toBe('reviewRetryDisabled')
+  expect(zh.reviewFaultRetries).toBe('自动故障重试')
+  const legacy = { ...job.fault, providerCode: 'UNKNOWN' }
+  delete legacy.providerStatus
+  expect(reviewFaultDescription(legacy)).toBe('reviewFaultUnknown')
+  expect(legacy.code).toBe('provider')
+  expect(reviewRetryExplanation({ ...job, fault: { ...job.fault, code: 'timeout', retryable: false } })).toBe('reviewRetryDeadline')
+})
 it.each(['queued', 'started', 'repairing', 'submitted'] as const)('keeps the %s activity visible while process details are collapsed', status => {
   const { job, state } = fixture()
   const labels = { queued: 'reviewQueuedAction', started: 'reviewRunning', repairing: 'reviewRecoveringAction', submitted: 'reviewSubmitted' }

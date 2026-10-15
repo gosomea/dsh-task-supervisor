@@ -2,15 +2,15 @@
 import { controlEvent } from './session-records.ts'
 
 import { restoreReviewReads } from './review-read-ledger.ts'
-import { transientReviewFault, waitReviewRetry, type FaultRecoveryPolicy } from './review-recovery.ts'
+import { automaticReviewRetryBlock, waitReviewRetry, type FaultRecoveryPolicy } from './review-recovery.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-api-session-controller/types'
-import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ReasoningEffortId, LlmError } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { childSessionMeta, snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
+import { childSessionMeta, snapshotSubagentDescriptor, foldSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { installImageEvidence } from './image-evidence.ts'
@@ -220,10 +220,11 @@ export async function reviewStage(ctx: Context, main: Agent, task: TaskSnapshot,
   for (;;) {
     try { return await reviewAttempt(ctx, main, task, stageId, evidence, signal, fixedModel, kind, policy, prior, recovery) }
     catch (error) {
-      if (!(error instanceof ReviewFailure) || signal.aborted || !transientReviewFault(error.fault)) throw error
+      if (!(error instanceof ReviewFailure) || signal.aborted) throw error
       const job = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === error.fault.jobId)
       const strategy = job?.recovery
-      if (!job || !strategy || strategy.manualOnly || strategy.consumed >= strategy.retryLimit) throw error
+      if (!job || !strategy || automaticReviewRetryBlock(job) !== null
+        || job.deadlineAt && Date.now() + strategy.delayMs >= Date.parse(job.deadlineAt)) throw error
       const actual = ctx.sessionProjections.stateOf(main.session, 'taskSupervisor')?.current
       if (!actual?.enabled || actual.id !== task.id || actual.revision !== taskRevision) throw error
       prior = { ...job, revision: job.revision + 1, status: 'queued', recovery: { ...strategy,
@@ -257,12 +258,13 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     attempt: previous.attempt + (queued ? 0 : 1), repairLimit: limits.repairAttempts,
     runtimeId: queued ? previous.runtimeId : randomUUID(),
     attemptStartedAt: new Date().toISOString(),
-    deadlineAt: queued ? previous.deadlineAt : new Date(Date.now() + limits.deadlineMs).toISOString() }
+    deadlineAt: previous.deadlineAt ?? new Date(Date.now() + limits.deadlineMs).toISOString() }
     : createReviewJob(main, task, stageId, evidence, kind, policy)
   const deadline = new AbortController()
   const timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')),
     Math.max(0, Date.parse(job.deadlineAt!) - Date.now()))
   timer.unref()
+  if (Date.parse(job.deadlineAt!) <= Date.now()) deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError'))
   signal = AbortSignal.any([signal, deadline.signal])
   try {
     await recordReview(ctx, main, job)
@@ -281,7 +283,7 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     const fault = !signal.aborted && error instanceof ReviewFailure ? error.fault : { jobId: job.id, stageId, cutoff: job.cutoff,
       reviewerSessionId: job.reviewerSessionId, code: signal.aborted ? signal.reason instanceof Error && signal.reason.name === 'TimeoutError' ? 'timeout' as const : 'cancelled' as const : 'internal' as const,
       ...signal.aborted && signal.reason?.name !== 'TimeoutError' ? { cancelSource: (signal.reason?.kind === 'user' ? 'user' : signal.reason?.kind === 'disposed' || ['Supervisor review queue unloaded', 'Supervisor unloaded'].includes(signal.reason?.message) ? 'unload' : 'other') as 'user' | 'unload' | 'other' } : {},
-      message: String(error), retryable: !signal.aborted || signal.reason?.name === 'TimeoutError', attempt: job.attempt, errorSeq: null, outcomeKnown: false }
+      message: String(error), retryable: (!signal.aborted || signal.reason?.name === 'TimeoutError') && Date.now() < Date.parse(job.deadlineAt!), attempt: job.attempt, errorSeq: null, outcomeKnown: false }
     if (job.recovery) {
       job.recovery.failures.push({ at: new Date().toISOString(), fault })
       if (fault.code === 'cancelled') job.recovery.manualOnly = true
@@ -329,8 +331,20 @@ async function runReviewStage(
     && task.criteria.some(criterion => criterion.evidenceKind === 'visual' && (reviewKind === 'completion' || stage?.criterionIds.includes(criterion.id)))
   const imageAfterSeq = runsOf(task).find(run => run.id === stageId)?.evidenceAfterSeq ?? task.readOnlyGateStartSeq ?? 0
   const assertComparison = () => { if (job.verification?.phase === 'independent') throw new Error('record independent task_review_observations before reading the main Agent report or Session evidence') }
+  let turnFailure: { turn: number; error: unknown } | undefined
   const setup = {
-    setup(agentCtx: Context) {
+    setup(agentCtx: Context, reviewer: Agent) {
+      // Creation observers classify the child before the first prompt is assembled.
+      const ownEvents = reviewer.session.snapshotEvents(reviewer.session.inheritedEventCount)
+      const descriptor = foldSubagentDescriptor(ownEvents)
+      if (ownEvents.some(event => event.type === 'subagent/descriptor')) {
+        if (descriptor?.mode !== 'one-shot' || descriptor.provider !== 'task-supervisor') {
+          throw new Error(`reviewer ${reviewer.id} has an incompatible subagent identity; restore the original Supervisor Session`)
+        }
+      } else reviewer.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+        mode: 'one-shot', provider: 'task-supervisor', label: `Supervisor ${reviewKind}: ${stageId}`,
+      }))
+      agentCtx.on('agent/error', ({ turn, error }) => { turnFailure = { turn, error } })
       agentCtx.tools.restrict({ allow: [] })
       if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal)
       agentCtx.tools.register(defineTool({ name: 'read_task_input', description: 'Read original direct user messages only, bounded by this job cutoff. Available before independent discovery; excludes injected prompts, assistant reports and execution logs.',
@@ -601,13 +615,6 @@ async function runReviewStage(
   const handle = exists ? await ctx.agents.resume({ resumeSessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal, ...setup })
     : await ctx.agents.create({ sessionId: reviewerSessionId, parentAgent: main, agentOptions: options, signal,
       meta: childSessionMeta(main, (main.session.header.delegationDepth ?? 0) + 1, false), ...setup })
-  // Browsing needs the native durable child identity, not merely a subagent header.
-  // The generic child UI has no continuation authority; this controller owns retries.
-  if (!handle.agent.session.snapshotEvents().some(event => event.type === 'subagent/descriptor')) {
-    handle.agent.session.append('subagent/descriptor', snapshotSubagentDescriptor({
-      mode: 'one-shot', provider: 'task-supervisor', label: `Supervisor ${reviewKind}: ${stageId}`,
-    }))
-  }
   const ledger = restoreReviewReads(handle.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
   for (const seq of ledger.observed) observedSeqs.add(seq)
   for (const seq of ledger.located) locatedSeqs.add(seq)
@@ -720,14 +727,17 @@ async function runReviewStage(
       const last = events.findLast(event => event.type === 'turn/end')
       const invalid = endingToolError(events, last?.type === 'turn/end' ? last.data.turn : undefined)
       const call = invalid?.type === 'tool/result' ? events.find(event => event.type === 'tool/call' && event.data.callId === invalid.data.message.source.callId) : undefined
-      const code = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? 'provider'
+      const failure = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error : undefined
+      const original = last?.type === 'turn/end' && turnFailure?.turn === last.data.turn ? turnFailure.error : undefined
+      const provider = original instanceof LlmError ? original.failure : original === undefined && failure?.code !== 'UNKNOWN' ? failure : undefined
+      const code = failure ? provider ? 'provider' : 'internal'
         : last?.type === 'turn/end' && last.data.reason.kind === 'aborted' ? 'cancelled'
         : call?.type === 'tool/call' ? call.data.name === 'task_review_decision' ? 'decision-invalid' : 'evidence-read' : 'protocol-missing'
-      const provider = last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error : undefined
+      const localCode = !provider && original instanceof Error && 'code' in original && typeof original.code === 'string' ? `[${original.code}] ` : ''
       throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code,
         ...provider ? { providerCode: provider.code, ...provider.status === undefined ? {} : { providerStatus: provider.status } } : {},
         message: code === 'protocol-missing' ? `reviewer ended without a valid structured decision; native reason ${last?.type === 'turn/end' ? last.data.reason.kind : 'unknown'}, repair ${job.attempt - firstAttempt}/${job.repairLimit}`
-          : last?.type === 'turn/end' && last.data.reason.kind === 'error' ? last.data.reason.error.message
+          : failure ? `${localCode}${failure.message}`
             : `review failed: ${code}${call?.type === 'tool/call' && invalid ? `; ${call.data.name} result seq ${invalid.seq}: ${safeText(eventText(invalid), 1000)}` : ''}`,
         retryable: true, attempt: job.attempt, errorSeq: invalid?.seq ?? last?.seq ?? null, outcomeKnown: true })
     }

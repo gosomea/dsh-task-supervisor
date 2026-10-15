@@ -2339,7 +2339,7 @@ it.each(['pause', 'off'] as const)('user %s cancels controller review without au
   expect(taskOf(ctx, agent)?.revision).toBe(task.revision)
 })
 
-it('controller deadline is retryable on the same job and reviewer Session without approving execution', async () => {
+it('controller deadline remains expired without another reviewer attempt or execution approval', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-review-deadline-')); roots.push(root)
   class Adapter extends ScriptedAdapter {
     first = true
@@ -2358,17 +2358,16 @@ it('controller deadline is retryable on the same job and reviewer Session withou
   await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
   const result = await ctx.tools.execute({ agent, signal, callId: ToolCallId('deadline-plan'), name: 'task_submit_plan', arguments: smallPlan })
   expect(result.isError).toBe(false)
-  await vi.waitFor(() => expect(taskOf(ctx, agent)?.reviewFault).toMatchObject({ code: 'timeout', retryable: true }), { timeout: 5000 })
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.reviewFault).toMatchObject({ code: 'timeout', retryable: false }), { timeout: 5000 })
   await agent.whenIdle()
   const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
   expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('error')
-  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('success')
-  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).not.toBe('reviewing'))
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
   await agent.whenIdle()
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs).toHaveLength(1)
   expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]).toMatchObject({
-    id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, nodeAttempt: job.nodeAttempt, status: 'applied', attempt: 2 })
-  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
+    id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, nodeAttempt: job.nodeAttempt, deadlineAt: job.deadlineAt, status: 'failed', attempt: 1 })
+  expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', everApproved: false })
 })
 
 it('a user stop between durable submission and handoff keeps the queued job for manual recovery', async () => {
@@ -2473,7 +2472,7 @@ it.each(['queued', 'started', 'submitted'] as const)('restart retains a %s contr
     pendingReview: { kind: 'plan' as const, stageId: 'plan', evidence: JSON.stringify(smallPlan), cutoff: agent.session.seq - 1, jobId: '' } }
   const job = { ...createReviewJob(agent, pending, 'plan', JSON.stringify(smallPlan.stages), 'plan', {}, status === 'submitted' ? 'started' : status), status,
     ...status === 'submitted' ? { decision: { verdict: 'pass' as const, finding: '已持久化的有效裁决', evidenceSeqs: [0], imageSeqs: [], decisionSeq: 0 } } : {}, owner: 'controller' as const,
-    model: { provider: 'scripted', model: 'reviewer' }, deadlineAt: new Date(0).toISOString() }
+    model: { provider: 'scripted', model: 'reviewer' }, deadlineAt: new Date(Date.now() + 60000).toISOString() }
   pending.pendingReview.jobId = job.id
   await recordReview(first, agent, job); appendTask(first, agent, pending); await first.sessions.flush(agent.session)
   await first.fiber.dispose(); contexts.splice(contexts.indexOf(first), 1)
@@ -2489,7 +2488,7 @@ it.each(['queued', 'started', 'submitted'] as const)('restart retains a %s contr
   expect(taskOf(second, resumed)).toMatchObject({ phase: 'awaiting-approval', everApproved: false })
   const jobs = second.sessionProjections.stateOf(resumed.session, 'taskSupervisor')!.reviewJobs
   expect(jobs).toHaveLength(1)
-  expect(jobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, status: 'applied', attempt: status === 'submitted' ? 1 : 2 })
+  expect(jobs[0]).toMatchObject({ id: job.id, reviewerSessionId: job.reviewerSessionId, cutoff: job.cutoff, deadlineAt: job.deadlineAt, status: 'applied', attempt: status === 'submitted' ? 1 : 2 })
   // The controller posts one primary closing response; this is not implementation.
   expect(adapter.requests).toBe(status === 'submitted' ? 1 : 3)
 })
