@@ -1,0 +1,33 @@
+{
+  "version": "0.1.7",
+  "sourceCommit": "5cf6a0d20830f3dd69d9c03cfbbcf15617358d04",
+  "hostSourceCommit": "571902028a75c64c1d767f4ae5fd099485f0ddf0",
+  "artifactSha256": "031c531fcf79375c498c5fe96fc4553a251d328d57062864a6e164375d7d46af",
+  "profile": "web",
+  "port": 3080,
+  "pid": 80793,
+  "tests": {
+    "sourceResultsAndReadLedger": 12,
+    "nativeErrorFeedback": 1,
+    "strictHost": true,
+    "strictClient": true,
+    "build": true,
+    "packageFileBytesVerified": true
+  },
+  "fullSuiteCompleted": false,
+  "dailyRecovery": {
+    "sameJob": true,
+    "sameReviewerSession": true,
+    "sameEvidenceCutoff": true,
+    "sameDeadline": true,
+    "attempt": 2,
+    "status": "applied",
+    "fault": null,
+    "verdict": "revise",
+    "phase": "planning",
+    "armed": false,
+    "route": "deepseek-codebuddy/deepseek-v4.1-flash",
+    "automaticallyApproved": false
+  },
+  "npmPublication": false
+}
