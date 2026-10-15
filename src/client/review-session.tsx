@@ -12,7 +12,8 @@ import { taskStore } from './task-store.ts'
 import type { ReviewPortals } from './review-portal-store.ts'
 import { ReviewProgress } from './review-progress.tsx'
 import { ReviewReport } from './review-report.tsx'
-import { reviewPresentation, reviewFaultDescription, reviewRetryExplanation, type createReviewDisclosureState } from './review-presentation.ts'
+import { reviewPresentation, reviewFaultDescription, reviewRetryExplanation, reviewRecoveryGuidance, reviewFaultRemedy, type createReviewDisclosureState } from './review-presentation.ts'
+import { SessionConnection } from './session-connection.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap { 'task-supervisor.review-session': { kind: 'single'; scope: 'session' } }
@@ -39,7 +40,7 @@ export function ReviewTranscript({ id, parentId, sessions, SessionProvider, rend
     {reference && <SessionProvider session={reference}>{renderSlot('task-supervisor.review-session', {})}</SessionProvider>}
   </div>
 }
-export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeProps & { portals: ReviewPortals; disclosures: ReturnType<typeof createReviewDisclosureState>; t: SupervisorTranslate }) {
+export function ReviewSession({ portals, disclosures, t, connect, ...props }: ReviewNodeProps & { portals: ReviewPortals; disclosures: ReturnType<typeof createReviewDisclosureState>; t: SupervisorTranslate; connect: () => Promise<void> }) {
   const job = props.node.data
   const store = useMemo(() => taskStore(props.sessionId), [props.sessionId])
   const { state, busy, error } = useSyncExternalStore(store.subscribe, store.getSnapshot)
@@ -72,14 +73,17 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
     </>}
     {job.fault && <p role={summary.canRetry ? 'alert' : 'status'}>{t(reviewFaultDescription(job.fault))}</p>}
     {job.status === 'failed' && <div className="dsh-task-review-recovery">
-      <span>{t(summary.canRetry ? 'reviewRetryNeeded' : summary.currentFault ? 'reviewManualRecovery' : 'reviewHistoricalFault')}</span>
+      <span>{t(summary.currentFault && state ? reviewRecoveryGuidance(state) ?? 'reviewManualRecovery' : 'reviewHistoricalFault')}</span>
       {summary.canRetry && <Button size="sm" variant="primary" disabled={busy} onClick={() => { void store.act('retry-review') }}>{t('reviewRetry')}</Button>}
       {summary.canRestart && <Button size="sm" variant="primary" disabled={busy} onClick={() => { void store.act('restart-review') }}>{t('reviewRestart')}</Button>}
     </div>}
+    {summary.currentFault && job.fault && <p>{t(reviewFaultRemedy(job.fault))}</p>}
+    {state && !active && state.task?.pendingReview?.jobId === job.id && <p className="dsh-task-next">{t(reviewRecoveryGuidance(state) ?? 'reviewManualRecovery')}</p>}
+    {state && (summary.currentFault || state.task?.pendingReview?.jobId === job.id) && <SessionConnection state={state} connect={connect} t={t} />}
     {job.status === 'failed' && summary.currentFault && <p className="dsh-task-meta">{t(reviewRetryExplanation(job))}</p>}
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     {!!job.recovery?.protocolRepairs && <p className="dsh-task-meta">{t('reviewProtocolRepairs')} {job.recovery.protocolRepairs}/{job.repairLimit}</p>}
-    {summary.canRetry && error && <p role="alert">{error}</p>}
+    {summary.currentFault && error && <p role="alert">{error}</p>}
     <DisclosureRow icon={null} className="dsh-task-review-heading" title={t('reviewProcess')} open={open} expandable expandOnRowClick running={active}
       onToggle={() => { disclosures.set(job.id, active, !open); refresh(value => value + 1) }} />
     {open && <div className="dsh-task-review-process">

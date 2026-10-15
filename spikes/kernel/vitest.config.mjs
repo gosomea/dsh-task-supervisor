@@ -15,6 +15,8 @@ const aliases = Object.entries(loaded.config.compilerOptions.paths).map(([name, 
   replacement: resolve(source, paths[0]).replace('*', '$1'),
 }))
 const requireFromChat = createRequire(resolve(source, 'packages/client/ui-chat/package.json'))
+aliases.push({ find: /^react$/, replacement: requireFromChat.resolve('react') })
+aliases.push({ find: /^react\/jsx-runtime$/, replacement: requireFromChat.resolve('react/jsx-runtime') })
 aliases.push({ find: /^react-dom\/server$/, replacement: requireFromChat.resolve('react-dom/server') })
 aliases.push({ find: /^vitest$/, replacement: resolve(requireFromDsh.resolve('vitest/package.json'), '../dist/index.js') })
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { PanelState } from './task-store.ts'
 import type { SupervisorTranslate } from './locales.ts'
-import { currentReviewJob, reviewPresentation } from './review-presentation.ts'
+import { currentReviewJob, reviewPresentation, reviewRecoveryGuidance, reviewFaultRemedy } from './review-presentation.ts'
 
 export function ReviewProgress({ state, t }: { state: PanelState; t: SupervisorTranslate }) {
   const [now, setNow] = useState(Date.now)
@@ -15,7 +15,9 @@ export function ReviewProgress({ state, t }: { state: PanelState; t: SupervisorT
   }, [job?.id, active])
   if (!active) {
     if (state.task?.phase === 'awaiting-approval') return <p className="dsh-task-next" role="status">{t('reviewAwaitApproval')}</p>
-    if (state.task?.pauseReason === 'review-fault') return <p className="dsh-task-next" role="status">{t('reviewFaultPaused')}</p>
+    const next = reviewRecoveryGuidance(state)
+    if (next) return <div className="dsh-task-next" role="status"><p>{t(next)}</p>
+      {state.task?.reviewFault && <p>{t(reviewFaultRemedy(state.task.reviewFault))}</p>}</div>
     return null
   }
   const activity = state.reviewActivity?.jobId === job.id ? state.reviewActivity : null

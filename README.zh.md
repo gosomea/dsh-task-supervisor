@@ -31,14 +31,14 @@ kind: "package-bundle"
 <a id="get-started"></a>
 ## 开始使用
 
-下文描述 **0.1.7**，在原生 DSH 模式中创建 Task。要求来源格式与纠错提示见[0.1.7 发布说明](docs/releases/0.1.7.zh.md)。过期审查恢复与直接状态查询见[0.1.6 发布说明](docs/releases/0.1.6.zh.md)。审查者初始化、故障分类与恢复变更见[0.1.5 发布说明](docs/releases/0.1.5.zh.md)。完整审查结果与工具过程独立展示；要求级结果、Task／尝试取证范围及有限读取纠正见[审查体验](docs/review-experience.zh.md)。此前的原生过程与恢复见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
+下文描述 **0.1.8**，在原生 DSH 模式中创建 Task。审查恢复操作与下一步见[0.1.8 发布说明](docs/releases/0.1.8.zh.md)。要求来源格式与纠错提示见[0.1.7 发布说明](docs/releases/0.1.7.zh.md)。过期审查恢复与直接状态查询见[0.1.6 发布说明](docs/releases/0.1.6.zh.md)。审查者初始化、故障分类与恢复变更见[0.1.5 发布说明](docs/releases/0.1.5.zh.md)。完整审查结果与工具过程独立展示；要求级结果、Task／尝试取证范围及有限读取纠正见[审查体验](docs/review-experience.zh.md)。此前的原生过程与恢复见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
 
 ### 安装到 Web profile
 
 已验证 Node 24 和官方 DSH `0.2.0-rc.2`，无需修改 Host 或原生沙箱。沿用该 profile 的模型配置；安装公开包：
 
 ```sh
-dsh plugin --profile web add /absolute/path/to/dsh-task-supervisor-0.1.7.tgz
+dsh plugin --profile web add /absolute/path/to/dsh-task-supervisor-0.1.8.tgz
 dsh web
 ```
 

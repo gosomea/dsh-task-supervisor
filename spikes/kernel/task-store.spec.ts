@@ -48,6 +48,23 @@ it('coalesces duplicate controls while the first request is in flight', async ()
   expect(store.getSnapshot().busy).toBe(false)
 })
 
+it('keeps a rejected recovery visible through background refreshes until the next control attempt', async () => {
+  vi.useFakeTimers()
+  const initial: PanelState = { task: newTask('场景'), live: true, armed: false, reviewing: false, actions: ['restart-review'] }
+  const request = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json(initial))
+    .mockResolvedValueOnce(Response.json({ error: '任务状态已变化，请刷新后操作。' }, { status: 409 }))
+    .mockResolvedValueOnce(Response.json(initial)).mockResolvedValueOnce(Response.json(initial))
+  const store = createTaskStore('recovery-error', request)
+  cleanups.push(store.subscribe(() => {}))
+  await vi.advanceTimersByTimeAsync(0)
+  await store.act('restart-review')
+  expect(store.getSnapshot().error).toContain('任务状态已变化')
+  await vi.advanceTimersByTimeAsync(2000)
+  expect(store.getSnapshot().error).toContain('任务状态已变化')
+  await store.act('restart-review')
+  expect(store.getSnapshot().error).toBe('')
+})
+
 
 it('does not restart a detached polling loop when a late read settles after remount', async () => {
   vi.useFakeTimers()

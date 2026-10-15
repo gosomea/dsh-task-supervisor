@@ -2,6 +2,8 @@
 import { controlEvent } from './session-records.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { NAMESPACE, type TaskSnapshot } from './state.ts'
+import type { ReviewJob } from './review-schema.ts'
+import { reviewRecoveryAction } from './review-recovery-action.ts'
 
 export function isApprovalText(text: string): boolean {
   const normalized = text.trim().replace(/[。！!．.]$/u, '').trim()
@@ -32,7 +34,16 @@ export function approvedTask(task: TaskSnapshot, startSeq: number, userMessageSe
     lastApproval: { planVersion: task.planVersion, userMessageSeq: userMessageSeq ?? null } }
 }
 
-export function controlActions(task: TaskSnapshot | null, armed: boolean, reviewing: boolean): string[] {
+/**
+ * List current controls; a missing failed job offers no review recovery.
+ * @param task - selected task, or null for no task.
+ * @param armed - current continuation permission.
+ * @param reviewing - whether the controller currently owns a running review.
+ * @param failedReview - recorded failed job, when available.
+ * @param now - deadline comparison time; defaults to the current clock.
+ * @returns actions that the current state admits.
+ */
+export function controlActions(task: TaskSnapshot | null, armed: boolean, reviewing: boolean, failedReview?: ReviewJob, now = Date.now()): string[] {
   if (task === null || task.phase === 'cleared') return []
   if (!task.enabled) return ['on']
   if (task.phase === 'complete') return []
@@ -40,7 +51,10 @@ export function controlActions(task: TaskSnapshot | null, armed: boolean, review
   const policyAction = task.approvalPolicy?.mode === 'after-review' ? 'auto-approve-off' : 'auto-approve-on'
   if (task.phase === 'awaiting-approval') return ['approve', policyAction, 'pause', 'off']
   if (task.phase === 'planning') return [armed ? 'pause' : 'resume', policyAction, 'off']
-  if (task.phase === 'paused' && task.pauseReason === 'review-fault') return task.reviewFault?.code === 'timeout' ? ['restart-review', 'off'] : task.reviewFault?.retryable ? ['retry-review', 'off'] : ['off']
+  if (task.phase === 'paused' && task.pauseReason === 'review-fault') {
+    const action = reviewRecoveryAction(task, failedReview, now)
+    return action ? [action, 'off'] : ['off']
+  }
   if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']
   return ['pause', 'off']
 }

@@ -3159,7 +3159,9 @@ it.each(['paused', 'reviewing', 'disabled'] as const)('exposes direct status und
   expect(schemas.at(-1)).toContain('run_code')
 })
 
-it('commissions a new manual review after expiry, preserves the failed job, and waits for approval', async () => {
+it.each([
+  ['timeout', false, true], ['provider', true, true], ['internal', true, true], ['provider', false, false], ['cancelled', false, true],
+] as const)('commissions a new manual review after a %s fault (retryable=%s, expired=%s), preserving the failed job and approval gate', async (code, retryable, expired) => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-review-restart-')); roots.push(root)
   const ctx = await host(root, new ScriptedAdapter({ reviewer: coverageChecks() }), true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
   const { agent } = await ctx.agents.create({ sessionId: SessionId('review-restart'), agentOptions: { provider: 'scripted', model: 'main' } })
@@ -3169,15 +3171,21 @@ it('commissions a new manual review after expiry, preserves the failed job, and 
   const input = { ...task, criteria: smallPlan.criteria, stages: smallPlan.stages }
   const reserved = createReviewJob(agent, input, 'plan', JSON.stringify(smallPlan.stages), 'plan')
   const fault = { jobId: reserved.id, stageId: 'plan', cutoff: reserved.cutoff, reviewerSessionId: reserved.reviewerSessionId,
-    code: 'timeout' as const, message: 'deadline expired', retryable: false, attempt: 1, errorSeq: null, outcomeKnown: false }
-  const previous = { ...reserved, status: 'failed' as const, deadlineAt: new Date(Date.now() - 1000).toISOString(), fault, finishedAt: new Date().toISOString() }
+    code, message: 'controlled review fault', retryable, attempt: 1, errorSeq: null, outcomeKnown: false }
+  const previous = { ...reserved, owner: 'controller' as const, status: 'failed' as const, deadlineAt: new Date(Date.now() + (expired ? -1000 : 600000)).toISOString(), fault, finishedAt: new Date().toISOString() }
   await recordReview(ctx, agent, previous)
   const paused = { ...task, revision: task.revision + 1, phase: 'paused' as const, pauseReason: 'review-fault' as const, reviewFault: fault }
-  appendTask(ctx, agent, paused)
+  appendTask(ctx, agent, code === 'cancelled' ? { ...paused, pauseReason: 'user', reviewFault: null,
+    pendingReview: { jobId: previous.id, kind: previous.kind, stageId: previous.stageId, cutoff: previous.cutoff, evidence: previous.evidence } } : paused)
+  if (code === 'cancelled') {
+    expect((await ctx.commands.execute(agent, '/task resume', [], signal))?.result.kind).toBe('success')
+    expect(taskOf(ctx, agent)).toMatchObject({ phase: 'paused', pauseReason: 'review-fault' })
+  }
+  const current = taskOf(ctx, agent)!
   expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
-  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision - 1}`, [], signal))?.result.kind).toBe('error')
-  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision}`, [], signal))?.result.kind).toBe('success')
-  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision}`, [], signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${current.revision - 1}`, [], signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${current.revision}`, [], signal))?.result.kind).toBe('success')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${current.revision}`, [], signal))?.result.kind).toBe('error')
   await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
   await agent.whenIdle()
   const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs

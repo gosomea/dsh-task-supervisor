@@ -27,6 +27,7 @@ export interface TaskView { state: PanelState | null; busy: boolean; error: stri
 
 export function createTaskStore(sessionId: string, request: typeof fetch = fetch) {
   let view: TaskView = { state: null, busy: false, error: '' }
+  let actionError = ''
   let sequence = 0
   let subscriptionEpoch = 0
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -45,7 +46,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       const result = await request(url, { signal: controller.signal, cache: 'no-store' })
       const body = await result.json() as PanelState & { error?: string }
       if (!result.ok) throw new Error(body.error ?? '无法读取督导状态')
-      if (current === sequence && !controller.signal.aborted) publish({ ...view, state: body, error: '' })
+      if (current === sequence && !controller.signal.aborted) publish({ ...view, state: body, error: actionError })
     } catch (error) {
       if (current === sequence && !controller.signal.aborted) publish({ ...view, error: String(error) })
     }
@@ -58,6 +59,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
   }
   return {
     getSnapshot: () => view,
+    refresh: load,
     subscribe(listener: () => void) {
       listeners.add(listener)
       if (listeners.size === 1) {
@@ -74,6 +76,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       if (view.busy || state?.task === null || state === null || !state.live || !state.actions.includes(action)) return
       const current = ++sequence
       poll?.abort()
+      actionError = ''
       publish({ ...view, busy: true, error: '' })
       try {
         const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -82,7 +85,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
         if (!result.ok) throw new Error(body.error ?? '督导操作失败')
         if (current === sequence) publish({ state: body, busy: false, error: '' })
       } catch (error) {
-        if (current === sequence) publish({ ...view, busy: false, error: String(error) })
+        if (current === sequence) { actionError = String(error); publish({ ...view, busy: false, error: actionError }) }
       } finally {
         if (view.busy) publish({ ...view, busy: false })
       }
@@ -92,6 +95,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       if (view.busy || !view.state?.live) return false
       const current = ++sequence
       poll?.abort()
+      actionError = ''
       publish({ ...view, busy: true, error: '' })
       try {
         const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -110,6 +114,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       if (view.busy || state === null || !state.live || !objective.trim()) return false
       const current = ++sequence
       poll?.abort()
+      actionError = ''
       publish({ ...view, busy: true, error: '' })
       try {
         const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -131,6 +136,7 @@ export function createTaskStore(sessionId: string, request: typeof fetch = fetch
       if (view.busy || !state?.live || state.draft?.id !== draftId || state.draft.version !== draftVersion) return false
       const current = ++sequence
       poll?.abort()
+      actionError = ''
       publish({ ...view, busy: true, error: '' })
       try {
         const result = await request(url, { method: 'POST', headers: { 'content-type': 'application/json' },

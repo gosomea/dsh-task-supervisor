@@ -71,12 +71,39 @@ export function reviewFaultDescription(fault: ReviewFault): SupervisorKey {
  * @returns the localized explanation key.
  */
 export function reviewRetryExplanation(job: ReviewJob): SupervisorKey {
-  if (job.fault?.code === 'timeout' && !job.fault.retryable) return 'reviewRetryDeadline'
+  if (job.deadlineAt && Date.parse(job.deadlineAt) <= Date.now()
+    || job.fault?.code === 'timeout' && !job.fault.retryable) return 'reviewRetryDeadline'
   const reason = automaticReviewRetryBlock(job)
   return reason === 'non-transient' ? 'reviewRetryNonTransient'
     : reason === 'disabled' ? 'reviewRetryDisabled'
     : reason === 'manual-only' ? 'reviewRetryManualOnly'
     : reason === 'exhausted' ? 'reviewRetryExhausted' : 'reviewManualRecovery'
+}
+
+/** Current controls determine the user instruction; historical failures never request action. */
+export function reviewRecoveryGuidance(state: PanelState): SupervisorKey | null {
+  const task = state.task
+  if (!task || ['complete', 'cleared'].includes(task.phase)) return null
+  if (!state.live) return 'reviewConnectNeeded'
+  if (!task.enabled) return 'reviewEnableNeeded'
+  if (task.pauseReason === 'review-fault') {
+    if (state.actions.includes('restart-review')) return 'reviewRestartNeeded'
+    if (state.actions.includes('retry-review')) return 'reviewRetryNeeded'
+    return 'reviewRecoveryUnavailable'
+  }
+  if (task.pauseReason === 'decision') return 'reviewUserNext'
+  if (!state.reviewing && state.actions.includes('resume')) return 'reviewResumeNeeded'
+  return null
+}
+
+/** Explain prerequisite repairs separately from whether automatic retries are enabled. */
+export function reviewFaultRemedy(fault: ReviewFault): SupervisorKey {
+  if (fault.code === 'provider') return fault.providerStatus === 401 || fault.providerStatus === 403 || fault.providerCode === 'AUTH'
+    ? 'reviewFixAuth' : ['CONFIG', 'NO_ADAPTER'].includes(fault.providerCode ?? '') ? 'reviewFixModel' : 'reviewFixProvider'
+  if (fault.code === 'stale') return 'reviewFixArtifacts'
+  if (fault.code === 'internal') return 'reviewFixInternal'
+  if (fault.code === 'snapshot' || fault.code === 'check-infrastructure') return 'reviewFixInfrastructure'
+  return 'reviewInspectFault'
 }
 
 /** Native transcript virtualization can remount rows while their reviewer streams. */

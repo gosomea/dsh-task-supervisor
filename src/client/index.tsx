@@ -28,6 +28,7 @@ import { ReviewConversation, ReviewSession, type ReviewNodeProps } from './revie
 import { createReviewDisclosureState } from './review-presentation.ts'
 import type { ReviewJob } from '../review-records.ts'
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session/types'
+import { SessionConnection, connectSupervisorSession } from './session-connection.tsx'
 
 const PANEL_ID = 'dsh-task-supervisor/sidebar'
 declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
@@ -72,7 +73,7 @@ function Actions({ sessionId }: PanelProps) {
     data-action={action} disabled={busy || !state.live} onClick={() => { void store.act(action) }}>
     {ACTION_LABEL[action] ?? action}</Button>)}</div>
 }
-function InlineTask({ sessionId, open, t }: PanelProps & { open: (params?: TaskNavigation) => void; t: SupervisorTranslate }): ReactNode {
+function InlineTask({ sessionId, open, t, connect }: PanelProps & { open: (params?: TaskNavigation) => void; t: SupervisorTranslate; connect: () => Promise<void> }): ReactNode {
   const { state, error } = useTask(sessionId)
   const task = state?.task
   const previous = useRef<{ id: string | null; phase: string | null } | null>(null)
@@ -87,7 +88,7 @@ function InlineTask({ sessionId, open, t }: PanelProps & { open: (params?: TaskN
   if (state?.entryActive) return <div className="dsh-task-actions"><span>任务规划 · 等待输入目标</span><Button size="sm" variant="toolbar" onClick={() => open({ view: 'details' })}>查看详情</Button></div>
   if (!task || task.phase === 'cleared') return null
   return <TaskOverview key={task.id} sessionId={sessionId} task={task} state={state} error={error}
-    actions={state.actions.length ? <Actions sessionId={sessionId} /> : null} open={open} t={t} />
+    actions={<><SessionConnection state={state} connect={connect} t={t} /><Actions sessionId={sessionId} /></>} open={open} t={t} />
 }
 
 function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; sessionId: string; t: SupervisorTranslate }): ReactNode {
@@ -119,9 +120,10 @@ function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; s
     </section>}
   </>
 }
-function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: PanelProps & {
+function TaskPanel({ sessionId, navigation, renderConsult, showReview, t, connect }: PanelProps & {
   navigation: ReturnType<ConsultationPanelProps['useTabInfo']>['tab']['navigation']; renderConsult: (id: string) => ReactNode; t: SupervisorTranslate
   showReview: (job: ReviewJob) => Promise<void>
+  connect: () => Promise<void>
 }): ReactNode {
   const { state, error, busy, store } = useTask(sessionId)
   const [tab, setTab] = useState<'details' | 'consultation'>('details')
@@ -235,6 +237,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t }: Pane
       {error && <p role="alert" className="dsh-task-error">{error}</p>}
     </div>}
     <div ref={detailsBody} className="dsh-task-body" role="tabpanel" id={`task-details-${sessionId}`} aria-labelledby={`task-details-tab-${sessionId}`} hidden={showHistory || tab !== 'details'}>
+      {state && <SessionConnection state={state} connect={connect} t={t} />}
       {state && <ReviewProgress state={state} t={t} />}
       {(reviewId || reviewJob) && <Button size="sm" variant="toolbar" onClick={() => {
         const job = reviewId ? state?.reviewJobs?.find(item => item.reviewerSessionId === reviewId) : reviewJob
@@ -328,9 +331,13 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('task-supervisor', { zh, en }))
   const t = ctx.locale.bind('task-supervisor')
   const open = (params: TaskNavigation = {}) => ctx.sidebarRight.openTab('task-supervisor', { params })
+  const connect = async (sessionId: string) => {
+    await connectSupervisorSession(ctx.sessions, sessionId as SessionId)
+    await taskStore(sessionId).refresh()
+  }
   const Panel = (props: ConsultationPanelProps) => {
     const { tab } = props.useTabInfo()
-    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation} t={t} showReview={async job => {
+    return <TaskPanel key={props.sessionId} sessionId={props.sessionId} navigation={tab.navigation} t={t} connect={() => connect(props.sessionId)} showReview={async job => {
       const binding = ctx.sessions.binding(props.sessionId as SessionId)
       if (!binding || job.mainSessionId !== props.sessionId) throw new Error(t('reviewUnavailable'))
       await binding.session.loadThrough(Math.max(0, job.cutoff) as SessionSeq)
@@ -341,12 +348,12 @@ export function apply(ctx: ClientContext): void {
     }}
       renderConsult={id => <ConsultationHost id={id} sessions={ctx.sessions} SessionProvider={props.SessionProvider} renderSlot={props.renderSlot} />} />
   }
-  const Inline = (props: PanelProps) => <InlineTask {...props} open={open} t={t} />
+  const Inline = (props: PanelProps) => <InlineTask {...props} open={open} t={t} connect={() => connect(props.sessionId)} />
   const Notes = (props: TailProps) => <><ReviewNotes {...props} open={open} /><DraftNotes {...props} t={t} /></>
   const portals = createReviewPortals()
   const disclosures = createReviewDisclosureState()
   ctx.effect(() => () => { portals.dispose(); disclosures.clear() })
-  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} portals={portals} disclosures={disclosures} t={t} />
+  const Review = (props: ReviewNodeProps) => <ReviewSession {...props} portals={portals} disclosures={disclosures} t={t} connect={() => connect(props.sessionId)} />
   const ReviewHost = (props: ReviewPortalProps) => <ReviewPortalHost {...props} portals={portals} sessions={ctx.sessions} />
   ctx.effect(() => ctx.uiConversation.events.register(reviewDefinition), 'task-supervisor:reviews')
   ctx.effect(() => ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'task-supervisor/review-portals',

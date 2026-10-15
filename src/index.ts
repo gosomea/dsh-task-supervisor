@@ -3,6 +3,7 @@ import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
 /** Native DSH task controller: durable state, human commands, and model tools. */
 import { installStandardHost } from './standard-host.ts'
 import { confirmedPtcTimeout } from './review-transport-recovery.ts'
+import { reviewRecoveryAction } from './review-recovery-action.ts'
 import { installReviewQueue } from './review-queue.ts'
 import { randomUUID } from 'node:crypto'
 import { installTaskToolPresentation } from './task-tool-presentation.ts'
@@ -431,7 +432,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const repairs = installRepairs(ctx, commitAndWake, repairLimits)
   const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
   installPanelApi(ctx, agent => ({ reviewVerification: effectiveVerification, armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
-    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent)) }), consultation, repairs)
+    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent), failedReview(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent, new Error('Supervisor unloaded'))
@@ -488,6 +489,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   function boundReview(agent: Agent, task: TaskSnapshot) {
     return task.pendingReview?.jobId ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs
       .find(job => job.id === task.pendingReview!.jobId) : undefined
+  }
+
+  function failedReview(agent: Agent) {
+    const id = current(agent)?.reviewFault?.jobId
+    return id ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === id) : undefined
   }
 
   async function finishReviewRecord(agent: Agent, jobId: string, status: 'applied' | 'stale'): Promise<void> {
@@ -948,6 +954,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         }
         if (input === 'resume') {
           if (task.pauseReason !== 'review-fault' && task.pendingReview?.jobId && boundReview(agent, task)?.owner === 'controller' && !life.armed && !reviewAbort.has(agent)) {
+            const interrupted = boundReview(agent, task)!
+            if (interrupted.status !== 'submitted' && interrupted.deadlineAt && Date.parse(interrupted.deadlineAt) <= Date.now()) {
+              const fault = interrupted.fault ?? { jobId: interrupted.id, stageId: interrupted.stageId, cutoff: interrupted.cutoff,
+                reviewerSessionId: interrupted.reviewerSessionId, code: 'timeout' as const, message: 'The interrupted review expired before manual recovery.',
+                retryable: false, attempt: interrupted.attempt, errorSeq: null, outcomeKnown: false }
+              if (interrupted.status !== 'failed') await recordReview(ctx, agent, { ...interrupted, revision: interrupted.revision + 1, status: 'failed', fault, finishedAt: new Date().toISOString() })
+              const paused: TaskSnapshot = { ...task, revision: task.revision + 1, phase: 'paused', pauseReason: 'review-fault', pendingReview: null, reviewFault: fault }
+              appendTask(ctx, agent, paused)
+              await flush(agent)
+              return reply('原审查已过期，任务保持暂停。请点击“重新审查”或输入 /task restart-review 建立新作业。', paused, false)
+            }
             await retryReview(agent, task, signal, true)
             return reply('原审查恢复已提交；用户暂停或宿主重启后的实施仍需手动恢复。', current(agent), false)
           }
@@ -1023,7 +1040,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         latestUserMessage: source,
         continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',
         reviewVerification: effectiveVerification,
-        availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
+        availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent), failedReview(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
         executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : task.phase === 'reviewing' ? 'REVIEW_IN_PROGRESS' : task.pauseReason === 'review-fault' ? 'REVIEW_FAULT: Use the available user review control.' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
         repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),
@@ -1204,15 +1221,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         : `${authorization && settled.lastApproval?.source === 'policy' ? 'Execution approved under the user task policy after independent plan review. ' : ''}${CLOSING_MESSAGE}` }
   }
 
-  /** A user can commission a fresh review after expiry without renewing the sealed job. */
+  /** A user commissions a fresh review when the original attempt cannot continue. */
   async function restartReview(agent: Agent, expected: TaskSnapshot, signal: AbortSignal): Promise<void> {
-    const previous = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === expected.reviewFault?.jobId)
-    if (!expected.enabled || expected.phase !== 'paused' || expected.pauseReason !== 'review-fault'
-      || reviewAbort.has(agent) || !previous || previous.status !== 'failed' || previous.fault?.code !== 'timeout'
-      || !previous.deadlineAt || !Number.isFinite(Date.parse(previous.deadlineAt)) || Date.parse(previous.deadlineAt) > Date.now()) throw new Error('no expired review to restart')
-    if (previous.mainSessionId !== agent.id || previous.taskId !== expected.id || previous.planVersion !== expected.planVersion
-      || previous.input.requirementsVersion !== expected.requirementsVersion
-      || previous.nodeAttempt !== (runsOf(expected).find(run => run.id === previous.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
+    const previous = failedReview(agent)
+    if (!previous || previous.mainSessionId !== agent.id || reviewAbort.has(agent)
+      || reviewRecoveryAction(expected, previous, Date.now()) !== 'restart-review') throw new Error('当前审查不能重新建立；请查看 /task status 中的 availableActions。要求或计划已变化时，请重新提交计划。')
     signal.throwIfAborted()
     const input = { ...previous.input, pendingReview: { kind: previous.kind, stageId: previous.stageId, evidence: previous.evidence, cutoff: previous.cutoff } }
     const reserved = createReviewJob(agent, input, previous.stageId, previous.evidence, previous.kind, reviewPolicyFor(agent, false), 'queued')
@@ -1238,12 +1251,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         && ['user', 'restart'].includes(expected.pauseReason ?? ''))
     if (!job || !expected.enabled || reviewAbort.has(agent)
       || !(stopped && ['paused', 'reviewing'].includes(expected.phase)
-        || job.status === 'failed' && expected.phase === 'paused' && expected.pauseReason === 'review-fault' && job.fault?.retryable)) throw new Error('no retryable review fault')
+        || reviewRecoveryAction(expected, job, Date.now()) === 'retry-review')) throw new Error('当前审查不能重试；请查看 /task status 中的 availableActions，原作业已过期时选择重新审查。')
     if (job.taskId !== expected.id || job.planVersion !== expected.planVersion
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
     commandSignal.throwIfAborted()
-    if (job.deadlineAt && Date.parse(job.deadlineAt) <= Date.now()) throw new Error('The original review deadline expired. Use /task restart-review to commission a new review.')
+    if (job.status !== 'submitted' && job.deadlineAt && Date.parse(job.deadlineAt) <= Date.now()) throw new Error('The original review deadline expired. Use /task restart-review to commission a new review.')
     const strategy = job.recovery ?? { retryLimit: 0, delayMs: 0, resume: false, consumed: 0, protocolRepairs: 0,
       permit: { armed: false, requirementsVersion: job.input.requirementsVersion, planVersion: job.planVersion,
         approvedPlanVersion: job.input.approvedPlanVersion }, manualOnly: true, manualPending: false, nextRetryAt: null, failures: [] }
