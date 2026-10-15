@@ -1,0 +1,93 @@
+{
+  "version": "0.1.8",
+  "sourceCommit": "eeff890dacbba917d50c8cfe8c4bc1712b0dfb88",
+  "artifactSha256": "2291183478f7e60f076a6b687344805c2fbde9cbbfd4cec45357e3b814a9926b",
+  "host": "0.2.1-alpha.3",
+  "tests": {
+    "presentationAndStore": 44,
+    "controllerRecoveryAndPtc": 11,
+    "strictHost": true,
+    "strictClient": true,
+    "build": true,
+    "packageEntries": true,
+    "installedFilesMatch": true,
+    "wholeSuiteRun": false
+  },
+  "realPlan": {
+    "sourceCommit": "eeff890dacbba917d50c8cfe8c4bc1712b0dfb88",
+    "sessionId": "session-f442d45b-744e-4d4b-bd89-275f7dea64c7",
+    "workspace": "/var/folders/kg/klnm7xcn56lbsvcwp5tqnxh00000gn/T/dsh-recovery-plan-3pjnail_",
+    "origin": "http://127.0.0.1:60217",
+    "passed": true,
+    "phase": "awaiting-approval",
+    "armed": false,
+    "everApproved": false,
+    "jobs": [
+      {
+        "id": "92dcfc84-b8c7-4cd2-bf5b-fcb4ce010e24",
+        "kind": "plan",
+        "status": "applied",
+        "attempt": 1,
+        "fault": null,
+        "reviewerSessionId": "task-review-26d04f31-b2ce-4e2c-91ba-7f7642d046af"
+      }
+    ],
+    "routes": [
+      {
+        "sessionId": "session-f442d45b-744e-4d4b-bd89-275f7dea64c7",
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "descriptorCount": 0
+      },
+      {
+        "sessionId": "task-review-26d04f31-b2ce-4e2c-91ba-7f7642d046af",
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "descriptorCount": 1
+      }
+    ]
+  },
+  "coldConnection": {
+    "sessionId": "session-6be18729-80b8-48d6-b7b9-1d924d7ed5e5",
+    "before": {
+      "live": false,
+      "phase": "awaiting-approval"
+    },
+    "after": {
+      "live": true,
+      "phase": "awaiting-approval",
+      "armed": false,
+      "reviewing": false,
+      "actions": [
+        "approve",
+        "auto-approve-on",
+        "pause",
+        "off"
+      ]
+    },
+    "taskUnchanged": true,
+    "reviewJobsUnchanged": true,
+    "nativeCommand": "/task status"
+  },
+  "limits": [
+    "Fault recovery cases use the controlled native Host fixture.",
+    "Cold connection uses the native command endpoint; browser button interaction is not yet recorded.",
+    "No npm publication."
+  ]
+}
