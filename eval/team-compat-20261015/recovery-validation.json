@@ -1,0 +1,60 @@
+{
+  "hostVersion": "0.2.1-alpha.3",
+  "hostSourceCommit": "571902028a75c64c1d767f4ae5fd099485f0ddf0",
+  "profile": "web",
+  "port": 3080,
+  "pid": 64082,
+  "versions": {
+    "@foreveryu/dsh-opencode-go": "0.1.2",
+    "dsh-task-supervisor": "0.1.6"
+  },
+  "artifactSha256": {
+    "@foreveryu/dsh-opencode-go": "6059b1ec864983aa546d3ba0c06cd01a9a94bacb10ad9a4dfe72898ac207cfb2",
+    "dsh-task-supervisor": "5527cfdfd9119d7513f5e685b7fdd71c44316d0ef5c055fcca95ec6cd595e034"
+  },
+  "allInstalledPackageBytesVerified": true,
+  "credentialsUnchanged": true,
+  "priorSessionDirectoriesRetained": true,
+  "npmPublication": false,
+  "catalog": {
+    "error": null,
+    "refreshing": false,
+    "observedAt": "2026-10-15T12:36:39.006Z",
+    "counts": {
+      "opencode": 86,
+      "opencode-go": 37
+    }
+  },
+  "pluginSourceCommit": "9ca704361f1b50c13cd3639141273b20075c145b",
+  "focusedTests": {
+    "passed": 16,
+    "omitted": 147
+  },
+  "teamTestsPassed": 9,
+  "strictHostTypecheckPassed": true,
+  "strictClientTypecheckPassed": true,
+  "buildPassed": true,
+  "fullSuiteCompleted": false,
+  "realCodeBuddyPlanReview": {
+    "passed": true,
+    "phase": "awaiting-approval",
+    "everApproved": false,
+    "requestRouteVerified": true,
+    "reviewerDescriptorCount": 1
+  },
+  "goPlanReview": {
+    "phase": "awaiting-approval",
+    "reviewStatus": "applied",
+    "fault": null,
+    "requestRouteVerified": "opencode-go/deepseek-v4.1-flash",
+    "fixtureExpectedCodeBuddy": false
+  },
+  "dailyRecovery": {
+    "newJob": true,
+    "oldJobUnchanged": true,
+    "oldDeadlineRetained": true,
+    "newDeadlineSeparate": true,
+    "automaticallyApproved": false,
+    "phaseAtSubmission": "reviewing"
+  }
+}
