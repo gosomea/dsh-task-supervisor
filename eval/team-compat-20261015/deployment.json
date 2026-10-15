@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "deployedAt": "2026-10-15T11:43:30.775546+00:00",
+  "verifiedAt": "2026-10-15T11:45:16.415835+00:00",
+  "mainCommit": "ad25a02d2e24665b05ec0ac34807bd76904dda3c",
+  "remoteMainVerified": true,
+  "host": {
+    "profile": "web-latest",
+    "port": 3080,
+    "pid": 56214,
+    "sourceCommit": "571902028a75c64c1d767f4ae5fd099485f0ddf0",
+    "sourceVersion": "0.2.1-alpha.3",
+    "launcher": "dsh-web --no-open",
+    "priorListener": null,
+    "httpStatus": 200,
+    "bootstrapAssetsOk": true
+  },
+  "supervisor": {
+    "previousVersion": "0.1.4",
+    "installedVersion": "0.1.5",
+    "artifactSha256": "a23850888df25a3b93134780e8a2aa1d5fe423e2c46e88199be724cb20672b41",
+    "installedFilesByteIdentical": 12,
+    "routeRegistered": true,
+    "missingSessionParameter": {
+      "status": 400,
+      "error": "sessionId is required"
+    }
+  },
+  "install": {
+    "entry": "dsh-web runtime apps/cli/src/bin.ts plugin --profile web-latest add <validated-tarball>",
+    "exitCode": 0,
+    "onlySupervisorDependencyChanged": true,
+    "unchangedConfigFiles": [
+      "cordis.yml",
+      "cordis.patch.yml",
+      "pnpm-workspace.yaml"
+    ],
+    "backupAvailable": true
+  },
+  "skippedBundles": [
+    "@foreveryu/dsh-opencode-go"
+  ],
+  "newModelRequests": 0,
+  "sessionsCreated": 0,
+  "existingSessionsOpened": 0,
+  "historicalRegressionResultsChanged": false,
+  "npmPublished": false,
+  "browserInteractionVerified": false
+}
