@@ -89,5 +89,30 @@
     "Fault recovery cases use the controlled native Host fixture.",
     "Cold connection uses the native command endpoint; browser button interaction is not yet recorded.",
     "No npm publication."
-  ]
+  ],
+  "dailyDeployment": {
+    "version": "0.1.8",
+    "pid": 76806,
+    "sessionId": "session-92d6f02c-9de0-4761-b03f-df567d75aa2e",
+    "taskId": "a86cd5ba-04a4-432a-84f5-86038645c33f",
+    "phaseAfter": "active",
+    "armedAfter": true,
+    "planVersion": 1,
+    "approvedPlanVersion": 1,
+    "sameTask": true,
+    "samePlanAndApproval": true,
+    "maintenanceInterruptedTaskResumed": true,
+    "credentialsUnchanged": true,
+    "priorSessionDirectoriesRetained": 623
+  },
+  "browserObservation": {
+    "origin": "http://127.0.0.1:3080",
+    "reviewJobId": "50713c43-ed80-444f-9d0f-eaebf3cb8263",
+    "fault": "evidence-read",
+    "expired": true,
+    "startNewReviewButtonVisible": true,
+    "retentionAndManualResumeInstructionsVisible": true,
+    "controlClicked": false
+  },
+  "isolatedHostStopped": true
 }
