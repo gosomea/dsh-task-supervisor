@@ -21,7 +21,7 @@ export type RequirementResult = z.infer<typeof requirementResultSchema>
 export const logRequirementsParameters = { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
   id: { type: 'string', required: true }, criterionId: { type: 'string', description: 'Applicable criterion ID; omit for an original requirement missing from the plan.' },
   requirement: { type: 'string', required: true }, source: { type: 'object', required: true, additionalProperties: false, properties: {
-    kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule', 'implementation', 'unknown'] }, reference: { type: 'string', required: true },
+    kind: { type: 'string', required: true, enum: ['objective', 'user-message', 'project-rule', 'implementation', 'unknown'] }, reference: { type: 'string', required: true, description: 'Source locator: objective for kind=objective; seq:<original user message seq> for kind=user-message, for example seq:594 from read_task_input. Put the requirement text in requirement, never in this locator.' },
   } }, basis: { type: 'string', required: true, enum: ['explicit', 'derived'] },
   status: { type: 'string', required: true, enum: ['satisfied', 'failed', 'unverified'] }, finding: { type: 'string', required: true },
   coverage: { type: 'string', required: true }, limitations: { type: 'string', required: true }, evidenceSeqs: { type: 'array', required: true, items: { type: 'integer' } },
@@ -35,9 +35,13 @@ export function logRequirementResults(job: ReviewJob, raw: unknown, ranges: Read
   if (new Set(values.map(item => item.id)).size !== values.length || values.some(item => item.criterionId !== null && !criteria.some(c => c.id === item.criterionId))
     || criteria.some(item => !values.some(value => value.criterionId === item.id))) throw new Error('requirement results must cover every applicable criterion and use unique IDs')
   if (!values.some(value => value.basis === 'explicit' && value.source.kind === 'objective')) throw new Error('include the original objective requirements, including omissions from the main plan')
-  return values.map(value => {
+  return values.map((value, index) => {
     if (value.source.kind === 'objective' && value.source.reference !== 'objective') throw new Error('objective source must reference objective')
-    if (value.source.kind === 'user-message' && (!/^seq:\d+$/u.test(value.source.reference) || !ranges.has(Number(value.source.reference.slice(4))))) throw new Error('read the original user requirement before citing its source')
+    if (value.source.kind === 'user-message') {
+      if (!/^seq:\d+$/u.test(value.source.reference)) throw new Error(`INVALID_REQUIREMENT_SOURCE_REFERENCE: requirements[${index}].source.reference must use seq:<original user message seq>, for example seq:594. Read the seq from read_task_input; put quoted requirement text in requirement, not source.reference. Correct the reference before resubmitting; rereading an already read source does not fix this format.`)
+      const seq = Number(value.source.reference.slice(4))
+      if (!ranges.has(seq)) throw new Error(`UNREAD_REQUIREMENT_SOURCE: requirements[${index}].source.reference=${value.source.reference} refers to an unread original user requirement. Call read_task_input with seq=${seq}, then retain source.reference=seq:${seq}.`)
+    }
     const criterion = criteria.find(item => item.id === value.criterionId)
     if (criterion?.provenance?.kind === 'user' && value.basis !== 'explicit') throw new Error('user requirements cannot become optional derived checks')
     if (value.source.kind === 'implementation' && value.basis !== 'derived' || value.source.kind === 'unknown' && passing) throw new Error('unknown or implementation sources cannot establish explicit acceptance')

@@ -3191,3 +3191,31 @@ it('commissions a new manual review after expiry, preserves the failed job, and 
   expect(taskOf(ctx, agent)).toMatchObject({ everApproved: false, approvedPlanVersion: null })
   expect((await ctx.tools.execute({ agent, signal, name: 'task_status', callId: ToolCallId('restart-status'), arguments: {} })).isError).toBe(false)
 })
+
+it('repairs a malformed user-source locator from native error feedback without another source read', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-source-locator-')); roots.push(root)
+  const scripts: Record<string, StreamChunk[][]> = {}
+  const ctx = await host(root, new ScriptedAdapter(scripts))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('source-locator'), agentOptions: { provider: 'scripted', model: 'main' } })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: 'Build import. Copy configuration only for testing; never commit it.' }] }))
+  await agent.whenIdle()
+  const seq = agent.session.snapshotEvents().find(event => event.type === 'user/message' && event.data.source.kind === 'user')!.seq
+  const task = { ...newTask('Build import'), criteria: smallPlan.criteria, stages: smallPlan.stages }
+  appendTask(ctx, agent, task)
+  const result = (reference: string) => ({ verdict: 'pass', finding: 'Controlled plan coverage', evidence_seqs: [seq], requirements: [
+    { id: 'objective', criterionId: 'c', requirement: 'Build import', source: { kind: 'objective', reference: 'objective' }, basis: 'explicit', status: 'satisfied', finding: 'Plan covers import', coverage: 'plan', limitations: 'log only', evidenceSeqs: [seq] },
+    { id: 'supplement', requirement: 'Never commit copied configuration', source: { kind: 'user-message', reference }, basis: 'explicit', status: 'satisfied', finding: 'Plan retains constraint', coverage: 'plan', limitations: 'log only', evidenceSeqs: [seq] },
+  ] })
+  scripts.reviewer = [toolResponse('read_task_input', { seq }, 'locator-source'),
+    toolResponse('task_review_decision', result('Copy configuration only for testing; never commit it.'), 'locator-invalid'),
+    toolResponse('task_review_decision', result(`seq:${seq}`), 'locator-corrected')]
+  const decision = await reviewStage(ctx, agent, task, 'plan', 'submitted plan', new AbortController().signal,
+    { provider: 'scripted', model: 'reviewer' }, 'plan', { scopeProtocol: 1, resultProtocol: 1, repairAttempts: 0 })
+  expect(decision.verdict).toBe('pass')
+  const reader = await ctx.sessionPersistence.open(SessionId(decision.reviewerSessionId), 'read')
+  const rows = (await reader.read(0, 256)).events; await reader.close()
+  expect(rows.filter(event => event.type === 'tool/call' && event.data.name === 'read_task_input')).toHaveLength(1)
+  const failure = rows.find(event => event.type === 'tool/result' && event.data.message.isError)
+  expect(JSON.stringify(failure)).toContain('INVALID_REQUIREMENT_SOURCE_REFERENCE')
+  expect(rows.filter(event => event.type === 'tool/call' && event.data.name === 'task_review_decision')).toHaveLength(2)
+})

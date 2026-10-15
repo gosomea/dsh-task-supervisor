@@ -70,3 +70,14 @@ it('preserves record 8 result identity and cannot upgrade an older job to a new 
   expect(foldReviewJobs([], event(value))).toHaveLength(1)
   expect(() => foldReviewJobs([value], event({ ...value, revision: 2, resultProtocol: 1 }))).toThrow()
 })
+
+it('corrects a malformed source locator without rereading or relaxing evidence admission', () => {
+  const sourceRequirement = { ...requirement, id: 'source', criterionId: null, source: { kind: 'user-message', reference: '复制配置但不得写入仓库' } }
+  expect(() => logRequirementResults(job(), [requirement, sourceRequirement], ranges, true))
+    .toThrow('INVALID_REQUIREMENT_SOURCE_REFERENCE: requirements[1].source.reference must use seq:')
+  const corrected = { ...sourceRequirement, source: { kind: 'user-message', reference: 'seq:10' } }
+  expect(logRequirementResults(job(), [requirement, corrected], ranges, true)[1]).toMatchObject({ source: corrected.source, method: 'log' })
+  const unread = { ...corrected, source: { kind: 'user-message', reference: 'seq:11' } }
+  expect(() => logRequirementResults(job(), [requirement, unread], ranges, true)).toThrow('UNREAD_REQUIREMENT_SOURCE: requirements[1].source.reference=seq:11')
+  expect(() => logRequirementResults(job(), [requirement, { ...corrected, status: 'unverified' }], ranges, true)).toThrow('cannot pass')
+})
