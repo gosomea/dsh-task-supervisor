@@ -11,7 +11,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import { WorkingDirectoryService } from '@deepseek-ai/dsh-working-directory'
-import Subagents, { snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
+import Subagents, { SUBAGENT_DESCRIPTOR_VERSION } from '@deepseek-ai/dsh-subagent'
 import TeamService, { TeamError } from '@deepseek-ai/dsh-experimental-agent-team'
 import * as TeamTools from '@deepseek-ai/dsh-experimental-tool-agent-team'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -149,7 +149,7 @@ it('rejects an incompatible persisted child identity before publishing a resumed
   await recordReview(ctx, agent, previous)
   const handle = await ctx.agents.create({ sessionId: SessionId(previous.reviewerSessionId!), parentAgent: agent,
     agentOptions: { provider: 'scripted', model: 'reviewer' }, setup(_scope, child) {
-      child.session.append('subagent/descriptor', snapshotSubagentDescriptor({ mode: 'one-shot', provider: 'other-provider', label: 'other worker' }))
+      child.session.append('subagent/descriptor', { version: SUBAGENT_DESCRIPTOR_VERSION, mode: 'one-shot', provider: 'other-provider', label: 'other worker' })
     } })
   await handle.dispose()
   await expect(reviewStage(ctx, agent, task, 'plan', 'submitted evidence', new AbortController().signal, model, 'plan', {}, previous, true))

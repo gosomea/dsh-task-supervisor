@@ -40,7 +40,7 @@ export function controlActions(task: TaskSnapshot | null, armed: boolean, review
   const policyAction = task.approvalPolicy?.mode === 'after-review' ? 'auto-approve-off' : 'auto-approve-on'
   if (task.phase === 'awaiting-approval') return ['approve', policyAction, 'pause', 'off']
   if (task.phase === 'planning') return [armed ? 'pause' : 'resume', policyAction, 'off']
-  if (task.phase === 'paused' && task.pauseReason === 'review-fault') return task.reviewFault?.retryable ? ['retry-review', 'off'] : ['off']
+  if (task.phase === 'paused' && task.pauseReason === 'review-fault') return task.reviewFault?.code === 'timeout' ? ['restart-review', 'off'] : task.reviewFault?.retryable ? ['retry-review', 'off'] : ['off']
   if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']
   return ['pause', 'off']
 }

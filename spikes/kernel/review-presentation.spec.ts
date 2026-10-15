@@ -181,3 +181,16 @@ it('renders the entire recorded tool-only report using native Markdown without t
   expect(html).toContain('const')
   expect(html).not.toContain('max-height')
 })
+
+it('offers a new review only for the current live timeout, while preserving historical failures', () => {
+  const { job, state } = fixture()
+  job.status = 'failed'
+  job.fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, code: 'timeout',
+    message: 'expired', retryable: false, attempt: 1, errorSeq: null, outcomeKnown: false }
+  state.task!.reviewFault = job.fault
+  state.reviewing = false
+  state.actions = ['restart-review', 'off']
+  expect(reviewPresentation(job, state)).toMatchObject({ canRestart: true, canRetry: false })
+  expect(reviewPresentation(job, { ...state, live: false }).canRestart).toBe(false)
+  expect(reviewPresentation({ ...job, id: randomUUID() }, state).canRestart).toBe(false)
+})

@@ -22,6 +22,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
     || currentReviewJob(state)?.id === job.id && ['user', 'restart'].includes(state?.task?.pauseReason ?? ''))
   const canRetry = currentFault && state?.live === true
     && state.actions.includes('retry-review')
+  const canRestart = currentFault && state?.live === true && state.actions.includes('restart-review')
   let label: SupervisorKey = 'reviewEnded'
   let tone: 'active' | 'success' | 'warning' | 'error' | 'neutral' = 'neutral'
   if (!state && pending) { label = 'reading' }
@@ -51,7 +52,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
     else if (!state.armed || !state.task?.enabled || state.task?.phase === 'paused') next = 'reviewManualRecovery'
     else next = state.task?.phase === 'planning' ? 'reviewNextPlanning' : 'reviewContinuing'
   }
-  return { active, currentFault, canRetry, label, tone, next, duration: duration !== null && Number.isFinite(duration) ? duration : null }
+  return { active, currentFault, canRetry, canRestart, label, tone, next, duration: duration !== null && Number.isFinite(duration) ? duration : null }
 }
 
 const FAULT_LABELS: Record<ReviewFault['code'], SupervisorKey> = {

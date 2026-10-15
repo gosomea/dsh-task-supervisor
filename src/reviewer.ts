@@ -1,3 +1,4 @@
+import type {} from '@deepseek-ai/dsh-session-persistence'
 /** Fresh, read-only reviewer over a fixed main Session evidence cutoff. */
 import { controlEvent } from './session-records.ts'
 
@@ -10,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-api-session-controller/types'
 import { createUserMessage, ReasoningEffortId, LlmError } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { childSessionMeta, snapshotSubagentDescriptor, foldSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
+import { childSessionMeta, SUBAGENT_DESCRIPTOR_VERSION, foldSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { installImageEvidence } from './image-evidence.ts'
@@ -341,9 +342,9 @@ async function runReviewStage(
         if (descriptor?.mode !== 'one-shot' || descriptor.provider !== 'task-supervisor') {
           throw new Error(`reviewer ${reviewer.id} has an incompatible subagent identity; restore the original Supervisor Session`)
         }
-      } else reviewer.session.append('subagent/descriptor', snapshotSubagentDescriptor({
-        mode: 'one-shot', provider: 'task-supervisor', label: `Supervisor ${reviewKind}: ${stageId}`,
-      }))
+      } else reviewer.session.append('subagent/descriptor', {
+        version: SUBAGENT_DESCRIPTOR_VERSION, mode: 'one-shot', provider: 'task-supervisor', label: `Supervisor ${reviewKind}: ${stageId}`,
+      })
       agentCtx.on('agent/error', ({ turn, error }) => { turnFailure = { turn, error } })
       agentCtx.tools.restrict({ allow: [] })
       if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal)

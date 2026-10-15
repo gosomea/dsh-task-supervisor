@@ -74,6 +74,7 @@ export function ReviewSession({ portals, disclosures, t, ...props }: ReviewNodeP
     {job.status === 'failed' && <div className="dsh-task-review-recovery">
       <span>{t(summary.canRetry ? 'reviewRetryNeeded' : summary.currentFault ? 'reviewManualRecovery' : 'reviewHistoricalFault')}</span>
       {summary.canRetry && <Button size="sm" variant="primary" disabled={busy} onClick={() => { void store.act('retry-review') }}>{t('reviewRetry')}</Button>}
+      {summary.canRestart && <Button size="sm" variant="primary" disabled={busy} onClick={() => { void store.act('restart-review') }}>{t('reviewRestart')}</Button>}
     </div>}
     {job.status === 'failed' && summary.currentFault && <p className="dsh-task-meta">{t(reviewRetryExplanation(job))}</p>}
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}

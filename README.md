@@ -31,14 +31,14 @@ Use `/task` to track, pause and rework a goal, follow its DAG, and obtain review
 <a id="get-started"></a>
 ## Get started
 
-This page describes **0.1.5**, which creates Tasks in native DSH modes. Reviewer initialization, fault classification and recovery changes are in [the 0.1.5 release](docs/releases/0.1.5.md). Complete reports are separate from tool process details; requirement outcomes, Task/attempt evidence scope and bounded read correction are described in [review experience](docs/review-experience.md). Earlier native-process and recovery changes are in [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
+This page describes **0.1.6**, which creates Tasks in native DSH modes. Expired-review recovery and direct status queries are described in [the 0.1.6 release](docs/releases/0.1.6.md). Reviewer initialization, fault classification and recovery changes are in [the 0.1.5 release](docs/releases/0.1.5.md). Complete reports are separate from tool process details; requirement outcomes, Task/attempt evidence scope and bounded read correction are described in [review experience](docs/review-experience.md). Earlier native-process and recovery changes are in [the 0.1.3 release](docs/releases/0.1.3.md). Earlier versions and public Host boundaries are documented in [the 0.1.2 release](docs/releases/0.1.2.md), [public DSH installation validation](docs/native-install.md) and [supervised tasks in native modes](docs/native-task.md).
 
 ### Install into a Web profile
 
 Node 24 and official DSH `0.2.0-rc.2` are validated without Host or native sandbox modifications. Retain the profile's model configuration and install the public package:
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.5
+dsh plugin --profile web add /absolute/path/to/dsh-task-supervisor-0.1.6.tgz
 dsh web
 ```
 
@@ -175,7 +175,7 @@ After native activity settles, the controller checks task identity, permission, 
 | Awaiting approval | Plan review passed without implementation permission; approve the plan or edit requirements first. |
 | Reviewing | After its Turn ends, the main Agent awaits the verdict; the Supervisor node in the primary conversation shows native live replies, tools, errors and elapsed time. Activity counts are not acceptance percentages. |
 | User decision required | The reviewer needs a condition resolved by the user; supply a decision and manually resume. Waiting timeout is not approval. |
-| Internal fault or review timeout | Internal timeouts and recognized transient request faults retry once by default. Exhaustion retains the job and fault; `/task retry-review` quickly queues the same job. A still-valid approval and version permit continuation; user pauses, disabling, restarts and old records without permission remain manual. |
+| Review fault or timeout | Recognized transient request faults retry once by default; exhausted failures retain their records. `/task retry-review` recovers a valid job within its original deadline. After expiry, `/task restart-review` creates a new review and waits for approval or manual execution resume. |
 | Planning stalled or recovery without progress | By default, two consecutive counts of the corresponding no-progress condition pause; investigate and resume manually. |
 | `/task pause` or `/task off` | Stop owned continuation and review while retaining records. `/task on` enables supervision; `/task resume` explicitly restores work. |
 | Requirements edits or artifact changes | Old-version verdicts cannot accept new work. Use `/task edit <objective>` for requirements; changed artifacts need fresh verification. |

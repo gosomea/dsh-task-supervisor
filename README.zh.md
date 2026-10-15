@@ -31,14 +31,14 @@ kind: "package-bundle"
 <a id="get-started"></a>
 ## 开始使用
 
-下文描述 **0.1.5**，在原生 DSH 模式中创建 Task。审查者初始化、故障分类与恢复变更见[0.1.5 发布说明](docs/releases/0.1.5.zh.md)。完整审查结果与工具过程独立展示；要求级结果、Task／尝试取证范围及有限读取纠正见[审查体验](docs/review-experience.zh.md)。此前的原生过程与恢复见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
+下文描述 **0.1.6**，在原生 DSH 模式中创建 Task。过期审查恢复与直接状态查询见[0.1.6 发布说明](docs/releases/0.1.6.zh.md)。审查者初始化、故障分类与恢复变更见[0.1.5 发布说明](docs/releases/0.1.5.zh.md)。完整审查结果与工具过程独立展示；要求级结果、Task／尝试取证范围及有限读取纠正见[审查体验](docs/review-experience.zh.md)。此前的原生过程与恢复见[0.1.3 发布说明](docs/releases/0.1.3.zh.md)。较早版本及公开 Host 边界见[0.1.2 发布说明](docs/releases/0.1.2.zh.md)、[公开 DSH 安装验收](docs/native-install.zh.md)和[原生模式中的任务督导](docs/native-task.zh.md)。
 
 ### 安装到 Web profile
 
 已验证 Node 24 和官方 DSH `0.2.0-rc.2`，无需修改 Host 或原生沙箱。沿用该 profile 的模型配置；安装公开包：
 
 ```sh
-dsh plugin --profile web add dsh-task-supervisor@0.1.5
+dsh plugin --profile web add /absolute/path/to/dsh-task-supervisor-0.1.6.tgz
 dsh web
 ```
 
@@ -175,7 +175,7 @@ flowchart TD
 | 等待批准 | 计划已审查通过，尚无实施许可；批准当前计划，或先修改要求。 |
 | 审查中 | 主 Agent 本轮结束后等待作业裁决；主对话中的 Supervisor 节点直接展示原生实时回复、工具、错误和耗时。审查活动数不代表验收百分比。 |
 | 需要用户决定 | 审查发现必须由用户解决的条件；补充决定后手动恢复，不能用等待超时视为批准。 |
-| 内部故障或审查超时 | 默认对内部超时或可识别的临时请求故障自动重试一次。耗尽后保留作业与故障，`/task retry-review` 快速提交同作业恢复；原批准与版本仍有效时续行。用户主动暂停、关闭、重启或旧记录缺少许可时仍手动恢复。 |
+| 审查故障或超时 | 默认对可识别的临时请求故障自动重试一次，耗尽后保留故障记录。`/task retry-review` 在原截止内恢复有效作业；过期后通过 `/task restart-review` 建立新审查，并等待批准或手动恢复执行。 |
 | 规划停滞或截断恢复无进展 | 默认连续两次对应的无进展计数后暂停，等待检查问题并手动恢复。 |
 | `/task pause`、`/task off` | 停止自有续行与在途审查，保留记录；`/task on` 只开启督导，`/task resume` 才明确恢复。 |
 | 编辑要求或产物变化 | 旧版本裁决不能验收新工作；要求用 `/task edit <目标>` 修订，相关产物须重新核对。 |

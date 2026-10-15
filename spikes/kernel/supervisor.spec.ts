@@ -8,6 +8,7 @@ import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
 import { verificationPolicy } from '../../src/verification.ts'
 import { PtcRuntime, type PtcRunRequest, type PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
+import { WorkingDirectoryService } from '@deepseek-ai/dsh-working-directory'
 import Goals from '@deepseek-ai/dsh-goal'
 import * as GoalDriver from '@deepseek-ai/dsh-goal-round-driver'
 import * as GoalTools from '@deepseek-ai/dsh-tool-goal'
@@ -16,7 +17,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import Commands from '@deepseek-ai/dsh-commands'
 import LlmRuntime, { LlmError, LlmAdapter, ToolCallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
-import JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
+import * as JsonlPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
@@ -157,6 +158,7 @@ async function host(root: string, adapter: ScriptedAdapter, supervisor = true,
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(JsonlPersistence, { root, compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
+  await ctx.plugin(WorkingDirectoryService, { defaultDirectory: root })
   await installNativePresets(ctx)
   if (supervisor) await ctx.plugin(Supervisor, { planningSupervision: false, ...planningReadTools === null ? {} : { planningReadTools }, automaticContinuation,
     maxAutomaticRoundsWithoutReport, planCoverageReview, reviewRepairAttempts: 0, ...extra,
@@ -2223,7 +2225,7 @@ it('admits an explicit post-approval read turn with native default read tools', 
   expect(taskOf(ctx, agent)).toMatchObject({ phase: 'awaiting-approval', readOnlyTurnsBeforeWrite: 1 })
 })
 
-const smallPlan = { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user', reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }] }
+const smallPlan = { criteria: [{ id: 'c', text: 'Build import', provenance: { kind: 'user' as const, reference: 'objective' } }], stages: [{ id: 'n', title: 'Implement', criterionIds: ['c'] }] }
 function coverageChecks(verdict = 'pass'): StreamChunk[][] {
   return [toolResponse('read_task_evidence', { from_seq: 0, limit: 30 }, 'coverage-read'),
     toolResponse('task_review_decision', { verdict, finding: '计划覆盖当前要求', evidence_seqs: [0] }, 'coverage-decision')]
@@ -2246,6 +2248,7 @@ it.each(handoffCases)('hands a %s review off before PTC settles, preserves its i
     code: `return await tools.${tool}(${JSON.stringify(args)})`, description: '提交独立审查',
   }, 'handoff-root'), textResponse('审查结果已收到')], reviewer: coverageChecks() })
   const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, kind === 'plan', [], {})
+  await ctx.plugin(LocalFileSystem)
   class Runtime extends PtcRuntime {
     readonly language = 'typescript'; readonly isolation = 'controlled fixture'
     resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: root, timeoutMs: request.timeoutMs ?? 120000 } }
@@ -3116,4 +3119,75 @@ it.each([0, 1])('bounds structured read correction in the same job (limit=%s)', 
       expect(ledger.ranges.get(input.seq)?.ranges).toContainEqual([0, 'Read a static report and check its total.'.length])
     } finally { await reader.close() }
   }
+})
+
+
+it.each(['paused', 'reviewing', 'disabled'] as const)('exposes direct status under a PTC %s gate without admitting a program or write', async phase => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-blocked-diagnostics-')); roots.push(root)
+  const schemas: string[][] = []
+  class Adapter extends ScriptedAdapter {
+    override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      schemas.push(options.tools?.map(tool => tool.name) ?? [])
+      yield* super.stream(options)
+    }
+  }
+  const adapter = new Adapter({ main: [toolResponse('task_status', {}, 'direct-status'), textResponse('等待用户操作'), textResponse('native transport restored')] })
+  const ctx = await host(root, adapter, true, undefined, false, 3, false, [], {}, 'ptc')
+  class Runtime extends PtcRuntime {
+    readonly language = 'typescript'; readonly isolation = 'controlled diagnostic fixture'
+    resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: root, timeoutMs: 1000 } }
+    async run(): Promise<never> { throw new Error('blocked programs must never dispatch') }
+  }
+  await ctx.plugin(Runtime)
+  let writes = 0
+  ctx.tools.register(defineContentToolFixture({ name: 'unsafe_write', description: 'write fixture', parameters: {}, execute: async () => { writes++; return [{ type: 'text', text: 'wrote' }] } }))
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`blocked-${phase}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = newTask('保持任务门禁')
+  appendTask(ctx, agent, { ...task, phase: phase === 'reviewing' ? 'reviewing' : 'paused', enabled: phase !== 'disabled', pauseReason: 'user' })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '查看状态' }] }))
+  await agent.whenIdle()
+  expect(schemas[0]).toEqual(['task_status'])
+  const status = agent.session.snapshotEvents().find(event => event.type === 'tool/result' && event.data.message.source.callId === 'direct-status')
+  expect(status?.type === 'tool/result' && status.data.message.isError).toBe(false)
+  const signal = new AbortController().signal
+  for (const name of ['run_code', 'unsafe_write']) expect((await ctx.tools.execute({ agent, signal, name, callId: ToolCallId(`blocked-${name}`), arguments: { code: 'return 1' } })).isError).toBe(true)
+  expect(writes).toBe(0)
+  const current = taskOf(ctx, agent)!
+  appendTask(ctx, agent, { ...current, revision: current.revision + 1, phase: 'cleared', pendingReview: null })
+  agent.followup(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '查看普通模式' }] }))
+  await agent.whenIdle()
+  expect(schemas.at(-1)).toContain('run_code')
+})
+
+it('commissions a new manual review after expiry, preserves the failed job, and waits for approval', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-restart-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter({ reviewer: coverageChecks() }), true, { provider: 'scripted', model: 'reviewer' }, true, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('review-restart'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  const input = { ...task, criteria: smallPlan.criteria, stages: smallPlan.stages }
+  const reserved = createReviewJob(agent, input, 'plan', JSON.stringify(smallPlan.stages), 'plan')
+  const fault = { jobId: reserved.id, stageId: 'plan', cutoff: reserved.cutoff, reviewerSessionId: reserved.reviewerSessionId,
+    code: 'timeout' as const, message: 'deadline expired', retryable: false, attempt: 1, errorSeq: null, outcomeKnown: false }
+  const previous = { ...reserved, status: 'failed' as const, deadlineAt: new Date(Date.now() - 1000).toISOString(), fault, finishedAt: new Date().toISOString() }
+  await recordReview(ctx, agent, previous)
+  const paused = { ...task, revision: task.revision + 1, phase: 'paused' as const, pauseReason: 'review-fault' as const, reviewFault: fault }
+  appendTask(ctx, agent, paused)
+  expect((await ctx.commands.execute(agent, '/task retry-review', [], signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision - 1}`, [], signal))?.result.kind).toBe('error')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision}`, [], signal))?.result.kind).toBe('success')
+  expect((await ctx.commands.execute(agent, `/task restart-review ${task.id} ${paused.revision}`, [], signal))?.result.kind).toBe('error')
+  await vi.waitFor(() => expect(taskOf(ctx, agent)?.phase).toBe('awaiting-approval'))
+  await agent.whenIdle()
+  const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs
+  expect(jobs).toHaveLength(2)
+  expect(jobs[0]).toEqual(previous)
+  expect(jobs[1]).toMatchObject({ status: 'applied', attempt: 1, cutoff: previous.cutoff,
+    recovery: { manualOnly: true, permit: { armed: false } } })
+  expect(jobs[1]!.id).not.toBe(previous.id)
+  expect(jobs[1]!.reviewerSessionId).not.toBe(previous.reviewerSessionId)
+  expect(Date.parse(jobs[1]!.deadlineAt!)).toBeGreaterThan(Date.parse(previous.deadlineAt))
+  expect(taskOf(ctx, agent)).toMatchObject({ everApproved: false, approvedPlanVersion: null })
+  expect((await ctx.tools.execute({ agent, signal, name: 'task_status', callId: ToolCallId('restart-status'), arguments: {} })).isError).toBe(false)
 })

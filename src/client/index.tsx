@@ -59,7 +59,7 @@ interface ClientContext {
 }
 
 export const inject = ['sessions', 'slots', 'sidebarRightTabs', 'sidebarRight', 'uiSession', 'uiConversation', 'locale']
-const ACTION_LABEL: Record<string, string> = { 'auto-approve-on': '审查通过后自动执行', 'auto-approve-off': '改为手动批准', approve: '批准计划', pause: '暂停', resume: '恢复任务', 'retry-review': '重试审查',
+const ACTION_LABEL: Record<string, string> = { 'auto-approve-on': '审查通过后自动执行', 'auto-approve-off': '改为手动批准', approve: '批准计划', pause: '暂停', resume: '恢复任务', 'retry-review': '重试审查', 'restart-review': '重新审查',
   off: '关闭督导', on: '重新启用督导' }
 const SOURCE_LABEL = { user: '用户要求', project: '项目约束', implementation: '实现选择' }
 function useTask(sessionId: string) {

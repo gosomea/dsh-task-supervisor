@@ -322,6 +322,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.sessionProjections.register(taskProjection)
   installTaskToolPresentation(ctx, agent => {
     const task = taskOf(ctx, agent)
+    if (task && task.phase !== 'cleared' && (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing')) return ['task_status']
     if (task?.phase === 'complete') return ['task_status', 'task_create', 'task_propose_repair', 'read', 'glob', 'grep', 'read_image']
     if (task?.phase === 'active' && readOnlyGateRemaining(agent, task) > 0) return ['task_status', 'task_approve', ...gateReadTools]
     return undefined
@@ -331,6 +332,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (!agent || consultationBinding(agent)) return ''
       const task = taskOf(ctx, agent)
       if (!task || task.phase === 'cleared' || task.phase === 'complete') return 'Supervisor is available but selecting a native mode does not create a supervised task. When the user explicitly asks to create a supervised task, call task_status to read the latest human message and its seq, then task_create with the objective and user_message_seq. Do not substitute a Todo list, planning skill, native Goal or Plan for Task creation. For ordinary questions, keep the native workflow. Creating a Task does not approve implementation; submit its plan and wait for Task approval.'
+      if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') return 'Task execution is blocked. Call task_status directly through its supplied schema, even with a PTC preset. Do not wrap it in run_code. Report the recorded phase, review fault and available user controls. Waiting for review or a user action does not authorize bash, run_code, approval or execution resume.'
       return 'Supervisor owns automatic continuation and final acceptance for this Task. Native Goal, Plan and Todo may organize work, but they do not replace the Task DAG, its approval or independent review. Native Goal automatic rounds are disarmed while this Task is retained. Native Goal completion and native Plan approval do not complete or approve this Task. Report completed nodes with task_report_stage and request final acceptance with task_request_completion.'
     },
   })
@@ -827,7 +829,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       return undefined
     }
     if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') {
-      return 'Supervisor is stopped or awaiting review'
+      return `SUPERVISOR_EXECUTION_BLOCKED: phase=${task.phase}; reason=${!task.enabled ? 'disabled' : task.pauseReason ?? 'reviewing'}. Call task_status directly through its supplied schema, not through run_code, to read the fault and available user controls. Execution remains blocked until the required review or user action settles.`
     }
     if (task.phase === 'active' && readOnlyGateRemaining(exec.agent, task) > 0
       && exec.name !== 'task_status' && exec.name !== 'task_approve' && !gateReadTools.has(exec.name)) {
@@ -839,7 +841,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.commands.register({
     name: 'task',
     description: 'Enter Task planning, plan an objective, or control the current task',
-    input: { hint: '[<objective>|status|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|clear|off|on]' },
+    input: { hint: '[<objective>|status|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|restart-review|clear|off|on]' },
     async handler({ agent, rawInput, signal }) {
       const binding = consultationBinding(agent)
       if (binding) {
@@ -853,7 +855,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
       }
       let input = rawInput.trim()
-      const bound = /^(approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
+      const bound = /^(approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|restart-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {
         const state = current(agent)
         if (state === null || state.id !== bound[2] || state.revision !== Number(bound[3])) {
@@ -876,7 +878,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           await setEntry(agent, false)
           if (!task) return { kind: 'success', text: '已退出任务规划入口。' }
         }
-        const controls = new Set(['new', 'status', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'edit', 'pause', 'resume', 'retry-review', 'clear', 'off', 'on'])
+        const controls = new Set(['new', 'status', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'edit', 'pause', 'resume', 'retry-review', 'restart-review', 'clear', 'off', 'on'])
         const verb = input.split(/\s/u)[0]!
         if (!controls.has(verb)) {
           const next = await createTask(agent, input, undefined, `/task${rawInput}`)
@@ -887,6 +889,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task <objective>')
+        if (input === 'restart-review') {
+          await restartReview(agent, task, signal)
+          return reply('新的独立审查已提交；原失败记录保留。审查结束后等待批准或手动恢复执行。', current(agent), false)
+        }
         if (input === 'retry-review') {
           await retryReview(agent, task, signal)
           return reply('审查重试已提交；Supervisor 将运行审查，并按原许可决定是否续行。', current(agent), false)
@@ -945,7 +951,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             await retryReview(agent, task, signal, true)
             return reply('原审查恢复已提交；用户暂停或宿主重启后的实施仍需手动恢复。', current(agent), false)
           }
-          if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请使用 /task retry-review，或编辑任务要求。')
+          if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请查看 /task status；未过期故障可 retry-review，超时故障可 restart-review 重新审查。')
           if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
             throw new Error('this task cannot resume in its current state')
           }
@@ -1019,7 +1025,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         reviewVerification: effectiveVerification,
         availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
-        executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
+        executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : task.phase === 'reviewing' ? 'REVIEW_IN_PROGRESS' : task.pauseReason === 'review-fault' ? 'REVIEW_FAULT: Use the available user review control.' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
         repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),
         historicalTasks: state?.archivedTasks.map(entry => ({ id: entry.task.id, revision: entry.task.revision, objective: entry.task.objective, phase: entry.task.phase })) ?? [],
         readyNodeIds: readyNodes(task),
@@ -1198,6 +1204,33 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         : `${authorization && settled.lastApproval?.source === 'policy' ? 'Execution approved under the user task policy after independent plan review. ' : ''}${CLOSING_MESSAGE}` }
   }
 
+  /** A user can commission a fresh review after expiry without renewing the sealed job. */
+  async function restartReview(agent: Agent, expected: TaskSnapshot, signal: AbortSignal): Promise<void> {
+    const previous = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(job => job.id === expected.reviewFault?.jobId)
+    if (!expected.enabled || expected.phase !== 'paused' || expected.pauseReason !== 'review-fault'
+      || reviewAbort.has(agent) || !previous || previous.status !== 'failed' || previous.fault?.code !== 'timeout'
+      || !previous.deadlineAt || !Number.isFinite(Date.parse(previous.deadlineAt)) || Date.parse(previous.deadlineAt) > Date.now()) throw new Error('no expired review to restart')
+    if (previous.mainSessionId !== agent.id || previous.taskId !== expected.id || previous.planVersion !== expected.planVersion
+      || previous.input.requirementsVersion !== expected.requirementsVersion
+      || previous.nodeAttempt !== (runsOf(expected).find(run => run.id === previous.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
+    signal.throwIfAborted()
+    const input = { ...previous.input, pendingReview: { kind: previous.kind, stageId: previous.stageId, evidence: previous.evidence, cutoff: previous.cutoff } }
+    const reserved = createReviewJob(agent, input, previous.stageId, previous.evidence, previous.kind, reviewPolicyFor(agent, false), 'queued')
+    const job: ReviewJob = { ...reserved, owner: 'controller', trigger: `manual-restart:${previous.id}`,
+      recovery: { ...reserved.recovery!, manualOnly: true, manualPending: true } }
+    await recordReview(ctx, agent, job)
+    if (signal.aborted || current(agent)?.id !== expected.id || current(agent)?.revision !== expected.revision) {
+      await finishReviewRecord(agent, job.id, 'stale')
+      throw new Error('task changed before the new review could be admitted')
+    }
+    const reviewing: TaskSnapshot = { ...expected, revision: expected.revision + 1, phase: 'reviewing', reviewFault: null, pauseReason: null,
+      pendingReview: { kind: job.kind, stageId: job.stageId, evidence: job.evidence, jobId: job.id, cutoff: job.cutoff } }
+    appendTask(ctx, agent, reviewing)
+    runtime(agent).armed = false
+    await flush(agent)
+    queuedReviews.schedule(agent, reviewing)
+  }
+
   async function retryReview(agent: Agent, expected: TaskSnapshot, commandSignal: AbortSignal, interrupted = false): Promise<void> {
     const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.find(item => item.id === (expected.pendingReview?.jobId ?? expected.reviewFault?.jobId))
     const stopped = interrupted && job?.owner === 'controller' && expected.pendingReview?.jobId === job.id
@@ -1210,6 +1243,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       || job.input.requirementsVersion !== expected.requirementsVersion
       || job.nodeAttempt !== (runsOf(expected).find(run => run.id === job.stageId)?.attempt ?? null)) throw new Error('the original review is no longer valid')
     commandSignal.throwIfAborted()
+    if (job.deadlineAt && Date.parse(job.deadlineAt) <= Date.now()) throw new Error('The original review deadline expired. Use /task restart-review to commission a new review.')
     const strategy = job.recovery ?? { retryLimit: 0, delayMs: 0, resume: false, consumed: 0, protocolRepairs: 0,
       permit: { armed: false, requirementsVersion: job.input.requirementsVersion, planVersion: job.planVersion,
         approvedPlanVersion: job.input.approvedPlanVersion }, manualOnly: true, manualPending: false, nextRetryAt: null, failures: [] }
@@ -1233,7 +1267,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         const decision = job.status === 'submitted'
           ? await savedReviewDecision(ctx, agent, job, selectedReviewPolicy, signal)
           : await reviewStage(ctx, agent, job.input, job.stageId, job.evidence, signal,
-            config.reviewerModel, job.kind, selectedReviewPolicy, job, true)
+            config.reviewerModel, job.kind, selectedReviewPolicy, job, job.revision !== 1)
         const actual = current(agent)
         if (signal.aborted || actual?.id !== reviewing.id || actual.revision !== reviewing.revision || !actual.enabled || hasPending(agent)) {
           await finishReviewRecord(agent, decision.jobId, 'stale')
