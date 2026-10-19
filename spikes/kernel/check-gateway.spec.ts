@@ -4,7 +4,7 @@ import { createServer } from 'node:net'
 import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
 import { SessionId } from '@deepseek-ai/dsh-session'
-import { mkdtemp, mkdir, writeFile, readFile, realpath, readdir, lstat, chmod, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, realpath, readdir, lstat, chmod, rm, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
@@ -154,4 +154,24 @@ it.skipIf(!native || process.platform === 'win32')('corrects a missing cwd throu
   expect(result.exitCode).toBe(0)
   expect(result.stdout).toContain('7')
   expect(result.snapshotId).toBe(f.snapshot.id)
+})
+
+
+it.skipIf(!native || process.platform === 'win32')('collects a v2 receipt after reconnect and restart without repeating the command', async () => {
+  const f = await fixture()
+  let close = await openGateway(f.ctx, f.config); closers.push(() => close())
+  const id = randomUUID(), argv = ['node', '-e', "require('fs').appendFileSync('../output/count', 'x');console.log('once')"]
+  const signal = new AbortController().signal
+  const result = await checkRequest(f.snapshot, 'v2-check', 'run', argv, 'tree', f.policy, signal, id)
+  expect(result?.exitCode).toBe(0)
+  const owned = JSON.parse(await readFile(join(f.privateStorage, `snapshot-${f.snapshot.id}.json`), 'utf8'))
+  expect(await checkRequest(f.snapshot, 'v2-check', 'collect', argv, 'tree', f.policy, signal, id)).toEqual(result)
+  await close()
+  // Simulate a crash window: native receipt was flushed but the gateway reply was not.
+  await unlink(join(f.privateStorage, `receipt-${id}.json`))
+  close = await openGateway(f.ctx, f.config)
+  expect(await checkRequest(f.snapshot, 'v2-check', 'collect', argv, 'tree', f.policy, signal, id)).toEqual(result)
+  expect(await readFile(join(owned.check, 'output/count'), 'utf8')).toBe('x')
+  await expect(checkRequest(f.snapshot, 'v2-check', 'collect', ['node', '-e', '0'], 'tree', f.policy, signal, id)).rejects.toThrow('identity')
+  await expect(checkRequest(f.snapshot, 'v2-check', 'collect', argv, 'tree', f.policy, signal, randomUUID())).rejects.toThrow('unknown check identity')
 })

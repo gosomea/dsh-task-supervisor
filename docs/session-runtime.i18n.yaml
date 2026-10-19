@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for session-runtime.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/session-runtime.md
+/supervisor-session-and-recovery:
+  en: 540f29dc03e369e6
+  zh: 22f98c33b061b3bf
+/supervisor-session-and-recovery/recommended-structure:
+  en: f33e3da0fa0dc4e1
+  zh: b0c36b253787131a
+/supervisor-session-and-recovery/source-and-experiment-findings:
+  en: 08708f1f06f03de1
+  zh: 26fa3d76449d262b
+/supervisor-session-and-recovery/alternatives:
+  en: 9a16d66b8c10d3b5
+  zh: 07d317a6b586d6d8
+/supervisor-session-and-recovery/required-host-support:
+  en: b2d10a6ac91d9e15
+  zh: 699471da9f549df7
+/supervisor-session-and-recovery/records-and-identities:
+  en: fc978ec42b6d3f29
+  zh: e8cc860b1841d889
+/supervisor-session-and-recovery/action-delivery-and-durability:
+  en: 532a7d2c698fc782
+  zh: f6ad27ff5d10a27f
+/supervisor-session-and-recovery/recovery-sequence:
+  en: 4e8fc09b63b1756b
+  zh: 0cfbce24d8704a95
+/supervisor-session-and-recovery/evidence-reads-and-joined-view:
+  en: 605d17f39cb03799
+  zh: 9c433d8b24f5cef4
+/supervisor-session-and-recovery/related-design-lessons:
+  en: e5a5b9d5c3645ab3
+  zh: 273d9bf9cdfb757c
+/supervisor-session-and-recovery/implementation-and-acceptance-order:
+  en: e4841e1f2e8b31cb
+  zh: adaa2fdacbada22e

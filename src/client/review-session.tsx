@@ -81,6 +81,11 @@ export function ReviewSession({ portals, disclosures, t, connect, ...props }: Re
     {state && !active && state.task?.pendingReview?.jobId === job.id && <p className="dsh-task-next">{t(reviewRecoveryGuidance(state) ?? 'reviewManualRecovery')}</p>}
     {state && (summary.currentFault || state.task?.pendingReview?.jobId === job.id) && <SessionConnection state={state} connect={connect} t={t} />}
     {job.status === 'failed' && summary.currentFault && <p className="dsh-task-meta">{t(reviewRetryExplanation(job))}</p>}
+    {state?.task && state.reviewJobs?.findLast(item => item.taskId === state.task?.id)?.id === job.id && state.actions.includes('skip-review') && <div className="dsh-task-review-recovery">
+      <p>{t('overrideNotice')}</p>
+      <Button size="sm" variant="ghost" disabled={busy || !state.live} onClick={() => { void store.act('skip-review') }}>{t(job.kind === 'plan' ? 'skipPlanReview' : 'skipReview')}</Button>
+      {state.actions.includes('finish-without-review') && <Button size="sm" variant="ghost" disabled={busy || !state.live} onClick={() => { void store.act('finish-without-review') }}>{t('finishWithoutReview')}</Button>}
+    </div>}
     {job.recovery && job.recovery.failures.length > 0 && <p className="dsh-task-meta">{t('reviewFaultHistory')} · {job.recovery.failures.length} · {t('reviewFaultRetries')} {job.recovery.consumed}/{job.recovery.retryLimit}</p>}
     {!!job.recovery?.protocolRepairs && <p className="dsh-task-meta">{t('reviewProtocolRepairs')} {job.recovery.protocolRepairs}/{job.repairLimit}</p>}
     {summary.currentFault && error && <p role="alert">{error}</p>}

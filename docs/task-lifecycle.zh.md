@@ -1,5 +1,7 @@
 # 任务状态与控制提案
 
+当前源码新增用户放行与未验收结束；历史通过结果不改写。当前动作、closed 终态及 user-released 节点详见[审查工作流](review-workflow.zh.md#controls)。
+
 原型默认首次手动批准，并支持任务或 profile 明确预授权正式计划审查通过后执行。编辑要求清除原批准；重启与完成后修复保持人工确认。见[已实现策略](../.agents/notes/implemented/feature/2026-09-29-planning-supervision.zh.md)。
 
 **状态：设计提案。** 本文负责容量、存储、命令路由和恢复。以下默认值是实现起点，尚未经过实测，也不是已发布的配置字段。

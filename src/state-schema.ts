@@ -15,7 +15,7 @@ export const stageSchema = z.object({
 }).strict()
 const nodeRunSchema = z.object({
   id: z.string().min(1), attempt: z.number().int().positive(),
-  status: z.enum(['pending', 'running', 'reviewing', 'passed', 'needs-revision', 'awaiting-user', 'awaiting-integration']),
+  status: z.enum(['pending', 'running', 'reviewing', 'passed', 'user-released', 'needs-revision', 'awaiting-user', 'awaiting-integration']),
   sessionId: z.string().optional(), startedAt: z.string().optional(), finishedAt: z.string().optional(),
   workerCutoff: z.number().int().nonnegative().optional(), integrationAfterSeq: z.number().int().nonnegative().optional(),
   evidenceAfterSeq: z.number().int().nonnegative().optional(),
@@ -70,6 +70,12 @@ export const taskSchema = z.object({
     rootNodeIds: z.array(z.string()), affectedNodeIds: z.array(z.string()), reason: z.string(),
     confirmedAt: z.string(), confirmationSeq: z.number().int().nonnegative(),
   }).strict()).optional(),
+  reviewOverrides: z.array(z.object({
+    jobId: z.string().uuid(), action: z.enum(['skip-review', 'finish-without-review']),
+    requirementsVersion: z.number().int().positive(), planVersion: z.number().int().nonnegative(),
+    stageId: z.string(), nodeAttempt: z.number().int().positive().nullable(),
+    at: z.string(), source: z.literal('user'), recordSeq: z.number().int().nonnegative(),
+  }).strict()).optional(),
   objective: z.string().min(1),
   creationRequestId: z.string().min(1).optional(),
   recovery: z.object({ endSeq: z.number().int().nonnegative(), turn: z.number().int().nonnegative(),
@@ -95,7 +101,7 @@ export const taskSchema = z.object({
   readOnlyGateStartSeq: z.number().int().nonnegative().nullable().optional(),
   everApproved: z.boolean(),
   enabled: z.boolean(),
-  phase: z.enum(['planning', 'awaiting-approval', 'active', 'reviewing', 'paused', 'complete', 'cleared']),
+  phase: z.enum(['planning', 'awaiting-approval', 'active', 'reviewing', 'paused', 'complete', 'closed', 'cleared']),
   pendingReview: pendingReviewSchema.nullable(),
   lastReview: reviewSchema.nullable(),
   reviewFault: reviewFaultSchema.nullable().optional(),

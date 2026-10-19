@@ -1,5 +1,9 @@
 /** Compact Supervisor navigation and proposal actions use the native locale service. */
 export const zh = {
+  reviewUserReleased: '用户已放行 · 未经审查通过', reviewBudgetModel: '模型用时／预算', reviewBudgetChecks: '检查用时／预算', reviewCoverage: '已保存发现', reviewWaitingCheck: '检查运行中 · 模型等待结果', reviewBudgetExtensions: '有效进展延长次数',
+  skipReview: '跳过本次审查并继续', skipPlanReview: '跳过审查并批准当前计划', finishWithoutReview: '结束任务，未通过最终验收',
+  overrideNotice: '仅放行当前检查点，保留未通过记录；后续检查点仍会审查。',
+  userEnded: '用户结束 · 未通过最终验收',
   requirementResults: '要求级结果', requirementSource: '要求来源', explicitRequirement: '明确要求', derivedRequirement: '推导假设',
   partialPages: '部分页面',
   'requirementStatus.satisfied': '已满足', 'requirementStatus.failed': '未满足', 'requirementStatus.unverified': '未验证',
@@ -65,6 +69,10 @@ export const zh = {
 export type SupervisorKey = keyof typeof zh
 export type SupervisorTranslate = (key: SupervisorKey) => string
 export const en: Record<SupervisorKey, string> = {
+  reviewUserReleased: 'User released · not review approved', reviewBudgetModel: 'Model time / budget', reviewBudgetChecks: 'Check time / budget', reviewCoverage: 'Saved findings', reviewWaitingCheck: 'Check running · model awaiting result', reviewBudgetExtensions: 'Progress extensions',
+  skipReview: 'Skip this review and continue', skipPlanReview: 'Skip review and approve this plan', finishWithoutReview: 'End task without final acceptance',
+  overrideNotice: 'Release this checkpoint only. Unresolved findings remain recorded; later checkpoints still require review.',
+  userEnded: 'Ended by user · final acceptance not passed',
   requirementResults: 'Requirement outcomes', requirementSource: 'Requirement source', explicitRequirement: 'Explicit requirement', derivedRequirement: 'Derived assumption',
   partialPages: 'Partial pages',
   'requirementStatus.satisfied': 'Satisfied', 'requirementStatus.failed': 'Not satisfied', 'requirementStatus.unverified': 'Unverified',

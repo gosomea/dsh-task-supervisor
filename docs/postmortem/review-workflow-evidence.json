@@ -1,0 +1,96 @@
+{
+  "status": "unreleased-source-validation",
+  "base": "012c921e4404f6d2e168b0acca7c3704383ba9bb",
+  "nativeTests": {
+    "files": 34,
+    "passed": 503,
+    "skipped": 0,
+    "durationSeconds": 35.56
+  },
+  "strictTypes": {
+    "host": true,
+    "client": true
+  },
+  "package": {
+    "sha256": "8cfcf6a230b5c350a069c7c3a1b39baa239a1bc6ef0137f665828169076e4041",
+    "published": false
+  },
+  "realModel": {
+    "sourceBase": "012c921e4404f6d2e168b0acca7c3704383ba9bb",
+    "artifactSha256": "8cfcf6a230b5c350a069c7c3a1b39baa239a1bc6ef0137f665828169076e4041",
+    "sessionId": "session-3f6fb5d0-a3dd-42a0-b9ae-0c6ca915b459",
+    "passed": true,
+    "phase": "awaiting-approval",
+    "armed": false,
+    "everApproved": false,
+    "jobs": [
+      {
+        "id": "4b749d04-8966-4e12-9d94-2ee8f402ea45",
+        "kind": "plan",
+        "status": "applied",
+        "attempt": 1,
+        "fault": null,
+        "reviewerSessionId": "task-review-845a0fe1-6258-4eed-bc45-7a61a78f2573"
+      }
+    ],
+    "routes": [
+      {
+        "sessionId": "session-3f6fb5d0-a3dd-42a0-b9ae-0c6ca915b459",
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "descriptorCount": 0
+      },
+      {
+        "sessionId": "task-review-845a0fe1-6258-4eed-bc45-7a61a78f2573",
+        "route": [
+          {
+            "provider": "deepseek-codebuddy",
+            "model": "deepseek-v4.1-flash"
+          }
+        ],
+        "descriptorCount": 1
+      }
+    ]
+  },
+  "browser": {
+    "status": "passed",
+    "surface": "isolated installed final candidate",
+    "checks": [
+      "Plan review pass card rendered",
+      "Awaiting user approval; 0/1 stages passed",
+      "Approve/pause/disable controls visible"
+    ],
+    "limits": [
+      "User bypass tested through native commands and presentation tests; no browser click on a faulted live model job"
+    ]
+  },
+  "limits": [
+    "No comparative quality or benchmark claim",
+    "Cross-job acceptance is not reused",
+    "D executor remains optional design",
+    "No npm publication or daily deployment"
+  ],
+  "docs": {
+    "pairs": 8,
+    "structureAndLineCountMatched": true
+  },
+  "regressions": [
+    "Scope diagnostics and bounded repeated invalid decisions",
+    "User release waits for cancelled reviewer; late pass cannot overwrite release",
+    "Gateway v2 original receipt collection without duplicate execution",
+    "Three-hour independent wall cap preserves explicit legacy deadline",
+    "Human closure never counts as passed"
+  ]
+}

@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for task-lifecycle.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/task-lifecycle.md
+/task-state-and-control-proposal:
+  en: c33422add4a53a46
+  zh: 2ee271240a2275d5
+/task-state-and-control-proposal/summary:
+  en: 0e7723da1ad8bb3e
+  zh: e8f35827882b8f4f
+/task-state-and-control-proposal/one-state-file:
+  en: 5800c10e6c8aea6f
+  zh: 9e8415c3cd55b725
+/task-state-and-control-proposal/commands-go-to-the-supervisor:
+  en: 921ac7577903471d
+  zh: 22dcb1595bd7706a
+/task-state-and-control-proposal/clear-recreate-fork-and-restart:
+  en: 7729a7ea19ec6a95
+  zh: 815003c256a967a3
+/task-state-and-control-proposal/close-supervisor:
+  en: 4e91b26c0d9466f2
+  zh: 665d23b2b4100541
+/task-state-and-control-proposal/next-round-admission:
+  en: 2ff043d533b9ebc6
+  zh: e4e4dfc0525ec2be
+/task-state-and-control-proposal/dev-note:
+  en: 8163304ac3ca2ed7
+  zh: 54171689f7a4ad66

@@ -28,13 +28,23 @@ export const logRequirementsParameters = { type: 'array', items: { type: 'object
 } } } as const
 
 type ReadRanges = Map<number, { total: number; ranges: [number, number][]; truncated: boolean }>
+/** The controller owns the applicable criteria; global criteria do not become node checks. */
+export function applicableCriteria(job: ReviewJob) {
+  return job.kind === 'plan' || job.kind === 'completion' ? job.input.criteria
+    : job.input.criteria.filter(item => job.input.stages.find(stage => stage.id === job.stageId)?.criterionIds.includes(item.id))
+}
 export function logRequirementResults(job: ReviewJob, raw: unknown, ranges: ReadRanges, passing: boolean): RequirementResult[] {
   const values = z.array(logRequirementSchema).min(1).max(100).parse(raw)
-  const criteria = job.kind === 'plan' || job.kind === 'completion' ? job.input.criteria
-    : job.input.criteria.filter(item => job.input.stages.find(stage => stage.id === job.stageId)?.criterionIds.includes(item.id))
-  if (new Set(values.map(item => item.id)).size !== values.length || values.some(item => item.criterionId !== null && !criteria.some(c => c.id === item.criterionId))
-    || criteria.some(item => !values.some(value => value.criterionId === item.id))) throw new Error('requirement results must cover every applicable criterion and use unique IDs')
-  if (!values.some(value => value.basis === 'explicit' && value.source.kind === 'objective')) throw new Error('include the original objective requirements, including omissions from the main plan')
+  const criteria = applicableCriteria(job)
+  const ids = values.map(item => item.id)
+  const extra = values.flatMap(item => item.criterionId !== null && !criteria.some(c => c.id === item.criterionId) ? [item.criterionId] : [])
+  const missing = criteria.filter(item => !values.some(value => value.criterionId === item.id)).map(item => item.id)
+  const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i)
+  const duplicateCriteria = values.filter((item, i) => item.criterionId !== null && values.findIndex(v => v.criterionId === item.criterionId) !== i).map(item => item.criterionId)
+  if (duplicates.length || extra.length || duplicateCriteria.length || missing.length && (passing || !job.qualityProtocol)) {
+    throw new Error(`REQUIREMENT_COVERAGE: applicable=${JSON.stringify(criteria.map(c => c.id))}; missing=${JSON.stringify(missing)}; extra=${JSON.stringify(extra)}; duplicateIds=${JSON.stringify(duplicates)}; duplicateCriteria=${JSON.stringify(duplicateCriteria)}. Use only applicable criterionId values; omit criterionId for requirements absent from the plan.`)
+  }
+  if ((passing || !job.qualityProtocol) && !values.some(value => value.basis === 'explicit' && value.source.kind === 'objective')) throw new Error('include the original objective requirements, including omissions from the main plan')
   return values.map((value, index) => {
     if (value.source.kind === 'objective' && value.source.reference !== 'objective') throw new Error('objective source must reference objective')
     if (value.source.kind === 'user-message') {
@@ -45,7 +55,7 @@ export function logRequirementResults(job: ReviewJob, raw: unknown, ranges: Read
     const criterion = criteria.find(item => item.id === value.criterionId)
     if (criterion?.provenance?.kind === 'user' && value.basis !== 'explicit') throw new Error('user requirements cannot become optional derived checks')
     if (value.source.kind === 'implementation' && value.basis !== 'derived' || value.source.kind === 'unknown' && passing) throw new Error('unknown or implementation sources cannot establish explicit acceptance')
-    if (passing && value.basis === 'explicit' && value.status !== 'satisfied') throw new Error('failed or unverified original requirements cannot pass')
+    if (passing && (value.basis === 'explicit' || criterion && criterion.provenance?.kind !== 'implementation') && value.status !== 'satisfied') throw new Error('failed or unverified original requirements cannot pass')
     if (value.status !== 'unverified' && !value.evidenceSeqs.length) throw new Error('verified log results require actually read original evidence')
     const evidence = value.evidenceSeqs.map(seq => {
       const read = ranges.get(seq)
@@ -64,7 +74,7 @@ export function independentRequirementResults(job: ReviewJob, findings: CheckFin
   return state.checkPlan.flatMap(revision => revision.checks).map(check => {
     const result = findings.find(item => item.checkId === check.id)
     if (!result) throw new Error('missing independent check finding')
-    const evidence: RequirementResult['evidence'] = result.evidenceIds.map(id => {
+    const evidence: RequirementResult['evidence'] = (job.qualityProtocol && result.status === 'unverified' ? [] : result.evidenceIds).map(id => {
       if (id.startsWith('file:')) {
         const path = id.slice(5), entry = state.snapshot.entries.find(item => item.path === path), read = state.readFiles.find(item => item.path === path)
         if (!entry || !read) throw new Error('artifact evidence is not bound to this snapshot')

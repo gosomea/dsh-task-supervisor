@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for review-workflow.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/review-workflow.md
+/review-budgets-incremental-findings-and-user-recovery:
+  en: ea19b3c414830be1
+  zh: 91b9adb4df51c74a
+/review-budgets-incremental-findings-and-user-recovery/summary:
+  en: ce861224e55d4ed0
+  zh: 54a8493b03ad5c53
+/review-budgets-incremental-findings-and-user-recovery/contents:
+  en: 9a95553b217f8158
+  zh: 753551f84ea98d67
+/review-budgets-incremental-findings-and-user-recovery/user-controls:
+  en: d46af87e7fe656e5
+  zh: c785a3434b2cf2b6
+/review-budgets-incremental-findings-and-user-recovery/budgets-and-scope:
+  en: 889a7cba9cff2fdb
+  zh: 893f63a44a8e8cbe
+/review-budgets-incremental-findings-and-user-recovery/findings-and-decisions:
+  en: eb43896bf8ab748d
+  zh: 13000daf689cef8b
+/review-budgets-incremental-findings-and-user-recovery/checks-and-recovery:
+  en: bf4fcf95fd8fad9c
+  zh: 80a7cedb1930f12d
+/review-budgets-incremental-findings-and-user-recovery/persistence-compatibility:
+  en: 86dec5ef71f6190b
+  zh: c95cb717b1c7f8e7
+/review-budgets-incremental-findings-and-user-recovery/optional-specialist-execution-d:
+  en: 770b805a8fa17547
+  zh: 8d7cca6f1e527523
+/review-budgets-incremental-findings-and-user-recovery/dev-note:
+  en: 824cafd122c958fd
+  zh: f444b26a68752112

@@ -20,7 +20,7 @@ export function checkPolicy(input: Partial<CheckPolicy> & { container: Container
   const result = { commandMs: 300000, outputBytes: 1024 * 1024, graceMs: 2000, path: process.env.PATH ?? '', ...input }
   if (result.gatewaySocket !== undefined && (!isAbsolute(result.gatewaySocket) || result.gatewaySocket.includes('\0'))) throw new TypeError('check gateway requires an absolute private Unix socket path')
   for (const [name, value] of Object.entries({ commandMs: result.commandMs, outputBytes: result.outputBytes, graceMs: result.graceMs })) {
-    if (!Number.isSafeInteger(value) || value < 1 || value > (name === 'outputBytes' ? 16 * 1024 * 1024 : 3600000)) throw new TypeError(`invalid check ${name}`)
+    if (!Number.isSafeInteger(value) || value < 1 || value > (name === 'outputBytes' ? 16 * 1024 * 1024 : name === 'commandMs' ? 7200000 : 3600000)) throw new TypeError(`invalid check ${name}`)
   }
   const { context, image, cpus, memoryMiB, pids } = result.container
   if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(context) || !/^(?:sha256:[a-f0-9]{64}|[^\s]+@sha256:[a-f0-9]{64})$/.test(image) || image.startsWith('-')) throw new TypeError('check container requires a local Docker context and immutable image digest')
@@ -110,14 +110,19 @@ export async function recoverCheckContainers(ctx: Context, snapshot: ArtifactSna
   }
 }
 
-/** Run only the check mount, in an immutable runtime image, with no host network or Docker socket. */
-export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, sessionId: SessionId, argv: string[], cwd: string,
-  policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult> {
-  signal.throwIfAborted()
+/** Validate command syntax before allocating a durable check identity. */
+export function validateCheckInput(argv: string[], cwd: string): void {
   if (!argv.length || argv.length > 256 || !argv[0] || argv.some(arg => arg.includes('\0') || arg.length > 16384) || argv[0]!.startsWith('-')) throw new CheckInputError('argv must contain a program and bounded valid arguments')
   if (cwd.length > 4096 || isAbsolute(cwd) || cwd.includes('\0') || cwd.split(/[\\/]/).includes('..')) throw new CheckInputError('cwd must be relative and inside the check directory')
+}
+
+/** Run only the check mount, in an immutable runtime image, with no host network or Docker socket. */
+export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, sessionId: SessionId, argv: string[], cwd: string,
+  policy: CheckPolicy, signal: AbortSignal, requestId?: string): Promise<CheckResult> {
+  signal.throwIfAborted()
+  validateCheckInput(argv, cwd)
   if (policy.gatewaySocket) {
-    const result = (await checkRequest(snapshot, sessionId, 'run', argv, cwd, policy, signal))!
+    const result = (await checkRequest(snapshot, sessionId, 'run', argv, cwd, policy, signal, requestId))!
     await writeFile(join(snapshot.root, `check-${result.id}.json`), JSON.stringify(result), { flag: 'wx', mode: 0o600 })
     return result
   }
@@ -136,13 +141,14 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
     throw error
   }
   const env = checkEnvironment(snapshot, policy), docker = await subprocess.resolveExecutable('docker', { PATH: policy.path }, signal)
-  const timer = AbortSignal.timeout(policy.commandMs), combined = AbortSignal.any([signal, timer])
+  let timer = requestId ? undefined : AbortSignal.timeout(policy.commandMs)
+  let combined = timer ? AbortSignal.any([signal, timer]) : signal
   const context = await managed(ctx, [docker, 'context', 'inspect', policy.container.context], snapshot.check, env, policy, combined)
   if (context.exitCode !== 0 || context.stdout.lossy) throw new Error('CHECK_INFRASTRUCTURE: Docker context unavailable')
   const contexts = JSON.parse(context.stdout.text) as { Endpoints: { docker: { Host: string } } }[]
   const endpoint = contexts.length === 1 ? contexts[0]!.Endpoints.docker.Host : ''
   if (!endpoint.startsWith('unix:///') || endpoint.includes('\0')) throw new Error('CHECK_INFRASTRUCTURE: host-backed snapshots require a local Unix Docker endpoint')
-  const prefix = [docker, '--host', endpoint], id = randomUUID(), name = `dsh-review-${id}`, startedAt = new Date().toISOString()
+  const prefix = [docker, '--host', endpoint], id = requestId ?? randomUUID(), name = `dsh-review-${id}`, startedAt = new Date().toISOString()
   // This durable identity allows a cancelled/restarted review to trace its exact daemon resource.
   await writeFile(join(snapshot.root, `container-${id}.json`), JSON.stringify({ name, endpoint, image: policy.container.image, snapshotId: snapshot.id, sessionId }), { flag: 'wx', mode: 0o600 })
   let outcome: Awaited<ReturnType<typeof managed>> | undefined, state: { ExitCode: number; OOMKilled: boolean; Error: string } | undefined
@@ -158,6 +164,7 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
       '--env', 'OPENSSL_CONF=/dev/null', '--env', 'NO_COLOR=1', '--entrypoint', '/usr/bin/timeout', policy.container.image,
       '--signal=TERM', '--kill-after=2s', `${Math.max(0.001, policy.commandMs / 1000)}s`, ...argv], snapshot.check, env, policy, combined)
     if (created.exitCode !== 0 || created.stdout.lossy) throw new Error(`CHECK_INFRASTRUCTURE: container creation failed: ${created.stderr.text}`)
+    if (requestId) { timer = AbortSignal.timeout(policy.commandMs); combined = AbortSignal.any([signal, timer]) }
     outcome = await managed(ctx, [...prefix, 'start', '-a', name], snapshot.check, env, policy, combined)
     const inspection = await managed(ctx, [...prefix, 'inspect', '--format', '{{json .State}}', name], snapshot.check, env, policy, combined)
     if (inspection.exitCode !== 0 || inspection.stdout.lossy) throw new Error('CHECK_INFRASTRUCTURE: command outcome unavailable')
@@ -173,7 +180,7 @@ export async function runCheck(ctx: Context, snapshot: ArtifactSnapshot, session
   }
   const result: CheckResult = { id, snapshotId: snapshot.id, argv, cwd, startedAt, finishedAt: new Date().toISOString(),
     runtime: { kind: 'docker', context: policy.container.context, image: policy.container.image, containerName: name },
-    exitCode: state?.ExitCode ?? null, signal: null, timedOut: timer.aborted || state?.ExitCode === 124, cancelled: signal.aborted,
+    exitCode: state?.ExitCode ?? null, signal: null, timedOut: timer?.aborted === true || state?.ExitCode === 124, cancelled: signal.aborted,
     stdout: outcome?.stdout.text ?? '', stderr: outcome?.stderr.text ?? '', outputIncomplete: !outcome || outcome.stdout.lossy || outcome.stderr.lossy, changed: await changedArtifacts(snapshot) }
   await writeFile(join(snapshot.root, `check-${id}.json`), JSON.stringify(result), { flag: 'wx', mode: 0o600 })
   return result

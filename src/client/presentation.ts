@@ -7,7 +7,7 @@ import type { ReworkRecord } from '../rework-records.ts'
 export const VERDICT = { pass: '通过', revise: '需要修订', 'needs-user': '等待用户决策' }
 const PHASE: Record<TaskSnapshot['phase'], string> = {
   planning: '规划中', 'awaiting-approval': '等待批准', active: '执行中', reviewing: '审查中',
-  paused: '已暂停', complete: '已完成', cleared: '已清除',
+  paused: '已暂停', complete: '已完成', closed: '用户结束 · 未通过最终验收', cleared: '已清除',
 }
 export function taskStatus(state: PanelState): string {
   const task = state.task
@@ -23,7 +23,7 @@ export function taskStatus(state: PanelState): string {
   return task.acceptanceCycle && task.acceptanceCycle > 1 ? `${PHASE[task.phase]} · 第 ${task.acceptanceCycle} 轮验收` : PHASE[task.phase]
 }
 export function progress(task: TaskSnapshot): string {
-  return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过` : task.pendingReview?.kind === 'plan' ? '计划已提交' : '正在准备计划'
+  return task.stages.length ? `${acceptedNodes(task).length}/${task.stages.length} 已通过${runsOf(task).some(run => run.status === 'user-released') ? ` · ${runsOf(task).filter(run => run.status === 'user-released').length} 用户放行` : ''}` : task.pendingReview?.kind === 'plan' ? '计划已提交' : '正在准备计划'
 }
 /** A proposal is a preview, never an approved task or an execution grant. */
 export function displayedPlan(state: PanelState) {
@@ -63,6 +63,7 @@ export function executorLabel(task: TaskSnapshot, mainSessionId: string, nodeId:
 export function nodeLabel(task: TaskSnapshot, id: string, state: PanelState): string {
   const run = runsOf(task).find(item => item.id === id)
   const rework = nodeRework(task, id, state.reworks)
+  if (run?.status === 'user-released') return '用户放行 · 未通过审查'
   if (run?.status === 'passed') return '已通过'
   if (run?.status === 'awaiting-user') return '等待决定'
   if (run?.status === 'reviewing') return state.reviewing ? '审查中' : '审查待恢复'

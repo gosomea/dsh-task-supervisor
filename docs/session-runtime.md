@@ -1,5 +1,7 @@
 # Supervisor session and recovery
 
+New jobs in current source use review record 9, Task record 16 and projection 22; old jobs retain their protocol and deadline. [Review workflow](review-workflow.md#persistence) defines incremental findings, asynchronous check identities and gateway v2 receipt recovery.
+
 **Status: design recommendation with a partial implementation.** This page owns durable records, recovery authority, action delivery, evidence reads, and fault acceptance; [implementation status](implementation.md) identifies the behavior already running, [task lifecycle](task-lifecycle.md) owns task semantics, and [kernel experiments](host-spike.md) record the earlier gap. A future same-repository `supervisor-session` module may separate these responsibilities; this prototype currently implements them inside the plugin and an isolated DSH host extension.
 
 ## Recommended structure

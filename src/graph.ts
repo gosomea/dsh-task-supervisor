@@ -37,7 +37,7 @@ export function readyNodes(task: TaskSnapshot): string[] {
   return task.stages.filter((stage, index) => {
     const run = runs.find(item => item.id === stage.id)
     return run !== undefined && ['pending', 'needs-revision'].includes(run.status)
-      && dependencies(task.stages, index).every(id => runs.find(item => item.id === id)?.status === 'passed')
+      && dependencies(task.stages, index).every(id => ['passed', 'user-released'].includes(runs.find(item => item.id === id)?.status ?? ''))
   }).map(stage => stage.id)
 }
 
@@ -105,4 +105,9 @@ export function reworkNode(task: TaskSnapshot, id: string, evidenceAfterSeq = 0)
   const affected = new Set(affectedNodes(task, [id]))
   return withRuns(task, runsOf(task).map(run => affected.has(run.id)
     ? { id: run.id, attempt: run.attempt + 1, status: 'pending', evidenceAfterSeq } : run))
+}
+
+/** Nodes released by a user unlock scheduling without becoming accepted evidence. */
+export function releasedNodes(task: TaskSnapshot): string[] {
+  return runsOf(task).filter(run => ['passed', 'user-released'].includes(run.status)).map(run => run.id)
 }

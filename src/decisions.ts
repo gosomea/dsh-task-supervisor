@@ -1,4 +1,5 @@
 /** Version-bound approval from a direct user message, never an injected prompt. */
+import { overrideActions } from './review-override.ts'
 import { controlEvent } from './session-records.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { NAMESPACE, type TaskSnapshot } from './state.ts'
@@ -46,15 +47,16 @@ export function approvedTask(task: TaskSnapshot, startSeq: number, userMessageSe
 export function controlActions(task: TaskSnapshot | null, armed: boolean, reviewing: boolean, failedReview?: ReviewJob, now = Date.now()): string[] {
   if (task === null || task.phase === 'cleared') return []
   if (!task.enabled) return ['on']
-  if (task.phase === 'complete') return []
-  if (reviewing) return task.approvalPolicy?.mode === 'after-review' && !task.everApproved ? ['auto-approve-off', 'pause', 'off'] : ['pause', 'off']
+  if (task.phase === 'complete' || task.phase === 'closed') return []
+  const overrides = overrideActions(task, failedReview)
+  if (reviewing) return task.approvalPolicy?.mode === 'after-review' && !task.everApproved ? ['auto-approve-off', 'pause', ...overrides, 'off'] : ['pause', ...overrides, 'off']
   const policyAction = task.approvalPolicy?.mode === 'after-review' ? 'auto-approve-off' : 'auto-approve-on'
   if (task.phase === 'awaiting-approval') return ['approve', policyAction, 'pause', 'off']
-  if (task.phase === 'planning') return [armed ? 'pause' : 'resume', policyAction, 'off']
+  if (task.phase === 'planning') return [armed ? 'pause' : 'resume', policyAction, ...overrides, 'off']
   if (task.phase === 'paused' && task.pauseReason === 'review-fault') {
     const action = reviewRecoveryAction(task, failedReview, now)
-    return action ? [action, 'off'] : ['off']
+    return action ? [action, ...overrides, 'off'] : [...overrides, 'off']
   }
-  if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', 'off']
-  return ['pause', 'off']
+  if (task.phase === 'paused' || task.phase === 'reviewing' || !armed) return ['resume', ...overrides, 'off']
+  return ['pause', ...overrides, 'off']
 }

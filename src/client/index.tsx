@@ -67,11 +67,11 @@ function useTask(sessionId: string) {
   const store = useMemo(() => taskStore(sessionId), [sessionId])
   return { ...useSyncExternalStore(store.subscribe, store.getSnapshot), store }
 }
-function Actions({ sessionId }: PanelProps) {
+function Actions({ sessionId, t }: PanelProps & { t: SupervisorTranslate }) {
   const { state, busy, store } = useTask(sessionId)
   return <div className="dsh-task-actions" aria-label="任务操作">{state?.actions.map(action => <Button size="sm" variant={action === 'approve' || action === 'resume' ? 'primary' : 'ghost'} key={action}
     data-action={action} disabled={busy || !state.live} onClick={() => { void store.act(action) }}>
-    {ACTION_LABEL[action] ?? action}</Button>)}</div>
+    {action === 'skip-review' ? t(state?.reviewJobs?.findLast(job => job.taskId === state.task?.id)?.kind === 'plan' ? 'skipPlanReview' : 'skipReview') : action === 'finish-without-review' ? t('finishWithoutReview') : ACTION_LABEL[action] ?? action}</Button>)}{state?.actions.includes('skip-review') && <small>{t('overrideNotice')}</small>}</div>
 }
 function InlineTask({ sessionId, open, t, connect }: PanelProps & { open: (params?: TaskNavigation) => void; t: SupervisorTranslate; connect: () => Promise<void> }): ReactNode {
   const { state, error } = useTask(sessionId)
@@ -88,7 +88,7 @@ function InlineTask({ sessionId, open, t, connect }: PanelProps & { open: (param
   if (state?.entryActive) return <div className="dsh-task-actions"><span>任务规划 · 等待输入目标</span><Button size="sm" variant="toolbar" onClick={() => open({ view: 'details' })}>查看详情</Button></div>
   if (!task || task.phase === 'cleared') return null
   return <TaskOverview key={task.id} sessionId={sessionId} task={task} state={state} error={error}
-    actions={<><SessionConnection state={state} connect={connect} t={t} /><Actions sessionId={sessionId} /></>} open={open} t={t} />
+    actions={<><SessionConnection state={state} connect={connect} t={t} /><Actions sessionId={sessionId} t={t} /></>} open={open} t={t} />
 }
 
 function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; sessionId: string; t: SupervisorTranslate }): ReactNode {
@@ -99,7 +99,7 @@ function HistoricalDetails({ entry, sessionId, t }: { entry: TaskHistoryEntry; s
   const historicalState: PanelState = { task, live: false, armed: false, reviewing: false, actions: [], reviews: entry.reviews, reworks: entry.reworks }
   return <>
     <section className="dsh-task-section"><h3>任务目标</h3><p className="dsh-task-objective">{task.objective}</p>
-      <p className="dsh-task-muted">{task.phase === 'complete' ? '已完成' : '已清除'} · 记录 seq {entry.lastSeq}</p></section>
+      <p className="dsh-task-muted">{task.phase === 'closed' ? t('userEnded') : task.phase === 'complete' ? '已完成' : '已清除'} · 记录 seq {entry.lastSeq}</p></section>
     {task.stages.length > 0 && <section className="dsh-task-section"><h3>执行计划 · {task.stages.length} 个节点</h3>
       <TaskGraph task={task} reworks={entry.reworks} selected={stage?.id} select={setSelected}
         label={id => nodeLabel(task, id, historicalState)} executor={id => executorLabel(task, sessionId, id)} />
@@ -166,7 +166,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t, connec
   const outcomeJob = state?.reviewJobs?.find(item => item.taskId === task?.id && item.reviewerSessionId === review?.reviewerSessionId && item.cutoff === review.cutoff)
   const historicalTask = historyEntries?.find(entry => entry.task.id === historySelection)
   useEffect(() => {
-    if (showHistory && historySelection === task?.id && task && !['complete', 'cleared'].includes(task.phase)) {
+    if (showHistory && historySelection === task?.id && task && !['complete', 'closed', 'cleared'].includes(task.phase)) {
       setShowHistory(false); setHistorySelection(null); setTab('details'); setSelected(null)
     }
   }, [showHistory, historySelection, task?.id, task?.phase])
@@ -229,7 +229,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t, connec
           {historyEntries?.map(entry => <button type="button" className="dsh-task-history-item" key={entry.task.id}
             onClick={() => selectHistory(entry.task.id)}>
             <strong>{headline(entry.task.objective, 72)}</strong>
-            <small>{entry.task.phase === 'complete' ? '已完成' : '已清除'} · {progress(entry.task)} · seq {entry.lastSeq}</small>
+            <small>{entry.task.phase === 'closed' ? t('userEnded') : entry.task.phase === 'complete' ? '已完成' : '已清除'} · {progress(entry.task)} · seq {entry.lastSeq}</small>
           </button>)}
         </section>
       </>}
@@ -292,7 +292,7 @@ function TaskPanel({ sessionId, navigation, renderConsult, showReview, t, connec
         {consultError && <p role="alert">{consultError}</p>}</div>}
     </div>
     {error && <p role="alert" className="dsh-task-error">{error}</p>}
-    {task && !showHistory && tab === 'details' && ((state?.actions.length ?? 0) > 0 || task.phase === 'paused' || task.phase === 'awaiting-approval') && <footer className="dsh-task-footer"><Actions sessionId={sessionId} />
+    {task && !showHistory && tab === 'details' && ((state?.actions.length ?? 0) > 0 || task.phase === 'paused' || task.phase === 'awaiting-approval') && <footer className="dsh-task-footer"><Actions sessionId={sessionId} t={t} />
       {task.phase === 'paused' && <small className="dsh-task-muted">等待手动恢复</small>}
       {task.phase === 'awaiting-approval' && <small className="dsh-task-muted">也可在主会话输入“批准”</small>}
     </footer>}
@@ -313,7 +313,7 @@ function DraftProposal({ draft, sessionId, t }: { draft: DraftCard; sessionId: s
   const current = state?.draft
   const latest = current?.id === draft.id && current.version === draft.version && current.status === 'draft'
   const created = current?.id === draft.id && current.status === 'created'
-  const available = latest && state?.live && (!state.task || ['complete', 'cleared'].includes(state.task.phase))
+  const available = latest && state?.live && (!state.task || ['complete', 'closed', 'cleared'].includes(state.task.phase))
   return <section id={`task-draft-${draft.mainSessionId}-${draft.id}-${draft.version}`} className="dsh-task-draft" aria-label={t('draft')}>
     <strong>{draft.title}</strong>
     <Disclosure title={t('requirements')}><p className="dsh-task-objective">{draft.requirements}</p></Disclosure>

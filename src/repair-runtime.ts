@@ -48,7 +48,7 @@ export function installRepairs(ctx: Context, wake: (agent: Agent, expected: Task
     const live = taskOf(ctx, agent)
     if (!live) throw new TaskActionError('TASK_STATE_UNAVAILABLE', 'Open the original main Session first.')
     if (!live.enabled) throw new TaskActionError('SUPERVISOR_DISABLED', 'Enable supervision explicitly before confirming.')
-    if (!['complete', 'cleared'].includes(live.phase)) throw new TaskActionError('ACTIVE_TASK_CONFLICT', 'Another task owns execution; wait for it to finish before confirming this repair.')
+    if (!['complete', 'closed', 'cleared'].includes(live.phase)) throw new TaskActionError('ACTIVE_TASK_CONFLICT', 'Another task owns execution; wait for it to finish before confirming this repair.')
     if (!['pending', 'confirmed'].includes(repair.status)) throw new TaskActionError('REPAIR_STALE', 'The proposal is no longer awaiting confirmation.')
     const selected = target(agent, repair.taskId, repair.taskRevision)
     repairImpact(selected, repair.rootNodeIds)

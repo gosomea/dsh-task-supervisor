@@ -29,7 +29,7 @@ export function SessionConnection({ state, connect, t }: { state: PanelState; co
   const mounted = useRef(true)
   const pending = useRef(false)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
-  if (state.live || !state.task || ['complete', 'cleared'].includes(state.task.phase)) return null
+  if (state.live || !state.task || ['complete', 'closed', 'cleared'].includes(state.task.phase)) return null
   async function activate() {
     if (pending.current) return
     pending.current = true; setBusy(true); setError('')

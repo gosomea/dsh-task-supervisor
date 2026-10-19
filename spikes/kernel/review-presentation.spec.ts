@@ -194,3 +194,14 @@ it('offers a new review only for the current live timeout, while preserving hist
   expect(reviewPresentation(job, { ...state, live: false }).canRestart).toBe(false)
   expect(reviewPresentation({ ...job, id: randomUUID() }, state).canRestart).toBe(false)
 })
+
+it('shows user release and human closure without displaying a false pass or current fault', () => {
+  const { job, state } = fixture()
+  job.status = 'failed'
+  state.task!.reviewOverrides = [{ jobId: job.id, action: 'skip-review', requirementsVersion: 1, planVersion: 0, stageId: 'node', nodeAttempt: 1, at: '2026-10-19T00:00:00Z', source: 'user', recordSeq: 21 }]
+  expect(reviewPresentation(job, state)).toMatchObject({ active: false, currentFault: false, tone: 'warning', label: 'reviewUserReleased', next: 'overrideNotice' })
+  state.task!.phase = 'closed'
+  expect(reviewPresentation(job, state).next).toBe('userEnded')
+  expect(zh.skipPlanReview).toContain('批准')
+  expect(zh.finishWithoutReview).toContain('未')
+})

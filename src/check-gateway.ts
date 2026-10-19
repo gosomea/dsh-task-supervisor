@@ -8,7 +8,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { captureSnapshot, changedArtifacts, within, type ArtifactSnapshot } from './artifact-snapshot.ts'
 import { snapshotSchema } from './verification-schema.ts'
 import { requestSchema, REQUEST_BYTES, type CheckRequest } from './check-channel.ts'
-import { checkPolicy, runCheck, recoverCheckContainers, type CheckPolicy, type ContainerPolicy } from './review-check.ts'
+import { checkPolicy, runCheck, readCheck, recoverCheckContainers, type CheckPolicy, type ContainerPolicy } from './review-check.ts'
 import { CheckInputError } from './check-errors.ts'
 
 export const name = 'task-review-check-gateway'
@@ -126,13 +126,14 @@ export async function openGateway(ctx: Context, config: Config) {
     }
     return owned
   }
-  const sockets = new Set<Socket>(), controllers = new Set<AbortController>(), jobs = new Set<Promise<void>>()
+  const active = new Map<string, { binding: string; controller: AbortController; result: Promise<unknown> }>()
+  const sockets = new Set<Socket>(), controllers = new Set<AbortController>(), jobs = new Set<Promise<unknown>>()
   let closing = false, busy = false
   const server = createServer(socket => {
     sockets.add(socket); socket.on('error', () => {}); socket.once('close', () => sockets.delete(socket))
     let buffer = Buffer.alloc(0), request: CheckRequest | undefined, controller: AbortController | undefined
     socket.setTimeout(10000, () => { if (!request) socket.destroy() })
-    socket.once('close', () => controller?.abort(new Error('check client disconnected')))
+    socket.once('close', () => { if (request?.version !== 2) controller?.abort(new Error('check client disconnected')) })
     socket.on('data', chunk => {
       buffer = Buffer.concat([buffer, chunk])
       if (buffer.length > REQUEST_BYTES) { socket.destroy(); return }
@@ -148,13 +149,50 @@ export async function openGateway(ctx: Context, config: Config) {
         try { request = requestSchema.parse(JSON.parse(frame.toString())) } catch { socket.destroy(); return }
         socket.setTimeout(0)
         const current = request
-        if (closing || busy || Date.now() >= deadline) { socket.end(JSON.stringify({ version: 1, id: current.id, error: 'gateway is busy, closing or expired' }) + '\n'); return }
-        busy = true; controller = new AbortController(); controllers.add(controller)
+        const binding = JSON.stringify({ ...current, operation: 'run' })
+        const existing = active.get(current.id)
+        if (current.version === 2 && existing) {
+          if (existing.binding !== binding) { socket.end(JSON.stringify({ version: 2, id: current.id, error: 'request identity reused with different input' }) + '\n'); return }
+          controller = existing.controller
+          void existing.result.then(reply => socket.end(JSON.stringify(reply) + '\n')).catch(() => socket.destroy())
+          return
+        }
+        controller = new AbortController()
         const cancellation = controller
         const job = (async () => {
+          let admitted = false
+          const reply = (value: object) => ({ version: current.version, id: current.id, ...value })
           try {
             const signal = AbortSignal.any([cancellation.signal, AbortSignal.timeout(Math.max(1, deadline - Date.now()))])
             const client = await boundSnapshot(storage, current)
+            if (current.version === 2) {
+              const path = join(privateStorage, `request-${current.id}.json`)
+              let prior: string | undefined
+              try { prior = await readFile(path, 'utf8') } catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error }
+              if (prior !== undefined) {
+                if (prior !== binding) throw new Error('request identity reused with different input')
+                const receiptPath = join(privateStorage, `receipt-${current.id}.json`)
+                try { return JSON.parse(await readFile(receiptPath, 'utf8')) } catch (error) {
+                  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error
+                  // A crash after native receipt flush must not launch a second command.
+                  const owned = copies.get(client.id)
+                  if (!owned) throw new Error('known request has no confirmed execution receipt')
+                  const result = await readCheck(owned, current.id)
+                  if (result.snapshotId !== current.snapshotId || result.cwd !== current.cwd || JSON.stringify(result.argv) !== JSON.stringify(current.argv)) throw new Error('receipt identity mismatch')
+                  const receipt = reply({ result })
+                  await writeFile(receiptPath, JSON.stringify(receipt), { flag: 'wx', mode: 0o600 })
+                  return receipt
+                }
+              }
+              if (current.operation === 'collect') throw new Error('unknown check identity; no execution was started by collection')
+              if (closing || busy || Date.now() >= deadline) throw new Error('gateway is busy, closing or expired')
+              // A durable admission prevents replay from executing the same command twice.
+              busy = true; admitted = true; controllers.add(cancellation)
+              await writeFile(path, binding, { flag: 'wx', mode: 0o600 })
+            } else {
+              if (closing || busy || Date.now() >= deadline) throw new Error('gateway is busy, closing or expired')
+              busy = true; admitted = true; controllers.add(cancellation)
+            }
             const bounded: CheckPolicy = { ...policy, commandMs: Math.min(policy.commandMs, current.commandMs, Math.max(1, deadline - Date.now())) }
             let result = null
             if (current.operation === 'recover') {
@@ -162,16 +200,18 @@ export async function openGateway(ctx: Context, config: Config) {
               if (owned) await recoverCheckContainers(ctx, owned, bounded, signal)
             } else {
               const owned = await privateCopy(client, signal)
-              result = await runCheck(ctx, owned, SessionId(current.sessionId), current.argv, current.cwd, bounded, signal)
+              result = await runCheck(ctx, owned, SessionId(current.sessionId), current.argv, current.cwd, bounded, signal, current.version === 2 ? current.id : undefined)
             }
-            socket.end(JSON.stringify({ version: 1, id: current.id, result }) + '\n')
+            const response = reply({ result })
+            if (current.version === 2) await writeFile(join(privateStorage, `receipt-${current.id}.json`), JSON.stringify(response), { flag: 'wx', mode: 0o600 })
+            return response
           } catch (error) {
-            // Export a bounded diagnostic; no daemon stdout, credentials or signed URLs.
             const message = String(error).replace(/https?:\/\/\S+/g, '[redacted URL]').slice(0, 2048)
-            socket.end(JSON.stringify({ version: 1, id: current.id, error: message,
-              errorCode: error instanceof CheckInputError ? 'invalid-request' : 'infrastructure' }) + '\n')
-          } finally { controllers.delete(cancellation); busy = false }
+            return reply({ error: message, errorCode: error instanceof CheckInputError ? 'invalid-request' : 'infrastructure' })
+          } finally { if (admitted) { controllers.delete(cancellation); busy = false } }
         })()
+        if (current.version === 2) active.set(current.id, { binding, controller: cancellation, result: job })
+        void job.then(reply => socket.end(JSON.stringify(reply) + '\n')).finally(() => active.delete(current.id)).catch(() => socket.destroy())
         jobs.add(job); void job.finally(() => jobs.delete(job)).catch(() => {})
       }
     })

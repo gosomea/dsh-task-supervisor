@@ -127,7 +127,7 @@ export function installConsultation(ctx: Context, fixedModel: ReviewerModel | un
     if (draft.questions.length) throw new Error('草案还有未决问题；请先明确关键选择，或把可接受的默认值写进要求。')
     const task = taskOf(ctx, main)
     const creationId = draft.creationId ?? `draft:${draft.id}:${draft.version}`
-    if (task && !['complete', 'cleared'].includes(task.phase) && task.creationRequestId !== creationId) throw new Error('当前任务仍在执行；草案已保存，结束后可创建。')
+    if (task && !['complete', 'closed', 'cleared'].includes(task.phase) && task.creationRequestId !== creationId) throw new Error('当前任务仍在执行；草案已保存，结束后可创建。')
     const creating = await recordDraft(ctx, main, { ...draft, version: draft.version + 1, status: 'creating', creationId, updatedAt: new Date().toISOString() })
     const created = await createTask(main, draft.requirements, creationId)
     return recordDraft(ctx, main, { ...creating, version: creating.version + 1, status: 'created', taskId: created.id, updatedAt: new Date().toISOString() })

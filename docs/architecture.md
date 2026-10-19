@@ -1,80 +1,86 @@
-# Architecture proposal
-
-**Status: product design.** A bounded native prototype now runs against an isolated DSH host extension; [implementation status](implementation.md) distinguishes working behavior from the remaining design. This document owns component responsibilities and integration direction. [Task lifecycle](task-lifecycle.md) owns task state and controls. [Review policy](review-policy.md) owns intervention behavior; [evaluation](evaluation.md) owns comparative claims.
+# Supervisor project architecture
 
 ## Summary
 
-One DSH session holds the user's request, subsequent instructions, agent actions, and tool results. The supervisor maintains durable task state for that session and decides when to continue, pause, or finish. The main agent executes work; independent reviewers inspect recorded evidence.
+Supervisor is a native DSH plugin. A deterministic controller owns tasks, approval, dependency scheduling and final acceptance; the main Agent works and an independent reviewer provides evidence-backed judgments. Main Session events are authoritative; projections and caches are rebuildable. This page describes current source; see [review workflow](review-workflow.md) for validation of unpublished changes.
 
-## Task ownership
+## Contents
 
-| Actor | Responsibility |
-| --- | --- |
-| User | Sets the objective and constraints, confirms the initial autonomous plan once, and resolves explicit pauses. |
-| Main agent | Proposes and updates the plan, works in the bound session, records results, and requests completion. |
-| Supervisor controller | Owns durable task state, versions the effective plan, admits rounds, applies review decisions, and decides the task's terminal state. |
-| Checkpoint reviewer | Runs independently at each checkpoint by default and returns evidence-linked findings and a recommended next action. |
-| Specialist reviewer | Runs only when a specific finding requires a focused review. |
-| Final evaluator | Independently checks the completion claim against session evidence and workspace results; acceptance checks run in an isolated copy. |
+- [Components and responsibilities](#components)
+- [State and authorization](#state)
+- [Evidence and review](#evidence)
+- [Budgets and recovery](#recovery)
+- [Integration and extensions](#integration)
 
-The [Supervisor Session module](session-runtime.md) owns durable records, replay, recovery, and evidence references. It reuses native Session logs and joins reviewer sessions into an audit view. Model selection reuses DSH profile configuration; [reviewer model policy](review-model.md) owns the details.
+<a id="components"></a>
+## Components and responsibilities
 
-The controller makes deterministic state transitions. Model reviewers supply findings and judgments; they do not directly mutate the main workspace or control state. The default topology combines persistent task state with a fresh reviewer at each checkpoint. A continuous reviewer session remains a configurable alternative.
+Users express objectives through `/task`, the panel or conversation. Commands and panel actions reach the same controller; model tools propose plans, report artifacts and request acceptance.
 
-## Relationship to Agent Team
-
-The main agent remains the task executor. Supervisor is a deterministic task controller assisted by independent model review; it does not introduce a general-purpose Lead that delegates the whole task to a Worker. Team already offers durable collaboration, and a well-instructed Lead can review and correct work. Supervisor must demonstrate value through enforced checkpoints, independent completion authority, and consistent recovery. See [first prototype and Team comparison](prototype.md) for the exact boundary and competing baseline.
-
-## User entry
-
-Supervisor uses an independent command namespace, provisionally `/task`. Creating a task and beginning with planning lead into one task lifecycle. The plugin offers an alternative to Goal and Plan for planning, persistent objectives, continuation, and completion judgment; native commands remain owned by their original plugins. Entry choice does not fix task duration, and the controller may select single-round or autonomous multi-round execution from task evidence.
-
-| Command | Proposed supervisor behavior |
-| --- | --- |
-| `/task new <objective>` | Create the task and propose an initial plan; obtain the one user confirmation before autonomous multi-round execution. |
-| `/task` | Show the task list, selected task, review findings, and next available action in Supervisor. |
-| `/task edit <objective>` | Update the selected task objective and record a new effective version; the main agent revises its plan using the same session evidence. |
-| `/task pause` | Stop automatic continuation while preserving task state. |
-| `/task resume` | Explicitly resume a paused task, including after a host restart. |
-| `/task clear` | End the current task and preserve its durable history. |
-| `/task plan [request]` | Create a draft with a request, or open the selected task for planning without one; approved work uses the same execution lifecycle. |
-| `/task plan off` | Exit planning without treating an unapproved draft as permission to execute. |
-| `/task off` | Close Supervisor, retain task state, and stop its execution and review. |
-| `/task on` | Enable Supervisor; tasks still require explicit resume. |
-
-Commands and right-panel controls enter the same supervisor request path. The bounded list, selected task, JSON snapshot, close button, and command recovery rules are defined in [task lifecycle](task-lifecycle.md). A later user instruction or `/task edit` is not an artificial second synchronization approval; the main agent and reviewer see the same session record. A new explicit user decision is required only when the review policy pauses for one or another host approval applies.
-
-## Shared evidence and state
-
-The bound main-session log is the source of truth for user instructions and observed execution. A new user instruction in that session takes effect through the normal task-state update path; the user does not have to approve an artificial synchronization between the agent and reviewer. The plugin records its own durable events for task interpretation, plan versions, review findings, user decisions, continuation, and final disposition. A replayable projection reconstructs controller state after restart; process memory is never its sole record.
-
-The reviewer starts at the last completed round, pages backward when context is missing, and then follows an incremental event cursor. Its read tool is bound to the main session and cannot select an arbitrary session ID. It returns structured boundaries and event IDs; longer message bodies and tool inputs or outputs require explicit expansion and redaction. A finding cites the event IDs that support it. [Review policy](review-policy.md) owns the access and intervention rules.
-
-## Lifecycle
-
-```text
-User request
-  → task interpretation and initial plan
-  → one user confirmation before autonomous multi-round work
-  → one execution round
-  → check whether a stage review or progress watchdog is due
-  → continue within the stage, revise plan, or pause for a user decision
-  → independent review before advancing a completed stage
-  → main agent requests completion
-  → independent final evaluation
-  → complete, continue, or await the user
+```mermaid
+flowchart LR
+  User --> Controller
+  Controller --> MainAgent
+  MainAgent --> Session
+  Controller --> ReviewQueue
+  ReviewQueue --> Reviewer
+  Reviewer --> EvidenceTools
+  EvidenceTools --> Session
+  EvidenceTools --> Snapshot
+  Reviewer --> CheckWork
+  CheckWork --> NativeRunner
+  CheckWork --> PrivateGateway
+  PrivateGateway --> NativeRunner
+  NativeRunner --> Receipt
+  Receipt --> Reviewer
+  Reviewer --> Decision
+  Decision --> Controller
+  Session --> Projection
+  Projection --> UI
 ```
 
-The controller selects a single-round path for a short task or autonomous continuation for a longer task and may change that choice as evidence develops. It can start the next round while work remains. A completion request is a proposal until final evaluation accepts it. Confirmed stagnation pauses for the user. A host restart restores state but leaves execution paused until the user manually resumes; it must not silently start a new round.
+| Module | Responsibility and boundary |
+| --- | --- |
+| `index.ts`, `decisions.ts`, `graph.ts` | Admission, approval, node attempts, continuation and terminal states; models do not grant execution permits. |
+| `state.ts`, `session-records.ts` | Native control events, versioned replay and caches; no second source of user requirements. |
+| `review-queue.ts`, `reviewer.ts` | Start review after main-turn settlement; bind identity, deadline and model; persist findings and decisions. |
+| `review-results.ts`, `verification.ts` | Applicable requirements, original-read eligibility, independent inspection and comparison; reject unsupported passes. |
+| `review-budget.ts`, `review-check-work.ts` | Separate model, check and wall budgets; persist check identity and receipts. |
+| `check-gateway.ts`, `review-check.ts` | Administrator-selected isolated execution, resource ownership and cleanup; no Docker authority for the model. |
+| `review-override.ts`, `client/` | Version-bound user release, human ending and actionable next steps; release is not acceptance. |
 
-## DSH integration direction
+<a id="state"></a>
+## State and authorization
 
-Implementation uses DSH's general plugin registrations and effect cleanup, durable session events and projections, agent lifecycle hooks, and client extension points. Supervisor owns its commands, model tools, state service, projection, continuation driver, and right-hand panel. Installation does not override `/goal` or `/plan`, take over native `get_goal`, `create_goal`, `update_goal`, or `exit_plan_mode`, require Goal or Plan to be uninstalled, or read and write their private state. Exact model-tool names and schemas remain open; the main agent's completion operation can only request acceptance.
+A Task reaches `complete` through planning, plan review, approval, execution, node review and final acceptance. `paused` retains a decision or fault; `closed` means the user ended without final acceptance; `cleared` preserves history while removing the current task. See [task lifecycle](task-lifecycle.md) for transitions.
 
-One native Session can retain Goal/Plan tools and create a Supervisor Task. Public GoalService.disarm removes native automatic continuation while a Task exists; Supervisor alone owns continuation and final acceptance. Goal state and history remain, and Plan approval does not approve a Task. Entry uses `/task new` or human-message-bound `task_create` without preset selection. See [task supervision in native modes](native-task.md) for recovery boundaries and legacy preset compatibility.
+Dependency release and review success are separate: both `passed` and `user-released` unlock successors, but only the former counts as passed. Final acceptance checks all current requirements; node counts cannot substitute for it. User release binds one job, requirement version, plan version and node attempt; stale callbacks cannot override it.
 
-Closing Supervisor stops only its owned work and does not automatically start native Goal or Plan. Host dependencies are general DSH capabilities; Goal and Plan are behavior and source references, not required supervisor services. Composition, model-tool visibility, and client loading must demonstrate both that native plugins remain independently usable and that Supervisor runs without native Goal and Plan services mounted. See [DSH architecture](../../../deepseek-harness/docs/architecture.md); the [Jev verifier prototype](../../dsh-jev-verifier/README.md) supplies selectively reusable lessons.
+Tasks retain native presets and disarm native Goal automatic continuation through the public GoalService. Goal and Plan history remains; native Plan approval does not approve a Task. Host permissions, read-only turns and container restrictions remain independent.
+
+<a id="evidence"></a>
+## Evidence and review
+
+Each job binds the main Session, Task, requirement and plan versions, node attempt, reviewer Session, evidence cutoff and snapshot. Plan review checks feasibility and coverage; node review checks its node; final review checks the whole result. Final-only criteria do not become mandatory node criteria.
+
+Log mode cites actually read originals. Independent mode inspects a snapshot, plans and runs necessary checks, saves findings, then compares main-Agent claims. Existing tests need inspection of assertions, execution paths, artifact identity and output; a passing test alone does not prove the requirement. Static requirements can use reads; behavior needs execution or reproduction; missing capabilities remain unverified.
+
+Findings can be saved incrementally and referenced in the final decision. Same-job recovery reuses durable reads and findings; artifact changes invalidate old decisions. Prior conclusions from other jobs are location hints, not inherited acceptance. See [independent review](review-quality.md) and [review workflow](review-workflow.md).
+
+<a id="recovery"></a>
+## Budgets and recovery
+
+Model time, check waiting and wall time each have a cap. During a check the model ends its turn; the controller waits for a receipt and continues. Only valid new findings permit model-budget extension. Earlier outer deadlines and user stops take precedence. [Review workflow](review-workflow.md) owns budget values, legacy configuration and unknown outcomes.
+
+Stopping or disabling cancels plugin-owned model work, checks and continuation. Maintenance is released after check cleanup settles. Restart rebuilds durable state without automatically resuming the Task. Missing receipts never cause uncertain commands to be resubmitted or infrastructure faults to become product failures. Users see applicable retry, restart, release, pause or disable actions.
+
+<a id="integration"></a>
+## Integration and extensions
+
+The Host uses public Cordis effects, Sessions, Agents, Inbox, tools and projections; Web uses native conversation components, sidebar and locale. A missing plugin cannot enforce cold-start gates; hot unload and restart with the plugin are separate cases. See [implementation reference](implementation.md) and [native tasks](native-task.md).
+
+D specialist review is an optional design, disabled by default; current code does not create multiple reviewers. A future interface binds scope, snapshot, capabilities, budget and result references; the main controller owns conflicts, cancellation and decisions. Specialists cannot expand objectives, mutate artifacts or bypass final acceptance.
 
 ## Dev Note
 
-Open implementation decisions: exact DSH event types and projection schema; typed plan-update surface; host mappings for the specified admission, cancellation, and fork behavior; independent command naming and attachment handling; client rendering; approval transport; safe active-session reads during concurrent append; and native tool coexistence and continuation ownership and tool visibility. Resolve these against the current DSH source and isolated tests before describing them as implemented behavior.
+This page replaces the early architecture proposal and covers the whole project. Historical designs remain in proposals; release records identify shipped behavior. This change makes no claim of improved quality, latency or benchmark results.

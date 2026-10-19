@@ -22,6 +22,8 @@ export const verificationSchema = z.object({ snapshot: snapshotSchema, phase: z.
   observations: z.array(findingSchema),
   phaseTimes: z.object({ planning: z.string(), independent: z.string().optional(), comparison: z.string().optional() }).strict().optional(),
   checkPlan: z.array(checkPlanRevisionSchema).optional(), checkFindings: z.array(checkFindingSchema).optional(),
+  requests: z.array(z.object({ id: z.string().uuid(), snapshotId: z.string().uuid(), sessionId: z.string(), argv: z.array(z.string()), cwd: z.string(), commandMs: z.number().int().positive(), status: z.enum(['queued', 'running', 'settled', 'unknown']), createdAt: z.string(), finishedAt: z.string().optional(), error: z.string().optional() }).strict()).optional(),
+  partialObservations: z.array(findingSchema).optional(), partialCheckFindings: z.array(checkFindingSchema).optional(),
   readInputs: z.array(z.number().int().nonnegative()).optional(), checks: z.array(checkResultSchema.omit({ stdout: true, stderr: true })),
   readFiles: z.array(z.object({ path: z.string(), purpose: z.enum(['input', 'constraint', 'deliverable']).optional(), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()),
   readChecks: z.array(z.object({ id: z.string(), stream: z.enum(['stdout', 'stderr']), ranges: z.array(z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])), total: z.number().int().nonnegative() }).strict()),

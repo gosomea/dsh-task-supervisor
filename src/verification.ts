@@ -13,6 +13,9 @@ import { captureSnapshot, snapshotFresh, reviewPath, within, type SnapshotLimits
 import { runCheck, readCheck, recoverCheckContainers, checkPolicy, type CheckPolicy, type ContainerPolicy } from './review-check.ts'
 import { findingSchema, type CriterionFinding, type VerificationState } from './verification-schema.ts'
 import { recordReview, ReviewFailure, type ReviewJob } from './review-records.ts'
+import { completeCheckFindings, completeCriterionFindings } from './review-partial.ts'
+import { createReviewCheckWork, collectReviewChecks } from './review-check-work.ts'
+import { chargeReviewBudget } from './review-budget.ts'
 import { CheckInputError } from './check-errors.ts'
 
 export interface VerificationConfig {
@@ -36,7 +39,7 @@ export function verificationPolicy(config: VerificationConfig): VerificationPoli
   if (limits.runtimeLinkTargets.some(path => !isAbsolute(path) || path.includes('\0'))) throw new TypeError('runtime link targets must be absolute paths')
   for (const value of [limits.files, limits.bytes]) if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('verification limits must be positive integers')
   const deadlineMs = config.deadlineMs ?? 1800000
-  if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('verification deadlineMs must be 1–3600000')
+  if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 10800000) throw new TypeError('verification deadlineMs must be 1–10800000')
   const checks = config.container ? checkPolicy({ container: config.container,
     ...config.checkGatewaySocket === undefined ? {} : { gatewaySocket: config.checkGatewaySocket },
     ...config.commandDeadlineMs === undefined ? {} : { commandMs: config.commandDeadlineMs },
@@ -48,7 +51,16 @@ export function verificationPolicy(config: VerificationConfig): VerificationPoli
 export async function prepareVerification(ctx: Context, main: Agent, job: ReviewJob, policy: VerificationPolicy, signal: AbortSignal): Promise<void> {
   if (job.verification) {
     if (!await snapshotFresh(job.verification.snapshot, policy.limits, signal)) throw new Error('SNAPSHOT_STALE: original artifacts changed; do not reuse this review')
-    if (policy.checks) await recoverCheckContainers(ctx, job.verification.snapshot, policy.checks, signal)
+    try {
+      if (policy.checks && job.qualityProtocol && job.verification.requests?.some(item => item.status !== 'settled')) {
+        if (job.budget) chargeReviewBudget(job.budget, 'checking', Date.now())
+        try { await collectReviewChecks(ctx, main, job, policy.checks, signal) }
+        finally { if (job.budget) chargeReviewBudget(job.budget, 'preparing', Date.now()) }
+      }
+    } finally {
+      // Missing receipts must not leave owned daemon resources behind.
+      if (policy.checks) await recoverCheckContainers(ctx, job.verification.snapshot, policy.checks, AbortSignal.timeout(30000))
+    }
     return
   }
   const fs = ctx.get('fs'), cwd = main.session.header.cwd
@@ -115,8 +127,9 @@ export const findingParameters = { type: 'array', items: { type: 'object', addit
 
 /** Install snapshot-only tools. Successful durable observations unlock comparison with the main report. */
 export function installVerification(ctx: Context, owner: Context, main: Agent, job: ReviewJob, sessionId: SessionId,
-  policy: VerificationPolicy, signal: AbortSignal): void {
+  policy: VerificationPolicy, signal: AbortSignal, phase: (mode: 'model' | 'checking') => void = () => {}) {
   const state = job.verification!
+  const work = createReviewCheckWork(owner, main, job, sessionId, policy.checks, signal, phase)
   const output = { schema: { type: 'json' as const }, render: (_args: object, value: JsonValue) => [{ type: 'text' as const, text: JSON.stringify(value) }] }
   async function persist() { signal.throwIfAborted(); await recordReview(owner, main, { ...job, revision: ++job.revision }) }
   const applicable = job.kind === 'completion' ? job.input.criteria.map(item => item.id) : job.input.stages.find(item => item.id === job.stageId)?.criterionIds ?? []
@@ -172,6 +185,7 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
     async execute(args, exec) {
       requirePlan()
       if (!policy.checks) throw new CheckInputError('CAPABILITY_UNAVAILABLE: independent command execution is not configured; mark the requirement unverified')
+      if (job.qualityProtocol) { const admitted = await work.start(args.argv, args.cwd, args.timeout_ms); exec.concludeTurn(); return admitted }
       const remaining = Date.parse(job.deadlineAt!) - Date.now()
       const commandMs = Math.min(policy.checks.commandMs, remaining, args.timeout_ms ?? policy.checks.commandMs)
       if (!Number.isSafeInteger(commandMs) || commandMs < 1) throw new Error('check deadline has expired or timeout_ms is invalid')
@@ -203,20 +217,44 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { snapshotId: state.snapshot.id, checkId: result.id, stream: args.stream, ...page }
     },
   }))
+  if (job.qualityProtocol) ctx.tools.register(defineTool({ name: 'record_review_observations',
+    description: 'Save independent findings incrementally without opening main-Agent claims. IDs must belong to this job’s plan. Previously saved rows are returned; task_review_observations finalizes this phase, filling missing coverage as unverified.',
+    parameters: { findings: { ...findingParameters, required: true }, checks: { ...checkFindingParameters, required: true } }, output,
+    async execute(args) {
+      if (state.phase !== 'independent') throw new Error('independent findings cannot change after comparison')
+      requirePlan()
+      const incomingChecks = args.checks.map(item => checkFindingSchema.parse(item))
+      const incoming = args.findings.map(item => findingSchema.parse(item))
+      const mergedChecks = [...state.partialCheckFindings ?? []].filter(c => !incomingChecks.some(n => n.checkId === c.checkId)).concat(incomingChecks)
+      const merged = [...state.partialObservations ?? []].filter(c => !incoming.some(n => n.criterionId === c.criterionId)).concat(incoming)
+      const results = completeCheckFindings(state, mergedChecks)
+      const evidence = checkResultsAsEvidence(state, results, false)
+      const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
+      validateFindings(basic, evidence.map(f => f.criterionId), evidence, false)
+      const completeRows = completeCriterionFindings(state, applicable, merged)
+      validateFindings({ ...state, checkFindings: results }, applicable, completeRows, false)
+      if (job.budget) job.budget.progress += incomingChecks.filter(c => c.status !== 'unverified' && !state.partialCheckFindings?.some(p => p.checkId === c.checkId)).length
+      state.partialCheckFindings = mergedChecks; state.partialObservations = merged
+      await persist()
+      return { recorded: true, criterionIds: merged.map(f => f.criterionId), checkIds: mergedChecks.map(f => f.checkId), remaining: applicable.filter(id => !merged.some(f => f.criterionId === id)) }
+    },
+  }))
   ctx.tools.register(defineTool({ name: 'task_review_observations', description: 'Persist independent findings for every applicable criterion, then unlock the main-session report. Use unverified with an explicit limitation when independent evidence is missing. Findings cannot be rewritten after comparison.',
-    parameters: { findings: { ...findingParameters, required: true }, checks: { ...checkFindingParameters, ...job.checkProtocol ? { required: true as const } : {} } }, output,
+    parameters: { findings: { ...findingParameters, ...job.qualityProtocol ? {} : { required: true as const } }, checks: { ...checkFindingParameters, ...job.checkProtocol && !job.qualityProtocol ? { required: true as const } : {} } }, output,
     async execute(args) {
       if (state.phase !== 'independent') throw new Error('independent observations already recorded')
       requirePlan()
       let checkedState = state
       if (job.checkProtocol) {
-        const results = (args.checks ?? []).map(item => checkFindingSchema.parse(item))
+        const submitted = (args.checks ?? state.partialCheckFindings ?? []).map(item => checkFindingSchema.parse(item))
+        const results = job.qualityProtocol ? completeCheckFindings(state, submitted) : submitted
         const evidence = checkResultsAsEvidence(state, results, false)
         const { checkPlan: _plan, checkFindings: _findings, ...basic } = state
         validateFindings(basic, evidence.map(item => item.criterionId), evidence, false)
         checkedState = { ...state, checkFindings: results }
       }
-      const findings = args.findings.map(item => findingSchema.parse(item))
+      const submitted = (args.findings ?? state.partialObservations ?? []).map(item => findingSchema.parse(item))
+      const findings = job.qualityProtocol ? completeCriterionFindings(state, applicable, submitted) : submitted
       const ids = job.kind === 'completion' ? job.input.criteria.map(item => item.id) : job.input.stages.find(item => item.id === job.stageId)!.criterionIds
       validateFindings(checkedState, ids, findings, false)
       // Visibility changes only after the comparison record is durably flushed.
@@ -227,4 +265,5 @@ export function installVerification(ctx: Context, owner: Context, main: Agent, j
       return { recorded: true, snapshotId: state.snapshot.id, phase: state.phase }
     },
   }))
+  return work
 }

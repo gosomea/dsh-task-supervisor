@@ -10,15 +10,16 @@ export function currentReviewJob(state: PanelState | null): ReviewJob | undefine
   if (!task) return undefined
   const id = task.pendingReview?.jobId ?? state.reviewActivity?.jobId
   return id ? state.reviewJobs?.find(job => job.taskId === task.id && job.id === id)
-    : state.reviewJobs?.findLast(job => job.taskId === task.id && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
+    : state.reviewJobs?.findLast(job => job.taskId === task.id && !task.reviewOverrides?.some(item => item.jobId === job.id) && ['queued', 'started', 'repairing', 'submitted'].includes(job.status))
 }
 
 export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
   const pending = ['queued', 'started', 'repairing', 'submitted'].includes(job.status)
   const current = state?.task?.id === job.taskId
-  const active = pending && state?.live === true && currentReviewJob(state)?.id === job.id
+  const overridden = state?.task?.reviewOverrides?.some(item => item.jobId === job.id)
+  const active = !overridden && pending && state?.live === true && currentReviewJob(state)?.id === job.id
     && state.reviewing
-  const currentFault = current && (state?.task?.reviewFault?.jobId === job.id
+  const currentFault = !overridden && current && (state?.task?.reviewFault?.jobId === job.id
     || currentReviewJob(state)?.id === job.id && ['user', 'restart'].includes(state?.task?.pauseReason ?? ''))
   const canRetry = currentFault && state?.live === true
     && state.actions.includes('retry-review')
@@ -38,6 +39,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
     label = `reviewVerdict.${job.decision.verdict}`
     tone = job.decision.verdict === 'pass' ? 'success' : 'warning'
   }
+  if (overridden) { label = 'reviewUserReleased'; tone = 'warning' }
   const duration = job.finishedAt ? Math.max(0, Math.floor((Date.parse(job.finishedAt) - Date.parse(job.startedAt)) / 1000)) : null
   let next: SupervisorKey | null = null
   if (job.status === 'submitted') next = 'reviewSubmitted'
@@ -52,6 +54,7 @@ export function reviewPresentation(job: ReviewJob, state: PanelState | null) {
     else if (!state.armed || !state.task?.enabled || state.task?.phase === 'paused') next = 'reviewManualRecovery'
     else next = state.task?.phase === 'planning' ? 'reviewNextPlanning' : 'reviewContinuing'
   }
+  if (overridden) next = state?.task?.phase === 'closed' ? 'userEnded' : 'overrideNotice'
   return { active, currentFault, canRetry, canRestart, label, tone, next, duration: duration !== null && Number.isFinite(duration) ? duration : null }
 }
 
@@ -83,7 +86,7 @@ export function reviewRetryExplanation(job: ReviewJob): SupervisorKey {
 /** Current controls determine the user instruction; historical failures never request action. */
 export function reviewRecoveryGuidance(state: PanelState): SupervisorKey | null {
   const task = state.task
-  if (!task || ['complete', 'cleared'].includes(task.phase)) return null
+  if (!task || ['complete', 'closed', 'cleared'].includes(task.phase)) return null
   if (!state.live) return 'reviewConnectNeeded'
   if (!task.enabled) return 'reviewEnableNeeded'
   if (task.pauseReason === 'review-fault') {

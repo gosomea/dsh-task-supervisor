@@ -1,3 +1,5 @@
+import { resolveReviewBudget, type ReviewBudgetConfig } from './review-budget.ts'
+import { overrideReview } from './review-override.ts'
 import type { ReviewJob } from './review-records.ts'
 import { faultRecoveryPolicy, recoveryCanContinue } from './review-recovery.ts'
 /** Native DSH task controller: durable state, human commands, and model tools. */
@@ -26,7 +28,7 @@ import { languagePolicy, resolveLanguage, continuationContext } from './task-con
 import { policyApproval } from './execution-policy.ts'
 import { recoveryBoundary } from './recovery.ts'
 import { observationReason, type ObservationCursor } from './observation.ts'
-import { acceptedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
+import { releasedNodes, readyNodes, runsOf, withRuns, beginNode, reviewNode, finishNode, reworkNode, recoverRuns } from './graph.ts'
 import { changedAttempts } from './rework-records.ts'
 import { installRepairs } from './repair-runtime.ts'
 import { taskExecutionError } from './repairs.ts'
@@ -34,6 +36,7 @@ import { validateProvenance } from './provenance.ts'
 import { faultFrom, recordReview, ReviewFailure } from './review-records.ts'
 import { createReviewJob, reviewerOptions, reviewStage, savedReviewDecision, reviewPolicy, type ReviewerModel } from './reviewer.ts'
 import { prepareCapabilities, type VerificationNeeds, type VerificationCapability } from './review-capabilities.ts'
+import { recoverCheckContainers } from './review-check.ts'
 import { verificationPolicy, type VerificationConfig } from './verification.ts'
 import { installDelegation, requireIntegration } from './delegation.ts'
 import { consultationBinding, installConsultation } from './consultation.ts'
@@ -73,6 +76,8 @@ export interface Config {
   fallbackLanguage?: string
   planningReadTools?: string[]
   reviewReadCorrectionAttempts?: number
+  reviewBudget?: ReviewBudgetConfig
+  reviewInvalidDecisionLimit?: number
   reviewRepairAttempts?: number
   reviewDeadlineMs?: number
   reviewFaultRetryAttempts?: number
@@ -126,7 +131,7 @@ function reply(title: string, task: TaskSnapshot | null, armed: boolean): Comman
 
 /** Register one independently owned workflow on public DSH seams. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
-  const reviewerPolicy = reviewPolicy({ ...config.reviewReadCorrectionAttempts === undefined ? {} : { readCorrectionAttempts: config.reviewReadCorrectionAttempts }, ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
+  const reviewerPolicy = reviewPolicy({ ...config.reviewInvalidDecisionLimit === undefined ? {} : { invalidDecisionLimit: config.reviewInvalidDecisionLimit }, ...config.reviewReadCorrectionAttempts === undefined ? {} : { readCorrectionAttempts: config.reviewReadCorrectionAttempts }, ...config.reviewRepairAttempts === undefined ? {} : { repairAttempts: config.reviewRepairAttempts },
     ...config.reviewDeadlineMs === undefined ? {} : { deadlineMs: config.reviewDeadlineMs } })
   const recoveryPolicy = faultRecoveryPolicy(config.reviewFaultRetryAttempts, config.reviewFaultRetryDelayMs, config.resumeAfterReviewRecovery)
   resolveLanguage('', config.responseLanguage, config.fallbackLanguage)
@@ -162,7 +167,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   if (config.reviewVerification === 'independent' && !config.independentVerification) throw new TypeError('independent review requires artifact storage configuration')
   if (config.requiredVerification && (config.requiredVerification.capabilities.some(id => !['read', 'run', 'visual'].includes(id)))) throw new TypeError('invalid requiredVerification capability')
   const effectiveVerification = config.reviewVerification ?? (config.independentVerification ? 'independent' : 'log')
-  const selectedReviewPolicy = { ...reviewerPolicy, scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
+  const selectedReviewPolicy = { ...reviewerPolicy, qualityProtocol: 1 as const, budget: resolveReviewBudget({ ...config.reviewBudget, ...config.reviewDeadlineMs === undefined ? {} : { modelMs: config.reviewDeadlineMs, modelMaxMs: config.reviewDeadlineMs, wallMs: config.reviewDeadlineMs } }), independentBudget: resolveReviewBudget({ ...config.reviewBudget, ...config.independentVerification?.deadlineMs === undefined ? {} : { wallMs: config.independentVerification.deadlineMs } }), scopeProtocol: 1 as const, resultProtocol: 1 as const, verificationMode: effectiveVerification,
     ...effectiveVerification === 'independent' ? { requirementsProtocol: 1 as const, checkProtocol: 1 as const } : {},
     ...effectiveVerification === 'independent' && config.independentVerification ? { verification: verificationPolicy(config.independentVerification) } : {},
     observationSettings: { ...observationPolicy,
@@ -266,6 +271,19 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         + 'An aborted turn does not count; Supervisor will continue after a completed read-only turn.'
   }
 
+  /** Unknown check outcomes can be bypassed only after owned resources are quiescent. */
+  async function cleanReleasedReviews(agent: Agent, task: TaskSnapshot | null): Promise<void> {
+    if (!task) return
+    const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? []
+    for (const release of task.reviewOverrides ?? []) {
+      const job = jobs.find(item => item.id === release.jobId)
+      if (!job?.verification?.requests?.some(request => request.status !== 'settled')) continue
+      const checks = selectedReviewPolicy.verification?.checks
+      if (!checks) throw new Error('检查资源尚未确认释放，请恢复检查运行环境后点击继续；不会重新执行测试。')
+      await recoverCheckContainers(ctx, job.verification.snapshot, checks, AbortSignal.timeout(30000))
+    }
+  }
+
   /** The idle maintenance lock holds a queued followup until both records are durable. */
   async function commitAndWake(agent: Agent, expected: TaskSnapshot | null, next: TaskSnapshot | (() => TaskSnapshot), instruction: string, beforeCommit?: () => Promise<void>, commandInput?: string, delivery?: ReturnType<typeof inputFor>): Promise<void> {
     await agent.runMaintenance(async signal => {
@@ -275,6 +293,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (actual?.id !== expected?.id || actual?.revision !== expected?.revision) {
         throw new Error('task changed before the action could be admitted')
       }
+      await cleanReleasedReviews(agent, actual)
       await beforeCommit?.()
       signal.throwIfAborted()
       if (current(agent)?.id !== expected?.id || current(agent)?.revision !== expected?.revision) throw new Error('task changed during admission')
@@ -324,6 +343,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   installTaskToolPresentation(ctx, agent => {
     const task = taskOf(ctx, agent)
     if (task && task.phase !== 'cleared' && (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing')) return ['task_status']
+    if (task?.phase === 'closed') return ['task_status', 'task_create', 'read', 'glob', 'grep', 'read_image']
     if (task?.phase === 'complete') return ['task_status', 'task_create', 'task_propose_repair', 'read', 'glob', 'grep', 'read_image']
     if (task?.phase === 'active' && readOnlyGateRemaining(agent, task) > 0) return ['task_status', 'task_approve', ...gateReadTools]
     return undefined
@@ -332,7 +352,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     text: ({ agent }) => {
       if (!agent || consultationBinding(agent)) return ''
       const task = taskOf(ctx, agent)
-      if (!task || task.phase === 'cleared' || task.phase === 'complete') return 'Supervisor is available but selecting a native mode does not create a supervised task. When the user explicitly asks to create a supervised task, call task_status to read the latest human message and its seq, then task_create with the objective and user_message_seq. Do not substitute a Todo list, planning skill, native Goal or Plan for Task creation. For ordinary questions, keep the native workflow. Creating a Task does not approve implementation; submit its plan and wait for Task approval.'
+      if (!task || task.phase === 'cleared' || task.phase === 'complete' || task.phase === 'closed') return 'Supervisor is available but selecting a native mode does not create a supervised task. When the user explicitly asks to create a supervised task, call task_status to read the latest human message and its seq, then task_create with the objective and user_message_seq. Do not substitute a Todo list, planning skill, native Goal or Plan for Task creation. For ordinary questions, keep the native workflow. Creating a Task does not approve implementation; submit its plan and wait for Task approval.'
       if (!task.enabled || task.phase === 'paused' || task.phase === 'reviewing') return 'Task execution is blocked. Call task_status directly through its supplied schema, even with a PTC preset. Do not wrap it in run_code. Report the recorded phase, review fault and available user controls. Waiting for review or a user action does not authorize bash, run_code, approval or execution resume.'
       return 'Supervisor owns automatic continuation and final acceptance for this Task. Native Goal, Plan and Todo may organize work, but they do not replace the Task DAG, its approval or independent review. Native Goal automatic rounds are disarmed while this Task is retained. Native Goal completion and native Plan approval do not complete or approve this Task. Report completed nodes with task_report_stage and request final acceptance with task_request_completion.'
     },
@@ -384,7 +404,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (disposed) throw new Error('Supervisor is unloaded')
     if (inTurn && !entryActive(agent)) throw new Error('Task planning entry was canceled during admission')
     const task = current(agent)
-    if (task && (!['complete', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
+    if (task && (!['complete', 'closed', 'cleared'].includes(task.phase) || !task.enabled)) throw new Error('当前任务须结束且督导已启用，才能创建下一项；草案可先保存。')
     let next: TaskSnapshot = { ...newTask(objective), responseLanguage: resolveLanguage(objective, config.responseLanguage, config.fallbackLanguage),
       ...creationId === undefined ? {} : { creationRequestId: creationId } }
     const grant = () => next = { ...next, approvalPolicy: { mode: config.executionApproval ?? 'manual', source: 'profile', mainSessionId: agent.id, requirementsVersion: next.requirementsVersion, grantSeq: agent.session.seq } }
@@ -432,7 +452,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const repairs = installRepairs(ctx, commitAndWake, repairLimits)
   const consultation = installConsultation(ctx, config.reviewerModel, createTask, repairs)
   installPanelApi(ctx, agent => ({ reviewVerification: effectiveVerification, armed: runtime(agent).armed, reviewing: reviewAbort.has(agent),
-    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent), failedReview(agent)) }), consultation, repairs)
+    actions: controlActions(current(agent), runtime(agent).armed, reviewAbort.has(agent), actionableReview(agent)) }), consultation, repairs)
   ctx.effect(() => () => {
     disposed = true
     for (const agent of knownAgents) withdrawOwned(agent, new Error('Supervisor unloaded'))
@@ -489,6 +509,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   function boundReview(agent: Agent, task: TaskSnapshot) {
     return task.pendingReview?.jobId ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs
       .find(job => job.id === task.pendingReview!.jobId) : undefined
+  }
+
+  function actionableReview(agent: Agent) {
+    const task = current(agent)
+    return task ? ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs.findLast(job => job.taskId === task.id
+      && job.planVersion === task.planVersion && job.input.requirementsVersion === task.requirementsVersion) : undefined
   }
 
   function failedReview(agent: Agent) {
@@ -723,7 +749,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       // A maintenance result is not a tool result in the already finished PTC turn.
       // Deliver the next permitted response through the durable native Inbox.
       const completeNext = pending.kind === 'stage' && latest.phase === 'active'
-        && runtime(agent).armed && acceptedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
+        && runtime(agent).armed && releasedNodes(latest).length === latest.stages.length && config.automaticContinuation !== false
       const revisePlan = pending.kind === 'plan' && latest.phase === 'planning' && config.automaticContinuation !== false
         && canContinueReview(agent, latest.lastReview?.jobId ?? '', latest)
       const node = latest.stages[latest.stageIndex]
@@ -734,7 +760,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       if (revisePlan) runtime(agent).armed = true
       if (!completeNext && !revisePlan) closeWithResponse(agent, latest.revision, true)
       agent.followup(inputFor(latest, `Supervisor review result: ${JSON.stringify(result)}\n${completeNext
-        ? 'All nodes passed. Inspect the current whole deliverable and call task_request_completion with concrete evidence; the task is not complete yet.'
+        ? 'All nodes are released (passed review or explicitly released by the user). Inspect the current whole deliverable and call task_request_completion with concrete evidence; the task is not complete yet.'
         : revisePlan ? 'Revise the proposed plan under this finding and the original user requirements, then submit it for another review. Implementation is not approved.' : CLOSING_MESSAGE}`))
       await flush(agent)
     },
@@ -825,7 +851,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     if (exec.agent === undefined) return undefined
     const task = taskOf(ctx, exec.agent)
     if (task === null || task.phase === 'cleared') return undefined
-    if (exec.name === 'task_status' || exec.name === 'task_create' && task.phase === 'complete' && task.enabled) return undefined
+    if (exec.name === 'task_status' || exec.name === 'task_create' && ['complete', 'closed'].includes(task.phase) && task.enabled) return undefined
+    if (task.phase === 'closed') return ['read', 'glob', 'grep', 'read_image'].includes(exec.name) ? undefined : 'TASK_USER_ENDED: This task ended without final acceptance. Start a new Task to continue work; do not claim this task passed.'
     if (task.phase === 'complete') {
       // A completed task has no execution grant, including before the model
       // proposes repair or after the user declines it. Generic executors can write.
@@ -847,7 +874,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   ctx.commands.register({
     name: 'task',
     description: 'Enter Task planning, plan an objective, or control the current task',
-    input: { hint: '[<objective>|status|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|restart-review|clear|off|on]' },
+    input: { hint: '[<objective>|status|approve|auto-approve-on|auto-approve-off|edit <objective>|pause|resume|retry-review|restart-review|skip-review|finish-without-review|clear|off|on]' },
     async handler({ agent, rawInput, signal }) {
       const binding = consultationBinding(agent)
       if (binding) {
@@ -861,7 +888,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         return result?.result ?? { kind: 'error', text: '主会话无法处理此任务命令。' }
       }
       let input = rawInput.trim()
-      const bound = /^(approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|restart-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
+      const bound = /^(approve|auto-approve-on|auto-approve-off|pause|resume|retry-review|restart-review|skip-review|finish-without-review|clear|off|on) ([\w-]+) (\d+)$/u.exec(input)
       if (bound !== null) {
         const state = current(agent)
         if (state === null || state.id !== bound[2] || state.revision !== Number(bound[3])) {
@@ -874,17 +901,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       try {
         if (input === 'consult') return { kind: 'success', text: `Supervisor Session: ${(await consultation.open(agent)).id}` }
         if (input === '') {
-          if (task && !['complete', 'cleared'].includes(task.phase)) return reply('当前任务督导', task, life.armed)
+          if (task && !['complete', 'closed', 'cleared'].includes(task.phase)) return reply('当前任务督导', task, life.armed)
           if (task && !task.enabled) throw new Error('督导已关闭；先运行 /task on，再进入新任务规划。')
           await setEntry(agent, true)
           return { kind: 'success', text: '已进入任务规划。下一条消息作为任务目标；也可以直接输入 /task <目标>。提交计划后等待批准，不会自动实施。' }
         }
         if (input === 'status') return reply('Supervisor', task, life.armed)
-        if (['off', 'clear'].includes(input) && (!task || ['complete', 'cleared'].includes(task.phase)) && entryActive(agent)) {
+        if (['off', 'clear'].includes(input) && (!task || ['complete', 'closed', 'cleared'].includes(task.phase)) && entryActive(agent)) {
           await setEntry(agent, false)
           if (!task) return { kind: 'success', text: '已退出任务规划入口。' }
         }
-        const controls = new Set(['new', 'status', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'edit', 'pause', 'resume', 'retry-review', 'restart-review', 'clear', 'off', 'on'])
+        const controls = new Set(['new', 'status', 'consult', 'approve', 'auto-approve-on', 'auto-approve-off', 'edit', 'pause', 'resume', 'retry-review', 'restart-review', 'skip-review', 'finish-without-review', 'clear', 'off', 'on'])
         const verb = input.split(/\s/u)[0]!
         if (!controls.has(verb)) {
           const next = await createTask(agent, input, undefined, `/task${rawInput}`)
@@ -895,6 +922,28 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           return reply('Task created', next, life.armed)
         }
         if (task === null) throw new Error('no task exists; use /task <objective>')
+        if (input === 'skip-review' || input === 'finish-without-review') {
+          const job = actionableReview(agent)
+          if (!job) throw new Error('No current review to override; read task_status.')
+          const next = overrideReview(task, job, input, agent.session.seq, new Date().toISOString())
+          // Persist the new revision before cancellation so late review callbacks become stale.
+          if (current(agent)?.revision !== task.revision || current(agent)?.id !== task.id) throw new Error('Task changed; refresh before acting.')
+          const held = input === 'finish-without-review' ? next : { ...next, phase: 'paused' as const, pauseReason: 'user' as const }
+          appendTask(ctx, agent, held)
+          withdrawOwned(agent)
+          await flush(agent)
+          // runMaintenance rejects overlapping work rather than queuing it. Wait for
+          // the cancelled review and its check cleanup before acquiring a new permit.
+          await agent.whenIdle()
+          if (current(agent)?.id !== held.id || current(agent)?.revision !== held.revision) throw new Error('Task changed while the review was stopping; refresh before continuing.')
+          if (input === 'finish-without-review') {
+            await agent.runMaintenance(async () => { await cleanReleasedReviews(agent, current(agent)); await flush(agent) })
+            return reply('用户结束任务，未通过最终验收。', next, false)
+          }
+          await commitAndWake(agent, held, { ...next, revision: next.revision + 1 },
+            `The user explicitly bypassed review ${job.id} for this checkpoint only. This is NOT a passed review. Preserve unresolved findings: ${job.decision?.finding ?? job.fault?.message ?? 'Review incomplete'}. Subsequent checkpoints and final acceptance remain required. ${next.phase === 'planning' ? 'Continue planning.' : executionPrompt(agent, next, 'Continue the approved task; do not resubmit the bypassed checkpoint without a new artifact or requirement change.')}`)
+          return reply(job.kind === 'plan' ? '已跳过审查并批准当前计划。' : '用户已放行本次检查点，后续审查保持开启。', next, life.armed)
+        }
         if (input === 'restart-review') {
           await restartReview(agent, task, signal)
           return reply('新的独立审查已提交；原失败记录保留。审查结束后等待批准或手动恢复执行。', current(agent), false)
@@ -930,7 +979,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
           return reply('Plan approved', next, life.armed)
         }
         if (input === 'pause' || input === 'off' || input === 'clear') {
-          if (input === 'pause' && (task.phase === 'complete' || task.phase === 'cleared')) {
+          if (input === 'pause' && (task.phase === 'complete' || task.phase === 'closed' || task.phase === 'cleared')) {
             throw new Error('a finished task cannot be paused')
           }
           withdrawOwned(agent)
@@ -968,8 +1017,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
             await retryReview(agent, task, signal, true)
             return reply('原审查恢复已提交；用户暂停或宿主重启后的实施仍需手动恢复。', current(agent), false)
           }
-          if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；请查看 /task status；未过期故障可 retry-review，超时故障可 restart-review 重新审查。')
-          if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'cleared') {
+          if (task.pauseReason === 'review-fault') throw new Error('审查故障尚未解决；查看 /task status 后选择 retry-review、restart-review，或由用户执行 /task skip-review 跳过本次审查并继续。')
+          if (!task.enabled || task.phase === 'awaiting-approval' || task.phase === 'complete' || task.phase === 'closed' || task.phase === 'cleared') {
             throw new Error('this task cannot resume in its current state')
           }
           if (reviewAbort.has(agent)) throw new Error('审查正在进行，请使用暂停而不是恢复。')
@@ -992,7 +1041,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         if (input.startsWith('edit ')) {
           const objective = input.slice(5).trim()
           if (!objective) throw new Error('replacement objective is required')
-          if (task.phase === 'complete' || task.phase === 'cleared') {
+          if (task.phase === 'complete' || task.phase === 'closed' || task.phase === 'cleared') {
             throw new Error('a finished task cannot be edited')
           }
           withdrawOwned(agent)
@@ -1040,7 +1089,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
         latestUserMessage: source,
         continuationOwner: task.phase === 'cleared' ? 'native' : 'supervisor',
         reviewVerification: effectiveVerification,
-        availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent), failedReview(agent)),
+        availableActions: task.phase === 'complete' ? [...task.enabled ? ['task_create'] : [], 'task_propose_repair', 'await-web-confirmation'] : controlActions(task, runtime(agent).armed, reviewAbort.has(agent), actionableReview(agent)),
         executionAllowed: live?.id === task.id && task.enabled && task.phase === 'active' && runtime(agent).armed,
         executionBlockedReason: task.phase === 'complete' ? 'TASK_COMPLETED: Propose repair and wait for the user click; do not call execution tools.' : !task.enabled ? 'SUPERVISOR_DISABLED' : task.phase === 'reviewing' ? 'REVIEW_IN_PROGRESS' : task.pauseReason === 'review-fault' ? 'REVIEW_FAULT: Use the available user review control.' : !runtime(agent).armed ? 'AWAITING_MANUAL_RESUME' : null,
         repairProposals: JSON.parse(JSON.stringify(state?.repairs.filter(p => p.taskId === task.id) ?? [])),
@@ -1362,12 +1411,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       await flush(agent)
       runtime(agent).armed = settled.phase === 'active' && canContinueReview(agent, decision.jobId, settled)
       const awaitsCompletion = kind === 'stage' && settled.phase === 'active'
-        && acceptedNodes(settled).length === settled.stages.length
+        && releasedNodes(settled).length === settled.stages.length
       if (awaitsCompletion) exec.concludeTurn()
       else closeWithResponse(agent, settled.revision)
       return { verdict: decision.verdict, finding: decision.finding,
         message: awaitsCompletion
-          ? 'All stages passed. The controller will start a new turn with tools for whole-task completion review.'
+          ? 'All stages are released (reviewed or explicitly released by the user). The controller will start a new turn with tools for whole-task completion review.'
           : CLOSING_MESSAGE,
         imageSeqs: decision.imageSeqs, evidenceSeqs: decision.evidenceSeqs, reviewerSessionId: decision.reviewerSessionId,
         nextStage: settled.stages[settled.stageIndex]?.id ?? null, phase: settled.phase }
@@ -1449,7 +1498,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   ctx.tools.register(defineTool({
     name: 'task_request_completion',
-    description: 'Submit to the Supervisor controller and end this turn. A queued receipt does not mean the review passed. Ask an independent reviewer to assess final completion after every plan stage passes.',
+    description: 'Submit to the Supervisor controller and end this turn. A queued receipt does not mean the review passed. Ask an independent reviewer to assess final completion after every plan stage passes or is explicitly released by the user.',
     parameters: {
       evidence: { type: 'string', required: true,
         description: 'Concrete evidence that every acceptance criterion is satisfied.' },
@@ -1459,8 +1508,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
       const agent = toolAgent(exec)
       const task = current(agent)
       if (task === null || task.phase !== 'active' || !task.enabled || !runtime(agent).armed) throw taskExecutionError(task)
-      if (task.stages.length === 0 || acceptedNodes(task).length !== task.stages.length || !args.evidence.trim()) {
-        throw new Error('every stage must pass before requesting final completion')
+      const jobs = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')?.reviewJobs ?? []
+      const bypass = task.reviewOverrides?.findLast(item => item.action === 'skip-review' && jobs.some(job => job.id === item.jobId && job.kind === 'completion'))
+      if (bypass) {
+        const events = agent.session.snapshotEvents().map(controlEvent)
+        const progressed = events.some(event => event.seq > bypass.recordSeq && event.type === 'tool/result' && event.data.message.isError !== true
+          && events.some(call => call.type === 'tool/call' && call.data.callId === event.data.message.source.callId
+            && !call.data.name.startsWith('task_') && !['read', 'glob', 'grep', 'list_agents'].includes(call.data.name)))
+        if (!progressed) throw new Error('Final review was bypassed by the user. Do further implementation or verification before requesting final review again; to end without acceptance the user can choose finish-without-review.')
+      }
+      if (task.stages.length === 0 || releasedNodes(task).length !== task.stages.length || !args.evidence.trim()) {
+        throw new Error('every stage must pass or be user-released before requesting final completion')
       }
       return queuedReviews.enqueue(agent, task, { kind: 'completion', stageId: 'completion', evidence: args.evidence }, exec)
     },

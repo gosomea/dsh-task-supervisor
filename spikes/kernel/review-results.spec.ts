@@ -81,3 +81,14 @@ it('corrects a malformed source locator without rereading or relaxing evidence a
   expect(() => logRequirementResults(job(), [requirement, unread], ranges, true)).toThrow('UNREAD_REQUIREMENT_SOURCE: requirements[1].source.reference=seq:11')
   expect(() => logRequirementResults(job(), [requirement, { ...corrected, status: 'unverified' }], ranges, true)).toThrow('cannot pass')
 })
+it('names extra final-only criteria and allows partial corrective reports only under the new protocol', () => {
+  const value = job()
+  value.qualityProtocol = 1
+  value.input.criteria.push({ id: 'later', text: 'final integration' })
+  expect(logRequirementResults(value, [{ ...requirement, status: 'failed' }], ranges, false)).toHaveLength(1)
+  expect(() => logRequirementResults(value, [requirement], ranges, true)).toThrow('missing=["later"]')
+  value.kind = 'stage'; value.stageId = 's'
+  value.input.stages = [{ id: 's', title: 'current', criterionIds: ['c'] }]
+  expect(() => logRequirementResults(value, [requirement, { ...requirement, id: 'final', criterionId: 'later' }], ranges, false)).toThrow('extra=["later"]')
+  expect(() => logRequirementResults(value, [requirement, { ...requirement, id: 'duplicate' }], ranges, true)).toThrow('duplicateCriteria=["c"]')
+})

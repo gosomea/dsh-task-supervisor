@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for architecture.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/architecture.md
+/supervisor-project-architecture:
+  en: d95c53792b5a4478
+  zh: a039fafad7a877d3
+/supervisor-project-architecture/summary:
+  en: 72dd5a95fd9f2e43
+  zh: af857da510639332
+/supervisor-project-architecture/contents:
+  en: a91a75ac765456f2
+  zh: a502ee0bcb8a56ef
+/supervisor-project-architecture/components-and-responsibilities:
+  en: 79a3d6f66f1faa9c
+  zh: 204ab1df54709031
+/supervisor-project-architecture/state-and-authorization:
+  en: 51ceecc8e443d5ad
+  zh: 6fe133f38b3351db
+/supervisor-project-architecture/evidence-and-review:
+  en: 289bffedf4fa3eb3
+  zh: 1f4bb9363b68258c
+/supervisor-project-architecture/budgets-and-recovery:
+  en: 4baf630ad1d91eab
+  zh: 15fc448ab733bdcf
+/supervisor-project-architecture/integration-and-extensions:
+  en: 26fc6a5ba489ad6f
+  zh: 57eb312bf312e667
+/supervisor-project-architecture/dev-note:
+  en: 36e5a51a34ad8ebd
+  zh: fdde717ac5bacb1c

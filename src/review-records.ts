@@ -13,7 +13,7 @@ export class ReviewFailure extends Error {
 
 export async function recordReview(ctx: Context, agent: Agent, value: ReviewJob): Promise<void> {
   const job = reviewJobSchema.parse(value)
-  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
+  appendControlRecord(agent, { namespace: REVIEW_NAMESPACE, schemaVersion: job.qualityProtocol ? 9 : job.scope ? 8 : job.recovery ? 7 : job.owner === 'controller' ? 6 : job.checkProtocol ? 5 : job.verificationMode ? 4 : job.kind === 'planning' ? 3 : job.verification ? 2 : 1,
     kind: 'job', recordId: `${job.id}:${job.revision}`, payload: JSON.parse(JSON.stringify(job)) as JsonValue })
   if (!await ctx.sessions.flush(agent.session)) throw new Error('review record is not durable')
 }
@@ -23,7 +23,7 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
   if (event.type !== 'extension/record' || event.data.namespace !== REVIEW_NAMESPACE) return [...jobs]
   if (!REVIEW_RECORD_VERSIONS.includes(event.data.schemaVersion) || event.data.kind !== 'job') throw new Error('unsupported review record')
   const job = reviewJobSchema.parse(event.data.payload)
-  if (job.kind === 'planning' && ![3, 4, 5, 6, 7, 8].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
+  if (job.kind === 'planning' && ![3, 4, 5, 6, 7, 8, 9].includes(event.data.schemaVersion)) throw new Error('planning review requires record version 3')
   const previous = jobs.find(item => item.id === job.id)
   if (job.revision !== (previous?.revision ?? 0) + 1) throw new Error('review revision is not contiguous')
   if (previous && (job.taskId !== previous.taskId || job.taskRevision !== previous.taskRevision
@@ -34,10 +34,26 @@ export function foldReviewJobs(jobs: readonly ReviewJob[], event: SessionEvent):
     || previous.verification && JSON.stringify(job.verification?.snapshot) !== JSON.stringify(previous.verification.snapshot)
     || previous.verification?.phase === 'comparison' && job.verification?.phase !== 'comparison'
     || previous.verification?.phase === 'comparison' && JSON.stringify(job.verification?.observations) !== JSON.stringify(previous.verification.observations)
-    || job.owner !== previous.owner || job.checkProtocol !== previous.checkProtocol || JSON.stringify(job.scope) !== JSON.stringify(previous.scope)
+    || job.qualityProtocol !== previous.qualityProtocol || job.invalidDecisionLimit !== previous.invalidDecisionLimit || job.owner !== previous.owner || job.checkProtocol !== previous.checkProtocol || JSON.stringify(job.scope) !== JSON.stringify(previous.scope)
     || job.verificationMode !== previous.verificationMode || job.requirementsProtocol !== previous.requirementsProtocol || job.resultProtocol !== previous.resultProtocol
     || JSON.stringify(job.observationSettings) !== JSON.stringify(previous.observationSettings)
     || previous.model !== null && JSON.stringify(job.model) !== JSON.stringify(previous.model))) throw new Error('review identity changed')
+  if (previous?.budget) {
+    const before = previous.budget, after = job.budget
+    if (!after || ['modelMaxMs', 'extensionMs', 'reserveMs', 'checksMs', 'wallMs'].some(key => after[key as keyof typeof after] !== before[key as keyof typeof before])
+      || after.usedModelMs < before.usedModelMs || after.usedChecksMs < before.usedChecksMs || after.progress < before.progress || after.modelMs < before.modelMs || after.modelMs > after.modelMaxMs) throw new Error('review budget changed or refunded')
+  }
+  if (previous?.verification?.requests) {
+    const requests = job.verification?.requests ?? []
+    if (requests.length < previous.verification.requests.length || new Set(requests.map(item => item.id)).size !== requests.length) throw new Error('check request history changed')
+    for (const prior of previous.verification.requests) {
+      const next = requests.find(item => item.id === prior.id)
+      if (!next || ['snapshotId', 'sessionId', 'argv', 'cwd', 'commandMs', 'createdAt'].some(key => JSON.stringify(next[key as keyof typeof next]) !== JSON.stringify(prior[key as keyof typeof prior]))
+        || prior.status === 'settled' && JSON.stringify(next) !== JSON.stringify(prior)) throw new Error('check request identity or receipt changed')
+    }
+    const before = previous.verification.checks
+    if (JSON.stringify(job.verification?.checks.slice(0, before.length)) !== JSON.stringify(before)) throw new Error('check receipts changed')
+  }
   if (previous?.recovery) {
     const prior = previous.recovery, next = job.recovery
     if (!next || next.retryLimit !== prior.retryLimit || next.delayMs !== prior.delayMs || next.resume !== prior.resume

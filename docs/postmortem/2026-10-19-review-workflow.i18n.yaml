@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-19-review-workflow.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/postmortem/2026-10-19-review-workflow.md
+/review-workflow-implementation-and-validation-2026-10-19:
+  en: f9b9e37de3375daf
+  zh: 0783e87276014b3b
+/review-workflow-implementation-and-validation-2026-10-19/problem-and-causes:
+  en: f96eb4044e63fa96
+  zh: 21fb567110dc6406
+/review-workflow-implementation-and-validation-2026-10-19/implementation:
+  en: 9a61be304591b444
+  zh: 52d742405d128b49
+/review-workflow-implementation-and-validation-2026-10-19/validation-evidence:
+  en: ff92e3c42b034f1f
+  zh: 08036469da81e665
+/review-workflow-implementation-and-validation-2026-10-19/limits-and-follow-up:
+  en: 961dfc9112014a4e
+  zh: 69705870c2241669

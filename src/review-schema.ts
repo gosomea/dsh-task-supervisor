@@ -1,5 +1,6 @@
 /** Shared review wire schema; safe to load without Host runtime services. */
 import { z } from 'zod'
+import { reviewBudgetSchema } from './review-budget.ts'
 import { planningSummarySchema, reviewFaultSchema, taskSchema } from './state-schema.ts'
 import { checkFindingSchema } from './review-check-plan.ts'
 import { verificationSchema, findingSchema } from './verification-schema.ts'
@@ -7,7 +8,7 @@ import { reviewScopeSchema } from './review-scope-schema.ts'
 import { requirementResultSchema } from './review-results.ts'
 
 export const REVIEW_NAMESPACE = 'dsh-task-supervisor-review'
-export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8]
+export const REVIEW_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 export type PlanningSummary = z.infer<typeof planningSummarySchema>
 export const observationSettingsSchema = z.object({ mode: z.enum(['current', 'configured', 'required-only']),
   toolCalls: z.number().int().positive(), elapsedMs: z.number().int().positive(), consecutiveErrors: z.number().int().positive(),
@@ -21,6 +22,11 @@ export const reviewRecoverySchema = z.object({
   failures: z.array(z.object({ at: z.string(), fault: reviewFaultSchema }).strict()),
 }).strict()
 export const reviewJobSchema = z.object({
+  budget: reviewBudgetSchema.optional(),
+  qualityProtocol: z.literal(1).optional(),
+  invalidDecisionLimit: z.number().int().positive().optional(),
+  decisionErrors: z.array(z.object({ message: z.string(), at: z.string(), progress: z.number().int().nonnegative().optional() }).strict()).max(100).optional(),
+  partialRequirements: z.array(requirementResultSchema).max(100).optional(),
   id: z.string().uuid(), revision: z.number().int().positive(),
   mainSessionId: z.string().min(1), taskId: z.string().uuid(), taskRevision: z.number().int().positive(),
   planVersion: z.number().int().nonnegative(), stageId: z.string().min(1), nodeAttempt: z.number().int().positive().nullable(),

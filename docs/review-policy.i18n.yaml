@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for review-policy.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/review-policy.md
+/review-and-intervention-proposal:
+  en: 55c2c4a1ee7f3fbc
+  zh: 01f7d38b836a6a0b
+/review-and-intervention-proposal/summary:
+  en: 32c307e9fe3ca0dc
+  zh: c39ccf8141d819e9
+/review-and-intervention-proposal/when-review-runs:
+  en: cc43894c30a2cffc
+  zh: 37a632794152e0fd
+/review-and-intervention-proposal/what-each-review-decides:
+  en: 0efd0c58a3ddb28c
+  zh: b66b9a90726f5098
+/review-and-intervention-proposal/pause-and-timeout:
+  en: 34817fbdd2410963
+  zh: 02f1493097f8efd3
+/review-and-intervention-proposal/evidence-access:
+  en: c57eae072ac18e2e
+  zh: ac29bfa7a51470e1
+/review-and-intervention-proposal/final-acceptance:
+  en: 044e715d1625e289
+  zh: 82009cc80659dc90
+/review-and-intervention-proposal/decision-record:
+  en: a76500e420caed5a
+  zh: 020fcbb2abb07f83
+/review-and-intervention-proposal/implemented-generic-protocol:
+  en: cd92c7e2be94367c
+  zh: e17a875e2c834b18
+/review-and-intervention-proposal/dev-note:
+  en: 4a0dfe3370b1835c
+  zh: eee1abc526663402

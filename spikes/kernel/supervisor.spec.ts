@@ -2010,9 +2010,10 @@ it('keeps run_code available for planning investigation and emits the exact task
   const root = await mkdtemp(join(tmpdir(), 'dsh-planning-input-')); roots.push(root)
   const adapter = new ScriptedAdapter({ scripted: [toolResponse('run_code', { code: 'return await tools.inspect_workspace({})', description: '只读查看工作区' }, 'planning-inspect'), textResponse('已完成只读勘察，等待批准计划')] })
   const ctx = await host(root, adapter)
+  await ctx.plugin(LocalFileSystem, { cwd: root })
   let calls = 0
   ctx.tools.register(defineContentToolFixture({ name: 'inspect_workspace', description: 'read-only inspection fixture', parameters: {}, execute: async () => { calls++; return [{ type: 'text', text: 'workspace inspected without writes' }] } }))
-  const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-input'), agentOptions: { provider: 'scripted', model: 'scripted' } })
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('planning-input'), meta: { cwd: root }, agentOptions: { provider: 'scripted', model: 'scripted' } })
   class InspectionRuntime extends PtcRuntime {
     readonly language = 'typescript'; readonly isolation = 'controlled fixture'
     resolve(request: PtcRunRequest): PtcRunSpec { return { ...request, cwd: request.cwd ?? root, timeoutMs: request.timeoutMs ?? 1000 } }
@@ -2022,7 +2023,7 @@ it('keeps run_code available for planning investigation and emits the exact task
   agent.ctx.tools.presentAs('ptc')
   const input = '/task new 开发一个我的世界，先看看工作区'
   await ctx.commands.execute(agent, input, [], new AbortController().signal); await agent.whenIdle()
-  expect(calls).toBe(1); expect(taskOf(ctx, agent)?.phase).toBe('planning')
+  expect(calls, JSON.stringify(agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'tool/result' || event.type === 'turn/end'))).toBe(1); expect(taskOf(ctx, agent)?.phase).toBe('planning')
   const messages = agent.session.snapshotEvents().map(controlEvent).filter(event => event.type === 'user/message' && event.data.source.kind === 'user')
   expect(messages).toHaveLength(1)
   expect(JSON.stringify(messages[0])).toContain(input)
@@ -3226,4 +3227,89 @@ it('repairs a malformed user-source locator from native error feedback without a
   const failure = rows.find(event => event.type === 'tool/result' && event.data.message.isError)
   expect(JSON.stringify(failure)).toContain('INVALID_REQUIREMENT_SOURCE_REFERENCE')
   expect(rows.filter(event => event.type === 'tool/call' && event.data.name === 'task_review_decision')).toHaveLength(2)
+})
+
+it.each(['plan', 'stage', 'completion'] as const)('admits a user bypass of %s through native commands without forging acceptance', async kind => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-human-release-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId(`human-release-${kind}`), agentOptions: { provider: 'scripted', model: 'main' } })
+  const base = { ...newTask('Build import'), criteria: smallPlan.criteria, stages: smallPlan.stages,
+    phase: 'paused' as const, pauseReason: 'review-fault' as const, everApproved: kind !== 'plan',
+    nodeRuns: smallPlan.stages.map(stage => ({ id: stage.id, attempt: 1, status: 'reviewing' as const })) }
+  appendTask(ctx, agent, base)
+  const job = createReviewJob(agent, base, kind === 'stage' ? smallPlan.stages[0]!.id : kind, 'controlled failure', kind)
+  const fault = { jobId: job.id, stageId: job.stageId, cutoff: job.cutoff, reviewerSessionId: job.reviewerSessionId, code: 'timeout' as const, message: 'controlled timeout', retryable: false, attempt: 1, errorSeq: null, outcomeKnown: true }
+  await recordReview(ctx, agent, { ...job, status: 'failed', fault })
+  const action = kind === 'completion' ? 'finish-without-review' : 'skip-review'
+  await ctx.commands.execute(agent, `/task ${action} ${base.id} ${base.revision}`, [], new AbortController().signal)
+  await agent.whenIdle()
+  const task = taskOf(ctx, agent)!
+  expect(task.reviewOverrides).toHaveLength(1)
+  expect(task.lastReview?.verdict).not.toBe('pass')
+  expect(ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!.fault).toEqual(fault)
+  if (kind === 'completion') {
+    expect(task.phase).toBe('closed')
+    expect((await ctx.commands.execute(agent, '/task resume', [], new AbortController().signal))?.result).toMatchObject({ kind: 'error', text: expect.stringContaining('cannot resume') })
+  } else {
+    expect(task.phase).toBe('active')
+    if (kind === 'plan') expect(task.approvedPlanVersion).toBe(task.planVersion)
+    else expect(task.nodeRuns?.[0]?.status).toBe('user-released')
+  }
+  const replay = agent.session.snapshotEvents().map(controlEvent).reduce(taskProjection.apply, taskProjection.init())
+  expect(replay.current?.reviewOverrides).toEqual(task.reviewOverrides)
+  expect((await ctx.commands.execute(agent, `/task ${action} ${base.id} ${base.revision}`, [], new AbortController().signal))?.result).toMatchObject({ kind: 'error' })
+  expect(taskOf(ctx, agent)?.reviewOverrides).toHaveLength(1)
+})
+
+it('stops three identical invalid decisions without evidence progress and retains their errors', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-invalid-decisions-')); roots.push(root)
+  const adapter = new ScriptedAdapter({ reviewer: [1, 2, 3, 4].map(n => toolResponse('task_review_decision', { verdict: 'pass', finding: 'unsupported', evidence_seqs: [999] }, `invalid-${n}`)) })
+  const ctx = await host(root, adapter)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('invalid-review-main'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = { ...newTask('Build import'), ...smallPlan }; appendTask(ctx, agent, task)
+  await expect(reviewStage(ctx, agent, task, 'n', 'claimed done', new AbortController().signal, { provider: 'scripted', model: 'reviewer' }, 'stage', { qualityProtocol: 1, repairAttempts: 0 })).rejects.toMatchObject({ fault: { code: 'decision-invalid', retryable: false } })
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.decisionErrors).toHaveLength(3)
+  expect(new Set(job.decisionErrors!.map(error => error.message)).size).toBe(1)
+  expect(job.decision).toBeNull()
+})
+
+it('admits a three-hour independent wall budget without widening an explicit legacy log deadline', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-review-budget-config-')); roots.push(root)
+  const ctx = await host(root, new ScriptedAdapter())
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('budget-config'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const task = { ...newTask('Build import'), ...smallPlan }
+  const verification = verificationPolicy({ storageRoot: join(root, 'snapshots'), deadlineMs: 10800000 })
+  const job = createReviewJob(agent, task, 'n', 'proof', 'stage', { qualityProtocol: 1, verification })
+  expect(Date.parse(job.deadlineAt!) - Date.parse(job.startedAt)).toBeGreaterThanOrEqual(10799900)
+  const legacy = createReviewJob(agent, task, 'plan', 'draft', 'plan', { deadlineMs: 120000, verification })
+  expect(Date.parse(legacy.deadlineAt!) - Date.parse(legacy.startedAt)).toBeLessThanOrEqual(120000)
+})
+
+
+it('holds user release until a running reviewer settles and rejects its late pass', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-release-running-')); roots.push(root)
+  const adapter = new PausingAdapter({ main: [textResponse('ready')], reviewer: coverageChecks() })
+  const ctx = await host(root, adapter, true, { provider: 'scripted', model: 'reviewer' }, false, 3, true)
+  const { agent } = await ctx.agents.create({ sessionId: SessionId('release-running'), agentOptions: { provider: 'scripted', model: 'main' } })
+  const signal = new AbortController().signal
+  await ctx.commands.execute(agent, '/task new Build import', [], signal); await agent.whenIdle()
+  adapter.pauseNext = true; adapter.pauseModel = 'reviewer'
+  let release: Promise<unknown> | undefined
+  try {
+    await ctx.tools.execute({ agent, signal, callId: ToolCallId('running-plan'), name: 'task_submit_plan', arguments: smallPlan })
+    await vi.waitFor(() => expect(adapter.pauseNext).toBe(false))
+    await adapter.entered.promise
+    const before = taskOf(ctx, agent)!
+    release = ctx.commands.execute(agent, `/task skip-review ${before.id} ${before.revision}`, [], signal)
+    await vi.waitFor(() => expect(taskOf(ctx, agent)?.reviewOverrides).toHaveLength(1))
+    expect(taskOf(ctx, agent)?.phase).toBe('paused')
+  } finally { adapter.release.resolve(); await release; await agent.whenIdle() }
+  const task = taskOf(ctx, agent)!
+  expect(task.phase, JSON.stringify({ task, result: await release })).toBe('active')
+  expect(task.approvedPlanVersion).toBe(task.planVersion)
+  expect(task.lastReview?.verdict).not.toBe('pass')
+  expect(task.reviewOverrides).toHaveLength(1)
+  const job = ctx.sessionProjections.stateOf(agent.session, 'taskSupervisor')!.reviewJobs[0]!
+  expect(job.status).not.toBe('applied')
 })

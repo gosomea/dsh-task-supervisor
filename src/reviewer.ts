@@ -1,3 +1,4 @@
+import { newReviewBudget, chargeReviewBudget, extendReviewBudget, type ReviewBudgetConfig } from './review-budget.ts'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 /** Fresh, read-only reviewer over a fixed main Session evidence cutoff. */
 import { controlEvent } from './session-records.ts'
@@ -24,12 +25,13 @@ import { languagePolicy } from './task-context.ts'
 import { recordReview, ReviewFailure, type ReviewJob, type PlanningSummary } from './review-records.ts'
 import { planningSummarySchema } from './state-schema.ts'
 import { NAMESPACE, taskSchema, type TaskSnapshot } from './state.ts'
+import { completeRequirementFindings, completeCriterionFindings } from './review-partial.ts'
 import { prepareVerification, installVerification, validateFindings, findingParameters, type VerificationPolicy } from './verification.ts'
 import { snapshotFresh } from './artifact-snapshot.ts'
 import { checkResultsAsEvidence, checkFindingSchema, checkFindingParameters } from './review-check-plan.ts'
 import { reviewCapabilities } from './review-capabilities.ts'
 import { findingSchema, type CriterionFinding } from './verification-schema.ts'
-import { independentRequirementResults, logRequirementResults, logRequirementsParameters, type RequirementResult } from './review-results.ts'
+import { applicableCriteria, independentRequirementResults, logRequirementResults, logRequirementsParameters, type RequirementResult } from './review-results.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -43,7 +45,8 @@ export interface ReviewerModel {
   reasoningEffort?: string
 }
 
-export interface ReviewPolicy { scopeProtocol?: 1; resultProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
+export interface ReviewPolicy { budget?: Required<ReviewBudgetConfig>
+  independentBudget?: Required<ReviewBudgetConfig>; qualityProtocol?: 1; invalidDecisionLimit?: number; scopeProtocol?: 1; resultProtocol?: 1; readCorrectionAttempts?: number; faultRecovery?: FaultRecoveryPolicy; repairAttempts?: number; deadlineMs?: number; observationSettings?: NonNullable<ReviewJob['observationSettings']>; verification?: VerificationPolicy; verificationMode?: 'log' | 'independent'; requirementsProtocol?: 1; checkProtocol?: 1 }
 export function reviewPolicy(policy: ReviewPolicy = {}) {
   const repairAttempts = policy.repairAttempts ?? 1
   const deadlineMs = policy.deadlineMs ?? 600000
@@ -51,7 +54,9 @@ export function reviewPolicy(policy: ReviewPolicy = {}) {
   if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 3600000) throw new TypeError('review deadlineMs must be 1–3600000')
   const readCorrectionAttempts = policy.readCorrectionAttempts ?? 1
   if (!Number.isSafeInteger(readCorrectionAttempts) || readCorrectionAttempts < 0 || readCorrectionAttempts > 1) throw new TypeError('reviewReadCorrectionAttempts must be 0–1')
-  return { repairAttempts, deadlineMs, readCorrectionAttempts }
+  const invalidDecisionLimit = policy.invalidDecisionLimit ?? 3
+  if (!Number.isSafeInteger(invalidDecisionLimit) || invalidDecisionLimit < 1 || invalidDecisionLimit > 10) throw new TypeError('reviewInvalidDecisionLimit must be 1–10')
+  return { repairAttempts, deadlineMs, readCorrectionAttempts, invalidDecisionLimit }
 }
 
 export interface ReviewDecision {
@@ -163,14 +168,16 @@ function priorFailedReviews(main: Agent, task: TaskSnapshot): JsonValue[] {
 export function createReviewJob(main: Agent, task: TaskSnapshot, stageId: string, evidence: string,
   kind: ReviewJob['kind'], policy: ReviewPolicy = {}, status: 'queued' | 'started' = 'started', id?: string): ReviewJob {
   const verification = (kind === 'stage' || kind === 'completion') ? policy.verification : undefined
-  const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
+  const limits = { ...reviewPolicy(policy), ...verification ? { deadlineMs: verification.deadlineMs } : {} }
+  const budget = verification ? policy.independentBudget ?? policy.budget : policy.budget
   const cutoff = task.pendingReview?.cutoff ?? main.session.seq - 1
   const scope = policy.scopeProtocol ? buildReviewScope(main.session.snapshotEvents(), task, stageId, cutoff, main.id) : undefined
-  return { id: id ?? randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
+  return { ...policy.qualityProtocol ? { qualityProtocol: policy.qualityProtocol, invalidDecisionLimit: limits.invalidDecisionLimit, decisionErrors: [], partialRequirements: [] } : {}, id: id ?? randomUUID(), revision: 1, mainSessionId: main.id, taskId: task.id,
     taskRevision: task.revision, planVersion: task.planVersion, stageId,
     nodeAttempt: kind === 'planning' ? null : runsOf(task).find(run => run.id === stageId)?.attempt ?? null,
     kind, cutoff, reviewerSessionId: `task-review-${randomUUID()}`,
-    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + limits.deadlineMs).toISOString(),
+    model: null, runtimeId: randomUUID(), status, attempt: 1, repairLimit: limits.repairAttempts, deadlineAt: new Date(Date.now() + (budget?.wallMs ?? limits.deadlineMs)).toISOString(),
+    ...budget ? { budget: newReviewBudget(budget, Date.now()) } : {},
     startedAt: new Date().toISOString(), attemptStartedAt: new Date().toISOString(), finishedAt: null, trigger: kind === 'progress' ? evidence : kind,
     ...policy.observationSettings ? { observationSettings: policy.observationSettings } : {},
     input: task, evidence, fault: null, decision: null,
@@ -249,10 +256,11 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
   evidence: string, signal: AbortSignal, fixedModel?: ReviewerModel,
   kind: ReviewJob['kind'] = 'stage', policy: ReviewPolicy = {}, previous?: ReviewJob, recovery = false): Promise<ReviewDecision> {
   const verification = (kind === 'stage' || kind === 'completion') ? policy.verification : undefined
-  const limits = reviewPolicy({ ...policy, ...verification ? { deadlineMs: verification.deadlineMs } : {} })
+  const limits = { ...reviewPolicy(policy), ...verification ? { deadlineMs: verification.deadlineMs } : {} }
   const queued = previous?.status === 'queued' && !recovery
   const job: ReviewJob = previous ? { ...previous, revision: previous.revision + 1,
     ...previous.verification ? { verification: structuredClone(previous.verification) } : {},
+    ...previous.budget ? { budget: structuredClone(previous.budget) } : {},
     status: 'started', fault: null, decision: null, finishedAt: null,
     ...previous.recovery ? { recovery: { ...previous.recovery, manualPending: false, nextRetryAt: null } } : {},
     trigger: queued ? previous.trigger : previous.recovery?.nextRetryAt ? 'fault-retry' : 'manual-retry',
@@ -261,6 +269,7 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
     attemptStartedAt: new Date().toISOString(),
     deadlineAt: previous.deadlineAt ?? new Date(Date.now() + limits.deadlineMs).toISOString() }
     : createReviewJob(main, task, stageId, evidence, kind, policy)
+  if (job.budget) chargeReviewBudget(job.budget, 'preparing', Date.now())
   const deadline = new AbortController()
   const timer = setTimeout(() => deadline.abort(new DOMException('Review deadline exceeded', 'TimeoutError')),
     Math.max(0, Date.parse(job.deadlineAt!) - Date.now()))
@@ -289,9 +298,16 @@ async function reviewAttempt(ctx: Context, main: Agent, task: TaskSnapshot, stag
       job.recovery.failures.push({ at: new Date().toISOString(), fault })
       if (fault.code === 'cancelled') job.recovery.manualOnly = true
     }
-    await recordReview(ctx, main, { ...job, revision: ++job.revision, status: 'failed', fault, finishedAt: new Date().toISOString() })
+    job.status = 'failed'; job.fault = fault; job.finishedAt = new Date().toISOString()
+    await recordReview(ctx, main, { ...job, revision: ++job.revision })
     throw new ReviewFailure(fault, { cause: error })
-  } finally { clearTimeout(timer) }
+  } finally {
+    clearTimeout(timer)
+    if (job.budget) {
+      chargeReviewBudget(job.budget, 'settled', Date.now())
+      await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    }
+  }
 }
 
 /** Run one reviewer, with no workspace mutation capability and a fixed log prefix. */
@@ -312,7 +328,7 @@ async function runReviewStage(
   const cutoff = job.cutoff
   const failedReviews = priorFailedReviews(main, task)
   const contextParts = {
-    objective: task.objective, criteria: JSON.stringify(task.criteria), stages: JSON.stringify({ stages: task.stages.map((stage, index) => ({ ...stage, dependsOn: dependencies(task.stages, index) })), ...job.verification ? {} : { nodeRuns: runsOf(task) } }),
+    objective: task.objective, criteria: JSON.stringify(job.qualityProtocol ? applicableCriteria(job) : task.criteria), stages: JSON.stringify({ stages: task.stages.map((stage, index) => ({ ...stage, dependsOn: dependencies(task.stages, index) })), ...job.verification ? {} : { nodeRuns: runsOf(task) } }),
     report: reportedEvidence, failedReviews: JSON.stringify(failedReviews),
   }
   const boundModel: ReviewerModel | undefined = job.model === null ? fixedModel : {
@@ -321,6 +337,31 @@ async function runReviewStage(
   }
   const { options, model } = reviewerOptions(ctx, main, boundModel)
   const reviewerSessionId = SessionId(job.reviewerSessionId!)
+  let reserveRequested = false, reserveDelivered = false
+  let budgetTimer: ReturnType<typeof setTimeout> | undefined
+  let budgetFailure: Error | undefined
+  let checkWork: { pending(): boolean; wait(): Promise<void>; dispose(): Promise<void> } | undefined
+  let cancelReviewer: (() => void) | undefined
+  const switchBudget = (mode: 'model' | 'checking') => {
+    clearTimeout(budgetTimer)
+    if (!job.budget) return
+    chargeReviewBudget(job.budget, mode, Date.now())
+    if (mode === 'checking') return
+    const remaining = job.budget.modelMs - job.budget.usedModelMs
+    const reserve = !reserveDelivered && job.budget.reserveMs > 0 ? job.budget.reserveMs : 0
+    budgetTimer = setTimeout(() => {
+      if (!job.budget) return
+      chargeReviewBudget(job.budget, 'model', Date.now())
+      if (!reserveDelivered && extendReviewBudget(job.budget)) {
+        // Append synchronously before another callback can consume the extension.
+        void recordReview(ctx, main, { ...job, revision: ++job.revision }).catch(error => { budgetFailure = error; cancelReviewer?.() })
+        switchBudget('model'); return
+      }
+      if (reserve && !reserveDelivered) { reserveRequested = true; cancelReviewer?.() }
+      else { budgetFailure = new Error('MODEL_REVIEW_BUDGET_EXHAUSTED: partial findings are retained'); cancelReviewer?.() }
+    }, Math.max(1, remaining - reserve))
+    budgetTimer.unref()
+  }
   let submitted: Pick<ReviewDecision, 'verdict' | 'finding' | 'evidenceSeqs' | 'criteria' | 'planning' | 'requiredCapabilities' | 'programs' | 'checks' | 'requirements'> | undefined
   const observedSeqs = new Set<number>()
   const locatedSeqs = new Set<number>()
@@ -347,7 +388,7 @@ async function runReviewStage(
       })
       agentCtx.on('agent/error', ({ turn, error }) => { turnFailure = { turn, error } })
       agentCtx.tools.restrict({ allow: [] })
-      if (verification) installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal)
+      if (verification) checkWork = installVerification(agentCtx, ctx, main, job, reviewerSessionId, verification, signal, switchBudget)
       agentCtx.tools.register(defineTool({ name: 'read_task_input', description: 'Read original direct user messages only, bounded by this job cutoff. Available before independent discovery; excludes injected prompts, assistant reports and execution logs.',
         parameters: { from_seq: { type: 'integer' }, limit: { type: 'integer' }, seq: { type: 'integer' }, offset: { type: 'integer' }, chars: { type: 'integer' } },
         output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
@@ -368,9 +409,9 @@ async function runReviewStage(
         },
       }))
       installImageEvidence(agentCtx, ctx, main, cutoff, imageAfterSeq, observedSeqs, imageSeqs, model, assertComparison)
-      agentCtx.tools.guard(exec => ['read_task_evidence', 'read_task_evidence_batch', 'read_task_evidence_index', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_input', 'task_review_decision',
+      agentCtx.tools.guard(exec => reserveDelivered && !['task_review_decision', 'record_review_requirements', 'read_recorded_review_requirements', 'task_review_observations'].includes(exec.name) ? 'Decision reserve: use already collected evidence; do not start new work.' : ['read_task_evidence', 'read_task_evidence_batch', 'read_task_evidence_index', 'read_task_call', 'read_task_text', 'read_task_context', 'read_task_image', 'read_task_input', 'task_review_decision', 'record_review_requirements', 'read_recorded_review_requirements',
         ...reviewKind === 'planning' ? [] : ['read_task_worker'],
-        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'task_review_check_plan'] : []].includes(exec.name)
+        ...verification ? ['inspect_task_artifact', 'write_review_probe', 'run_review_check', 'read_review_evidence', 'task_review_observations', 'record_review_observations', 'task_review_check_plan'] : []].includes(exec.name)
         ? undefined : 'reviewers may only inspect evidence and submit a decision')
       agentCtx.tools.register(defineTool({ name: 'read_task_evidence_index', description: 'Locate relevant bound main Session events by type, tool and errors, with paired call/result seqs and redacted truncation-aware summaries. Available after independent findings. Index summaries are NOT citable evidence: expand originals with read_task_call/read_task_text before citing.',
         parameters: { from_seq: { type: 'integer', description: 'First Session seq, nonnegative; default 0.' },
@@ -513,10 +554,42 @@ async function runReviewStage(
           return { field: args.field, reviewKind, cutoff, revision: task.revision, ...textPage(contextParts[args.field], args.offset, args.limit) }
         },
       }))
+      if (job.qualityProtocol && !job.verification && ['plan', 'stage', 'completion'].includes(reviewKind)) {
+        agentCtx.tools.register(defineTool({ name: 'record_review_requirements',
+          description: 'Persist inspected requirement findings incrementally. Use exact applicable criterion IDs. Controller assigns stable result IDs. This records evidence, not acceptance; final pass still requires all applicable requirements. Resubmitting a criterion replaces its current finding within this job while prior events remain in history.',
+          parameters: { requirements: { ...logRequirementsParameters, required: true } },
+          output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+          async execute(args, exec) {
+            signal.throwIfAborted()
+            if (!exec.agent) throw new Error('Native reviewer required')
+            const reads = restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent))
+            const values = logRequirementResults(job, args.requirements.map(item => ({ ...item, criterionId: item.criterionId ?? null })), reads.ranges, false)
+            for (const value of values) {
+              const key = value.criterionId ?? `${value.source.kind}:${value.source.reference}:${value.requirement}`
+              const previous = job.partialRequirements?.find(item => (item.criterionId ?? `${item.source.kind}:${item.source.reference}:${item.requirement}`) === key)
+              if (value.source.kind === 'user-message') {
+                const seq = Number(value.source.reference.replace(/^seq:/, ''))
+                const source = main.session.snapshotEvents().map(controlEvent).find(event => event.seq === seq)
+                if (source?.type !== 'user/message' || source.data.source.kind !== 'user') throw new Error('requirement source is not a direct user message')
+              }
+              const record = { ...value, id: previous?.id ?? randomUUID() }
+              if (job.budget && value.status !== 'unverified' && !previous) job.budget.progress++
+              job.partialRequirements = [...(job.partialRequirements ?? []).filter(item => item.id !== previous?.id), record]
+            }
+            await recordReview(ctx, main, { ...job, revision: ++job.revision })
+            return { recorded: true, results: job.partialRequirements ?? [], applicable: applicableCriteria(job).map(({ id, text }) => ({ id, text })) }
+          },
+        }))
+        agentCtx.tools.register(defineTool({ name: 'read_recorded_review_requirements', description: 'Read this job’s durable findings after correction or recovery; final decisions can reference result_ids without repeating report objects.',
+          parameters: {}, output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+          async execute() { return { results: job.partialRequirements ?? [], applicable: applicableCriteria(job).map(({ id, text }) => ({ id, text })) } },
+        }))
+      }
       agentCtx.tools.register(defineTool({
         name: 'task_review_decision',
         description: 'Submit one evidence-linked review. A planning pass only continues investigation toward a plan; a progress pass only continues the current stage. Neither approves execution nor completes a node.',
         parameters: {
+          result_ids: { type: 'array', items: { type: 'string' }, description: 'Current durable requirement result IDs from record_review_requirements; replaces inline requirements for log review.' },
           verdict: { type: 'string', required: true, enum: ['pass', 'revise', 'needs-user'] },
           finding: { type: 'string', required: true, description: 'Start with a short, human-readable conclusion title on its own line (about 12 Chinese characters or 6 English words). Then write the complete report in the task language: conclusion and scope, actual checks and evidence, problems, unverified matters and limitations, and necessary revisions. This report is displayed verbatim. Do not promise automatic continuation; the controller decides the next action. Keep protocol IDs and log details out of the title.' },
           evidence_seqs: { type: 'array', required: true, items: { type: 'integer' } },
@@ -524,7 +597,7 @@ async function runReviewStage(
           programs: { type: 'array', items: { type: 'string' }, description: 'Executable names needed for necessary independent run checks, e.g. node. Do not invent tools for read-only requirements.' },
           checks: { ...checkFindingParameters, description: 'For new independent protocol, final results for every planned check, including supplementary comparison checks. Cite only actually inspected evidence and describe coverage/limitations.' },
           ...job.resultProtocol && !job.verification && ['plan', 'stage', 'completion'].includes(reviewKind) ? {
-            requirements: { ...logRequirementsParameters, required: true as const, description: 'Requirement-level LOG results. Include every applicable criterion and omitted original requirement. Identify its original source, actual evidence, coverage and limitations. This is log inspection, not independent execution. Use criterionId only for applicable criteria; omit for omitted original requirements. Failed/unverified explicit requirements cannot pass; derived preferences are nonblocking.' },
+            requirements: { ...logRequirementsParameters, ...!job.qualityProtocol ? { required: true as const } : {}, description: 'Requirement-level LOG results. Include every applicable criterion and omitted original requirement. Identify its original source, actual evidence, coverage and limitations. This is log inspection, not independent execution. Use criterionId only for applicable criteria; omit for omitted original requirements. Failed/unverified explicit requirements cannot pass; derived preferences are nonblocking.' },
           } : {},
           criteria: { ...findingParameters, description: 'Independent reviews require one final finding per applicable criterion, with inspected snapshot evidence. Omit only for legacy log-based reviews.' },
           ...reviewKind === 'planning' ? { planning: { type: 'object', required: true as const, additionalProperties: false,
@@ -541,8 +614,9 @@ async function runReviewStage(
           render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
         },
         async execute(args, exec) {
+          try {
           if (submitted !== undefined) throw new Error('review decision already submitted')
-          if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
+          if (job.fault && (job.status !== 'repairing' || !job.fault.retryable)) throw new ReviewFailure(job.fault)
           // Validate against delivered native results, including truncation, rather than
           // the reader's in-memory success before Host output materialization.
           const actual = exec.agent ? restoreReviewReads(exec.agent.session.snapshotEvents().map(controlEvent), job, main.session.snapshotEvents().map(controlEvent)) : undefined
@@ -551,9 +625,12 @@ async function runReviewStage(
             for (const seq of actual.observed) observedSeqs.add(seq)
             if (job.verification) { job.verification.readFiles = actual.files; job.verification.readChecks = actual.checks }
           }
+          let decisionCriteria: ReviewDecision['criteria']
           if (job.verification) {
             assertComparison()
-            const findings = (args.criteria ?? []).map(item => findingSchema.parse(item))
+            let findings = (args.criteria ?? (job.qualityProtocol ? job.verification.observations : [])).map(item => findingSchema.parse(item))
+            if (job.qualityProtocol && args.verdict !== 'pass') findings = completeCriterionFindings(job.verification, applicableCriteria(job).map(c => c.id), findings)
+            decisionCriteria = findings
             const applicable = reviewKind === 'completion' ? task.criteria : task.criteria.filter(item => stage?.criterionIds.includes(item.id))
             let state = job.verification
             if (job.checkProtocol) {
@@ -593,7 +670,15 @@ async function runReviewStage(
               if (!requirements.some(item => item.basis === 'explicit' && item.source.kind === 'objective')) throw new Error('independent checks must cover the original objective, including omitted requirements')
             } else {
               if (!actual) throw new Error('actual native read results are unavailable')
-              requirements = logRequirementResults(job, args.requirements?.map(item => ({ ...item, criterionId: item.criterionId ?? null })), actual.ranges, args.verdict === 'pass')
+              const saved = args.result_ids?.map(id => {
+                const item = job.partialRequirements?.find(value => value.id === id)
+                if (!item) throw new Error(`Unknown result ID ${id}; read_recorded_review_requirements`)
+                const { method: _method, evidence, ...raw } = item
+                return { ...raw, evidenceSeqs: evidence.flatMap(ref => ref.kind === 'session' ? [ref.seq] : []) }
+              })
+              if (saved && args.requirements) throw new Error('Use result_ids or requirements, not both')
+              requirements = logRequirementResults(job, saved ?? args.requirements?.map(item => ({ ...item, criterionId: item.criterionId ?? null })), actual.ranges, args.verdict === 'pass')
+              if (job.qualityProtocol && args.verdict !== 'pass') requirements = completeRequirementFindings(job, requirements)
               for (const item of requirements) if (item.source.kind === 'user-message') {
                 const seq = Number(item.source.reference.replace(/^seq:/, ''))
                 const source = main.session.snapshotEvents().map(controlEvent).find(event => event.seq === seq)
@@ -605,9 +690,22 @@ async function runReviewStage(
             ...requirements ? { requirements } : {},
             ...planning ? { planning } : {},
             ...reviewKind === 'plan' ? { requiredCapabilities: args.required_capabilities, programs: args.programs } : {},
-            ...job.verification ? { criteria: args.criteria!.map(item => findingSchema.parse(item)), ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
+            ...job.verification ? { criteria: decisionCriteria!, ...job.checkProtocol ? { checks: (args.checks ?? job.verification.checkFindings ?? []).map(item => checkFindingSchema.parse(item)) } : {} } : {} }
           exec.concludeTurn()
           return { recorded: true, cutoff }
+          } catch (error) {
+            if (job.qualityProtocol && !signal.aborted && (!job.fault || job.status === 'repairing' && job.fault.retryable)) {
+              const message = error instanceof Error ? error.message : String(error)
+              job.decisionErrors = [...job.decisionErrors ?? [], { message, at: new Date().toISOString(), progress: job.budget?.progress ?? job.partialRequirements?.length ?? 0 }].slice(-100)
+              const repeated = job.decisionErrors.slice(-(job.invalidDecisionLimit ?? 3))
+              if (repeated.length >= (job.invalidDecisionLimit ?? 3) && repeated.every(item => item.message === message && item.progress === repeated[0]?.progress)) {
+                job.fault = { jobId: job.id, stageId, cutoff, reviewerSessionId, code: 'decision-invalid', message: `Repeated invalid decision: ${message}`, retryable: false, attempt: job.attempt, errorSeq: null, outcomeKnown: true }
+                exec.concludeTurn()
+              }
+              await recordReview(ctx, main, { ...job, revision: ++job.revision })
+            }
+            throw error
+          }
         },
       }))
     },
@@ -627,15 +725,18 @@ async function runReviewStage(
     job.verification.readChecks = ledger.checks
     job.verification.readInputs = (job.verification.readInputs ?? []).filter(seq => ledger.observed.has(seq))
   }
+  cancelReviewer = () => handle.agent.cancel({ kind: 'hook', reason: 'Supervisor decision reserve' })
   const abort = () => handle.agent.cancel({ kind: 'parent' })
   signal.addEventListener('abort', abort, { once: true })
   try {
     signal.throwIfAborted()
     if (exists && job.verification) await recordReview(ctx, main, { ...job, revision: ++job.revision })
+    switchBudget('model')
     handle.agent.followup(createUserMessage({
       source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
       content: [{ type: 'text', text: [
         languagePolicy(task),
+        ...job.qualityProtocol ? [`Applicable criterion IDs for THIS review: ${JSON.stringify(applicableCriteria(job).map(c => c.id))}. Never submit other node or final-only criteria. ${job.verification ? 'Save incremental independent findings with record_review_observations; finalize independent coverage before comparison.' : 'Persist findings with record_review_requirements as you inspect them and use result_ids in the final decision.'} A pass covers all applicable requirements; revise/needs-user may report confirmed blockers with remaining requirements explicitly uninspected. Repeated identical invalid submissions end this review; correct the specific fields in the returned error.`] : [],
         ...job.scope ? [`Bound review scope: ${JSON.stringify(job.scope)}. Default indexes prefer this task; current-attempt and changes narrow location only. Earlier-context and all remain available. Earlier messages marked needs-check are not inherited requirements: establish applicability from their originals. Current task objective remains authoritative. Read sources with read_task_input; index summaries cannot be cited.`] : [],
         ...job.resultProtocol ? [`Review responsibility (${reviewKind}): ${reviewKind === 'planning' ? 'Objective convergence, reduced unknowns and the next planning output.' : reviewKind === 'plan' ? 'Original requirement coverage, effective dependency order and necessary verification capabilities.' : reviewKind === 'progress' ? 'Work drift, concrete blockers, new defects and necessary plan changes; do not claim node acceptance.' : reviewKind === 'stage' ? 'This node attempt and its relevant upstream/downstream relationships.' : 'The current combined deliverable, all original requirements and relationships between parts; prior node passes alone do not establish completion.'} Plan/node/final decisions retain requirement-level results. In log mode submit requirements; in independent mode existing checks and criteria are normalized automatically. Describe actual coverage and limitations, never upgrade a file's existence, process exit or test count into satisfaction. No unrelated preference may block explicit requirements.`] : [],
         ...reviewKind === 'planning' ? [
@@ -672,7 +773,7 @@ async function runReviewStage(
         ],
         `Main Session: ${main.id}; cutoff: ${cutoff}; task revision: ${task.revision}.`,
         `Objective: ${safeText(task.objective, 3000)}`,
-        ...reviewKind === 'planning' ? [] : [`Criteria: ${safeText(JSON.stringify(task.criteria), 10000)}`,
+        ...reviewKind === 'planning' ? [] : [`Criteria: ${safeText(JSON.stringify(job.qualityProtocol ? applicableCriteria(job) : task.criteria), 10000)}`,
           `Applicable criterion IDs: ${JSON.stringify(reviewKind === 'plan' || reviewKind === 'completion' ? task.criteria.map(item => item.id) : stage?.criterionIds ?? [])}`,
           `Controller readOnlyTurnsBeforeWrite: ${task.readOnlyTurnsBeforeWrite ?? 0}.`],
         `Earlier failed reviews in this task: ${job.verification ? 'locked until independent observations' : safeText(JSON.stringify(failedReviews), 10000)}.`,
@@ -685,7 +786,24 @@ async function runReviewStage(
     const firstAttempt = job.attempt
     while (true) {
       await handle.agent.whenIdle()
-      if (job.fault?.code === 'check-infrastructure') throw new ReviewFailure(job.fault)
+      if (budgetFailure) throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code: 'timeout', message: budgetFailure.message, retryable: false, attempt: job.attempt, errorSeq: null, outcomeKnown: true })
+      if (reserveRequested && submitted === undefined) {
+        reserveRequested = false; reserveDelivered = true
+        switchBudget('model')
+        handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision }, content: [{ type: 'text', text: 'Decision reserve: finish now using saved findings. Do not start new reads or tests. Report remaining checks as unverified and submit revise or needs-user if acceptance is incomplete.' }] }))
+        continue
+      }
+      if (checkWork?.pending()) {
+        switchBudget('checking')
+        try { await checkWork.wait() } catch (error) {
+          throw new ReviewFailure({ jobId: job.id, stageId, cutoff, reviewerSessionId, code: 'check-infrastructure', message: String(error), retryable: true, attempt: job.attempt, errorSeq: null, outcomeKnown: false }, { cause: error })
+        }
+        signal.throwIfAborted()
+        switchBudget('model')
+        handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision }, content: [{ type: 'text', text: `Check execution settled. Read the original result streams before judging: ${JSON.stringify(job.verification?.checks.map(c => ({ id: c.id, exitCode: c.exitCode, timedOut: c.timedOut, cancelled: c.cancelled })))}. Do not rerun completed or uncertain checks.` }] }))
+        continue
+      }
+      if (job.fault && (job.status !== 'repairing' || !job.fault.retryable)) throw new ReviewFailure(job.fault)
       if (submitted !== undefined) break
       signal.throwIfAborted()
       const events = handle.agent.session.snapshotEvents().map(controlEvent)
@@ -723,6 +841,7 @@ async function runReviewStage(
       handle.agent.followup(createUserMessage({ source: { kind: 'task-supervisor-review', taskId: task.id, revision: task.revision },
         content: [{ type: 'text', text: `${languagePolicy(task)}\n${truncated ? `The actual latest native request reached its output limit (max-tokens, turn ${truncated.turn}, end seq ${truncated.endSeq}). Preserve evidence already read in this Session and any recorded independent observations; do not repeat long reasoning or replay uncertain tool effects.` : 'The previous turn ended without recording a valid task_review_decision.'} This is repair ${job.attempt - firstAttempt}/${job.repairLimit} for the SAME review, Session, task revision ${task.revision} and cutoff ${cutoff}. Submit the decision using the tool, not prose. Required fields: verdict (pass, revise, needs-user), finding, evidence_seqs (nonempty, all read through the bound tools). ${reviewKind === 'planning' ? 'Planning reviews also require planning={facts,unknowns,nextAction,progress}, all facts supported by the cited original Session evidence. A pass only continues planning, never approves execution. Do not infer stagnation from long reasoning alone.' : job.verification ? 'Independent reviews also require criteria for every applicable item; preserve the same snapshot and phase, and record task_review_observations before comparison.' : 'Use the existing objective, acceptance criteria and original Session log evidence to submit the decision.'} Evidence gaps are revise or needs-user, not a reason to invent a pass. Inspect the preceding tool validation error if any. Read evidence again only if required; do not inspect anything beyond cutoff ${cutoff}. The original review deadline ${job.deadlineAt} is unchanged.` }] }))
     }
+    if (job.fault && (job.status !== 'repairing' || !job.fault.retryable)) throw new ReviewFailure(job.fault)
     if (submitted === undefined) {
       const events = handle.agent.session.snapshotEvents().map(controlEvent)
       const last = events.findLast(event => event.type === 'turn/end')
@@ -756,7 +875,10 @@ async function runReviewStage(
     await recordReview(ctx, main, { ...job, revision: ++job.revision })
     return { jobId: job.id, ...submitted, imageSeqs: [...imageSeqs], cutoff, model, reviewerSessionId }
   } finally {
+    clearTimeout(budgetTimer)
     signal.removeEventListener('abort', abort)
-    try { await handle.dispose() } catch (error) { if (job.status !== 'submitted') throw error }
+    try { await checkWork?.dispose() } finally {
+      try { await handle.dispose() } catch (error) { if (job.status !== 'submitted') throw error }
+    }
   }
 }

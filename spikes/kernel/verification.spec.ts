@@ -6,6 +6,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { CheckInputError } from '../../src/check-errors.ts'
 import * as ReviewCheck from '../../src/review-check.ts'
 import * as Records from '../../src/review-records.ts'
+import { newReviewBudget, resolveReviewBudget } from '../../src/review-budget.ts'
 import { newTask } from '../../src/state.ts'
 import { complete, validateFindings, verificationPolicy, installVerification } from '../../src/verification.ts'
 import type { VerificationState, CriterionFinding } from '../../src/verification-schema.ts'
@@ -62,7 +63,7 @@ it('bounds trusted deployment configuration before model tools become available'
 afterEach(() => vi.restoreAllMocks())
 
 /** Execute the registered tool body while mocking only native execution and the durable record boundary. */
-function verificationTool() {
+function verificationTool(quality = false) {
   type Tool = { name: string; execute(args: object, exec: { concludeTurn(): void }): Promise<unknown> }
   const tools = new Map<string, Tool>()
   const ctx = { tools: { register: (tool: Tool) => { tools.set(tool.name, tool) } } } as unknown as Context
@@ -81,9 +82,10 @@ function verificationTool() {
     persisted.push(structuredClone(value))
   })
   const container = { context: 'test', image: 'sha256:' + 'a'.repeat(64), cpus: 1, memoryMiB: 512, pids: 64 }
-  installVerification(ctx, ctx, main, job, SessionId('review'), verificationPolicy({ storageRoot: '/private/evidence', container }), controller.signal)
+  if (quality) { job.qualityProtocol = 1; job.budget = newReviewBudget(resolveReviewBudget(), Date.now()) }
+  const work = installVerification(ctx, ctx, main, job, SessionId('review'), verificationPolicy({ storageRoot: '/private/evidence', container }), controller.signal)
   const tool = tools.get('run_review_check')!, concludeTurn = vi.fn()
-  return { job, persisted, record, controller, concludeTurn, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn }),
+  return { job, persisted, record, controller, concludeTurn, work, tools, invoke: () => tool.execute({ argv: ['node'], cwd: 'tree' }, { concludeTurn }),
     observe: (findings: CriterionFinding[], checks: CheckFinding[]) => tools.get('task_review_observations')!.execute({ findings, checks }, { concludeTurn }) }
 }
 
@@ -173,4 +175,43 @@ it('retains appended check plans, rejects missing coverage and keeps hypotheses 
   expect(() => checkResultsAsEvidence(value, findings, true)).not.toThrow()
   expect(() => checkResultsAsEvidence(value, findings.slice(1), true)).toThrow('every planned')
   expect(() => checkResultsAsEvidence(value, [{ ...findings[0]!, status: 'unverified' }, findings[1]!], true)).toThrow('cannot pass')
+})
+
+it('admits a durable check once, ends the model turn, and retains its receipt until consumed', async () => {
+  const f = verificationTool(true), result = Promise.withResolvers<ReviewCheck.CheckResult>()
+  const run = vi.spyOn(ReviewCheck, 'runCheck').mockImplementation(() => result.promise)
+  const admitted = await f.invoke() as { checkId: string; queued: boolean }
+  expect(admitted.queued).toBe(true); expect(f.concludeTurn).toHaveBeenCalledOnce()
+  expect(f.persisted[0]?.verification?.requests?.[0]?.status).toBe('queued')
+  expect(f.work.pending()).toBe(true)
+  await expect(f.invoke()).rejects.toThrow('CHECK_PENDING')
+  expect(run).toHaveBeenCalledOnce()
+  result.resolve({ id: admitted.checkId, snapshotId: f.job.verification!.snapshot.id, argv: ['node'], cwd: 'tree', startedAt: 'now', finishedAt: 'later', exitCode: 0, signal: null, timedOut: false, cancelled: false, stdout: 'ok', stderr: '', outputIncomplete: false, changed: [] })
+  await f.work.wait()
+  expect(f.work.pending()).toBe(false)
+  expect(f.job.verification?.requests?.[0]?.status).toBe('settled')
+  expect(f.job.verification?.checks[0]?.id).toBe(admitted.checkId)
+  expect(f.job.budget?.progress).toBe(1)
+})
+it('retains unknown execution and never turns a missing receipt into acceptance', async () => {
+  const f = verificationTool(true)
+  vi.spyOn(ReviewCheck, 'runCheck').mockRejectedValue(new Error('connection lost'))
+  await f.invoke()
+  await expect(f.work.wait()).rejects.toThrow('connection lost')
+  expect(f.job.verification?.requests?.[0]?.status).toBe('unknown')
+  expect(f.job.verification?.checks).toHaveLength(0)
+  expect(f.job.budget?.progress).toBe(0)
+})
+it('incremental independent findings stay private until finalization and missing rows remain unverified', async () => {
+  const f = verificationTool(true), value = f.job.verification!
+  f.job.checkProtocol = 1
+  appendCheckPlan(value, [{ id: 'check', criterionId: 'c', source: { kind: 'objective', reference: 'objective' }, fact: 'title', method: 'read', expected: 'expected title', coverage: 'text', basis: 'explicit' }], ['c'], 'now')
+  const exec = { concludeTurn: f.concludeTurn }
+  await f.tools.get('record_review_observations')!.execute({ findings: [], checks: [] }, exec)
+  expect(value.phase).toBe('independent')
+  await f.tools.get('task_review_observations')!.execute({}, exec)
+  expect(value.phase).toBe('comparison')
+  expect(value.observations[0]?.status).toBe('unverified')
+  expect(value.checkFindings?.[0]?.status).toBe('unverified')
+  await expect(f.tools.get('record_review_observations')!.execute({ findings: [], checks: [] }, exec)).rejects.toThrow('cannot change')
 })

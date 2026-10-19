@@ -8,20 +8,20 @@ import { checkResultSchema, type CheckResult } from './verification-schema.ts'
 import { CheckInputError } from './check-errors.ts'
 
 export const requestSchema = z.object({
-  version: z.literal(1), id: z.string().uuid(), operation: z.enum(['run', 'recover']),
+  version: z.union([z.literal(1), z.literal(2)]), id: z.string().uuid(), operation: z.enum(['run', 'recover', 'collect']),
   snapshotRoot: z.string().min(1).max(4096), snapshotId: z.string().uuid(),
   sessionId: z.string().min(1).max(256),
   argv: z.array(z.string().max(16384)).max(256), cwd: z.string().max(4096),
-  commandMs: z.number().int().min(1).max(3600000),
+  commandMs: z.number().int().min(1).max(7200000),
 }).strict()
 export type CheckRequest = z.infer<typeof requestSchema>
 export const REQUEST_BYTES = 64 * 1024
 
 /** Wait for a cleanup acknowledgement after cancellation; lost acknowledgement remains a fault. */
-export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string, operation: 'run' | 'recover',
-  argv: string[], cwd: string, policy: CheckPolicy, signal: AbortSignal): Promise<CheckResult | null> {
+export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string, operation: 'run' | 'recover' | 'collect',
+  argv: string[], cwd: string, policy: CheckPolicy, signal: AbortSignal, requestId?: string): Promise<CheckResult | null> {
   signal.throwIfAborted()
-  const request = requestSchema.parse({ version: 1, id: randomUUID(), operation,
+  const request = requestSchema.parse({ version: requestId ? 2 : 1, id: requestId ?? randomUUID(), operation,
     snapshotRoot: snapshot.root, snapshotId: snapshot.id, sessionId, argv, cwd, commandMs: policy.commandMs })
   const frame = JSON.stringify(request) + '\n'
   if (Buffer.byteLength(frame) > REQUEST_BYTES) throw new CheckInputError('request exceeds framing limit; shorten argv')
@@ -33,9 +33,12 @@ export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string
       settled = true; signal.removeEventListener('abort', abort); socket.destroy()
       if (error) reject(error); else resolve(value)
     }
-    const abort = () => { if (connected) socket.write(JSON.stringify({ cancel: request.id }) + '\n') }
+    const abort = () => {
+      socket.setTimeout(45000) // Cancellation never inherits the multi-hour execution wait.
+      if (connected) socket.write(JSON.stringify({ cancel: request.id }) + '\n')
+    }
     signal.addEventListener('abort', abort, { once: true })
-    socket.setTimeout(policy.commandMs + 45000, () => finish(new Error('CHECK_INFRASTRUCTURE: gateway cleanup acknowledgement timed out')))
+    socket.setTimeout(request.version === 2 ? 10800000 : policy.commandMs + 45000, () => finish(new Error('CHECK_INFRASTRUCTURE: gateway cleanup acknowledgement timed out')))
     socket.once('connect', () => { connected = true; socket.write(frame); if (signal.aborted) abort() })
     socket.on('error', error => finish(error))
     socket.on('close', () => finish(new Error('CHECK_INFRASTRUCTURE: gateway closed without cleanup acknowledgement')))
@@ -49,7 +52,7 @@ export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string
       try { finish(undefined, JSON.parse(body)) } catch { finish(new Error('CHECK_CHANNEL: invalid response JSON')) }
     })
   })
-  const response = z.object({ version: z.literal(1), id: z.literal(request.id),
+  const response = z.object({ version: z.literal(request.version), id: z.literal(request.id),
     result: checkResultSchema.nullable().optional(), error: z.string().optional(),
     errorCode: z.enum(['invalid-request', 'infrastructure']).optional() }).strict().parse(reply)
   if (response.error) {
@@ -61,7 +64,7 @@ export async function checkRequest(snapshot: ArtifactSnapshot, sessionId: string
     return null
   }
   const result = response.result
-  if (!result || result.snapshotId !== snapshot.id || JSON.stringify(result.argv) !== JSON.stringify(argv)
+  if (!result || requestId && result.id !== requestId || result.snapshotId !== snapshot.id || JSON.stringify(result.argv) !== JSON.stringify(argv)
     || result.cwd !== cwd || result.runtime?.image !== policy.container.image || result.runtime.context !== policy.container.context) {
     throw new Error('CHECK_CHANNEL: returned evidence does not match the bound request')
   }

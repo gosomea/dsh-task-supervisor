@@ -13,8 +13,8 @@ import { captureRework, settleRework, pendingReworkSchema, reworkRecordSchema,
   type PendingRework, type ReworkRecord } from './rework-records.ts'
 
 export const NAMESPACE = 'dsh-task-supervisor'
-export const RECORD_VERSION = 15
-export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+export const RECORD_VERSION = 16
+export const READABLE_RECORD_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 export { criterionSchema, stageSchema, taskSchema } from './state-schema.ts'
 export type { TaskSnapshot, TaskStage, TaskCriterion, NodeRun } from './state-schema.ts'
@@ -55,7 +55,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 /** Rebuild the authoritative task state from ordered native control records. */
 export const taskProjection = {
   key: 'taskSupervisor',
-  stateVersion: 21,
+  stateVersion: 22,
   stateSchema: z.object({ entry: entrySchema.nullable(), current: taskSchema.nullable(), failure: z.string().nullable(), reviews: z.array(reviewSchema),
     reviewJobs: z.array(reviewJobSchema), draft: draftSchema.nullable(), reworks: z.array(reworkRecordSchema), pendingReworks: z.array(pendingReworkSchema),
     repairs: z.array(repairProposalSchema), currentSeq: z.number().int().nonnegative(),
@@ -93,10 +93,12 @@ export const taskProjection = {
         throw new Error('task revision is not contiguous')
       }
       if (previous !== null && next.id !== previous.id
-        && (!['complete', 'cleared'].includes(previous.phase) || (!archived && next.revision !== 1))) {
+        && (!['complete', 'closed', 'cleared'].includes(previous.phase) || (!archived && next.revision !== 1))) {
         throw new Error('new task identity requires a terminal predecessor')
       }
       const source = previous?.id === next.id ? previous : archived?.task
+      if (source?.reviewOverrides && JSON.stringify(next.reviewOverrides?.slice(0, source.reviewOverrides.length)) !== JSON.stringify(source.reviewOverrides)) throw new Error('review override history changed')
+      if (source?.phase === 'closed' && next.phase !== 'closed' && next.phase !== 'cleared') throw new Error('a user-ended task cannot resume')
       if (source?.phase === 'complete' && next.phase === 'active') {
         const proposal = state.repairs.find(p => p.id === next.reopenedFromProposalId)
         if (!proposal || JSON.stringify(taskJson(reopenTask(source, proposal, event.seq))) !== JSON.stringify(taskJson(next))) {
@@ -130,7 +132,7 @@ export const taskProjection = {
 /** Read completed and cleared tasks from the same ordered Session records as the live projection. */
 export function createTaskHistoryCollector() {
   let projection = taskProjection.init()
-  const terminal = (task: TaskSnapshot) => task.phase === 'complete' || task.phase === 'cleared'
+  const terminal = (task: TaskSnapshot) => task.phase === 'complete' || task.phase === 'closed' || task.phase === 'cleared'
   return {
     add(event: SessionEvent) {
       projection = taskProjection.apply(projection, event)
@@ -158,6 +160,7 @@ export function taskJson(state: TaskSnapshot): JsonValue {
     id: state.id,
     revision: state.revision,
     ...state.acceptanceCycle === undefined ? {} : { acceptanceCycle: state.acceptanceCycle },
+    ...state.reviewOverrides === undefined ? {} : { reviewOverrides: state.reviewOverrides },
     ...state.completedAt === undefined ? {} : { completedAt: state.completedAt },
     ...state.reopenedFromProposalId === undefined ? {} : { reopenedFromProposalId: state.reopenedFromProposalId },
     ...state.repairHistory === undefined ? {} : { repairHistory: JSON.parse(JSON.stringify(state.repairHistory)) as JsonValue },

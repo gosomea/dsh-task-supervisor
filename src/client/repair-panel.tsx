@@ -13,7 +13,7 @@ export function RepairPanel({ task, state, busy, store }: { task: TaskSnapshot; 
   const [roots, setRoots] = useState<string[]>([])
   const proposal = state.repairs?.findLast(item => item.taskId === task.id && ['pending', 'confirmed'].includes(item.status))
   const stale = proposal && proposal.taskRevision !== task.revision
-  const activeConflict = state.task && !['complete', 'cleared'].includes(state.task.phase)
+  const activeConflict = state.task && !['complete', 'closed', 'cleared'].includes(state.task.phase)
   const available = state.live && task.enabled && state.task?.enabled && !activeConflict
   const title = (id: string) => task.stages.find(node => node.id === id)?.title ?? id
   return <>

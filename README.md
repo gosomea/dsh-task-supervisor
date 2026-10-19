@@ -11,6 +11,8 @@ English | [中文](README.zh.md)
 
 ## Summary
 
+The current source includes the new review workflow (unreleased): explicit user bypass, separate model and long-check budgets, and durable incremental findings. See [project architecture](docs/architecture.md) for components and state, and [review workflow](docs/review-workflow.md) for controls and configuration. The installation version below remains 0.1.8.
+
 Use `/task` to track, pause and rework a goal, follow its DAG, and obtain reviews during planning, execution and completion. The main Agent plans and delivers; Supervisor persists state, schedules reviews, and continues, pauses or closes the task under valid decisions. Discuss requirements, ask about progress and explicitly change tasks in consultation. Default review examines the main conversation log; direct artifact reads and isolated checks require configuration, and passing review does not guarantee that nothing was missed.
 
 ## Table of Contents
